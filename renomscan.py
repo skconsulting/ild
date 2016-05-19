@@ -1,5 +1,8 @@
 import os
 import shutil
+"""In some dataset, the scan are not numbered  from 0 to n. \
+The tool renomscan.py  rename the .dcm file by appending a number \
+starting from 1 in 4 digits (example -0021) just before the .dcm"""
 
 
 
