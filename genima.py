@@ -1,6 +1,7 @@
 import os
 import shutil
-
+"""Genima.py file creates in proper place all the bmp directories \
+and move bmp images of scan in them.""""
 typei='bmp'
 
 namedirtop = 'ILD_DB_txtROIs'
