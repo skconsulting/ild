@@ -51,10 +51,12 @@ def repti(tabc,dx,dy):
                  xi=x1
                  c=float((y2-y1)/(x2-x1))
                  while xi < x2:
-                     yi = min(511,y1 + c * (xi-x1))
+#                     print xi, x2
+                     yi = round(min(511,y1 + c * (xi-x1)))
+               
                   
                      #print('x1:',x1, 'y1:',y1, 'x2:',x2,'y2:',y2,'xi:',xi,'yi:',yi,'c:',c)             
-                     tab[round(yi)][round(xi)]=1
+                     tab[int(yi)][int(xi)]=1
 #                     xi+=1
                      if c!=0:
                          xi+=min(abs(c),abs(1/c))
@@ -184,9 +186,11 @@ def reptfc(tab,dx,dy):
 def reptfull(tabc,dx,dy):
     """ top function to generate ROI table filled from ROI text file"""
     tabz=repts(tabc,dx,dy)
+#    print('plot')
 #    scipy.misc.imsave('tabz.jpg', tabz)
 #    im1 = plt.matshow(tabz)
 #    plt.colorbar(im1,label='with summit')
+    plt.show 
 
     tabz1=tabz+repti(tabc,dx,dy)
 #    scipy.misc.imsave('tabz1.jpg', tabz1)
@@ -199,10 +203,10 @@ def reptfull(tabc,dx,dy):
 #    plt.colorbar(im3,label='with full fill')
      
     tabz3=reptfc (tabz2,dx,dy)
-    scipy.misc.imsave('tabz3.jpg', tabz3)
+#    scipy.misc.imsave('tabz3.jpg', tabz3)
 #    im4 = plt.matshow(tabz3)
 #    plt.colorbar(im4,label='with correct fill')
-#    plt.show 
+    plt.show 
 #    print(tabz3)
 #  
     return tabz3
@@ -245,11 +249,10 @@ def pavs (tabc,tab,dx,dy,px,py,namedirtopcf,jpegpath,patchpath,thr,iln,f,label,l
     mini=min(maxtabx-px,dx-px)
     minj=min(maxtaby-py,dy-py)
     maxj=max(mintaby-py,0)
-    while i < mini:
+    while i <= mini:
         j=maxj
-#        print(i,j)
-        while j<minj:
-           
+        while j<=minj:
+#            print(i,j)
             ii=0
             area=0
             while ii < px:
