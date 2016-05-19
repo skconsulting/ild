@@ -67,13 +67,13 @@ white=(255,255,255)
 
 classif ={'consolidation':0,
  'fibrosis':1,
- 'ground_class':2,
+ 'ground_glass':2,
  'healthy':3,
  'micronodules':4,
  'reticulation':5}
 classifc ={'consolidation':red,
  'fibrosis':blue,
- 'ground_class':yellow,
+ 'ground_glass':yellow,
  'healthy':green,
  'micronodules':cyan,
  'reticulation':purple}
