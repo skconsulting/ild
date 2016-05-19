@@ -1,4 +1,6 @@
-#Sylvain Kritter 4 mai 2016
+#Sylvain Kritter 14 mai 2016
+"""Top file to generate patches """
+
 import os
 import numpy as np
 import shutil
@@ -20,7 +22,7 @@ dimpavy = 32
 #threshold for patch
 thr=0.8
 #directory name with patient databases, should be in current directory
-namedirtop = 'ILD_DB_txtROIs'
+namedirtop = 'ILD1'
 ###########end customisation part#####################
 #######################################################
 def remove_folder(path):
@@ -70,11 +72,13 @@ for f in listdirc:
      
         if  'patchfile' not in contenudir:
             os.mkdir(namedirtopcf+'/patchfile')
+        fif=False
         for f1 in contenudir:
             posp1=f1.find('.txt',0)
             posc1=f1.find('CT',0)
 #            print(posp1,posc1)
             if posp1>0 and posc1==0:
+                fif=True
                 fileList =f1
                 ##f1 = CT-INSPIRIUM-1186.txt
                 pathf1=namedirtopcf+'/'+fileList
@@ -82,6 +86,9 @@ for f in listdirc:
                 print('work on:',f)
                 labell,coefi =fileext(pathf1,namedirtopcf,cwd,patchpath)
 #                print(label,loca)
+                break
+        if not fif:
+             print('ERROR: no content file', f)
         
         listslice= os.listdir(namedirtopcf+'/patchfile') 
 #        print('listslice',listslice)
@@ -125,7 +132,7 @@ for f in listdirc:
                     tabc=tabccfi.astype(int)
                     
 #                print(tabc)
-#                    print('generate tables from:',l,'in:', f)
+                    print('generate tables from:',l,'in:', f)
                     tabz= reptfull(tabc,dimtabx,dimtaby)
                     tabzc=tabz+tabzc
                     if ftab:
@@ -134,7 +141,7 @@ for f in listdirc:
                     
                     reftab=np.concatenate((reftab,tabc),axis=0)
                     
-#                    print('end create tables')
+                    print('end create tables')
                     il=l.find('.',0)
                     iln=l[0:il]
                 #coefi=0.79296875
@@ -142,10 +149,10 @@ for f in listdirc:
                 #label=micronodules
                 #loca=diffuse
 #                print(tabc)
-#            print('creates patches from:',iln, 'in:', f)
+            print('creates patches from:',iln, 'in:', f)
             nbp,tabz1=pavs (reftab,tabzc,dimtabx,dimtaby,dimpavx,dimpavy,namedirtopcf,\
                 jpegpath, patchpath,thr,iln,f,label,loca,typei)
-#            print('end create patches')
+            print('end create patches')
             nbpf=nbpf+nbp
 #    print(f,nbpf)
     ofilepw = open(jpegpath+'/nbpat_'+f+'.txt', 'w')
