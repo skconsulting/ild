@@ -35,7 +35,6 @@ def remove_folder(path):
     if os.path.exists(path):
          # remove if exists
          shutil.rmtree(path)
-         
 t0=mytime()
 #####################################################################
 #define the working directory
@@ -43,21 +42,19 @@ globalHist=True
 contrast=False
 normiInternal =True
 isGre=False
-td=false # if front predict is requested
 #HUG='predict_23d'   
-#HUG='predict_S106530'   
-#HUG='predict_S14740' 
-#HUG='predict_S15440'
-#HUG='predict_S107260'
+HUG='predict_S106530'   
+HUG='predict_S14740' 
+HUG='predict_S15440'
+HUG='predict_S107260'
+thrpatch = 0.8 #threshold for pad acceptance (recovery)
+thrproba =0.6 #thresholm proba for generation of predicted images
+thrprobaUIP=0.6 #threshold proba for UIP
+thrprobaMerge=0.6 #threshold proba for UIP
 
-#thrpatch = 0.8 #threshold for pad acceptance (recovery)
-#thrproba =0.6 #thresholm proba for generation of predicted images
-#thrprobaUIP=0.6 #threshold proba for UIP
-#thrprobaMerge=0.6 #threshold proba for UIP
-#
-#picklein_file = '../pickle_ex/pickle_ex61'
-#picklein_file_front = '../pickle_ex/pickle_ex63'
-path_pickle='CNNparameters'
+picklein_file = '../pickle_ex/pickle_ex61'
+picklein_file_front = '../pickle_ex/pickle_ex63'
+
 predictout='predicted_results'
 predictout3d='predicted_results_3d'
 predictout3dn='predicted_results_3dn'
@@ -100,6 +97,7 @@ excluvisu=['back_ground','healthy']
 #excluvisu=[]
 excluvisuh=[]
 
+
 htmldir='html'
 threeFileTxt='uip.txt'
 threeFile='uip.html'
@@ -127,12 +125,11 @@ imageDepth=8191 #number of bits used on dicom images (2 **n) 13 bits
 
 cwd=os.getcwd()
 (cwdtop,tail)=os.path.split(cwd)
-dirpickle=os.path.join(cwdtop,path_pickle)
-#dirHUG=os.path.join(cwdtop,HUG)
-#
-#print dirHUG
-#listHug= [ name for name in os.listdir(dirHUG) if os.path.isdir(os.path.join(dirHUG, name)) ]
-#print listHug
+dirHUG=os.path.join(cwdtop,HUG)
+
+print dirHUG
+listHug= [ name for name in os.listdir(dirHUG) if os.path.isdir(os.path.join(dirHUG, name)) ]
+print listHug
 
 font5 = ImageFont.truetype( 'arial.ttf', 5)
 font10 = ImageFont.truetype( 'arial.ttf', 10)
@@ -1326,130 +1323,110 @@ def mergeproba(prx,plx,tabx,slnt,dimtabx,dimtaby)  :
     return proba_merge,patch_list_merge
      
 
-def predictrun(indata,path_patient):
+         
+for f in listHug:
+    print f
+ 
+    errorfile = open(eferror, 'a')
+    listelabelfinal={}
+    dirf=os.path.join(dirHUG,f)
+    sroidir=os.path.join(dirf,sroid)
     
-        thrpatch=indata['thrpatch']
-        thrproba=indata['thrproba']
-        thrprobaMerge=indata['thrprobaMerge']
-        thrprobaUIP=indata['thrprobaUIP']
-        picklein_filet=indata['picklein_file']
-        picklein_file_frontt=indata['picklein_file_front']
-        
+    wridir=os.path.join(dirf,source)
+    wridir=os.path.join(wridir,transbmp)
+    remove_folder(wridir)
+    os.mkdir(wridir)
+    
+    jpegpathdir=os.path.join(dirf,jpegpadirm)
+    remove_folder(jpegpathdir)
+    os.mkdir(jpegpathdir) 
+    
+    dicompathdir=os.path.join(dirf,dicompadirm)
+    remove_folder(dicompathdir)
+    os.mkdir(dicompathdir) 
+    
+    dicompathdircross=os.path.join(dicompathdir,dicomcross)
 
-        picklein_fileu =  os.path.join(dirpickle,picklein_filet)
-        picklein_file_frontu =  os.path.join(dirpickle,picklein_file_frontt)
-        
-        picklein_file =  os.path.join(picklein_fileu,modelname)
-        picklein_file_front =  os.path.join(picklein_file_frontu,modelname)
+    remove_folder(dicompathdircross)
+    os.mkdir(dicompathdircross) 
     
-        dirHUG=os.path.join(cwdtop,path_patient)
-        
-        print dirHUG
-        listHug= [ name for name in os.listdir(dirHUG) if os.path.isdir(os.path.join(dirHUG, name)) ]
-        print listHug        
-    for f in listHug:
-        print f
-     
-        errorfile = open(eferror, 'a')
-        listelabelfinal={}
-        dirf=os.path.join(dirHUG,f)
-        sroidir=os.path.join(dirf,sroid)
-        
-        wridir=os.path.join(dirf,source)
-        wridir=os.path.join(wridir,transbmp)
-        remove_folder(wridir)
-        os.mkdir(wridir)
-        
-        jpegpathdir=os.path.join(dirf,jpegpadirm)
-        remove_folder(jpegpathdir)
-        os.mkdir(jpegpathdir) 
-        
-        dicompathdir=os.path.join(dirf,dicompadirm)
-        remove_folder(dicompathdir)
-        os.mkdir(dicompathdir) 
-        
-        dicompathdircross=os.path.join(dicompathdir,dicomcross)
+    dicompathdirfront=os.path.join(dicompathdir,dicomfront)
+    remove_folder(dicompathdirfront)
+    os.mkdir(dicompathdirfront) 
     
-        remove_folder(dicompathdircross)
-        os.mkdir(dicompathdircross) 
-        
-        dicompathdirfront=os.path.join(dicompathdir,dicomfront)
-        remove_folder(dicompathdirfront)
-        os.mkdir(dicompathdirfront) 
-        
-        dicompathdirmerge=os.path.join(dicompathdir,dicomcross_merge)
-        remove_folder(dicompathdirmerge)
-        os.mkdir(dicompathdirmerge) 
-        
-        if isGre:
-            print 'is gre'
+    dicompathdirmerge=os.path.join(dicompathdir,dicomcross_merge)
+    remove_folder(dicompathdirmerge)
+    os.mkdir(dicompathdirmerge) 
     
-    
-        else:
-    #        
-            tabscanScan,slnt,dimtabx,slicepitch=genebmp(dirf,source) 
-            datacross=(slnt,dimtabx,slicepitch)
-            pickle.dump(datacross, open( os.path.join(dirf,"datacross"), "wb" ))
-    #        datacross= pickle.load( open( os.path.join(dirf,"datacross"), "r" ))
-    #        dimtabx=datacross[1]
-    #        slnt=datacross[0]
-    #        slicepitch=datacross[2]
-            tabscanLung=genebmplung(dirf,lung_name_gen,slnt,dimtabx,dimtabx)
-            
-            patch_list_cross=pavgene(dirf,dimtabx,dimtabx,tabscanScan,tabscanLung,slnt,jpegpath)
-            model=modelCompilation('cross')
-            proba_cross=ILDCNNpredict(patch_list_cross,model)
-            pickle.dump(proba_cross, open( os.path.join(dirf,"proba_cross"), "wb" ))
-            pickle.dump(patch_list_cross, open( os.path.join(dirf,"patch_list_cross"), "wb" ))
-    #        proba_cross= pickle.load( open( os.path.join(dirf,"proba_cross"), "r" ))
-    #        patch_list_cross= pickle.load( open( os.path.join(dirf,"patch_list_cross"), "r" ))
-            sliceok = visua(dirf,proba_cross,patch_list_cross,dimtabx,dimtabx,slnt,predictout,sroi,scan_bmp,source,dicompathdircross,True)
-    ###        
-            if td=True:
-                tabresScan=reshapeScan(tabscanScan,slnt,dimtabx)
-                dimtabxn,dimtabyn,tabScan3d=wtebres(dirf,tabresScan,dimtabx,slicepitch,lung_name_gen,'scan')
-           
-        ###        
-                tabresLung=reshapeScan(tabscanLung,slnt,dimtabx)
-                dimtabxn,dimtabyn,tabLung3d=wtebres(dirf,tabresLung,dimtabx,slicepitch,lung_name_gen,'lung')
-                datafront=(dimtabxn,dimtabyn)
-                pickle.dump(datafront, open( os.path.join(dirf,"datafront"), "wb" ))
-        #        datafront= pickle.load( open( os.path.join(dirf,"datafront"), "r" ))
-        #        dimtabyn=datafront[1]
-        #        dimtabxn=datafront[0]
+    if isGre:
+        print 'is gre'
+
+
+    else:
+#        
+        tabscanScan,slnt,dimtabx,slicepitch=genebmp(dirf,source) 
+        datacross=(slnt,dimtabx,slicepitch)
+        pickle.dump(datacross, open( os.path.join(dirf,"datacross"), "wb" ))
+#        datacross= pickle.load( open( os.path.join(dirf,"datacross"), "r" ))
+#        dimtabx=datacross[1]
+#        slnt=datacross[0]
+#        slicepitch=datacross[2]
+        tabscanLung=genebmplung(dirf,lung_name_gen,slnt,dimtabx,dimtabx)
         
-                patch_list_front=pavgene(dirf,dimtabxn,dimtabx,tabScan3d,tabLung3d,dimtabyn,jpegpath3d)
-                model=modelCompilation('front')
-                proba_front=ILDCNNpredict(patch_list_front,model)
-                pickle.dump(proba_front, open( os.path.join(dirf,"proba_front"), "wb" ))
-                pickle.dump(patch_list_front, open( os.path.join(dirf,"patch_list_front"), "wb" ))
-        #        proba_front=pickle.load(open( os.path.join(dirf,"proba_front"), "rb" ))
-        #        patch_list_front=pickle.load(open( os.path.join(dirf,"patch_list_front"), "rb" ))      
-                visua(dirf,proba_front,patch_list_front,dimtabxn,dimtabx,dimtabyn,predictout3d,sroid,transbmp,source,dicompathdirfront,False)
-        #####        
-                proba_cross=pickle.load(open( os.path.join(dirf,"proba_cross"), "rb" ))
-                patch_list_cross=pickle.load(open( os.path.join(dirf,"patch_list_cross"), "rb" ))
-                proba_front=pickle.load(open( os.path.join(dirf,"proba_front"), "rb" ))
-                patch_list_front=pickle.load(open( os.path.join(dirf,"patch_list_front"), "rb" ))
-        #     
-                genethreef(dirf,patch_list_cross,proba_cross,slicepitch,dimtabx,dimtabx,dimpavx,slnt,'cross')
-                genethreef(dirf,patch_list_front,proba_front,avgPixelSpacing,dimtabxn,dimtabyn,dimpavx,dimtabx,'front')
-                
-                tabpx=genecross(dirf,proba_front,patch_list_front,slnt,slicepitch,dimtabxn,dimtabyn,predictout3dn)
-        #        pickle.dump(tabpx, open( os.path.join(dirf,"tabpx"), "wb" ))
-        #        tabpx=pickle.load(open( os.path.join(dirf,"tabpx"), "rb" ))
-                tabx=reshapepatern(dirf,tabpx,dimtabxn,dimtabx,slnt,slicepitch,predictout3d1,source,dicompathdirfront)        
-        #        pickle.dump(tabx, open( os.path.join(dirf,"tabx"), "wb" ))        
-        #        tabx=pickle.load(open( os.path.join(dirf,"tabx"), "rb" ))
-                
-                proba_merge,patch_list_merge=mergeproba(proba_cross,patch_list_cross,tabx,slnt,dimtabx,dimtabx)
+        patch_list_cross=pavgene(dirf,dimtabx,dimtabx,tabscanScan,tabscanLung,slnt,jpegpath)
+        model=modelCompilation('cross')
+        proba_cross=ILDCNNpredict(patch_list_cross,model)
+        pickle.dump(proba_cross, open( os.path.join(dirf,"proba_cross"), "wb" ))
+        pickle.dump(patch_list_cross, open( os.path.join(dirf,"patch_list_cross"), "wb" ))
+#        proba_cross= pickle.load( open( os.path.join(dirf,"proba_cross"), "r" ))
+#        patch_list_cross= pickle.load( open( os.path.join(dirf,"patch_list_cross"), "r" ))
+        sliceok = visua(dirf,proba_cross,patch_list_cross,dimtabx,dimtabx,slnt,predictout,sroi,scan_bmp,source,dicompathdircross,True)
+###        
+
+        tabresScan=reshapeScan(tabscanScan,slnt,dimtabx)
+        dimtabxn,dimtabyn,tabScan3d=wtebres(dirf,tabresScan,dimtabx,slicepitch,lung_name_gen,'scan')
+   
+###        
+        tabresLung=reshapeScan(tabscanLung,slnt,dimtabx)
+        dimtabxn,dimtabyn,tabLung3d=wtebres(dirf,tabresLung,dimtabx,slicepitch,lung_name_gen,'lung')
+        datafront=(dimtabxn,dimtabyn)
+        pickle.dump(datafront, open( os.path.join(dirf,"datafront"), "wb" ))
+#        datafront= pickle.load( open( os.path.join(dirf,"datafront"), "r" ))
+#        dimtabyn=datafront[1]
+#        dimtabxn=datafront[0]
+
+        patch_list_front=pavgene(dirf,dimtabxn,dimtabx,tabScan3d,tabLung3d,dimtabyn,jpegpath3d)
+        model=modelCompilation('front')
+        proba_front=ILDCNNpredict(patch_list_front,model)
+        pickle.dump(proba_front, open( os.path.join(dirf,"proba_front"), "wb" ))
+        pickle.dump(patch_list_front, open( os.path.join(dirf,"patch_list_front"), "wb" ))
+#        proba_front=pickle.load(open( os.path.join(dirf,"proba_front"), "rb" ))
+#        patch_list_front=pickle.load(open( os.path.join(dirf,"patch_list_front"), "rb" ))      
+        visua(dirf,proba_front,patch_list_front,dimtabxn,dimtabx,dimtabyn,predictout3d,sroid,transbmp,source,dicompathdirfront,False)
+#####        
+        proba_cross=pickle.load(open( os.path.join(dirf,"proba_cross"), "rb" ))
+        patch_list_cross=pickle.load(open( os.path.join(dirf,"patch_list_cross"), "rb" ))
+        proba_front=pickle.load(open( os.path.join(dirf,"proba_front"), "rb" ))
+        patch_list_front=pickle.load(open( os.path.join(dirf,"patch_list_front"), "rb" ))
+#     
+        genethreef(dirf,patch_list_cross,proba_cross,slicepitch,dimtabx,dimtabx,dimpavx,slnt,'cross')
+        genethreef(dirf,patch_list_front,proba_front,avgPixelSpacing,dimtabxn,dimtabyn,dimpavx,dimtabx,'front')
         
-                visua(dirf,proba_merge,patch_list_merge,dimtabx,dimtabx,slnt,predictoutmerge,sroi,scan_bmp,source,dicompathdirmerge,True)
-                genethreef(dirf,patch_list_merge,proba_merge,slicepitch,dimtabx,dimtabx,dimpavx,slnt,'merge')
-            
-        errorfile.write('completed :'+f)
-        errorfile.close()  
-    errorfile.close()      
+        tabpx=genecross(dirf,proba_front,patch_list_front,slnt,slicepitch,dimtabxn,dimtabyn,predictout3dn)
+#        pickle.dump(tabpx, open( os.path.join(dirf,"tabpx"), "wb" ))
+#        tabpx=pickle.load(open( os.path.join(dirf,"tabpx"), "rb" ))
+        tabx=reshapepatern(dirf,tabpx,dimtabxn,dimtabx,slnt,slicepitch,predictout3d1,source,dicompathdirfront)        
+#        pickle.dump(tabx, open( os.path.join(dirf,"tabx"), "wb" ))        
+#        tabx=pickle.load(open( os.path.join(dirf,"tabx"), "rb" ))
+        
+        proba_merge,patch_list_merge=mergeproba(proba_cross,patch_list_cross,tabx,slnt,dimtabx,dimtabx)
+
+        visua(dirf,proba_merge,patch_list_merge,dimtabx,dimtabx,slnt,predictoutmerge,sroi,scan_bmp,source,dicompathdirmerge,True)
+        genethreef(dirf,patch_list_merge,proba_merge,slicepitch,dimtabx,dimtabx,dimpavx,slnt,'merge')
+
+    errorfile.write('completed :'+f)
+    errorfile.close()  
+errorfile.close()      
 print "predict time:",round(mytime()-t0,3),"s"
   
 #bglist=listcl()
