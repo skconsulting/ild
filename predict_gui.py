@@ -9,9 +9,12 @@ from appJar import gui
 from modulepredictgui import *
 import cPickle as pickle
 
+
 paramsave='data'
 source='source'
 paramname ='paramname.pkl'
+paramdict={}
+
 cwd=os.getcwd()
 (cwdtop,tail)=os.path.split(cwd)
 
@@ -24,19 +27,27 @@ paramsaveDirf=os.path.join(paramsaveDir,paramname)
 
 if os.path.exists(paramsaveDir):
     if os.path.exists(paramsaveDirf):
-        lisdir=pickle.load(open( paramsaveDirf, "rb" ))
+        paramdict=pickle.load(open( paramsaveDirf, "rb" ))
+        lisdir= paramdict['path_patient']
+        thrpatch= paramdict['thrpatch']
+        thrproba= paramdict['thrproba']
+        thrprobaMerge= paramdict['thrprobaMerge']
+        thrprobaUIP= paramdict['thrprobaUIP']
+        picklein_file= paramdict['picklein_file']
+        picklein_file_front= paramdict['picklein_file_front']
+
+        
     else:
         lisdir=cwdtop        
-
-#path_patient=''
-#lisdir=os.path.join(cwdtop,path_patient)
-#
-#some_sg,stsdir=lisdirprocess(lisdir)
-
-
+        thrpatch= 0.8
+        thrproba=0.6
+        thrprobaMerge=0.6
+        thrprobaUIP= 0.6
+        picklein_file= "pickle_ex74"
+        picklein_file_front= "pickle_ex711"
 
 def predict(btn):
-    global app
+    global continuevisu,goodir,app
     indata={}
 #    print(app.getListItems("list"))
 #    print(app.getEntry("Percentage of pad Overlapp"))
@@ -48,35 +59,46 @@ def predict(btn):
     indata['picklein_file']=app.getEntry("cross view weight")
     indata['picklein_file_front']= app.getEntry("front view weight")
     indata['lispatientselect']=app.getListItems("list")
+
 #    roirun(app.getListItems("list"),lisdir)
     if len(indata['lispatientselect']) >0:
+        paramdict['thrpatch']=indata['thrpatch']
+        paramdict['thrproba']=indata['thrproba']
+        paramdict['thrprobaMerge']= indata['thrprobaMerge']
+        paramdict['thrprobaUIP']=indata['thrprobaUIP']
+        paramdict['picklein_file']=indata['picklein_file']
+        paramdict['picklein_file_front']=indata['picklein_file_front']
+        pickle.dump(paramdict,open( paramsaveDirf, "wb" ))
 #    roirun(app.getListItems("list"),lisdir)
         predictrun(indata,lisdir)
+        app.stop(Stop)
+        visuDraw()
     else:
         app.errorBox('error', 'no patient selected for predict')  
-    app.stop(Stop)
-    initDraw()
+        app.stop(Stop)
+        initDraw()
+    goodir=False
+    continuevisu=False
+   
 
 def visualisation(btn):
     global app,continuevisu
 #    print(app.getListItems("list"))
     indata={}
+    indata['lispatient']=selectpatient
+#    print 'frontpredict',frontpredict
     if frontpredict:
-        indata['3dasked']=True
-        indata['3d']=app.getRadioButton("3d")
-        
-
+        indata['3dasked']=True        
     else:
         indata['3dasked']=False
-        indata['viewstyle']=app.getRadioButton("planar")
-    indata['lispatient']=selectpatient
+    indata['viewstyle']=app.getRadioButton("planar")
 #    if len(indata['lispatient']) >0:
 #    roirun(app.getListItems("list"),lisdir)
     visuarun(indata,lisdir)
 #    else:
 #        app.errorBox('error', 'no patient selected for visu')
     app.stop(Stop)
-    continuevisu=False
+    continuevisu=True
     visuDraw()
        
 def redraw(app):   
@@ -121,8 +143,8 @@ def gobackselection(btn):
     visuDraw()
  
 def selectPatientDir(btn):
-    global lisdir,goodir
-    print app.getEntry("path_patient")
+    global lisdir,goodir,continuevisu
+#    print app.getEntry("path_patient")
     lisdirold=lisdir
     lisdir=app.getEntry("path_patient")
     pbg=False
@@ -133,7 +155,8 @@ def selectPatientDir(btn):
             sourced=os.path.join(os.path.join(lisdir,i),source)
 #            print sourced
             if os.path.exists(sourced):
-                pickle.dump(lisdir,open( paramsaveDirf, "wb" ))
+                paramdict['path_patient']=lisdir
+                pickle.dump(paramdict,open( paramsaveDirf, "wb" ))
                 if pbg==False:
                     pbg=True
 #                print 'exist',pbg
@@ -160,7 +183,7 @@ goodir=False
 def initDraw():
     global app
    
-    app = gui("ROI form","1000x600")
+    app = gui("Predict form","1000x600")
     app.setBg("lightBlue")
     app.setFont(10)
 #    app.setInPadding([40,20]) # padding inside the widget
@@ -175,7 +198,7 @@ def initDraw():
     app.addHorizontalSeparator( colour="red",colspan=2)
 #    app.addLabel("sepa", "")
 #    app.setLabelBg("top", "green")
-    print goodir
+#    print goodir
     if goodir:                       # Row 1,Column 1
       
         app.addLabel("top1", "Select patient:")
@@ -205,18 +228,19 @@ def initDraw():
         app.setLabelBg("l1","blue")
         app.setLabelFg("l1","yellow")
         row = app.getRow()
+              
         app.addLabelNumericEntry("Percentage of pad Overlapp",row,0)
-        app.setEntry("Percentage of pad Overlapp", 0.8)        
+        app.setEntry("Percentage of pad Overlapp", thrpatch)        
         
         app.addLabelNumericEntry("Treshold proba for predicted image generation",row,1)
-        app.setEntry("Treshold proba for predicted image generation", 0.6)
+        app.setEntry("Treshold proba for predicted image generation", thrproba)
         
         row = app.getRow()
         app.addLabelNumericEntry("Treshold proba for volume calculation",row,0)
-        app.setEntry("Treshold proba for volume calculation", 0.6)
+        app.setEntry("Treshold proba for volume calculation",thrprobaUIP)
         
         app.addLabelNumericEntry("Treshold proba for merge cross and front view",row,1)
-        app.setEntry("Treshold proba for merge cross and front view", 0.6)
+        app.setEntry("Treshold proba for merge cross and front view", thrprobaMerge)
         row = app.getRow()
         app.addHorizontalSeparator(row,0,2, colour="red")
         app.addHorizontalSeparator(row,1,2, colour="red")
@@ -230,11 +254,11 @@ def initDraw():
         row = app.getRow()        
         app.addLabelEntry("cross view weight",row,0)
 #        app.addVerticalSeparator(row,0 ,colour="red")
-        app.setEntry("cross view weight","pickle_ex74")
+        app.setEntry("cross view weight",picklein_file)
         app.addRadioButton("predict_style", "Cross Only",row,1)
         row = app.getRow()
         app.addLabelEntry("front view weight",row,0)
-        app.setEntry("front view weight","pickle_ex711")
+        app.setEntry("front view weight",picklein_file_front)
         app.addRadioButton("predict_style", "Cross + Front",row,1)
         
         app.setFont(10)
@@ -249,8 +273,8 @@ def initDraw():
 
 def visuDraw():
     global app
-    print "visudraw"
-    app = gui("ROI form","1000x600")
+#    print "visudraw"
+    app = gui("Predict form","1000x600")
     app.setBg("lightBlue")
 
     app.setFont(10)
@@ -266,7 +290,7 @@ def visuDraw():
     app.addHorizontalSeparator( colour="red")
 #    app.addLabel("sepa", "")
 #    app.setLabelBg("top", "green")
-    print goodir
+#    print goodir
     if goodir:                       # Row 1,Column 1
       
         
@@ -310,7 +334,19 @@ def visuDraw():
             app.setFont(8)
             app.setSticky("w")
             if not frontpredict:
-                app.addRadioButton("planar","cross view")                            
+                row = app.getRow() # get current row
+                app.addLabel("l1", "Type of planar view,select one",row,0) 
+                app.addLabel("l2", "Type of orbit 3d view,select one",row,1)
+                app.setLabelBg("l1","blue")
+                app.setLabelFg("l1","yellow") 
+                app.setLabelBg("l2","blue")
+                app.setLabelFg("l2","yellow")
+                row = app.getRow() # get current row
+#                app.addRadioButton("planar","none",row,0) 
+#                app.addRadioButton("planar","none",row,1)  
+                row = app.getRow() # get current row
+                app.addRadioButton("planar","cross view",row,0) 
+                app.addRadioButton("planar","from cross predict",row,1)                             
             else:
                 row = app.getRow() # get current row
                 app.addLabel("l1", "Type of planar view,select one",row,0) 
@@ -320,17 +356,17 @@ def visuDraw():
                 app.setLabelBg("l2","blue")
                 app.setLabelFg("l2","yellow")
                 row = app.getRow() # get current row
-                app.addRadioButton("planar","none",row,0) 
-                app.addRadioButton("3d","none",row,1)  
+#                app.addRadioButton("planar","none",row,0) 
+#                app.addRadioButton("3d","none",row,1)  
                 row = app.getRow() # get current row
                 app.addRadioButton("planar","cross view",row,0) 
-                app.addRadioButton("3d","from cross predict",row,1)  
+                app.addRadioButton("planar","from cross predict",row,1)  
                 row = app.getRow() # get current row
                 app.addRadioButton("planar","front view",row,0)   
-                app.addRadioButton("3d","from front predict",row,1)  
+                app.addRadioButton("planar","from front predict",row,1)  
                 row = app.getRow() # get current row
                 app.addRadioButton("planar","merge view",row,0)        
-                app.addRadioButton("3d","from cross + front merge",row,1)    
+                app.addRadioButton("planar","from cross + front merge",row,1)    
             app.addHorizontalSeparator( colour="red")
             app.setSticky("n")
 #            app.setStrech("row")

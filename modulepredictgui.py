@@ -10,10 +10,17 @@ import shutil
 from tdGenePredictGui import *
 import cPickle as pickle
 import numpy as np
+import webbrowser
 
 dimpavx=16
 dimpavy=16
 pxy=float(dimpavx*dimpavy)
+
+
+htmldir='html'
+threeFile='uip.html'
+threeFileMerge='uipMerge.html'
+threeFile3d='uip3d.html'
 
 path_data='data'
 source_name='source'
@@ -372,12 +379,12 @@ def retrievepatch(x,y,sln,pr,li,dx,dy):
 def openfichier(ti,datacross,patch_list,proba,path_img):
     global  quitl,dimtabx,dimtaby,patchi,ix,iy
     quitl=False 
-    print 'datacros',datacross
+#    print 'datacros',datacross
     dimtabx=datacross[1]
     slnt=datacross[0]
     dimtaby= datacross[2]
-    print 'openfichier',slnt,dimtabx,ti,dimtaby
-    print 'dimltabx, dimtaby',dimtabx,dimtaby
+#    print 'openfichier',slnt,dimtabx,ti,dimtaby
+#    print 'dimltabx, dimtaby',dimtabx,dimtaby
 #    slicepitch=datacross[2]
     patchi=False
     ix=0
@@ -388,17 +395,18 @@ def openfichier(ti,datacross,patch_list,proba,path_img):
     else:
         sn=transbmp 
         corectnumber=0
-    print "corectnumber",corectnumber
+#    print "corectnumber",corectnumber
     pdirk = os.path.join(path_img,source_name)
     pdirk = os.path.join(pdirk,sn)
     list_image={}
     cdelimter='_'
     extensionimage='.'+typei
-    print pdirk
+#    print pdirk
     limage=[name for name in os.listdir(pdirk) if name.find('.'+typei,1)>0 ]
 #    print 'limag',limage
 #    print 'lenght limage',len(limage)
-    if len(limage)+1==slnt:
+#    print 'ti',ti
+    if ((ti =="cross view" or ti =="merge view") and len(limage)+1==slnt) or ti =="front view":
 #        print 'good'
 #    
         for iimage in range(0,slnt-1):
@@ -531,51 +539,63 @@ def openfichier(ti,datacross,patch_list,proba,path_img):
         return 'error in the number of scan images compared to dicom numbering'
     
 def visuarun(indata,path_patient):
-    
-    if indata['3dasked']:   
-        v3d=indata['3d']
-        print 'v3d',v3d   
-    else:
-        viewstyle=indata['viewstyle']
-        print 'viewstyle',viewstyle   
-             
-    print 'indata',indata
-    print 'path_patient',path_patient
-    
+    messageout=""
+#    print 'indata',indata
+#    print 'path_patient',path_patient
     lpt=indata['lispatient']
-
     pos=lpt.find(' PREDICT!:')
     if pos >0:
             listHug=(lpt[0:pos])
     else:
             pos=str(indata).find(' noPREDICT!')
             listHug=(lpt[0:pos])
-    
-    
-    print 'listhug',listHug
-    messageout=""
-    
+            messageout="no predict!for "+listHug
+            return messageout
+#    print 'listhug',listHug
     patient_path_complet=os.path.join(path_patient,listHug)
-    print patient_path_complet
+#    print patient_path_complet
     path_data_dir=os.path.join(patient_path_complet,path_data)
-    if not indata['3dasked']:  
-        if viewstyle=='cross view':
+    viewstyle=indata['viewstyle']
+#    print 'viewstyle',viewstyle
+    pathhtml=os.path.join(patient_path_complet,htmldir)
+    if viewstyle=='from cross predict':
+            namefilehtml=listHug+'_'+threeFile
+            viewfilehtmlcomplet=os.path.join(pathhtml,namefilehtml)
+            url = 'file://' + viewfilehtmlcomplet
+            webbrowser.open(url, new=2)
+           
+    elif viewstyle=='from front predict':
+           namefilehtml=listHug+'_'+threeFile3d
+           viewfilehtmlcomplet=os.path.join(pathhtml,namefilehtml)
+           url = 'file://' + viewfilehtmlcomplet
+           webbrowser.open(url, new=2)
+           
+    elif viewstyle=='from cross + front merge':
+            namefilehtml=listHug+'_'+threeFileMerge
+            viewfilehtmlcomplet=os.path.join(pathhtml,namefilehtml)
+            url = 'file://' + viewfilehtmlcomplet
+            webbrowser.open(url, new=2)            
+
+    elif viewstyle=='cross view':
             datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "r" ))
             patch_list= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross"), "r" ))
             proba= pickle.load( open( os.path.join(path_data_dir,"proba_cross"), "r" ))
-        elif viewstyle=='front view':
+            messageout=openfichier(viewstyle,datarep,patch_list,proba,patient_path_complet)
+    elif viewstyle=='front view':
             datarep= pickle.load( open( os.path.join(path_data_dir,"datafront"), "r" ))
             patch_list= pickle.load( open( os.path.join(path_data_dir,"patch_list_front"), "r" ))
             proba= pickle.load( open( os.path.join(path_data_dir,"proba_front"), "r" ))
-        else:
+            messageout=openfichier(viewstyle,datarep,patch_list,proba,patient_path_complet)
+    else:
             datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "r" ))
             patch_list= pickle.load( open( os.path.join(path_data_dir,"patch_list_merge"), "r" ))
             proba= pickle.load( open( os.path.join(path_data_dir,"proba_merge"), "r" ))
-        messageout=openfichier(viewstyle,datarep,patch_list,proba,patient_path_complet)
-    else:
-        messageout="3d asked"
+            messageout=openfichier(viewstyle,datarep,patch_list,proba,patient_path_complet)
     
     return messageout
+
+
+
 #    
 #indata={'lispatient':'23','typeofview':'cross','thrpatch':0.8,'thrproba':0.6,'thrprobaUIP':0.6,'thrprobaMerge':0.6,
 #        'picklein_file':"pickle_ex74",'picklein_file_front':"pickle_ex711",'23':'on'

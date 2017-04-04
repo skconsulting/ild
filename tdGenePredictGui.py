@@ -1,5 +1,5 @@
 # coding: utf-8
-#sylvain Kritter 07-feb-2017
+#sylvain Kritter 04-Apr-2017
 '''predict on lung scan front view and cross view
  '''
 import os
@@ -61,6 +61,8 @@ td=False # if front predict is requested
 #
 #picklein_file = '../pickle_ex/pickle_ex61'
 #picklein_file_front = '../pickle_ex/pickle_ex63'
+pathjs='../static'
+
 datacrossn='datacross'
 datafrontn='datafront'
 path_data='data'
@@ -120,7 +122,9 @@ threeFileTxt3d='uip3d.txt'
 threeFile3d='uip3d.html'
 threeFilejs3d='world3d.js'
 
-threeFileTop='uiptop.html'
+threeFileTop0='uiptop0.html'
+threeFileTop1='uiptop1.html'
+threeFileTop2='uiptop2.html'
 threeFileBot='uipbot.html'
 
 
@@ -924,13 +928,20 @@ def genethreef(dirpatientdb,patchPositions,probabilities_raw,slicepitch,dimtabx,
         """generate  voxels for 3d view"""
         print 'generate voxels for :',v
         global thrprobaUIP
+        cwd=os.getcwd()
+        pathjscomp=os.path.join(cwd,pathjs)
+        pathjscompr=os.path.realpath(pathjscomp)
+
+#bglist=listcl()
         (dptop,dptail)=os.path.split(dirpatientdb)
         pz=slicepitch/avgPixelSpacing
         htmldifr=os.path.join(dirpatientdb,htmldir)
         if not os.path.exists(htmldifr):
             os.mkdir(htmldifr)
         cwd=os.getcwd()
-        souuip=os.path.join(cwd,threeFileTop)
+        souuip0=os.path.join(cwd,threeFileTop0)
+        souuip1=os.path.join(cwd,threeFileTop1)
+        souuip2=os.path.join(cwd,threeFileTop2)
 #        print souuip
         if v =='cross':
             threeFilel=dptail+'_'+threeFile
@@ -958,13 +969,46 @@ def genethreef(dirpatientdb,patchPositions,probabilities_raw,slicepitch,dimtabx,
             BGz=str(dimpavx)
     
         desouip=os.path.join(htmldifr,threeFilel)
-        shutil.copyfile(souuip,desouip)                    
+        shutil.copyfile(souuip0,desouip)  
+        
+        
         volumefileT = open(os.path.join(htmldifr,threeFileTxtl), 'w')                  
-#        jsfilel=os.path.join(htmldifr,jsfile)
-        
-#        jsfilel1='/dynamic/'+dptail+'/'+htmldir+'/'+jsfile
-        
+
         volumefile = open(os.path.join(htmldifr,threeFilel), 'a')
+        volumefile.write( '<title> '+dptail+' '+v+' orbit </title> \n')	
+        volumefile.write( '<h1 id=patientname>'+dptail+' '+v+'  </h1> \n')	
+        
+        vtop1=open(os.path.join(cwd,souuip1),'r')
+        apptop1=vtop1.read()
+        vtop1.close()
+        volumefile.write(apptop1)
+        
+        volumefile.write( '<link rel="stylesheet" type="text/css" href="'+
+                         pathjscompr+
+                         '/css/aff.CSS"> \n')	
+        volumefile.write( '<script src="'+ pathjscompr+
+                          '/js/three.js"></script> \n') 
+        volumefile.write( '<script src="'+ pathjscompr+
+                          '/js/Detector.js"></script> \n') 
+        volumefile.write( '<script src="'+ pathjscompr+
+                          '/js/CanvasRenderer.js"></script> \n') 
+        volumefile.write( '<script src="'+ pathjscompr+
+                          '/js/Projector.js"></script> \n') 
+        volumefile.write( '<script src="'+ pathjscompr+
+                          '/js/OrbitControls.js"></script> \n') 
+        volumefile.write( '<script src="'+ pathjscompr+
+                          '/js/stats.min.js"></script> \n') 
+        volumefile.write( '<script src="'+ pathjscompr+
+                          '/js/uip.js"></script> \n') 
+        volumefile.write( '<script src="'+ pathjscompr+
+                          '/js/aff.js"></script> \n') 
+        volumefile.write( '<script src="'+ pathjscompr+
+                          '/js/underscore-min.js"></script> \n') 
+        
+        vtop2=open(os.path.join(cwd,souuip2),'r')
+        apptop2=vtop2.read()
+        vtop2.close()
+        volumefile.write(apptop2)
 #        volumefilejs = open(jsfilel, 'w')
 #        jsfilel.replace("\\","/")
 #        print jsfilel
@@ -1402,12 +1446,12 @@ def mergeproba(dirf,prx,plx,tabx,slnt,dimtabx,dimtaby)  :
 def predictrun(indata,path_patient):
         global thrpatch,thrproba,thrprobaMerge,thrprobaUIP
         global  picklein_file,picklein_file_front
-        
+        td=False
         thrpatch=float(indata['thrpatch'])
         if indata['threedpredictrequest']=='Cross Only':
            td=False
         else:
-            td+True       
+            td=True       
         thrproba=float(indata['thrproba'])
         thrprobaMerge=float(indata['thrprobaMerge'])
         thrprobaUIP=float(indata['thrprobaUIP'])
@@ -1415,18 +1459,19 @@ def predictrun(indata,path_patient):
         picklein_filet=indata['picklein_file']
         picklein_file_frontt=indata['picklein_file_front']
         listHug=[]
-        print indata
-        print path_patient
+#        print indata
+#        print path_patient
         listHugi=indata['lispatientselect']
-        print listHugi
+#        print listHugi
         for lpt in listHugi:
-             print lpt
+#             print lpt
              pos=lpt.find(' PREDICT!:')
-             print pos
+#             print pos
              if pos >0:
                     listHug.append(lpt[0:pos])
              else:
-                    pos=str(indata).find(' noPREDICT!')
+                    pos=lpt.find(' noPREDICT!')
+#                    print 'no predict',pos
                     listHug.append(lpt[0:pos])
     
 #        if type(listHugi)==unicode:
@@ -1434,19 +1479,19 @@ def predictrun(indata,path_patient):
 #            listHug.append(str(listHugi))
 #        else:
 #            listHug=listHugi
-#            
+    
         picklein_file =  os.path.join(dirpickle,picklein_filet)
         picklein_file_front =  os.path.join(dirpickle,picklein_file_frontt)      
     
         dirHUG=os.path.join(cwdtop,path_patient)
         
-        print 'from predictrun',dirHUG
+#        print 'from predictrun',dirHUG
 #        listHug= [ name for name in os.listdir(dirHUG) if os.path.isdir(os.path.join(dirHUG, name)) ]
-        print  'listHug from predictrun',listHug    
+#        print  'listHug from predictrun',listHug    
         
         eferror=os.path.join(dirHUG,'gp3d.txt')
         for f in listHug:
-            print f
+            print 'work on patient',f
            
             errorfile = open(eferror, 'a')
             listelabelfinal={}
@@ -1457,8 +1502,8 @@ def predictrun(indata,path_patient):
            
 #            sroidir=os.path.join(dirf,sroid)
             
-            wridir=os.path.join(dirf,source)
-            wridir=os.path.join(wridir,transbmp)
+            wridirsource=os.path.join(dirf,source)
+            wridir=os.path.join(wridirsource,transbmp)
             remove_folder(wridir)
             os.mkdir(wridir)
             
@@ -1494,7 +1539,7 @@ def predictrun(indata,path_patient):
             else:
         #        
                 tabscanScan,slnt,dimtabx,slicepitch=genebmp(dirf,source) 
-                print 'slnt',slnt
+#                print 'slnt',slnt
                 datacross=(slnt,dimtabx,dimtabx,slicepitch)
                 pickle.dump(datacross, open( os.path.join(path_data_write,datacrossn), "wb" ))
         #        datacross= pickle.load( open( os.path.join(dirf,"datacross"), "r" ))
@@ -1566,6 +1611,5 @@ def predictrun(indata,path_patient):
             
 #errorfile.close()      
 print "predict time:",round(mytime()-t0,3),"s"
-  
-#bglist=listcl()
+
 #ILDCNNpredict(bglist)
