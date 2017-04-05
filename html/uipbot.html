@@ -1,0 +1,93 @@
+		
+		<script>
+			if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
+
+			var stats;
+
+			var camera, controls, scene, renderer;
+			var xcd=250;
+			var ycd=-200;
+			var zcd=300;
+			var opacity = 0.5;
+			//var boxGeometry = new THREE.BoxGeometry( 16 , 16 , 14.986) ;
+			var boxMaterialGrey = new THREE.MeshBasicMaterial( { color:'rgb(100,100,100)', wireframe: false,transparent:true, opacity:opacity  } );
+			var boxMaterialRed = new THREE.MeshBasicMaterial( { color: 'red', wireframe: false,transparent:true, opacity:opacity } );
+			var boxMaterialBlue = new THREE.MeshBasicMaterial( { color: 'blue', wireframe: false,transparent:true, opacity:opacity  } );
+			var boxMaterialYellow = new THREE.MeshBasicMaterial( { color: 'yellow', wireframe: false,transparent:true, opacity:opacity  } );
+			var boxMaterialGreen = new THREE.MeshBasicMaterial( { color: 'green', wireframe: false,transparent:true, opacity:opacity  } );	
+			var boxMaterialDarkgreen = new THREE.MeshBasicMaterial( { color:'rgb(11,123,96)', wireframe: false,transparent:true, opacity:opacity  } );									
+			var boxMaterialCyan = new THREE.MeshBasicMaterial( { color:'rgb(0,255,255)', wireframe: false,transparent:true, opacity:opacity  } );						
+			var boxMaterialPink = new THREE.MeshBasicMaterial( { color:'rgb(255,128,150)', wireframe: false,transparent:true, opacity:opacity  } );	
+			var boxMaterialOrange = new THREE.MeshBasicMaterial( { color:'rgb(255,153,102)', wireframe: false,transparent:true, opacity:opacity  } );		
+			var boxMaterialPurple = new THREE.MeshBasicMaterial( { color:'rgb(255,0,255)', wireframe: false,transparent:true, opacity:opacity  } );			
+			var boxMaterialLightgreen = new THREE.MeshBasicMaterial( { color:'rgb(127,237,125)', wireframe: false,transparent:true, opacity:opacity  } );	
+			var boxMaterialParme = new THREE.MeshBasicMaterial( { color:'rgb(234,136,222)', wireframe: false,transparent:true, opacity:opacity  } );
+			var boxMaterialChatain = new THREE.MeshBasicMaterial( { color:'rgb(139,108,66)', wireframe: false,transparent:true, opacity:opacity  } );				
+
+			init();
+			buildobj();
+			animate();
+			document.getElementById("myCheckGG").checked=true
+			document.getElementById("myCheckAL").checked=true
+			document.getElementById("myCheckHC").checked=true
+			document.getElementById("myCheckHE").checked=true
+			document.getElementById("myCheckCO").checked=true
+			document.getElementById("myCheckMI").checked=true
+			document.getElementById("myCheckRE").checked=true
+			document.getElementById("myCheckAI").checked=true
+			document.getElementById("myCheckCY").checked=true
+			document.getElementById("myCheckBR").checked=true
+			document.getElementById("myCheckRS").checked=false
+			document.getElementById("myCheckGR").checked=true
+			document.getElementById("myCheckEM").checked=true
+			
+			function init() {
+
+				scene = new THREE.Scene();
+				//scene.fog = new THREE.FogExp2( 0xcccccc, 0.002 );
+				
+
+				renderer = new THREE.WebGLRenderer();
+				//renderer.setClearColor( scene.fog.color );
+				renderer.setClearColor(0x00000, 1); 
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+				var container = document.getElementById( 'container' );
+				container.appendChild( renderer.domElement );
+
+				camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 5000 ); 
+				controls = new THREE.OrbitControls( camera, renderer.domElement );
+				//controls.addEventListener( 'change', render ); // add this only if there is no animation loop (requestAnimationFrame)
+				controls.enableDamping = true;
+				controls.dampingFactor = 0.15;
+				controls.rotateSpeed= 0.1;
+				controls.enableZoom = true;
+				
+		window.addEventListener( 'resize', onWindowResize, false );
+			}
+
+			function onWindowResize() {
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+			}
+
+			function animate() {
+				requestAnimationFrame( animate );			
+				controls.update(); // required if controls.enableDamping = true, or if controls.autoRotate = true
+
+
+				render();
+			}
+
+			function render() {				
+				renderer.render( scene, camera );
+
+			}
+
+		</script>
+
+	</body>
+</html>
