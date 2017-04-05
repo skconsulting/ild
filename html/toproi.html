@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+	
+    <head>
+	<title> ROI gene </title>
+	    <link href="/static/css/style.css" rel="stylesheet">
+		<script src="http://code.jquery.com/jquery-2.0.3.min.js"></script>
+		<script type='text/javascript'>
+    $(document).ready(function()
+  {
+    $('#tt').on('click', function()
+    {
+      var request = $.ajax({'url': '/getData'});
+      request.done(function(response) 
+      {
+        $('#foo').text(response.foo);
+        $('#baz').text(response.baz);
+      });
+      request.fail(function(jqXHR, textStatus) 
+      {
+        alert('Request failed: ' + textStatus);
+      });
+    })
+  });
+		</script>
+     </head>
+      <body>
+	  <form method="get" action="listdicom" id="select_patient">    
+          <!--<a href="listdir" id="az" >list jpg</a> directory with patients' -->
+		  <p>
+		  <label for ="lisdir" id="labelisdir" >Put Patient directory (full path): </label> <br>   
+		  <input type="text" value ="C:/Users/sylvain/Documents/boulot/startup/radiology/predicttool/path_patient" name ="lisdir" id="lisdir" /> 
+  
+              </p>
+			  <button type="submit">RUN!</button>
+		    </form>
+			</div>
+			<form method = "post" action = "stop">
+		<button type="submit"  class="quitasked">quit</button>
+		</form>
+
+      </body>
+ </html>

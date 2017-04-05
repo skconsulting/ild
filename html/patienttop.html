@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+	
+    <head>
+	<title> Predict </title>
+	    <link href="/static/css/style.css" rel="stylesheet">
+		<script src="http://code.jquery.com/jquery-2.0.3.min.js"></script>
+		<script type='text/javascript'>
+    $(document).ready(function()
+  {
+    $('#tt').on('click', function()
+    {
+      var request = $.ajax({'url': '/getData'});
+      request.done(function(response) 
+      {
+        $('#foo').text(response.foo);
+        $('#baz').text(response.baz);
+      });
+      request.fail(function(jqXHR, textStatus) 
+      {
+        alert('Request failed: ' + textStatus);
+      });
+    })
+  });
+		</script>
+     </head>
+	<body id = 'predict_config'>
+		<h2>Prediction configuration</h2>
+		<div id='titre_principal'>
+			<h3>Patients List, select the ones to predict:</h3>
+			<form method = 'post' action = generate id='top_parameters'> 

@@ -1,0 +1,53 @@
+			</div>
+			<div id ="parameters">
+	  <fieldset>
+	  <legend>prediction parameters:</legend>
+				<input type ="number" value = "0.8" name ="thrpatch" id = "thrpatch" min ="0" max ="1" step="0.01"/> 
+				<label for ="thrpatch" > percentage of pad overlapp</label> <br> 
+
+				<input type ="number" value = "0.6" name ="thrproba" id = "thrproba" min ="0" max ="1" step="0.01"/> 
+				<label for ="thrproba" > threshold proba for predicted image generation</label> <br> 
+
+				<input type ="number" value = "0.6" name ="thrprobaUIP" id = "thrprobaUIP" min ="0" max ="1" step="0.01"/> 
+				<label for ="thrprobaUIP" > threshold proba for volume calculation</label> <br> 
+
+				<input type ="number" value = "0.6" name ="thrprobaMerge" id = "thrprobaMerge" min ="0" max ="1" step="0.01"/> 
+				<label for ="thrprobaMerge" > threshold proba for merge cross and front views</label> <br> 
+				</fieldset>
+				<fieldset>
+			    <legend>CNN weights:</legend>
+				<input type ="text" value = "pickle_ex74" name ="picklein_file" id = "picklein_file"   /> 
+				<label for ="picklein_file" > cross view weights</label> <br> 
+
+				<input type ="text" value = "pickle_ex711"  name ="picklein_file_front" id = "picklein_file_front"  /> 
+				<label for ="picklein_file_front" > front view weights</label> <br> 
+				</fieldset>
+			</div>
+				<fieldset>
+			    <legend>3D predicts:</legend>
+				<input type ="checkbox"  name ="threedpredictrequest" id = "threedpredictrequest" value="threedpredictrequest"  /> 
+				<label id= "classthreedpredictrequest" for ="threedpredictrequest" > click for 3d predict (longer runtime)</label> <br> 
+				</fieldset>
+	
+			<button type="submit">run predict</button>	
+
+		<br> 			
+		</form>
+			<br> 
+		<form method = 'post' action = generate>
+		<input type ="hidden"  name ="onlyvisuaasked" id = "onlyvisuaasked"   /> 
+		<button type="submit">go to visualisation</button>
+		</form>
+		
+		<br> 
+
+		<form method = 'post' action = index>
+			<button type="submit"  >return to select directory</button>
+		</form>
+		<br> 
+		
+		<form method = 'post' action = stop>
+		<button type="submit"  class='quitasked'>quit</button>
+		</form>
+      </body>
+ </html>
