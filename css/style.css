@@ -1,0 +1,188 @@
+body {
+  background-color:rgb(114,191,254)
+
+}
+#az{
+  float: left;
+    width: 150px;
+    border: 1px solid black;
+	color: blue;
+		justify-content: space-between;
+}
+#titre_principal
+{
+	border: 3px solid green;
+    flex-direction: column;
+    align-items: left;
+	color:blue;
+	background-color: rgb(153,240,128);
+	display: flex;
+	width: 1000px;
+    height: 400px;
+	overflow:auto;
+}
+#listdicom_config
+{
+	border: 3px solid green;
+    flex-direction: column;
+    align-items: left;
+	color:blue;
+	background-color: rgb(153,240,128);
+	display: flex;
+	width: 1000px;
+    height: 400px;
+	overflow:auto;
+}
+#visualisationuip 
+{
+    flex-direction: row;
+	color:black;
+ text-align: center;
+	background-color: rgb(153,240,128);
+	display: flex;
+	position: right;
+	align-items: baseline;
+	position: absolute;
+    top: 10px;
+    right: -12px;
+
+}
+#viewtoselect
+{
+    flex-direction: row;
+	color:black;
+ text-align: left;
+	background-color: rgb(153,240,128);
+	display: flex;
+	
+	align-items: baseline;
+}
+
+#visualisation
+{
+	color:black;
+	font-size: 1.2em;
+	background-color: yellow;
+}
+#classpredictdone
+{
+	color:black;
+	font-size: 1.0em;
+	background-color: white;
+}
+#classpredictnotdone
+{
+	color:black;
+	font-size: 1.0em;
+}
+#threedpredictrequest
+{
+	color:black;
+	width: 30px;
+	height: 30px;
+    border: 1px solid black;
+	font-size: 2.2em;
+	background-color: yellow;
+}
+#classthreedpredictrequest
+{
+	color:red;
+	font-size: 2.2em;
+	background-color: yellow;
+}
+#parameters input
+{
+	color:yellow;
+	background-color: blue;
+	
+}
+#top_parameters input
+{
+	color:red;
+	background-color: blue;
+	
+}
+#titre_principal
+{
+	color:black;
+	background-color: yellow;
+}
+button{
+	 border: 2px solid #760001;
+	width: 300px;
+    height: 40px;
+	font-size: 1.5em;
+	color:yellow;
+	background-color: blue;
+	 border-radius: 5px;
+	 box-shadow: 0px 4px 4px #1c1a19;
+	 text-align: center;
+}
+#fieldset_select_visu{
+	font-size: 1em;
+}
+.smallbutton{
+	 border: 2px solid #760001;
+	width: 100px;
+    height: 25px;
+	font-size: 1.2em;
+	color:yellow;
+	background-color: blue;
+	 border-radius: 5px;
+	 text-align: center;
+	
+}
+.quitasked{
+	 border: 2px solid #760001;
+	width: 200px;
+    height: 35px;
+	font-size: 1.2em;
+	color:red;
+	background-color: yellow;
+	 border-radius: 5px;
+	 box-shadow: 0px 4px 4px #1c1a19;
+	 text-align: center;
+}
+.quitaskedsmall{
+	 border: 2px solid #760001;
+	width: 100px;
+    height: 25px;
+	font-size: 1.3em;
+	color:red;
+	background-color: yellow;
+	 border-radius: 5px;
+	 box-shadow: 0px 4px 4px #1c1a19;
+	 text-align: center;
+}
+.warningnopatient
+{
+	color:red;
+	background-color: yellow;
+}
+
+#lisdir
+{width: 800px;
+margin: auto;
+text-align: center;
+    height:80px;
+	background-color: yellow;
+	border: 1px solid #760001;
+	font-size: 1.4em;
+	 border-radius: 5px;
+	 box-shadow: 0px 4px 4px #1c1a19;
+	}
+#labelisdir {
+	border: 1px solid #760001;
+	width: 400px;
+	font-size: 1.4em;
+	 border-radius: 5px;
+	color:rgb(253,228,132);
+}
+h2
+{
+	border: 1px solid #760001;
+	width: 400px;
+	font-size: 1.4em;
+	 border-radius: 5px;
+	color:rgb(253,228,132);
+}
