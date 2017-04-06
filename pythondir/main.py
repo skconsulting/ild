@@ -55,7 +55,9 @@ train_params = {
      'res_alias': args.csv if args.csv else 'res' + str(today)     # csv results filename alias
 }
 
-imageDepth=8191 #number of bits used on dicom images (2 **n) 13 bits
+#imageDepth=8191 #number of bits used on dicom images (2 **n) 13 bits
+imageDepth=28000 #for dct min dct=-12131 maxdct=27282 on HUG  '16_set1_13b2'
+
 #imageDepth=65535 #number of bits used on dicom images (2 **n) 13 bits
 #class_weights= (1.0, 26.5, 1.0,
 #                 2.27, 1.0,  1.04,  2.27,
