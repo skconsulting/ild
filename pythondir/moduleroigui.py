@@ -9,7 +9,7 @@ from roigene import *
 
 def lisdirprocess(directorytocheck):
     a= os.walk(directorytocheck).next()[1]
-    print 'listdirprocess',a
+#    print 'listdirprocess',a
     stsdir={}
     for dd in a:
         stpred=[]
@@ -21,18 +21,18 @@ def lisdirprocess(directorytocheck):
                 if len(listfile)>0:
                     stpred.append(key)
         stsdir[dd]=stpred
-    
+
     return a,stsdir
 
-    
+
 def roirun(indata,path_patient):
     listHug=indata
     pos=str(indata).find(' ROI!:')
     if pos >0:
-        listHug=str(indata)[2:pos]
+        listHug=str(indata)[3:pos]
     else:
         pos=str(indata).find(' noROI!')
-        listHug=str(indata)[2:pos]    
+        listHug=str(indata)[3:pos]
 #    print 'listhug',listHug
 #    print 'indata',indata
 #    print 'path_patient',path_patient
