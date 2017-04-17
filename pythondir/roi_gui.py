@@ -11,14 +11,47 @@ from moduleroigui import *
 import cPickle as pickle
 import webbrowser
 
+#print os.environ['TMP']
+#print os.environ['USERPROFILE']
+print os.environ['LOCALAPPDATA']
+#print os.environ['APPDATA']
+print os.environ['PROGRAMDATA']
+
+instdirroiGene='Roi_Gene'
+instdirMedikey='MedikEye'
+instdirroiGeneLocal='Roi_Gene'
+instdirMedikeyLocal='MedikEye'
+#empofile=os.path.join(os.environ['TMP'],picklefileglobal)
+#workingdir= os.path.join(os.environ['USERPROFILE'],workdiruser)
+#instdir=os.path.join(os.environ['LOCALAPPDATA'],instdirMHK)
+pathMedikEye=os.path.join(os.environ['PROGRAMDATA'],instdirMedikey)
+pathRoiGene=os.path.join(pathMedikEye,instdirroiGene)
+
+pathMedikEyelocal=os.path.join(os.environ['LOCALAPPDATA'],instdirMedikeyLocal)
+pathRoiGenelocal=os.path.join(pathMedikEyelocal,instdirroiGeneLocal)
+
+print 'pathMedikEye',pathMedikEye
+print 'pathRoiGene',pathRoiGene
+
+print 'pathMedikEyelocal',pathMedikEyelocal
+print 'pathRoiGenelocal',pathRoiGenelocal
+
+
+if not os.path.exists(pathMedikEyelocal):
+    os.mkdir(pathMedikEyelocal)
+if not os.path.exists(pathRoiGenelocal):
+    os.mkdir(pathRoiGenelocal)
+#workingdir= os.path.join(os.environ['USERPROFILE'],workdiruser)
+
+
 version ="1.0"
 paramsave='data'
 source='source'
 paramname ='paramname.pkl'
-cwd=os.getcwd()
-(cwdtop,tail)=os.path.split(cwd)
+#cwd=os.getcwd()
+(cwdtop,tail)=os.path.split(pathRoiGene)
 
-paramsaveDir=os.path.join(cwdtop,paramsave)
+paramsaveDir=os.path.join(pathRoiGenelocal,paramsave)
 if not os.path.exists(paramsaveDir):
     os.mkdir(paramsaveDir)
 
@@ -45,7 +78,7 @@ def press(btn):
 def presshelp(btn):
 #    print 'help'
 
-    filehelp=os.path.join(cwd,'doc.pdf')
+    filehelp=os.path.join(pathRoiGene,'doc.pdf')
 #    print filehelp
 #    webbrowser.open_new(r'file://C:\Users\sylvain\Documents\boulot\startup\radiology\roittool\modulepython\doc.pdf')
     webbrowser.open_new(r'file://'+filehelp)
@@ -83,7 +116,7 @@ def selectPatientDir():
     lisdir=os.path.realpath(app.directoryBox(title='path patient',dirName=lisdir))
     pbg=False
 #    print lisdir
-    if lisdir ==cwd:
+    if lisdir ==pathRoiGene:
 #        print 'exit'
         sys.exit(1)
     if os.path.exists(lisdir):
