@@ -49,7 +49,7 @@ paramsave='data'
 source='source'
 paramname ='paramname.pkl'
 #cwd=os.getcwd()
-(cwdtop,tail)=os.path.split(pathRoiGene)
+#(cwdtop,tail)=os.path.split(pathRoiGene)
 
 paramsaveDir=os.path.join(pathRoiGenelocal,paramsave)
 if not os.path.exists(paramsaveDir):
@@ -61,7 +61,7 @@ if os.path.exists(paramsaveDir):
     if os.path.exists(paramsaveDirf):
         lisdir=pickle.load(open( paramsaveDirf, "rb" ))
     else:
-        lisdir=cwdtop
+        lisdir=os.environ['USERPROFILE']
 
 def press(btn):
     global app
