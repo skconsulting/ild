@@ -22,6 +22,7 @@ threeFile='uip.html'
 threeFileMerge='uipMerge.html'
 threeFile3d='uip3d.html'
 
+lungimage='lungimage'
 path_data='data'
 source_name='source'
 scan_bmp='scan_bmp'
@@ -30,23 +31,22 @@ typei='jpg'
 excluvisu=['back_ground','healthy']
 datafrontn='datafront'
 datacrossn='datacross'
-wbg=True
+
 #reservedparm=[ 'thrpatch','thrproba','thrprobaUIP','thrprobaMerge','picklein_file',
 #                      'picklein_file_front','tdornot','threedpredictrequest',
 #                      'onlyvisuaasked','cross','front','merge']
 classif ={
-        'back_ground':0,
-        'consolidation':1,
-        'HC':2,
-        'ground_glass':3,
-        'healthy':4,
-        'micronodules':5,
-        'reticulation':6,
-        'air_trapping':7,
-        'cysts':8,
-        'bronchiectasis':9,
-        'emphysema':10,
-        'GGpret':11
+        'consolidation':0,
+        'HC':1,
+        'ground_glass':2,
+        'healthy':3,
+        'micronodules':4,
+        'reticulation':5,
+        'air_trapping':6,
+        'cysts':7,
+        'bronchiectasis':8,
+#        'emphysema':10,
+        'GGpret':9
         }
 
 
@@ -112,7 +112,7 @@ def lisdirprocess(d):
         else:
             stpred['front']=False
         stsdir[dd]=stpred
-    
+
     return a,stsdir
 
 cwd=os.getcwd()
@@ -125,14 +125,14 @@ def remove_folder(path):
          shutil.rmtree(path,ignore_errors=True)
 
 
-    
-       
+
+
 def predict(indata,path_patient):
     print 'module predict'
     listdir=[]
     nota=True
     try:
-        listdiri= indata['lispatientselect']       
+        listdiri= indata['lispatientselect']
     except KeyError:
             print 'No patient selected'
             nota=False
@@ -146,7 +146,7 @@ def predict(indata,path_patient):
         predictrun(indata,path_patient)
         if type(listdiri)==unicode:
     #        print 'this is unicode'
-           
+
             listdir.append(str(listdiri))
         else:
                 listdir=listdiri
@@ -173,15 +173,17 @@ def draw_circle(event,x,y,flags,img):
 
     if event == cv2.EVENT_RBUTTONDBLCLK:
         print x, y
-    if event == cv2.EVENT_LBUTTONDBLCLK:
- 
+    if event == cv2.EVENT_LBUTTONDOWN:
+
 #        print('identification')
         ix,iy=x,y
-       
+
         patchi=True
         print 'identification', ix,iy, patchi
         dxrect=(dimtaby/2)
-        if x>dxrect and x<dxrect+20 and y>dimtabx-30 and y< dimtabx-10:
+
+
+        if x>dxrect and x<dxrect+40 and y>dimtabx-30 and y< dimtabx-10:
             print 'quit'
             ix,iy=x,y
             quitl=True
@@ -195,12 +197,12 @@ def rsliceNum(s,c,e):
     while s.find(c,posend)==-1:
         posend-=1
     debnumslice=posend+1
-    return int((s[debnumslice:endnumslice])) 
+    return int((s[debnumslice:endnumslice]))
 
-def contrasti(im,r):   
+def contrasti(im,r):
 #     tabi = np.array(im)
      r1=0.5+r/100.0
-     tabi1=im*r1     
+     tabi1=im*r1
      tabi2=np.clip(tabi1,0,255)
      tabi3=tabi2.astype(np.uint8)
      return tabi3
@@ -228,13 +230,13 @@ def fidclass(numero,classn):
     found=False
 #    print numero
     for cle, valeur in classn.items():
-        
+
         if valeur == numero:
             found=True
             return cle
-      
+
     if not found:
-        return 'unknown'    
+        return 'unknown'
 
 def addpatchn(col,lab, xt,yt,imgn):
 #    print col,lab
@@ -246,17 +248,14 @@ def tagviewn(fig,label,pro,nbr,x,y):
 
     col=classifc[label]
 #    print col, label
-    if wbg :
-        labnow=classif[label]-1
-    else:
-        labnow=classif[label]
+    labnow=classif[label]
 #    print (labnow, text)
     if label == 'back_ground':
         x=0
-        y=0        
+        y=0
         deltax=0
         deltay=60
-    else:                
+    else:
         deltax=130*((labnow)//5)
         deltay=11*((labnow)%5)
     gro=-x*0.0027+0.9
@@ -264,7 +263,7 @@ def tagviewn(fig,label,pro,nbr,x,y):
 #            print label,x,deltax, y,deltay,labnow,gro
     cv2.putText(fig,str(nbr)+' '+label+' '+pro,(x+deltax, y+deltay+10),cv2.FONT_HERSHEY_PLAIN,gro,col,1)
 
-   
+
 def drawpatch(t,lp,preprob,k,dx,dy,slnum,va):
     imgn = np.zeros((dx,dy,3), np.uint8)
     ill = 0
@@ -275,7 +274,7 @@ def drawpatch(t,lp,preprob,k,dx,dy,slnum,va):
 #    while k.find('-',posend)==-1:
 #            posend-=1
 #    debnumslice=posend+1
-#    slicenumber=int((k[debnumslice:endnumslice])) 
+#    slicenumber=int((k[debnumslice:endnumslice]))
     th=t/100.0
     listlabel={}
     listlabelaverage={}
@@ -283,18 +282,18 @@ def drawpatch(t,lp,preprob,k,dx,dy,slnum,va):
     for ll in lp:
 
 #            print ll
-            slicename=ll[0]          
+            slicename=ll[0]
             xpat=ll[1]
-            ypat=ll[2]        
+            ypat=ll[2]
         #we find max proba from prediction
             proba=preprob[ill]
-           
+
             prec, mprobai = maxproba(proba)
 
             classlabel=fidclass(prec,classif)
             classcolor=classifc[classlabel]
-       
-            
+
+
             if mprobai >th and slicenumber == slicename and classlabel not in excluvisu and va[classlabel]==True:
 #                    print classlabel
                     if classlabel in listlabel:
@@ -313,7 +312,7 @@ def drawpatch(t,lp,preprob,k,dx,dy,slnum,va):
 
 
             ill+=1
-#            print listlabel        
+#            print listlabel
     for ll1 in listlabel:
 #                print ll1,listlabelaverage[ll1]
                 delx=int(dy*0.6-120)
@@ -324,12 +323,12 @@ def drawpatch(t,lp,preprob,k,dx,dy,slnum,va):
     return imgn
 
 def retrievepatch(x,y,sln,pr,li,dx,dy):
-  
+
     tabtext = np.zeros((dx,dy,3), np.uint8)
     ill=-1
     pfound=False
     for f in li:
-        ill+=1 
+        ill+=1
         slicenumber=f[0]
 
         if slicenumber == sln:
@@ -350,35 +349,186 @@ def retrievepatch(x,y,sln,pr,li,dx,dy):
 #                     print probatab
                      for key, value in  probatab.items():
                          listproba.append( (key,value))
-#                     print 'listed',listproba  
+#                     print 'listed',listproba
                      lsorted= sorted(listproba,key=lambda std:std[1],reverse=True)
 #                     print 'lsit sorted', lsorted
                      cv2.putText(tabtext,'X',(xs-5+dimpavx/2,ys+5+dimpavy/2),cv2.FONT_HERSHEY_PLAIN,1,(0,255,0),1)
-#                     for j in range (0,len(proba)):
-#                         
-##                     for j in range (0,2):
-#                         if proba[j]>0.01:
-#                             n=n+1
-#                             strw=fidclass(j,classif)+ ' {0:.1f}%'.format(100*proba[j])                             
-##                             cv2.putText(tabtext,strw,(dy-142,(dx-60)+10*n),cv2.FONT_HERSHEY_PLAIN,0.7,(0,255,0),1)
-#                             
-#                             print fidclass(j,classif), ' {0:.2f}%'.format(100*proba[j])
+
                      for j in range (0,3):
                              n=n+1
-                             strw=lsorted[j][0]+ ' {0:.1f}%'.format(100*lsorted[j][1])                             
+                             strw=lsorted[j][0]+ ' {0:.1f}%'.format(100*lsorted[j][1])
                              cv2.putText(tabtext,strw,(dy-142,(dx-40)+10*n),cv2.FONT_HERSHEY_PLAIN,0.7,(0,255,0),1)
-                             
+
                              print lsorted[j][0], ' {0:.2f}%'.format(100*lsorted[j][1])
                      print'found'
-                     break 
-#    cv2.imshow('image',tabtext)                
+                     break
+#    cv2.imshow('image',tabtext)
     if not pfound:
             print'not found'
     return tabtext
 
+def colorimage(image,color):
+    im=image.copy()
+    np.putmask(im,im>0,color)
+
+    return im
+
+def findmaxvolume(dictSurf,poslung):
+#    patmax=''
+    patmax=''
+    surfmax=0
+    for pat in classif:
+       if dictSurf[pat][poslung]>surfmax:
+           surfmax=dictSurf[pat][poslung]
+           patmax=pat
+
+    return surfmax,patmax
+
+
+def openfichiervolume(dictSurf,listHug):
+    global  quitl,dimtabx,dimtaby,patchi,ix,iy
+    print 'openfichiervolume start'
+    listPosLung=('left_sub_lower',  'left_sub_middle'  ,'left_sub_upper',
+                 'right_sub_lower','right_sub_middle','right_sub_upper',
+                 'left_lower','left_middle','left_upper',
+                  'right_lower','right_middle','right_upper')
+    quitl=False
+#    print dictSurf
+
+#
+#    for i in listPosLung:
+#        surfmax[i],patmax[i] =findmaxvolume(dictSurf,i)
+#        print i,surfmax[i],patmax[i]
+#    return
+#    print 'datacros',datacross
+    cwd=os.getcwd()
+    (cwdtop,tail)=os.path.split(cwd)
+#    print 'openfichier',slnt,dimtabx,ti,dimtaby
+#    print 'dimltabx, dimtaby',dimtabx,dimtaby
+#    slicepitch=datacross[2]
+#    print "corectnumber",corectnumber
+    path_img=os.path.join(cwdtop,lungimage)
+#    print listHug
+    lung_left=cv2.imread(os.path.join(path_img,'lung_left.png'),1)
+    lung_right=cv2.imread(os.path.join(path_img,'lung_right.png'),1)
+
+    lung_lower_right=cv2.imread(os.path.join(path_img,'lung_lower_right.png'),1)
+    lung_middle_right=cv2.imread(os.path.join(path_img,'lung_middle_right.png'),1)
+    lung_upper_right=cv2.imread(os.path.join(path_img,'lung_upper_right.png'),1)
+
+    lung_lower_left=cv2.imread(os.path.join(path_img,'lung_lower_left.png'),1)
+    lung_middle_left=cv2.imread(os.path.join(path_img,'lung_middle_left.png'),1)
+    lung_upper_left=cv2.imread(os.path.join(path_img,'lung_upper_left.png'),1)
+
+    lung_sub_lower_right=cv2.imread(os.path.join(path_img,'lung_sub_lower_right.png'),1)
+    lung_sub_middle_right=cv2.imread(os.path.join(path_img,'lung_sub_middle_right.png'),1)
+    lung_sub_upper_right=cv2.imread(os.path.join(path_img,'lung_sub_upper_right.png'),1)
+
+    lung_sub_lower_left=cv2.imread(os.path.join(path_img,'lung_sub_lower_left.png'),1)
+    lung_sub_middle_left=cv2.imread(os.path.join(path_img,'lung_sub_middle_left.png'),1)
+    lung_sub_upper_left=cv2.imread(os.path.join(path_img,'lung_sub_upper_left.png'),1)
+
+
+    dictPosImage={}
+
+    dictPosImage['left']=lung_left
+    dictPosImage['right']=lung_right
+
+    dictPosImage['left_lower']=lung_lower_left
+    dictPosImage['left_middle']=lung_middle_left
+    dictPosImage['left_upper']=lung_upper_left
+
+    dictPosImage['right_lower']=lung_lower_right
+    dictPosImage['right_middle']=lung_middle_right
+    dictPosImage['right_upper']=lung_upper_right
+
+    dictPosImage['left_sub_lower']=lung_sub_lower_left
+    dictPosImage['left_sub_middle']=lung_sub_middle_left
+    dictPosImage['left_sub_upper']=lung_sub_upper_left
+
+    dictPosImage['right_sub_lower']=lung_sub_lower_right
+    dictPosImage['right_sub_middle']=lung_sub_middle_right
+    dictPosImage['right_sub_upper']=lung_sub_upper_right
+
+
+    dimtabx=lung_left.shape[0]
+    dimtaby=lung_left.shape[1]
+    imgtext = np.zeros((dimtabx,dimtaby,3), np.uint8)
+
+
+    cv2.namedWindow('image',cv2.WINDOW_NORMAL)
+    cv2.namedWindow("SliderVolume",cv2.WINDOW_NORMAL)
+
+    cv2.createTrackbar( 'Threshold','SliderVolume',50,100,nothing)
+    cv2.createTrackbar( 'All','SliderVolume',0,1,nothings)
+    cv2.createTrackbar( 'None','SliderVolume',0,1,nothings)
+    viewasked={}
+    for key in classif:
+        viewasked[key]=True
+        cv2.createTrackbar( key,'SliderVolume',0,1,nothings)
+    imgbackg = np.zeros((dimtabx,dimtaby,3), np.uint8)
+    posrc=0
+    for key1 in classif:
+        xr=800
+        yr=15*posrc
+        xrn=xr+10
+        yrn=yr+10
+        cv2.rectangle(imgbackg, (xr, yr),(xrn,yrn), classifc[key1], -1)
+        cv2.putText(imgbackg,key1,(xr+15,yr+10),cv2.FONT_HERSHEY_PLAIN,1.0,classifc[key1],1 )
+        posrc+=1
+
+    dxrect=(dimtaby/2)
+    cv2.rectangle(imgbackg,(dxrect,dimtabx-30),(dxrect+40,dimtabx-10),red,-1)
+    #        cv2.rectangle(imgt,(172,358),(192,368),white,-1)
+    cv2.putText(imgbackg,'quit',(dxrect+10,dimtabx-10),cv2.FONT_HERSHEY_PLAIN,1,yellow,1,cv2.LINE_AA)
+    cv2.putText(imgbackg,'Patient Name:'+listHug,(50,30),cv2.FONT_HERSHEY_PLAIN,1.4,yellow,1,cv2.LINE_AA)
+    while(1):
+#            print "corectnumber",corectnumber
+            cv2.setMouseCallback('image',draw_circle,imgtext)
+            tl = cv2.getTrackbarPos('Threshold','SliderVolume')
+            allview = cv2.getTrackbarPos('All','SliderVolume')
+            noneview = cv2.getTrackbarPos('None','SliderVolume')
+
+            for key,value in classif.items():
+                s = cv2.getTrackbarPos(key,'SliderVolume')
+                if allview==1:
+                     viewasked[key]=True
+                elif noneview ==1:
+                    viewasked[key]=False
+                elif s==0:
+#            print key
+                    viewasked[key]=False
+                else:
+                     viewasked[key]=True
+            surfmax={}
+            patmax={}
+            imgtext = np.zeros((dimtabx,dimtaby,3), np.uint8)
+
+            for i in listPosLung:
+                surfmax[i],patmax[i] =findmaxvolume(dictSurf,i)
+                colori=classifc[patmax[i]]
+                dictPosImage[i]=colorimage(dictPosImage[i],colori)
+                imgtext=cv2.add(imgtext,dictPosImage[i])
+
+            imgtext=cv2.add(imgtext,imgbackg)
+            imgtowrite=cv2.cvtColor(imgtext,cv2.COLOR_BGR2RGB)
+            cv2.imshow('image',imgtowrite)
+
+            if quitl or cv2.waitKey(20) & 0xFF == 27 :
+    #            print 'on quitte', quitl
+                break
+    quitl=False
+    #    print 'on quitte 2'
+    cv2.destroyWindow("image")
+    cv2.destroyWindow("SliderVolume")
+
+    return ''
+
+
 def openfichier(ti,datacross,patch_list,proba,path_img):
     global  quitl,dimtabx,dimtaby,patchi,ix,iy
-    quitl=False 
+    print 'openfichier start'
+    quitl=False
 #    print 'datacros',datacross
     dimtabx=datacross[1]
     slnt=datacross[0]
@@ -393,7 +543,7 @@ def openfichier(ti,datacross,patch_list,proba,path_img):
         sn=scan_bmp
         corectnumber=1
     else:
-        sn=transbmp 
+        sn=transbmp
         corectnumber=0
 #    print "corectnumber",corectnumber
     pdirk = os.path.join(path_img,source_name)
@@ -408,28 +558,28 @@ def openfichier(ti,datacross,patch_list,proba,path_img):
 #    print 'ti',ti
     if ((ti =="cross view" or ti =="merge view") and len(limage)+1==slnt) or ti =="front view":
 #        print 'good'
-#    
+#
         for iimage in range(0,slnt-1):
     #        print iimage
-            s=limage[iimage]       
+            s=limage[iimage]
                 #s: file name, c: delimiter for snumber, e: end of file extension
             sln=rsliceNum(s,cdelimter,extensionimage)
             list_image[sln]=s
-            
+
         image0=os.path.join(pdirk,list_image[slnt/2])
         img = cv2.imread(image0,1)
     #    cv2.imshow('cont',img)
-    #    cv2.waitKey(0)    
+    #    cv2.waitKey(0)
     #    cv2.destroyAllWindows()
-        
+
         imgtext = np.zeros((dimtabx,dimtaby,3), np.uint8)
     #    print 'openfichier:',k , ncf, pdirk,top
-        
-        (preprob,listnamepatch)=(proba,patch_list)     
-        
+
+        (preprob,listnamepatch)=(proba,patch_list)
+
         cv2.namedWindow('image',cv2.WINDOW_NORMAL)
         cv2.namedWindow("Slider",cv2.WINDOW_NORMAL)
-    
+
         cv2.createTrackbar( 'Brightness','Slider',0,100,nothing)
         cv2.createTrackbar( 'Contrast','Slider',50,100,nothing)
         cv2.createTrackbar( 'Threshold','Slider',50,100,nothing)
@@ -441,11 +591,7 @@ def openfichier(ti,datacross,patch_list,proba,path_img):
 #            print key
             viewasked[key]=True
             cv2.createTrackbar( key,'Slider',0,1,nothings)
-            
-    #    switch = '0 : OFF \n1 : ON'
-    #    cv2.createTrackbar(switch, 'image',0,1,nothing)
-    
-            
+
         while(1):
 #            print "corectnumber",corectnumber
             cv2.setMouseCallback('image',draw_circle,img)
@@ -455,7 +601,7 @@ def openfichier(ti,datacross,patch_list,proba,path_img):
             fl = cv2.getTrackbarPos('Flip','Slider')
             allview = cv2.getTrackbarPos('All','Slider')
             noneview = cv2.getTrackbarPos('None','Slider')
-                  
+
             for key,value in classif.items():
                 s = cv2.getTrackbarPos(key,'Slider')
                 if allview==1:
@@ -467,64 +613,50 @@ def openfichier(ti,datacross,patch_list,proba,path_img):
                     viewasked[key]=False
                 else:
                      viewasked[key]=True
-                    
-    
+
+
     #        img,pdirk= opennew(dirk, fl,L)
     #        print pdirk
             slicenumber=fl+corectnumber
             imagel=os.path.join(pdirk,list_image[slicenumber])
             img = cv2.imread(imagel,1)
-    #        print 'img',img.shape, img.dtype
-            
-            
-    #        (topnew,tailnew)=os.path.split(pdirk)
-    #        endnumslice=tailnew.find('.bmp',0)
-    #        posend=endnumslice
-           
-#            slicenumber=fl+corectnumber
-#            print slicenumber,fl
-    #        ooo
-    #        while tailnew.find('_',posend)==-1:
-    #            posend-=1
-    #            debnumslice=posend+1
-    #        slicenumber=int((tailnew[debnumslice:endnumslice])) 
-    #        
+
             imglumi=lumi(img,l)
-            imcontrast=contrasti(imglumi,c)        
+            imcontrast=contrasti(imglumi,c)
             imcontrast=cv2.cvtColor(imcontrast,cv2.COLOR_BGR2RGB)
-            
+
     #        print 'imcontrast',imcontrast.shape, imcontrast.dtype
             imgn=drawpatch(tl,listnamepatch,preprob,list_image[slicenumber],dimtabx,dimtaby,slicenumber,viewasked)
     #        imgn=cv2.cvtColor(imgn,cv2.COLOR_BGR2RGB)
             imgngray = cv2.cvtColor(imgn,cv2.COLOR_BGR2GRAY)
     #        print 'imgray',imgngray.shape, imgngray.dtype
-            mask_inv = cv2.bitwise_not(imgngray)           
+            mask_inv = cv2.bitwise_not(imgngray)
     #        print 'mask_inv',mask_inv.shape, mask_inv.dtype
             outy=cv2.bitwise_and(imcontrast,imcontrast,mask=mask_inv)
-            
+
     #        print 'imgn',imgn.shape, imgn.dtype
     #        print 'outy',outy.shape, outy.dtype
             imgt=cv2.add(imgn,outy)
     #        imgt=np.add(imgn,outy)
     #        imgt=np.clip(imgt,0,255)
-    
+
             dxrect=(dimtaby/2)
     #        print dxrect,dimtaby,dimtabx
     #        dxrect=100
             cv2.rectangle(imgt,(dxrect,dimtabx-30),(dxrect+20,dimtabx-10),red,-1)
     #        cv2.rectangle(imgt,(172,358),(192,368),white,-1)
             cv2.putText(imgt,'quit',(dxrect+10,dimtabx-10),cv2.FONT_HERSHEY_PLAIN,1,yellow,1,cv2.LINE_AA)
-            imgtoshow=cv2.add(imgt,imgtext)     
-    
+            imgtoshow=cv2.add(imgt,imgtext)
+
             imgtoshow=cv2.cvtColor(imgtoshow,cv2.COLOR_BGR2RGB)
-    
+
             cv2.imshow('image',imgtoshow)
-           
+
             if patchi :
                 print 'retrieve patch asked'
                 imgtext=retrievepatch(ix,iy,fl+corectnumber,preprob,listnamepatch,dimtabx,dimtaby)
                 patchi=False
-            
+
             if quitl or cv2.waitKey(20) & 0xFF == 27 :
     #            print 'on quitte', quitl
                 break
@@ -532,12 +664,12 @@ def openfichier(ti,datacross,patch_list,proba,path_img):
     #    print 'on quitte 2'
         cv2.destroyWindow("image")
         cv2.destroyWindow("Slider")
-        
+
         return ''
     else:
         print 'error in the number of scan images compared to dicom numbering'
         return 'error in the number of scan images compared to dicom numbering'
-    
+
 def visuarun(indata,path_patient):
     messageout=""
 #    print 'indata',indata
@@ -548,6 +680,7 @@ def visuarun(indata,path_patient):
             listHug=(lpt[0:pos])
     else:
             pos=str(indata).find(' noPREDICT!')
+#            print 'no predict'
             listHug=(lpt[0:pos])
             messageout="no predict!for "+listHug
             return messageout
@@ -563,18 +696,18 @@ def visuarun(indata,path_patient):
             viewfilehtmlcomplet=os.path.join(pathhtml,namefilehtml)
             url = 'file://' + viewfilehtmlcomplet
             webbrowser.open(url, new=2)
-           
+
     elif viewstyle=='from front predict':
            namefilehtml=listHug+'_'+threeFile3d
            viewfilehtmlcomplet=os.path.join(pathhtml,namefilehtml)
            url = 'file://' + viewfilehtmlcomplet
            webbrowser.open(url, new=2)
-           
+
     elif viewstyle=='from cross + front merge':
             namefilehtml=listHug+'_'+threeFileMerge
             viewfilehtmlcomplet=os.path.join(pathhtml,namefilehtml)
             url = 'file://' + viewfilehtmlcomplet
-            webbrowser.open(url, new=2)            
+            webbrowser.open(url, new=2)
 
     elif viewstyle=='cross view':
             datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "r" ))
@@ -586,20 +719,25 @@ def visuarun(indata,path_patient):
             patch_list= pickle.load( open( os.path.join(path_data_dir,"patch_list_front"), "r" ))
             proba= pickle.load( open( os.path.join(path_data_dir,"proba_front"), "r" ))
             messageout=openfichier(viewstyle,datarep,patch_list,proba,patient_path_complet)
+    elif viewstyle=='volume view':
+            dictSurf= pickle.load( open( os.path.join(path_data_dir,"dictSurf"), "r" ))
+            messageout=openfichiervolume(dictSurf,listHug)
+
     else:
             datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "r" ))
             patch_list= pickle.load( open( os.path.join(path_data_dir,"patch_list_merge"), "r" ))
             proba= pickle.load( open( os.path.join(path_data_dir,"proba_merge"), "r" ))
             messageout=openfichier(viewstyle,datarep,patch_list,proba,patient_path_complet)
-    
+
     return messageout
 
 
 
-#    
-#indata={'lispatient':'23','typeofview':'cross','thrpatch':0.8,'thrproba':0.6,'thrprobaUIP':0.6,'thrprobaMerge':0.6,
-#        'picklein_file':"pickle_ex74",'picklein_file_front':"pickle_ex711",'23':'on'
-#        }
-#path_patient='C:/Users/sylvain/Documents/boulot/startup/radiology/predicttool/patient_directory'
+
+indata={'lispatient':'23 PREDICT!:  Cross','viewstyle':'volume view','thrpatch':0.8,'thrproba':0.6,'thrprobaUIP':0.8,'thrprobaMerge':0.6,
+        'picklein_file':"pickle_ex80",'picklein_file_front':"pickle_ex81",'23':'on','threedpredictrequest':'Cross Only','subErosion':15
+        }
+path_patient='C:/Users/sylvain/Documents/boulot/startup/radiology/predicttool/patient_directory'
 ##
-#visuarun(indata,path_patient)
+visuarun(indata,path_patient)
+#predict(indata,path_patient)

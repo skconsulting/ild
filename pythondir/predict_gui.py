@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Sun Apr 02 09:52:27 2017
-
+Updated April 20 2017
 @author: sylvain
 """
 import os
@@ -21,11 +21,17 @@ instdirPredict='Predict'
 instdirMedikey='MedikEye'
 instdirpredictLocal='Predict'
 instdirMedikeyLocal='MedikEye'
+modulepython='modulepython'
+moduledoc='doc'
+
+
 #empofile=os.path.join(os.environ['TMP'],picklefileglobal)
 #workingdir= os.path.join(os.environ['USERPROFILE'],workdiruser)
 #instdir=os.path.join(os.environ['LOCALAPPDATA'],instdirMHK)
 pathMedikEye=os.path.join(os.environ['PROGRAMDATA'],instdirMedikey)
 pathPredict=os.path.join(pathMedikEye,instdirPredict)
+pathPredictModulepython=os.path.join(pathPredict,modulepython)
+pathPrdictDoc=os.path.join(pathPredict,moduledoc)
 
 pathMedikEyelocal=os.path.join(os.environ['LOCALAPPDATA'],instdirMedikeyLocal)
 pathPredictlocal=os.path.join(pathMedikEyelocal,instdirpredictLocal)
@@ -47,9 +53,9 @@ version ="1.0"
 paramsave='data'
 source='source'
 paramname ='paramname.pkl'
-cwd=os.getcwd()
+#cwd=os.getcwd()
 
-pathPredict=cwd
+#pathPredict=cwd
 paramsaveDir=os.path.join(pathPredictlocal,paramsave)
 if not os.path.exists(paramsaveDir):
     os.mkdir(paramsaveDir)
@@ -58,8 +64,8 @@ paramsaveDirf=os.path.join(paramsaveDir,paramname)
 
 paramdict={}
 
-cwd=os.getcwd()
-(cwdtop,tail)=os.path.split(cwd)
+#cwd=os.getcwd()
+#(cwdtop,tail)=os.path.split(cwd)
 
 #path_pickle='CNNparameters'
 
@@ -79,6 +85,7 @@ if os.path.exists(paramsaveDir):
             thrprobaUIP= paramdict['thrprobaUIP']
             picklein_file= paramdict['picklein_file']
             picklein_file_front= paramdict['picklein_file_front']
+            subErosion = paramdict['subErosion']
 
     else:
         lisdir=os.environ['USERPROFILE']
@@ -86,8 +93,9 @@ if os.path.exists(paramsaveDir):
         thrproba=0.6
         thrprobaMerge=0.6
         thrprobaUIP= 0.6
-        picklein_file= "pickle_ex74"
-        picklein_file_front= "pickle_ex711"
+        picklein_file= "pickle_ex80"
+        picklein_file_front= "pickle_ex81"
+        subErosion = 15  # erosion factor for subpleura in mm
 
 def predict(btn):
     global continuevisu,goodir,app
@@ -101,6 +109,7 @@ def predict(btn):
     indata['threedpredictrequest']=app.getRadioButton("predict_style")
     indata['picklein_file']=app.getEntry("cross view weight")
     indata['picklein_file_front']= app.getEntry("front view weight")
+    indata['subErosion']= app.getEntry("subErosion in mm")
     indata['lispatientselect']=app.getListItems("list")
 
 #    roirun(app.getListItems("list"),lisdir)
@@ -110,6 +119,7 @@ def predict(btn):
         paramdict['thrprobaMerge']= indata['thrprobaMerge']
         paramdict['thrprobaUIP']=indata['thrprobaUIP']
         paramdict['picklein_file']=indata['picklein_file']
+        paramdict['subErosion in mm']=indata['subErosion']
         paramdict['picklein_file_front']=indata['picklein_file_front']
         pickle.dump(paramdict,open( paramsaveDirf, "wb" ))
 #    roirun(app.getListItems("list"),lisdir)
@@ -160,6 +170,7 @@ def Stop():
     return True
 
 def boutonStop(btn):
+    global app
     ans= app.yesNoBox("Confirm Exit", "Are you sure you want to exit the application?")
     if ans:
 #        app.stop(Stop)
@@ -171,7 +182,7 @@ def boutonStop(btn):
 
 
 def selection(btn):
-    global frontpredict,continuevisu,selectpatient
+    global frontpredict,continuevisu,selectpatient,app
     selectvisu=app.getListItems("list")
     selectpatient=selectvisu[0]
     frontexist=selectvisu[0].find('Cross & Front')
@@ -187,7 +198,7 @@ def selection(btn):
 
 
 def gobackselection(btn):
-    global continuevisu
+    global continuevisu,app
     continuevisu=False
     app.stop(Stop)
     visuDraw()
@@ -200,8 +211,8 @@ def selectPatientDir():
 #    print 'select dir'
     lisdir=os.path.realpath(app.directoryBox(title='path patient',dirName=lisdir))
     pbg=False
-    print lisdir
-    if lisdir ==pathPredict:
+#    print lisdir,pathPredict
+    if lisdir ==pathPredictModulepython:
         print 'exit'
         app.stop(Stop)
         sys.exit(1)
@@ -233,24 +244,24 @@ def selectPatientDirB(btn):
 
 
 def presshelp(btn):
-#    print 'help'
-
-    filehelp=os.path.join(pathPredict,'doc.pdf')
+    filehelp=os.path.join(pathPredictDoc,'doc.pdf')
 #    print filehelp
 #    webbrowser.open_new(r'file://C:\Users\sylvain\Documents\boulot\startup\radiology\roittool\modulepython\doc.pdf')
     webbrowser.open_new(r'file://'+filehelp)
 
-
-
-
+def initDrawB(btn):
+    global goodir,app
+    app.stop(Stop)
+#    print 'initDrawB'
+    goodir=True
+    initDraw()
 
 listannotated=[]
 goodir=False
-
 def initDraw():
     global app
-
-    app = gui("Predict form","1000x600")
+#    print goodir
+    app = gui("Predict form","1000x700")
     app.setBg("lightBlue")
     app.setFont(10)
     app.setStopFunction(Stop)
@@ -261,17 +272,26 @@ def initDraw():
 #    app.setLabelBg("top","blue")
 #    app.setLabelFg("top","yellow")
 
-    app.addHorizontalSeparator( colour="red",colspan=2)
+#    app.addHorizontalSeparator( colour="red",colspan=2)
 #    app.addLabel("sepa", "")
 #    app.setLabelBg("top", "green")
 #    print goodir
-    if goodir:                       # Row 1,Column 1
+#    app.setFont(10)
+    if goodir:
+        app.addLabel("path_patientt", "path_patient",colspan=2)
         app.addLabel("path_patient", lisdir,colspan=2)
-        app.addButton("Change Patient Dir",  selectPatientDirB)
+        app.setLabelBg("path_patient", "Blue")
+        app.setLabelFg("path_patient", "Yellow")
+        app.setLabelBg("path_patientt", "Blue")
+        app.setLabelFg("path_patientt", "Yellow")
 
 
-        app.addHorizontalSeparator( colour="red")
-        app.addLabel("top1", "Select patient:")
+        app.addButton("Change Patient Dir",  selectPatientDirB,colspan=2)
+        app.addHorizontalSeparator( colour="red",colspan=2)
+
+
+#        app.addHorizontalSeparator( colour="red")
+        app.addLabel("top1", "Select patient for prediction:")
         app.setLabelBg("top1", "blue")
         app.setLabelFg("top1", "yellow")
         some_sg,stsdir=lisdirprocess(lisdir)
@@ -292,7 +312,7 @@ def initDraw():
         app.setListBoxMulti("list", multi=True)
         app.setListBoxRows("list",10)
         app.addHorizontalSeparator( colour="red",colspan=1)
-        app.setFont(8)
+#        app.setFont(8)
         app.setSticky("w")
         app.addLabel("l1", "Prediction parameters:")
         app.setLabelBg("l1","blue")
@@ -312,6 +332,11 @@ def initDraw():
         app.addLabelNumericEntry("Treshold proba for merge cross and front view",row,1)
         app.setEntry("Treshold proba for merge cross and front view", thrprobaMerge)
         row = app.getRow()
+
+        app.addLabelNumericEntry("subErosion in mm",row,1)
+        app.setEntry("subErosion in mm", subErosion)
+        row = app.getRow()
+
         app.addHorizontalSeparator(row,0,2, colour="red")
         app.addHorizontalSeparator(row,1,2, colour="red")
         row = app.getRow()
@@ -331,7 +356,7 @@ def initDraw():
         app.setEntry("front view weight",picklein_file_front)
         app.addRadioButton("predict_style", "Cross + Front",row,1)
 
-        app.setFont(10)
+#        app.setFont(10)
         app.setSticky("n")
         app.addHorizontalSeparator( colour="red")
         app.addButton("Predict",  predict)
@@ -346,19 +371,23 @@ def visuDraw():
 #    print "visudraw"
     app = gui("Predict form","1000x600")
     app.setBg("lightBlue")
-
-    app.setFont(10)
+#    app.decreaseButtonFont(2)
+    app.setFont(10,font=None)
     app.addButton("HELP",  presshelp)
-    app.addHorizontalSeparator( colour="red")
-    app.addLabel("path_patient", lisdir)
-    app.addButton("Change Patient Dir",  selectPatientDirB)
-
-    app.addHorizontalSeparator( colour="red")
-
+    app.addLabel("path_patientt", "path_patient",colspan=2)
+    app.addLabel("path_patient", lisdir,colspan=2)
+    app.setLabelBg("path_patient", "Blue")
+    app.setLabelFg("path_patient", "Yellow")
+    app.setLabelBg("path_patientt", "Blue")
+    app.setLabelFg("path_patientt", "Yellow")
+    app.addButton("Change Patient Dir",  selectPatientDirB,colspan=2)
+    app.addButton("Go back to prediction form",  initDrawB,colspan=2)
+    app.addHorizontalSeparator( colour="red",colspan=2)
+#    app.setFont(10)
     if goodir:
 
         if not continuevisu:
-            app.addLabel("top1", "Select patient:")
+            app.addLabel("top1", "Select patient to visualize:")
             app.setLabelBg("top1", "blue")
             app.setLabelFg("top1", "yellow")
             some_sg,stsdir=lisdirprocess(lisdir)
@@ -392,7 +421,7 @@ def visuDraw():
             app.setLabelBg("l11","blue")
             app.setLabelFg("l11","yellow")
             app.addHorizontalSeparator( colour="red")
-            app.setFont(8)
+#            app.setFont(8)
             app.setSticky("w")
             if not frontpredict:
                 row = app.getRow() # get current row
@@ -402,12 +431,15 @@ def visuDraw():
                 app.setLabelFg("l1","yellow")
                 app.setLabelBg("l2","blue")
                 app.setLabelFg("l2","yellow")
-                row = app.getRow() # get current row
+#                row = app.getRow() # get current row
 #                app.addRadioButton("planar","none",row,0)
 #                app.addRadioButton("planar","none",row,1)
                 row = app.getRow() # get current row
                 app.addRadioButton("planar","cross view",row,0)
+
                 app.addRadioButton("planar","from cross predict",row,1)
+                row = app.getRow() # get current row
+                app.addRadioButton("planar","volume view",row,0)
             else:
                 row = app.getRow() # get current row
                 app.addLabel("l1", "Type of planar view,select one",row,0)
@@ -419,9 +451,11 @@ def visuDraw():
                 row = app.getRow() # get current row
 #                app.addRadioButton("planar","none",row,0)
 #                app.addRadioButton("3d","none",row,1)
-                row = app.getRow() # get current row
+
                 app.addRadioButton("planar","cross view",row,0)
                 app.addRadioButton("planar","from cross predict",row,1)
+                row = app.getRow() # get current row
+                app.addRadioButton("planar","volume view",row,0)
                 row = app.getRow() # get current row
                 app.addRadioButton("planar","front view",row,0)
                 app.addRadioButton("planar","from front predict",row,1)
@@ -432,7 +466,7 @@ def visuDraw():
             app.setSticky("n")
 #            app.setStrech("row")
             app.addHorizontalSeparator( colour="red",colspan=1)
-            app.setFont(10)
+#            app.setFont(10)
             app.addButton("Visualisation",  visualisation)
             app.addHorizontalSeparator( colour="red")
     app.addButton("Quit",  boutonStop)
