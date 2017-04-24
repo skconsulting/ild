@@ -51,7 +51,7 @@ isGre=False
 MIN_BOUND = -1000.0
 MAX_BOUND = 400.0
 PIXEL_MEAN = 0.25
-writeFile=True
+writeFile=False
 #HUG='predict_23d'
 #HUG='predict_S106530'
 #HUG='predict_S14740'
@@ -1542,15 +1542,16 @@ def  calcMed (tabscanLung,lungSegment):
 
     return tabMed
 
-def calcSupNp(dirf,tabscanLung, proba_cross,patch_list_cross, pat, tabMed,lungSegment,dictSubP,dictP):
+def subpleural(dirf,tabscanLung,lungSegment,subErosion):
 #def calcSupNp(preprob, posp, lungs, imscan, pat, midx, psp, dictSubP, dimtabx):
     '''calculate the number of pat in subpleural'''
-    global subErosion
     (top,tail)=os.path.split(dirf)
-    print 'number of subpleural for :',tail, 'pattern :', pat
+#    print 'number of subpleural for :',tail, 'pattern :', pat
 
     dimtabx=tabscanLung.shape[1]
     dimtaby=tabscanLung.shape[2]
+    slnt=tabscanLung.shape[0]
+    subpleurmaskset={}
     for slicename in lungSegment['allset']:
         vis = np.zeros((dimtabx,dimtaby,3), np.uint8)
 
@@ -1567,6 +1568,7 @@ def calcSupNp(dirf,tabscanLung, proba_cross,patch_list_cross, pat, tabMed,lungSe
         mask_inv = cv2.bitwise_not(mask)
 #        mask_inv = np.bitwise_not(erosion)
         subpleurmask = np.bitwise_and(imgngray, mask_inv)
+        subpleurmaskset[slicename]=subpleurmask
 
         im2,contours0, hierarchy = cv2.findContours(subpleurmask,cv2.RETR_TREE,\
                       cv2.CHAIN_APPROX_SIMPLE)
@@ -1586,85 +1588,68 @@ def calcSupNp(dirf,tabscanLung, proba_cross,patch_list_cross, pat, tabMed,lungSe
                 cv2.imwrite(lfbg,cv2.add(vis,imscan))
                 break
 
+    return subpleurmaskset
 
-        ill = 0
-        for ll in patch_list_cross:
+def calcSupNp(dirf, patch_list_cross_slice, pat, tabMed,
+              dictSubP,dictP,thrprobaUIP,lungSegment,patch_list_cross_slice_sub):
+#def calcSupNp(preprob, posp, lungs, imscan, pat, midx, psp, dictSubP, dimtabx):
+    '''calculate the number of pat in subpleural'''
+    (top,tail)=os.path.split(dirf)
+#    print 'number of subpleural for :',tail, 'pattern :', pat
+#    ff=lungSegment['allset'][0]
+#    dimtabx=subpleurmask[ff].shape[0]
+#    dimtaby=subpleurmask[ff].shape[1]
+    for slicename in lungSegment['allset']:
 
-            xpat = ll[1]
-            ypat = ll[2]
-            sln= ll[0]
-
-            if sln == slicename:
-                psp=posP(sln, lungSegment)
-
-                proba = proba_cross[ill]
+        psp=posP(slicename, lungSegment)
+#        ill = 0
+        if len(patch_list_cross_slice[slicename])>0:
+            for ll in range (0, len(patch_list_cross_slice[slicename])):
+    
+                xpat = patch_list_cross_slice[slicename][ll][0][0]
+#                ypat = patch_list_cross_slice[slicename][ll][0][1]
+                proba = patch_list_cross_slice[slicename][ll][1]
                 prec, mprobai = maxproba(proba)
                 classlabel = fidclass(prec, classif)
-
-                if xpat >= tabMed[sln]:
+    
+                if xpat >= tabMed[slicename]:
                     pospr = 0
                     pospl = 1
                 else:
                     pospr = 1
                     pospl = 0
                 if classlabel == pat and mprobai > thrprobaUIP:
+                
                     dictP[pat][psp] = (
                     dictP[pat][psp][0] + pospl,
                     dictP[pat][psp][1] + pospr)
-                    dictP[pat]['all'] = (
-                    dictP[pat]['all'][0] + pospl,
-                    dictP[pat]['all'][1] + pospr)
-                    tabpatch = np.zeros((dimtabx, dimtaby), np.uint8)
-                    tabpatch[ypat:ypat + dimpavy, xpat:xpat + dimpavx] = 1
-                    tabsubpl = np.bitwise_and(subpleurmask, tabpatch)
-
-                    area = tabsubpl.sum()
-        #                    check if area above threshold
-                    targ = float(area) / pxy
-
-                    if targ > thrpatch:
-                        dictSubP[pat]['all'] = (
+                    dictP[pat]['all'] = (dictP[pat]['all'][0] + pospl, dictP[pat]['all'][1] + pospr)
+                    
+        if len(patch_list_cross_slice_sub[slicename])>0:
+            for ll in range (0, len(patch_list_cross_slice_sub[slicename])):
+                xpat = patch_list_cross_slice_sub[slicename][ll][0][0]
+#                ypat = patch_list_cross_slice_sub[slicename][ll][0][1]
+                proba = patch_list_cross_slice_sub[slicename][ll][1]
+                prec, mprobai = maxproba(proba)
+                classlabel = fidclass(prec, classif)
+                if classlabel == pat and mprobai > thrprobaUIP:
+                    if xpat >= tabMed[slicename]:
+                        pospr = 0
+                        pospl = 1
+                    else:
+                        pospr = 1
+                        pospl = 0
+                    dictSubP[pat]['all'] = (
                             dictSubP[pat]['all'][0] + pospl,
                             dictSubP[pat]['all'][1] + pospr)
-                        dictSubP[pat][psp] = (
+                    dictSubP[pat][psp] = (
                             dictSubP[pat][psp][0] + pospl,
                             dictSubP[pat][psp][1] + pospr)
-
-            ill += 1
+#                ill += 1
+        if pat == 'consolidation':
+             print slicename, dictP[pat]
     return dictSubP,dictP
 
-def diffMicro(dirf,proba_cross, patch_list_cross, pat, tabMed, lungSegment,dictP):
-    '''calculate number of diffuse micronodules, left and right '''
-    (top,tail)=os.path.split(dirf)
-    print 'calculate surface for :',tail, 'pattern :', pat
-
-    ill = 0
-    for ll in patch_list_cross:
-        xpat = ll[1]
-        sln=ll[0]
-        psp=posP(sln, lungSegment)
-
-        proba = proba_cross[ill]
-        prec, mprobai = maxproba(proba)
-        classlabel = fidclass(prec, classif)
-        if xpat >= tabMed[sln]:  # look if patch is in right or left lung
-            pospr = 0
-            pospl = 1
-        else:
-            pospr = 1
-            pospl = 0
-
-        if classlabel == pat and mprobai > thrprobaUIP:  # look if patch his above probability
-            dictP[pat][psp] = (
-                dictP[pat][psp][0] + pospl,
-                dictP[pat][psp][1] + pospr)
-            dictP[pat]['all'] = (
-                dictP[pat]['all'][0] + pospl,
-                dictP[pat]['all'][1] + pospr)
-
-        ill += 1
-
-    return dictP
 
 def cvsarea(p, f, de, dse, s, dc, wf):
     '''calculate area of patches related to total area'''
@@ -1680,7 +1665,6 @@ def cvsarea(p, f, de, dse, s, dc, wf):
     if wf:
         f.write(p + ': ')
     for i in llungloc:
-
         st = s[i[0]][0] + s[i[0]][1]
         if st > 0:
             l = 100 * float(d[i[0]][0] + d[i[0]][1]) / st
@@ -1690,13 +1674,15 @@ def cvsarea(p, f, de, dse, s, dc, wf):
         dictint[i[1]] = l
         if wf:
             f.write(str(l) + ' ')
-
+        if p == 'consolidation':
+             print 'surface',i,st
+             print dictint[i[1]]
     for i in llunglocsl:
         st = s[i[0]][0]
 #        print 'cvsarea',s
 #        print 'cvsarea i',i[0], i[1]
 #        print 'cvsarea p d', p,d
-#        ooo
+#        oo
         if st > 0:
             l = 100 * float(ds[i[0]][0]) / st
             l = round(l, 2)
@@ -1705,6 +1691,9 @@ def cvsarea(p, f, de, dse, s, dc, wf):
         dictint[i[1]] = l
         if wf:
             f.write(str(l) + ' ')
+        if p == 'consolidation':
+             print 'surface sub left',i,st
+             print dictint[i[1]]
 
     for i in llunglocsr:
         st = s[i[0]][1]
@@ -1716,28 +1705,37 @@ def cvsarea(p, f, de, dse, s, dc, wf):
         dictint[i[1]] = l
         if wf:
             f.write(str(l) + ' ')
+        if p == 'consolidation':
+             print 'surface sub right',i,st
+             print dictint[i[1]]
 
     for i in llunglocl:
         st = s[i[0]][0]
         if st > 0:
             l = 100 * float(d[i[0]][0]) / st
-            l = round(l, 3)
+            l = round(l, 2)
         else:
             l = 0
         dictint[i[1]] = l
         if wf:
             f.write(str(l) + ' ')
-
+        if p == 'consolidation':
+             print 'surface left',i,st
+             print dictint[i[1]]
+             
     for i in llunglocr:
         st = s[i[0]][1]
         if st > 0:
             l = 100 * float(d[i[0]][1]) / st
-            l = round(l, 3)
+            l = round(l, 2)
         else:
             l = 0
         dictint[i[1]] = l
         if wf:
             f.write(str(l) + ' ')
+        if p == 'consolidation':
+             print 'surface right',i,st
+             print dictint[i[1]]
 
     dc[p] = dictint
     if wf:
@@ -1767,7 +1765,7 @@ def posP(sln, lungSegment):
 
 def calculSurface(dirf,posp, midx,lungSegment,dictPS):
     (top,tail)=os.path.split(dirf)
-    print 'calculate surface for :',tail
+#    print 'calculate surface for :',tail
     ill = 0
 #    print posp[0]
 #    oooo
@@ -1811,36 +1809,36 @@ def writedict(dirf, dx):
 
 #def uipTree(pid, proba, posp, lungs, imscan, tabmedx,
 #            psp, dictP, dictSubP, dictPS, dimtabx):
-def uipTree(dirf,proba_cross,patch_list_cross,tabscanLung,lungSegment,tabMed,dictPS,dictP,dictSubP,dictSurf):
+def uipTree(dirf,patch_list_cross_slice,lungSegment,tabMed,dictPS,
+            dictP,dictSubP,dictSurf,thrprobaUIP,patch_list_cross_slice_sub):
     '''calculate the number of reticulation and HC in total and subpleural
     and diffuse micronodules'''
     (top,tail)=os.path.split(dirf)
-    print 'calculate volume in : ',tail
+#    print 'calculate volume in : ',tail
 
-    dictPS = calculSurface(dirf,patch_list_cross, tabMed,lungSegment,dictPS)
-    print '-------------------------------------------'
-    print 'surface total  by segment Left Right :'
-    print dictPS
-    print '-------------------------------------------'
+    
+#    print '-------------------------------------------'
+#    print 'surface total  by segment Left Right :'
+#    print dictPS
+#    print '-------------------------------------------'
     if writeFile:
          volumefile = writedict(dirf, dimpavx)
     else:
         volumefile = ''
     for pat in classif:
-
-#        dictP = diffMicro(dirf,proba_cross,patch_list_cross, pat, tabMed,lungSegment,dictP)
-#        print ' volume total for:',pat
-#        print dictP[pat]
-#        print '-------------------------------------------'
-
-        dictSubP,dictP = calcSupNp(dirf,tabscanLung, proba_cross,patch_list_cross, pat, tabMed,lungSegment,dictSubP,dictP)
-
-        print ' volume subpleural for:', pat
-        print dictSubP[pat]
-        print '-------------------------------------------'
-        print ' volume total for:',pat
-        print dictP[pat]
-        print '-------------------------------------------'
+       
+        dictSubP,dictP= calcSupNp(dirf, patch_list_cross_slice, pat, tabMed,
+              dictSubP,dictP,thrprobaUIP,lungSegment,patch_list_cross_slice_sub)
+        if pat == 'consolidation':
+            print ' volume total for:',pat
+            print dictP[pat]
+            print '-------------------------------------------'
+            print ' volume subpleural for:', pat
+            print dictSubP[pat]
+            print '-------------------------------------------'
+            print ' volume total for:',pat
+            print dictP[pat]
+            print '-------------------------------------------'
         dictSurf = cvsarea(
             pat,
             volumefile,
@@ -1855,7 +1853,7 @@ def uipTree(dirf,proba_cross,patch_list_cross,tabscanLung,lungSegment,tabMed,dic
 #    print ' volume for:',tail
 #    print dictSurf
 #    print '-------------------------------------------'
-    return dictP, dictSubP, dictPS,dictSurf
+    return dictP, dictSubP, dictSurf
 
 def selectposition(lislnumber):
     upperset=[]
@@ -1886,6 +1884,34 @@ def initdictP(d, p):
     d[p]['all'] = (0, 0)
     return d
 
+def genepatchlistslice(patch_list_cross,proba_cross,lissln,subpleurmask,thrpatch):
+    res={}   
+    ressub={}  
+    dimtabx=subpleurmask[lissln[0]].shape[0]
+    dimtaby=subpleurmask[lissln[0]].shape[1]
+    for i in lissln:
+        res[i]=[]
+        ressub[i]=[]  
+        ii=0
+        for ll in patch_list_cross:
+            xpat = ll[1]
+            ypat = ll[2]
+            sln= ll[0]
+            if sln ==i:
+                t=((xpat,ypat),proba_cross[ii])
+                res[sln].append(t)                
+                tabpatch = np.zeros((dimtabx, dimtaby), np.uint8)
+                tabpatch[ypat:ypat + dimpavy, xpat:xpat + dimpavx] = 1
+                tabsubpl = np.bitwise_and(subpleurmask[i], tabpatch)
+                area = tabsubpl.sum()
+                targ = float(area) / pxy    
+                if targ > thrpatch:
+                        ressub[sln].append(t)               
+            ii+=1
+            
+            
+    return res,ressub
+
 
 
 
@@ -1897,7 +1923,7 @@ def predictrun(indata,path_patient):
 #        print path_patient
 #        print indata
 #        ooo
-        thrpatch=float(indata['thrpatch'])
+        
         if indata['threedpredictrequest']=='Cross Only':
            td=False
         else:
@@ -1905,11 +1931,11 @@ def predictrun(indata,path_patient):
         thrproba=float(indata['thrproba'])
         thrprobaMerge=float(indata['thrprobaMerge'])
         thrprobaUIP=float(indata['thrprobaUIP'])
-
+        thrpatch=float(indata['thrpatch'])
         picklein_filet=indata['picklein_file']
         picklein_file_frontt=indata['picklein_file_front']
         subErosion=indata['subErosion']
-
+#        print thrproba,thrprobaMerge,thrprobaUIP
         listHug=[]
 #        print indata
 #        print path_patient
@@ -1948,23 +1974,24 @@ def predictrun(indata,path_patient):
         for f in listHug:
             print 'work on patient',f
             lungSegment={}
+            patch_list_cross_slice={}
             errorfile = open(eferror, 'a')
             listelabelfinal={}
             dirf=os.path.join(dirHUG,f)
             tabMed = {}  # dictionary with position of median between lung
-            dictP = {}  # dictionary with patch in lung segment
-            dictPS = {}  # dictionary with total patch area in lung segment
-            dictSubP = {}  # dictionary with patch in subpleural
-            dictSurf = {}  # dictionary with patch volume in percentage
+#            dictP = {}  # dictionary with patch in lung segment
+#            dictPS = {}  # dictionary with total patch area in lung segment
+#            dictSubP = {}  # dictionary with patch in subpleural
+#            dictSurf = {}  # dictionary with patch volume in percentage
 
-
-            dictPS['upperset'] = (0, 0)
-            dictPS['middleset'] = (0, 0)
-            dictPS['lowerset'] = (0, 0)
-            dictPS['all'] = (0, 0)
-            for patt in classif:
-                dictP = initdictP(dictP, patt)
-                dictSubP = initdictP(dictSubP, patt)
+#
+#            dictPS['upperset'] = (0, 0)
+#            dictPS['middleset'] = (0, 0)
+#            dictPS['lowerset'] = (0, 0)
+#            dictPS['all'] = (0, 0)
+#            for patt in classif:
+#                dictP = initdictP(dictP, patt)
+#                dictSubP = initdictP(dictSubP, patt)
 
 #            print dirf
 
@@ -2026,12 +2053,18 @@ def predictrun(indata,path_patient):
                 slicepitch=datacross[2]
 #                """
                 tabscanLung=genebmplung(dirf,lung_name_gen,slnt,dimtabx,dimtabx)
+                subpleurmask=subpleural(dirf,tabscanLung,lungSegment,subErosion)
+                pickle.dump(subpleurmask, open( os.path.join(path_data_write,"subpleurmask"), "wb" ))
 
                 patch_list_cross=pavgene(dirf,dimtabx,dimtabx,tabscanScan,tabscanLung,slnt,jpegpath)
+                
                 model=modelCompilation('cross',picklein_file,picklein_file_front)
                 proba_cross=ILDCNNpredict(patch_list_cross,model)
-
+                patch_list_cross_slice,patch_list_cross_slice_sub=genepatchlistslice(patch_list_cross,
+                                                                proba_cross,lissln,subpleurmask,thrpatch)
                 pickle.dump(proba_cross, open( os.path.join(path_data_write,"proba_cross"), "wb" ))
+                pickle.dump(patch_list_cross_slice, open( os.path.join(path_data_write,"patch_list_cross_slice"), "wb" ))
+                pickle.dump(patch_list_cross_slice_sub, open( os.path.join(path_data_write,"patch_list_cross_slice_sub"), "wb" ))
                 pickle.dump(tabscanLung, open( os.path.join(path_data_write,"tabscanLung"), "wb" ))
                 pickle.dump(patch_list_cross, open( os.path.join(path_data_write,"patch_list_cross"), "wb" ))
 #                """
@@ -2039,21 +2072,23 @@ def predictrun(indata,path_patient):
                 patch_list_cross= pickle.load( open( os.path.join(path_data_write,"patch_list_cross"), "r" ))
                 tabscanLung= pickle.load( open( os.path.join(path_data_write,"tabscanLung"), "r" ))
                 tabMed = calcMed(tabscanLung,lungSegment)
+                
 #                """
                 visua(listelabelfinal,dirf,proba_cross,patch_list_cross,dimtabx,
                       dimtabx,slnt,predictout,sroi,scan_bmp,source,dicompathdircross,True,errorfile)
 #                """
-                dictP, dictSubP, dictPS,dictSurf=uipTree(dirf,proba_cross,patch_list_cross,tabscanLung,lungSegment,tabMed,dictPS,dictP,dictSubP,dictSurf)
+#                dictP, dictSubP, dictPS,dictSurf=uipTree(dirf,proba_cross,patch_list_cross,tabscanLung,lungSegment,tabMed,dictPS,dictP,dictSubP,dictSurf)
 #                """
-                pickle.dump(dictP, open( os.path.join(path_data_write,"dictP"), "wb" ))
-                pickle.dump(dictSubP, open( os.path.join(path_data_write,"dictSubP"), "wb" ))
-                pickle.dump(dictPS, open( os.path.join(path_data_write,"dictPS"), "wb" ))
-                pickle.dump(dictSurf, open( os.path.join(path_data_write,"dictSurf"), "wb" ))
+#                pickle.dump(dictP, open( os.path.join(path_data_write,"dictP"), "wb" ))
+                pickle.dump(tabMed, open( os.path.join(path_data_write,"tabMed"), "wb" ))
+#                pickle.dump(dictSubP, open( os.path.join(path_data_write,"dictSubP"), "wb" ))
+#                pickle.dump(dictPS, open( os.path.join(path_data_write,"dictPS"), "wb" ))
+#                pickle.dump(dictSurf, open( os.path.join(path_data_write,"dictSurf"), "wb" ))
 
-                dictP= pickle.load( open( os.path.join(path_data_write,"dictP"), "r" ))
-                dictSubP= pickle.load( open( os.path.join(path_data_write,"dictSubP"), "r" ))
-                dictPS= pickle.load( open( os.path.join(path_data_write,"dictPS"), "r" ))
-                dictSurf= pickle.load( open( os.path.join(path_data_write,"dictSurf"), "r" ))
+#                dictP= pickle.load( open( os.path.join(path_data_write,"dictP"), "r" ))
+#                dictSubP= pickle.load( open( os.path.join(path_data_write,"dictSubP"), "r" ))
+#                dictPS= pickle.load( open( os.path.join(path_data_write,"dictPS"), "r" ))
+#                dictSurf= pickle.load( open( os.path.join(path_data_write,"dictSurf"), "r" ))
 #                ooo
                 genethreef(dirf,patch_list_cross,proba_cross,slicepitch,dimtabx,dimtabx,dimpavx,slnt,'cross')
 #                """

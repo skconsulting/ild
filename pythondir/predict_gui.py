@@ -123,6 +123,7 @@ def predict(btn):
         paramdict['picklein_file_front']=indata['picklein_file_front']
         pickle.dump(paramdict,open( paramsaveDirf, "wb" ))
 #    roirun(app.getListItems("list"),lisdir)
+#        print indata
         predictrun(indata,lisdir)
         app.stop(Stop)
         visuDraw()
@@ -138,7 +139,10 @@ def visualisation(btn):
     global app,continuevisu
 #    print(app.getListItems("list"))
     indata={}
-    indata['lispatient']=selectpatient
+#    indata['subErosion']= app.getEntry("subErosion in mm")
+    indata['thrprobaUIP']=app.getEntry("Treshold proba for volume calculation")
+    indata['lispatientselect']=selectpatient
+#    indata['thrpatch']=app.getEntry("Percentage of pad Overlapp")
 #    print 'frontpredict',frontpredict
     if frontpredict:
         indata['3dasked']=True
@@ -416,6 +420,13 @@ def visuDraw():
             app.addButton("Selection",  selection)
 
         else:
+            row = app.getRow() # get current row
+#            app.addLabelNumericEntry("subErosion in mm",row,1)
+#            app.setEntry("subErosion in mm", subErosion)
+            app.addLabelNumericEntry("Treshold proba for volume calculation",row,0)
+            app.setEntry("Treshold proba for volume calculation",thrprobaUIP)
+#            app.addLabelNumericEntry("Percentage of pad Overlapp")
+#            app.setEntry("Percentage of pad Overlapp", thrpatch)
             app.addLabel("l11", "Patient selected: "+selectpatient)
             app.addButton("Go back to Selection",  gobackselection)
             app.setLabelBg("l11","blue")

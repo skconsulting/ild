@@ -384,33 +384,45 @@ def findmaxvolume(dictSurf,poslung):
 
     return surfmax,patmax
 
+def initdictP(d, p):
+    d[p] = {}
+    d[p]['upperset'] = (0, 0)
+    d[p]['middleset'] = (0, 0)
+    d[p]['lowerset'] = (0, 0)
+    d[p]['all'] = (0, 0)
+    return d
 
-def openfichiervolume(dictSurf,listHug):
+
+
+def openfichiervolume(listHug,path_patient,patch_list_cross_slice,patch_list_cross,
+                      lungSegment,tabMed,thrprobaUIP,patch_list_cross_slice_sub):
     global  quitl,dimtabx,dimtaby,patchi,ix,iy
-    print 'openfichiervolume start'
+    print 'openfichiervolume start',path_patient
+    dirf=os.path.join(path_patient,listHug)
+    dictP = {}  # dictionary with patch in lung segment
+    dictPS = {}  # dictionary with total patch area in lung segment
+    dictSubP = {}  # dictionary with patch in subpleural
+    dictSurf = {}  # dictionary with patch volume in percentage
+
+
+    dictPS['upperset'] = (0, 0)
+    dictPS['middleset'] = (0, 0)
+    dictPS['lowerset'] = (0, 0)
+    dictPS['all'] = (0, 0)
+    dictPS = calculSurface(dirf,patch_list_cross, tabMed,lungSegment,dictPS)
+    for patt in classif:
+        dictP = initdictP(dictP, patt)
+        dictSubP = initdictP(dictSubP, patt)
+
     listPosLung=('left_sub_lower',  'left_sub_middle'  ,'left_sub_upper',
                  'right_sub_lower','right_sub_middle','right_sub_upper',
                  'left_lower','left_middle','left_upper',
                   'right_lower','right_middle','right_upper')
     quitl=False
-#    print dictSurf['cysts']
-    dictSurf['cysts'][ 'left_middle']= 50.0
-    dictSurf['cysts'][ 'right_middle']= 60.0
-#    print dictSurf['cysts']
 
-
-#
-#    for i in listPosLung:
-#        surfmax[i],patmax[i] =findmaxvolume(dictSurf,i)
-#        print i,surfmax[i],patmax[i]
-#    return
-#    print 'datacros',datacross
     cwd=os.getcwd()
     (cwdtop,tail)=os.path.split(cwd)
-#    print 'openfichier',slnt,dimtabx,ti,dimtaby
-#    print 'dimltabx, dimtaby',dimtabx,dimtaby
-#    slicepitch=datacross[2]
-#    print "corectnumber",corectnumber
+
     path_img=os.path.join(cwdtop,lungimage)
 #    print listHug
     lung_left=cv2.imread(os.path.join(path_img,'lung_left.bmp'),1)
@@ -464,19 +476,13 @@ def openfichiervolume(dictSurf,listHug):
     dictPosTextImage['right_upper']=(200,215)
 
     dictPosTextImage['left_sub_lower']=(480,660)
-    dictPosTextImage['left_sub_middle']=(610,370)
-    dictPosTextImage['left_sub_upper']=(450,140)
+    dictPosTextImage['left_sub_middle']=(610,380)
+    dictPosTextImage['left_sub_upper']=(450,150)
 
     dictPosTextImage['right_sub_lower']=(170,660)
-    dictPosTextImage['right_sub_middle']=(70,370)
-    dictPosTextImage['right_sub_upper']=(200,140)
+    dictPosTextImage['right_sub_middle']=(70,380)
+    dictPosTextImage['right_sub_upper']=(200,150)
 
-#    lungtw=colorimage(dictPosImage['left_upper'],red)
-#
-#    cv2.imshow('a',lungtw)
-#    cv2.imshow('b',dictPosImage['left_upper'])
-#    cv2.waitKey(0)
-#    cv2.destroyAllWindows()
     dimtabx=lung_left.shape[0]
     dimtaby=lung_left.shape[1]
     imgtext = np.zeros((dimtabx,dimtaby,3), np.uint8)
@@ -485,7 +491,7 @@ def openfichiervolume(dictSurf,listHug):
     cv2.namedWindow('image',cv2.WINDOW_AUTOSIZE)
     cv2.namedWindow("SliderVolume",cv2.WINDOW_AUTOSIZE)
 
-    cv2.createTrackbar( 'Threshold','SliderVolume',50,100,nothing)
+    cv2.createTrackbar( 'Threshold','SliderVolume',int(thrprobaUIP*100),100,nothing)
     cv2.createTrackbar( 'All','SliderVolume',0,1,nothings)
     cv2.createTrackbar( 'None','SliderVolume',0,1,nothings)
     viewasked={}
@@ -533,11 +539,21 @@ def openfichiervolume(dictSurf,listHug):
                 else:
                      viewasked[key1]=True
 #                     print key1
+            dictP = {}  # dictionary with patch in lung segment    
+            dictSubP = {}  # dictionary with patch in subpleural
+            dictSurf = {}  # dictionary with patch volume in percentage
+            for patt in classif:
+                dictP = initdictP(dictP, patt)
+                dictSubP = initdictP(dictSubP, patt)
+            tl=tl/100.0
+            thrprobaUIP=tl
+            dictP, dictSubP, dictSurf= uipTree(dirf,patch_list_cross_slice,lungSegment,tabMed,dictPS,
+                                               dictP,dictSubP,dictSurf,thrprobaUIP,patch_list_cross_slice_sub)
 
-#            dictP, dictSubP, dictPS,dictSurf=uipTree(dirf,proba_cross,patch_list_cross,tabscanLung,lungSegment,tabMed,dictPS,dictP,dictSubP,dictSurf)
+#            break
             surfmax={}
             patmax={}
-            tl=tl/100.0
+            
             imgtext = np.zeros((dimtabx,dimtaby,3), np.uint8)
             img = np.zeros((dimtabx,dimtaby,3), np.uint8)
             cv2.putText(imgtext,'Treshold : '+str(tl),(50,50),cv2.FONT_HERSHEY_PLAIN,1,yellow,1,cv2.LINE_AA)
@@ -745,10 +761,10 @@ def openfichier(ti,datacross,patch_list,proba,path_img):
         return 'error in the number of scan images compared to dicom numbering'
 
 def visuarun(indata,path_patient):
+
     messageout=""
-#    print 'indata',indata
 #    print 'path_patient',path_patient
-    lpt=indata['lispatient']
+    lpt=indata['lispatientselect']
     pos=lpt.find(' PREDICT!:')
     if pos >0:
             listHug=(lpt[0:pos])
@@ -794,8 +810,22 @@ def visuarun(indata,path_patient):
             proba= pickle.load( open( os.path.join(path_data_dir,"proba_front"), "r" ))
             messageout=openfichier(viewstyle,datarep,patch_list,proba,patient_path_complet)
     elif viewstyle=='volume view':
-            dictSurf= pickle.load( open( os.path.join(path_data_dir,"dictSurf"), "r" ))
-            messageout=openfichiervolume(dictSurf,listHug)
+#            dictSurf= pickle.load( open( os.path.join(path_data_dir,"dictSurf"), "r" ))
+#            proba_cross= pickle.load( open( os.path.join(path_data_dir,"proba_cross"), "r" ))
+            patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice"), "r" ))
+            patch_list_cross_slice_sub= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice_sub"), "r" ))
+            patch_list_cross= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross"), "r" ))
+#            tabscanLung= pickle.load( open( os.path.join(path_data_dir,"tabscanLung"), "r" ))
+            lungSegment= pickle.load( open( os.path.join(path_data_dir,"lungSegment"), "r" ))
+#            subpleurmask= pickle.load( open( os.path.join(path_data_dir,"subpleurmask"), "r" ))
+            tabMed= pickle.load( open( os.path.join(path_data_dir,"tabMed"), "r" ))
+            thrprobaUIP=float(indata['thrprobaUIP'])
+#            thrpatch=float(indata['thrpatch'])
+#            subErosion=float(indata['subErosion'])
+            
+            messageout = openfichiervolume(listHug,path_patient,patch_list_cross_slice,patch_list_cross,
+                      lungSegment,tabMed,thrprobaUIP,patch_list_cross_slice_sub)
+         
 
     else:
             datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "r" ))
@@ -807,11 +837,11 @@ def visuarun(indata,path_patient):
 
 
 #
-##
-#indata={'lispatientselect':'23 PREDICT!:  Cross','viewstyle':'volume view','thrpatch':0.8,'thrproba':0.9,'thrprobaUIP':0.9,'thrprobaMerge':0.9,
+####
+#indata={'lispatient':'36 PREDICT!:  Cross','viewstyle':'volume view','thrpatch':0.8,'thrproba':0.9,'thrprobaUIP':0.9,'thrprobaMerge':0.9,
 #        'picklein_file':"pickle_ex80",'picklein_file_front':"pickle_ex81",'23':'on','threedpredictrequest':'Cross Only','subErosion':15
 #        }
 #path_patient='C:/Users/sylvain/Documents/boulot/startup/radiology/predicttool/patient_directory'
 ####
-##visuarun(indata,path_patient)
-#predict(indata,path_patient)
+#visuarun(indata,path_patient)
+##predict(indata,path_patient)
