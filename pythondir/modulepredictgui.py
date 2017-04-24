@@ -49,7 +49,8 @@ classif ={
         'GGpret':9
         }
 
-
+black=(0,0,0)
+grey=(100,100,100)
 red=(255,0,0)
 green=(0,255,0)
 blue=(0,0,255)
@@ -370,7 +371,6 @@ def retrievepatch(x,y,sln,pr,li,dx,dy):
 def colorimage(image,color):
     im=image.copy()
     np.putmask(im,im>0,color)
-
     return im
 
 def findmaxvolume(dictSurf,poslung):
@@ -393,7 +393,11 @@ def openfichiervolume(dictSurf,listHug):
                  'left_lower','left_middle','left_upper',
                   'right_lower','right_middle','right_upper')
     quitl=False
-#    print dictSurf
+#    print dictSurf['cysts']
+    dictSurf['cysts'][ 'left_middle']= 50.0
+    dictSurf['cysts'][ 'right_middle']= 60.0
+#    print dictSurf['cysts']
+
 
 #
 #    for i in listPosLung:
@@ -409,27 +413,28 @@ def openfichiervolume(dictSurf,listHug):
 #    print "corectnumber",corectnumber
     path_img=os.path.join(cwdtop,lungimage)
 #    print listHug
-    lung_left=cv2.imread(os.path.join(path_img,'lung_left.png'),1)
-    lung_right=cv2.imread(os.path.join(path_img,'lung_right.png'),1)
+    lung_left=cv2.imread(os.path.join(path_img,'lung_left.bmp'),1)
+    lung_right=cv2.imread(os.path.join(path_img,'lung_right.bmp'),1)
 
-    lung_lower_right=cv2.imread(os.path.join(path_img,'lung_lower_right.png'),1)
-    lung_middle_right=cv2.imread(os.path.join(path_img,'lung_middle_right.png'),1)
-    lung_upper_right=cv2.imread(os.path.join(path_img,'lung_upper_right.png'),1)
+    lung_lower_right=cv2.imread(os.path.join(path_img,'lung_lower_right.bmp'),1)
+    lung_middle_right=cv2.imread(os.path.join(path_img,'lung_middle_right.bmp'),1)
+    lung_upper_right=cv2.imread(os.path.join(path_img,'lung_upper_right.bmp'),1)
 
-    lung_lower_left=cv2.imread(os.path.join(path_img,'lung_lower_left.png'),1)
-    lung_middle_left=cv2.imread(os.path.join(path_img,'lung_middle_left.png'),1)
-    lung_upper_left=cv2.imread(os.path.join(path_img,'lung_upper_left.png'),1)
+    lung_lower_left=cv2.imread(os.path.join(path_img,'lung_lower_left.bmp'),1)
+    lung_middle_left=cv2.imread(os.path.join(path_img,'lung_middle_left.bmp'),1)
+    lung_upper_left=cv2.imread(os.path.join(path_img,'lung_upper_left.bmp'),1)
 
-    lung_sub_lower_right=cv2.imread(os.path.join(path_img,'lung_sub_lower_right.png'),1)
-    lung_sub_middle_right=cv2.imread(os.path.join(path_img,'lung_sub_middle_right.png'),1)
-    lung_sub_upper_right=cv2.imread(os.path.join(path_img,'lung_sub_upper_right.png'),1)
+    lung_sub_lower_right=cv2.imread(os.path.join(path_img,'lung_sub_lower_right.bmp'),1)
+    lung_sub_middle_right=cv2.imread(os.path.join(path_img,'lung_sub_middle_right.bmp'),1)
+    lung_sub_upper_right=cv2.imread(os.path.join(path_img,'lung_sub_upper_right.bmp'),1)
 
-    lung_sub_lower_left=cv2.imread(os.path.join(path_img,'lung_sub_lower_left.png'),1)
-    lung_sub_middle_left=cv2.imread(os.path.join(path_img,'lung_sub_middle_left.png'),1)
-    lung_sub_upper_left=cv2.imread(os.path.join(path_img,'lung_sub_upper_left.png'),1)
+    lung_sub_lower_left=cv2.imread(os.path.join(path_img,'lung_sub_lower_left.bmp'),1)
+    lung_sub_middle_left=cv2.imread(os.path.join(path_img,'lung_sub_middle_left.bmp'),1)
+    lung_sub_upper_left=cv2.imread(os.path.join(path_img,'lung_sub_upper_left.bmp'),1)
 
 
     dictPosImage={}
+    dictPosTextImage={}
 
     dictPosImage['left']=lung_left
     dictPosImage['right']=lung_right
@@ -450,14 +455,35 @@ def openfichiervolume(dictSurf,listHug):
     dictPosImage['right_sub_middle']=lung_sub_middle_right
     dictPosImage['right_sub_upper']=lung_sub_upper_right
 
+    dictPosTextImage['left_lower']=(480,570)
+    dictPosTextImage['left_middle']=(480,400)
+    dictPosTextImage['left_upper']=(450,215)
 
+    dictPosTextImage['right_lower']=(170,570)
+    dictPosTextImage['right_middle']=(170,400)
+    dictPosTextImage['right_upper']=(200,215)
+
+    dictPosTextImage['left_sub_lower']=(480,660)
+    dictPosTextImage['left_sub_middle']=(610,370)
+    dictPosTextImage['left_sub_upper']=(450,140)
+
+    dictPosTextImage['right_sub_lower']=(170,660)
+    dictPosTextImage['right_sub_middle']=(70,370)
+    dictPosTextImage['right_sub_upper']=(200,140)
+
+#    lungtw=colorimage(dictPosImage['left_upper'],red)
+#
+#    cv2.imshow('a',lungtw)
+#    cv2.imshow('b',dictPosImage['left_upper'])
+#    cv2.waitKey(0)
+#    cv2.destroyAllWindows()
     dimtabx=lung_left.shape[0]
     dimtaby=lung_left.shape[1]
     imgtext = np.zeros((dimtabx,dimtaby,3), np.uint8)
 
 
-    cv2.namedWindow('image',cv2.WINDOW_NORMAL)
-    cv2.namedWindow("SliderVolume",cv2.WINDOW_NORMAL)
+    cv2.namedWindow('image',cv2.WINDOW_AUTOSIZE)
+    cv2.namedWindow("SliderVolume",cv2.WINDOW_AUTOSIZE)
 
     cv2.createTrackbar( 'Threshold','SliderVolume',50,100,nothing)
     cv2.createTrackbar( 'All','SliderVolume',0,1,nothings)
@@ -482,37 +508,84 @@ def openfichiervolume(dictSurf,listHug):
     #        cv2.rectangle(imgt,(172,358),(192,368),white,-1)
     cv2.putText(imgbackg,'quit',(dxrect+10,dimtabx-10),cv2.FONT_HERSHEY_PLAIN,1,yellow,1,cv2.LINE_AA)
     cv2.putText(imgbackg,'Patient Name:'+listHug,(50,30),cv2.FONT_HERSHEY_PLAIN,1.4,yellow,1,cv2.LINE_AA)
+    imgbackg = cv2.add(imgbackg, dictPosImage['right'])
+    imgbackg = cv2.add(dictPosImage['left'], imgbackg)
+#    cv2.imshow('a',imgbackg)
+#    cv2.waitKey(0)
+#    cv2.destroyAllWindows()
+
     while(1):
 #            print "corectnumber",corectnumber
+
             cv2.setMouseCallback('image',draw_circle,imgtext)
             tl = cv2.getTrackbarPos('Threshold','SliderVolume')
             allview = cv2.getTrackbarPos('All','SliderVolume')
             noneview = cv2.getTrackbarPos('None','SliderVolume')
 
-            for key,value in classif.items():
-                s = cv2.getTrackbarPos(key,'SliderVolume')
+            for key1 in classif:
+                s = cv2.getTrackbarPos(key1,'SliderVolume')
                 if allview==1:
-                     viewasked[key]=True
+                     viewasked[key1]=True
                 elif noneview ==1:
-                    viewasked[key]=False
+                    viewasked[key1]=False
                 elif s==0:
-#            print key
-                    viewasked[key]=False
+                    viewasked[key1]=False
                 else:
-                     viewasked[key]=True
+                     viewasked[key1]=True
+#                     print key1
+
+#            dictP, dictSubP, dictPS,dictSurf=uipTree(dirf,proba_cross,patch_list_cross,tabscanLung,lungSegment,tabMed,dictPS,dictP,dictSubP,dictSurf)
             surfmax={}
             patmax={}
+            tl=tl/100.0
             imgtext = np.zeros((dimtabx,dimtaby,3), np.uint8)
+            img = np.zeros((dimtabx,dimtaby,3), np.uint8)
+            cv2.putText(imgtext,'Treshold : '+str(tl),(50,50),cv2.FONT_HERSHEY_PLAIN,1,yellow,1,cv2.LINE_AA)
+            if allview==1:
+#                print allview
+                for i in listPosLung:
+#                    lungtw = np.zeros((dimtabx,dimtaby,3), np.uint8)
 
-            for i in listPosLung:
-                surfmax[i],patmax[i] =findmaxvolume(dictSurf,i)
-                colori=classifc[patmax[i]]
-                dictPosImage[i]=colorimage(dictPosImage[i],colori)
-                imgtext=cv2.add(imgtext,dictPosImage[i])
+    #                dictPosImage[i]=colorimage(dictPosImage[i],black)
+                    surfmax[i],patmax[i] =findmaxvolume(dictSurf,i)
+#                    print i,surfmax[i],patmax[i]
 
+                    if surfmax[i]>0:
+                         colori=classifc[patmax[i]]
+                    else:
+                         colori=grey
+
+    #                print i,surfmax[i],patmax[i],colori
+                    lungtw=colorimage(dictPosImage[i],colori)
+#
+#                    mgray = cv2.cvtColor(lungtw,cv2.COLOR_BGR2GRAY)
+#                    np.putmask(mgray,mgray>0,255)
+#                    nthresh=cv2.bitwise_not(mgray)
+#                    vis1=cv2.bitwise_and(img,img,mask=nthresh)
+                    img=cv2.add(img,lungtw)
+                    cv2.putText(imgtext,str(surfmax[i])+'%',(dictPosTextImage[i][0],dictPosTextImage[i][1]),cv2.FONT_HERSHEY_PLAIN,1.2,white,1,)
+            else:
+                for i in listPosLung:
+                    for pat in classif:
+#                        img = np.zeros((dimtabx,dimtaby,3), np.uint8)
+                        if viewasked[pat]==True:
+                             if dictSurf[pat][i]>0:
+                                 colori=classifc[pat]
+                             else:
+                                 colori=grey
+                             lungtw=colorimage(dictPosImage[i],colori)
+#                             mgray = cv2.cvtColor(lungtw,cv2.COLOR_BGR2GRAY)
+#                             np.putmask(mgray,mgray>0,255)
+#                             nthresh=cv2.bitwise_not(mgray)
+#                             vis1=cv2.bitwise_and(img,img,mask=nthresh)
+                             img=cv2.add(img,lungtw)
+                             cv2.putText(imgtext,str(dictSurf[pat][i])+'%',(dictPosTextImage[i][0],dictPosTextImage[i][1]),cv2.FONT_HERSHEY_PLAIN,1.2,white,1,)
+#            break
             imgtext=cv2.add(imgtext,imgbackg)
+            imgtext=cv2.add(imgtext,img)
             imgtowrite=cv2.cvtColor(imgtext,cv2.COLOR_BGR2RGB)
             cv2.imshow('image',imgtowrite)
+#            cv2.imshow('image',vis1)
 
             if quitl or cv2.waitKey(20) & 0xFF == 27 :
     #            print 'on quitte', quitl
@@ -652,6 +725,7 @@ def openfichier(ti,datacross,patch_list,proba,path_img):
 
             cv2.imshow('image',imgtoshow)
 
+
             if patchi :
                 print 'retrieve patch asked'
                 imgtext=retrievepatch(ix,iy,fl+corectnumber,preprob,listnamepatch,dimtabx,dimtaby)
@@ -732,12 +806,12 @@ def visuarun(indata,path_patient):
     return messageout
 
 
-
-
-indata={'lispatient':'23 PREDICT!:  Cross','viewstyle':'volume view','thrpatch':0.8,'thrproba':0.6,'thrprobaUIP':0.8,'thrprobaMerge':0.6,
-        'picklein_file':"pickle_ex80",'picklein_file_front':"pickle_ex81",'23':'on','threedpredictrequest':'Cross Only','subErosion':15
-        }
-path_patient='C:/Users/sylvain/Documents/boulot/startup/radiology/predicttool/patient_directory'
+#
 ##
-visuarun(indata,path_patient)
+#indata={'lispatientselect':'23 PREDICT!:  Cross','viewstyle':'volume view','thrpatch':0.8,'thrproba':0.9,'thrprobaUIP':0.9,'thrprobaMerge':0.9,
+#        'picklein_file':"pickle_ex80",'picklein_file_front':"pickle_ex81",'23':'on','threedpredictrequest':'Cross Only','subErosion':15
+#        }
+#path_patient='C:/Users/sylvain/Documents/boulot/startup/radiology/predicttool/patient_directory'
+####
+##visuarun(indata,path_patient)
 #predict(indata,path_patient)

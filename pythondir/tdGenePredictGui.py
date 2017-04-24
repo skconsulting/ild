@@ -324,6 +324,7 @@ def genebmp(fn,sou):
 
     FilesDCM =(os.path.join(fmbmp,listdcm[0]))
     RefDs = dicom.read_file(FilesDCM)
+    patientPosition=RefDs.PatientPosition
     SliceThickness=RefDs.SliceThickness
     try:
             SliceSpacingB=RefDs.SpacingBetweenSlices
@@ -335,10 +336,18 @@ def genebmp(fn,sou):
     print 'SliceSpacingB', SliceSpacingB
     slicepitch=float(SliceThickness)+float(SliceSpacingB)
     print 'slice pitch in z :',slicepitch
-
-    fxs=float(RefDs.PixelSpacing[0])/avgPixelSpacing
+    print patientPosition
     dsr= RefDs.pixel_array
+    dsr = dsr.astype('int16')
+    fxs=float(RefDs.PixelSpacing[0])/avgPixelSpacing
 
+#    imtowrite=normi(dsr)
+#
+#    cv2.imshow('b',imtowrite)
+#    cv2.waitKey(0)
+#    cv2.destroyAllWindows()
+#
+#    ooo
     imgresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
     dimtabx=imgresize.shape[0]
     dimtaby=imgresize.shape[1]
@@ -1533,9 +1542,10 @@ def  calcMed (tabscanLung,lungSegment):
 
     return tabMed
 
-def calcSupNp(dirf,tabscanLung, proba_cross,patch_list_cross, pat, tabMed,lungSegment,dictSubP):
+def calcSupNp(dirf,tabscanLung, proba_cross,patch_list_cross, pat, tabMed,lungSegment,dictSubP,dictP):
 #def calcSupNp(preprob, posp, lungs, imscan, pat, midx, psp, dictSubP, dimtabx):
     '''calculate the number of pat in subpleural'''
+    global subErosion
     (top,tail)=os.path.split(dirf)
     print 'number of subpleural for :',tail, 'pattern :', pat
 
@@ -1592,12 +1602,18 @@ def calcSupNp(dirf,tabscanLung, proba_cross,patch_list_cross, pat, tabMed,lungSe
                 classlabel = fidclass(prec, classif)
 
                 if xpat >= tabMed[sln]:
-                    pospr = 1
-                    pospl = 0
-                else:
                     pospr = 0
                     pospl = 1
+                else:
+                    pospr = 1
+                    pospl = 0
                 if classlabel == pat and mprobai > thrprobaUIP:
+                    dictP[pat][psp] = (
+                    dictP[pat][psp][0] + pospl,
+                    dictP[pat][psp][1] + pospr)
+                    dictP[pat]['all'] = (
+                    dictP[pat]['all'][0] + pospl,
+                    dictP[pat]['all'][1] + pospr)
                     tabpatch = np.zeros((dimtabx, dimtaby), np.uint8)
                     tabpatch[ypat:ypat + dimpavy, xpat:xpat + dimpavx] = 1
                     tabsubpl = np.bitwise_and(subpleurmask, tabpatch)
@@ -1615,7 +1631,7 @@ def calcSupNp(dirf,tabscanLung, proba_cross,patch_list_cross, pat, tabMed,lungSe
                             dictSubP[pat][psp][1] + pospr)
 
             ill += 1
-    return dictSubP
+    return dictSubP,dictP
 
 def diffMicro(dirf,proba_cross, patch_list_cross, pat, tabMed, lungSegment,dictP):
     '''calculate number of diffuse micronodules, left and right '''
@@ -1632,11 +1648,11 @@ def diffMicro(dirf,proba_cross, patch_list_cross, pat, tabMed, lungSegment,dictP
         prec, mprobai = maxproba(proba)
         classlabel = fidclass(prec, classif)
         if xpat >= tabMed[sln]:  # look if patch is in right or left lung
-            pospr = 1
-            pospl = 0
-        else:
             pospr = 0
             pospl = 1
+        else:
+            pospr = 1
+            pospl = 0
 
         if classlabel == pat and mprobai > thrprobaUIP:  # look if patch his above probability
             dictP[pat][psp] = (
@@ -1664,10 +1680,11 @@ def cvsarea(p, f, de, dse, s, dc, wf):
     if wf:
         f.write(p + ': ')
     for i in llungloc:
+
         st = s[i[0]][0] + s[i[0]][1]
         if st > 0:
             l = 100 * float(d[i[0]][0] + d[i[0]][1]) / st
-            l = round(l, 3)
+            l = round(l, 2)
         else:
             l = 0
         dictint[i[1]] = l
@@ -1676,9 +1693,13 @@ def cvsarea(p, f, de, dse, s, dc, wf):
 
     for i in llunglocsl:
         st = s[i[0]][0]
+#        print 'cvsarea',s
+#        print 'cvsarea i',i[0], i[1]
+#        print 'cvsarea p d', p,d
+#        ooo
         if st > 0:
             l = 100 * float(ds[i[0]][0]) / st
-            l = round(l, 3)
+            l = round(l, 2)
         else:
             l = 0
         dictint[i[1]] = l
@@ -1689,7 +1710,7 @@ def cvsarea(p, f, de, dse, s, dc, wf):
         st = s[i[0]][1]
         if st > 0:
             l = 100 * float(ds[i[0]][1]) / st
-            l = round(l, 3)
+            l = round(l, 2)
         else:
             l = 0
         dictint[i[1]] = l
@@ -1757,11 +1778,11 @@ def calculSurface(dirf,posp, midx,lungSegment,dictPS):
         psp=posP(sln, lungSegment)
 
         if xpat >= midx[sln]:
-            pospr = 1
-            pospl = 0
-        else:
             pospr = 0
             pospl = 1
+        else:
+            pospr = 1
+            pospl = 0
 
         dictPS[psp] = (dictPS[psp][0] + pospl, dictPS[psp][1] + pospr)
         dictPS['all'] = (dictPS['all'][0] + pospl, dictPS['all'][1] + pospr)
@@ -1807,15 +1828,18 @@ def uipTree(dirf,proba_cross,patch_list_cross,tabscanLung,lungSegment,tabMed,dic
         volumefile = ''
     for pat in classif:
 
-        dictP = diffMicro(dirf,proba_cross,patch_list_cross, pat, tabMed,lungSegment,dictP)
-        print ' volume total for:',pat
-        print dictP[pat]
-        print '-------------------------------------------'
+#        dictP = diffMicro(dirf,proba_cross,patch_list_cross, pat, tabMed,lungSegment,dictP)
+#        print ' volume total for:',pat
+#        print dictP[pat]
+#        print '-------------------------------------------'
 
-        dictSubP = calcSupNp(dirf,tabscanLung, proba_cross,patch_list_cross, pat, tabMed,lungSegment,dictSubP)
+        dictSubP,dictP = calcSupNp(dirf,tabscanLung, proba_cross,patch_list_cross, pat, tabMed,lungSegment,dictSubP,dictP)
 
         print ' volume subpleural for:', pat
         print dictSubP[pat]
+        print '-------------------------------------------'
+        print ' volume total for:',pat
+        print dictP[pat]
         print '-------------------------------------------'
         dictSurf = cvsarea(
             pat,
@@ -1901,7 +1925,7 @@ def predictrun(indata,path_patient):
                     pos=lpt.find(' noPREDICT!')
 #                    print 'no predict',pos
                     listHug.append(lpt[0:pos])
-#        listHug=['23']
+#        listHug=['36']
 
 #        if type(listHugi)==unicode:
 #            listHug=[]
@@ -2015,10 +2039,12 @@ def predictrun(indata,path_patient):
                 patch_list_cross= pickle.load( open( os.path.join(path_data_write,"patch_list_cross"), "r" ))
                 tabscanLung= pickle.load( open( os.path.join(path_data_write,"tabscanLung"), "r" ))
                 tabMed = calcMed(tabscanLung,lungSegment)
+#                """
                 visua(listelabelfinal,dirf,proba_cross,patch_list_cross,dimtabx,
                       dimtabx,slnt,predictout,sroi,scan_bmp,source,dicompathdircross,True,errorfile)
+#                """
                 dictP, dictSubP, dictPS,dictSurf=uipTree(dirf,proba_cross,patch_list_cross,tabscanLung,lungSegment,tabMed,dictPS,dictP,dictSubP,dictSurf)
-
+#                """
                 pickle.dump(dictP, open( os.path.join(path_data_write,"dictP"), "wb" ))
                 pickle.dump(dictSubP, open( os.path.join(path_data_write,"dictSubP"), "wb" ))
                 pickle.dump(dictPS, open( os.path.join(path_data_write,"dictPS"), "wb" ))
@@ -2030,7 +2056,7 @@ def predictrun(indata,path_patient):
                 dictSurf= pickle.load( open( os.path.join(path_data_write,"dictSurf"), "r" ))
 #                ooo
                 genethreef(dirf,patch_list_cross,proba_cross,slicepitch,dimtabx,dimtabx,dimpavx,slnt,'cross')
-
+#                """
         ###       cross
                 if td:
                     tabresScan=reshapeScan(tabscanScan,slnt,dimtabx)
