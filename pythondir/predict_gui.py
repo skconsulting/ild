@@ -31,7 +31,7 @@ moduledoc='doc'
 pathMedikEye=os.path.join(os.environ['PROGRAMDATA'],instdirMedikey)
 pathPredict=os.path.join(pathMedikEye,instdirPredict)
 pathPredictModulepython=os.path.join(pathPredict,modulepython)
-pathPrdictDoc=os.path.join(pathPredict,moduledoc)
+pathPredictDoc=os.path.join(pathPredict,moduledoc)
 
 pathMedikEyelocal=os.path.join(os.environ['LOCALAPPDATA'],instdirMedikeyLocal)
 pathPredictlocal=os.path.join(pathMedikEyelocal,instdirpredictLocal)
@@ -142,6 +142,7 @@ def visualisation(btn):
 #    indata['subErosion']= app.getEntry("subErosion in mm")
     indata['thrprobaUIP']=app.getEntry("Treshold proba for volume calculation")
     indata['lispatientselect']=selectpatient
+
 #    indata['thrpatch']=app.getEntry("Percentage of pad Overlapp")
 #    print 'frontpredict',frontpredict
     if frontpredict:
@@ -163,6 +164,29 @@ def redraw(app):
     initDraw()
 
 def visuDrawl(btn):
+    global frontpredict,continuevisu,selectpatient,app
+#    print(app.getListItems("list"))
+#    print(app.getEntry("Percentage of pad Overlapp"))
+#    indata['thrpatch']=app.getEntry("Percentage of pad Overlapp")
+#    indata['thrproba']=app.getEntry("Treshold proba for predicted image generation")
+#    indata['thrprobaMerge']=app.getEntry("Treshold proba for merge cross and front view")
+#    indata['thrprobaUIP']=app.getEntry("Treshold proba for volume calculation")
+#    indata['threedpredictrequest']=app.getRadioButton("predict_style")
+#    indata['picklein_file']=app.getEntry("cross view weight")
+#    indata['picklein_file_front']= app.getEntry("front view weight")
+#    indata['subErosion']= app.getEntry("subErosion in mm")
+    selectvisu=app.getListItems("list")
+    if len(selectvisu) >0:
+         selectpatient=selectvisu[0]
+         frontexist=selectvisu[0].find('Cross & Front')
+         selectpatient=selectvisu[0]
+         if frontexist>0:
+             frontpredict=True
+         else:
+            frontpredict=False
+         continuevisu=True
+    else: 
+        continuevisu=False
     app.stop(Stop)
     visuDraw()
 
@@ -273,14 +297,7 @@ def initDraw():
 
 #    app.addLabel("top", "Select patient directory:", 0, 0)
     if not goodir: selectPatientDir()
-#    app.setLabelBg("top","blue")
-#    app.setLabelFg("top","yellow")
 
-#    app.addHorizontalSeparator( colour="red",colspan=2)
-#    app.addLabel("sepa", "")
-#    app.setLabelBg("top", "green")
-#    print goodir
-#    app.setFont(10)
     if goodir:
         app.addLabel("path_patientt", "path_patient",colspan=2)
         app.addLabel("path_patient", lisdir,colspan=2)
@@ -328,7 +345,6 @@ def initDraw():
 
         app.addLabelNumericEntry("Treshold proba for predicted image generation",row,1)
         app.setEntry("Treshold proba for predicted image generation", thrproba)
-
         row = app.getRow()
         app.addLabelNumericEntry("Treshold proba for volume calculation",row,0)
         app.setEntry("Treshold proba for volume calculation",thrprobaUIP)
@@ -425,6 +441,7 @@ def visuDraw():
 #            app.setEntry("subErosion in mm", subErosion)
             app.addLabelNumericEntry("Treshold proba for volume calculation",row,0)
             app.setEntry("Treshold proba for volume calculation",thrprobaUIP)
+           
 #            app.addLabelNumericEntry("Percentage of pad Overlapp")
 #            app.setEntry("Percentage of pad Overlapp", thrpatch)
             app.addLabel("l11", "Patient selected: "+selectpatient)
@@ -466,13 +483,16 @@ def visuDraw():
                 app.addRadioButton("planar","cross view",row,0)
                 app.addRadioButton("planar","from cross predict",row,1)
                 row = app.getRow() # get current row
-                app.addRadioButton("planar","volume view",row,0)
-                row = app.getRow() # get current row
-                app.addRadioButton("planar","front view",row,0)
+                app.addRadioButton("planar","volume view from cross",row,0)
                 app.addRadioButton("planar","from front predict",row,1)
                 row = app.getRow() # get current row
-                app.addRadioButton("planar","merge view",row,0)
+                app.addRadioButton("planar","volume view from front",row,0)
                 app.addRadioButton("planar","from cross + front merge",row,1)
+
+                app.addRadioButton("planar","front view")
+                app.addRadioButton("planar","merge view")
+                app.addRadioButton("planar","front projected view")
+               
             app.addHorizontalSeparator( colour="red")
             app.setSticky("n")
 #            app.setStrech("row")
