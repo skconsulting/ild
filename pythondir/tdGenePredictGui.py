@@ -1976,16 +1976,16 @@ def predictrun(indata,path_patient):
             errorfile = open(eferror, 'a')
             listelabelfinal={}
             dirf=os.path.join(dirHUG,f)
-            """
+#            """
             tabMed = {}  # dictionary with position of median between lung
 
             wridirsource=os.path.join(dirf,source)
             wridir=os.path.join(wridirsource,transbmp)
             remove_folder(wridir)
             os.mkdir(wridir)
-            """
+#            """
             path_data_write=os.path.join(dirf,path_data)
-            """
+#            """
 #            remove_folder(path_data_write)
             if not os.path.exists(path_data_write):
                 os.mkdir(path_data_write)
@@ -1993,9 +1993,9 @@ def predictrun(indata,path_patient):
             jpegpathdir=os.path.join(dirf,jpegpadirm)
             remove_folder(jpegpathdir)
             os.mkdir(jpegpathdir)
-            """
+#            """
             dicompathdir=os.path.join(dirf,dicompadirm)
-            """
+#            """
             remove_folder(dicompathdir)
             os.mkdir(dicompathdir)
 
@@ -2003,14 +2003,14 @@ def predictrun(indata,path_patient):
 
             remove_folder(dicompathdircross)
             os.mkdir(dicompathdircross)
-            """
+#            """
             dicompathdirfront=os.path.join(dicompathdir,dicomfront)
-            """
+#            """
             remove_folder(dicompathdirfront)
             os.mkdir(dicompathdirfront)
-            """
+#            """
             dicompathdirmerge=os.path.join(dicompathdir,dicomcross_merge)
-            """
+#            """
             remove_folder(dicompathdirmerge)
             os.mkdir(dicompathdirmerge)
 
@@ -2023,7 +2023,7 @@ def predictrun(indata,path_patient):
             pickle.dump(datacross, open( os.path.join(path_data_write,datacrossn), "wb" ),protocol=-1)
             pickle.dump(tabscanScan, open( os.path.join(path_data_write,"tabscanScan"), "wb" ),protocol=-1)
             pickle.dump(lungSegment, open( os.path.join(path_data_write,"lungSegment"), "wb" ),protocol=-1)
-            """
+#            """
             datacross= pickle.load( open( os.path.join(path_data_write,"datacross"), "rb" ))
             tabscanScan= pickle.load( open( os.path.join(path_data_write,"tabscanScan"), "rb" ))
             lungSegment= pickle.load( open( os.path.join(path_data_write,"lungSegment"), "rb" ))
@@ -2033,8 +2033,7 @@ def predictrun(indata,path_patient):
             dimtaby=datacross[2]
             slicepitch=datacross[3]
             lissln=datacross[4]
-            """
-#            print slicepitch
+#            """
 #
             tabscanLung=genebmplung(dirf,lung_name_gen,slnt,dimtabx,dimtabx)
             subpleurmask=subpleural(dirf,tabscanLung,lungSegment,subErosion,'cross')
@@ -2056,21 +2055,22 @@ def predictrun(indata,path_patient):
             pickle.dump(tabscanLung, open( os.path.join(path_data_write,"tabscanLung"), "wb" ),protocol=-1)
             pickle.dump(patch_list_cross, open( os.path.join(path_data_write,"patch_list_cross"), "wb" ),protocol=-1)
             pickle.dump(tabMed, open( os.path.join(path_data_write,"tabMed"), "wb" ),protocol=-1)
-
+            """
             proba_cross= pickle.load( open( os.path.join(path_data_write,"proba_cross"),"rb" ))
             patch_list_cross_slice= pickle.load( open( os.path.join(path_data_write,"patch_list_cross_slice"), "rb" ))
             patch_list_cross_slice_sub= pickle.load( open( os.path.join(path_data_write,"patch_list_cross_slice_sub"), "rb" ))
             tabscanLung= pickle.load( open( os.path.join(path_data_write,"tabscanLung"), "rb" ))
             patch_list_cross= pickle.load( open( os.path.join(path_data_write,"patch_list_cross"), "rb" ))
             tabMed= pickle.load( open( os.path.join(path_data_write,"tabMed"), "rb" ))
+            """
             
             visua(listelabelfinal,dirf,proba_cross,patch_list_cross,dimtabx,
                   dimtabx,slnt,predictout,sroi,scan_bmp,source,dicompathdircross,True,errorfile)            
             genethreef(dirf,patch_list_cross,proba_cross,slicepitch,dimtabx,dimtabx,dimpavx,slnt,'cross')
-            """
+#            """
     ###       cross
             if td:
-                """
+#                """
                 tabresScan=reshapeScan(tabscanScan,slnt,dimtabx)
                 dimtabxn,dimtabyn,tabScan3d,lisslnfront=wtebres(wridir,dirf,tabresScan,dimtabx,slicepitch,lung_name_gen,'scan')
                 tabresLung=reshapeScan(tabscanLung,slnt,dimtabx)               
@@ -2079,7 +2079,7 @@ def predictrun(indata,path_patient):
                 
                 pickle.dump(datafront, open( os.path.join(path_data_write,datafrontn), "wb" ),protocol=-1)
                 """
-                datafront= pickle.load( open( os.path.join(path_data_write,"datafront"), "rb" ))
+                datafront= pickle.load( open( os.path.join(path_data_write,"datafront"), "rb" ))               
                 dimtabx=datafront[0]                
                 dimtabxn=datafront[1]
                 dimtabyn=datafront[2]
@@ -2092,10 +2092,10 @@ def predictrun(indata,path_patient):
                 
                 pickle.dump(proba_front, open( os.path.join(path_data_write,"proba_front"), "wb" ),protocol=-1)
                 pickle.dump(patch_list_front, open( os.path.join(path_data_write,"patch_list_front"), "wb" ),protocol=-1)
-                
+                """
                 proba_front=pickle.load(open( os.path.join(path_data_write,"proba_front"), "rb" ))
                 patch_list_front=pickle.load(open( os.path.join(path_data_write,"patch_list_front"), "rb" ))
-                
+                """                
                 visua(listelabelfinal,dirf,proba_front,patch_list_front,dimtabxn,dimtabx,
                       dimtabyn,predictout3d,sroid,transbmp,source,dicompathdirfront,False,errorfile)
                 """
@@ -2114,14 +2114,13 @@ def predictrun(indata,path_patient):
                 pickle.dump(patch_list_front_slice, open( os.path.join(path_data_write,"patch_list_front_slice"), "wb" ),protocol=-1)
                 pickle.dump(patch_list_front_slice_sub, open( os.path.join(path_data_write,"patch_list_front_slice_sub"), "wb" ),protocol=-1)
                 pickle.dump(lungSegmentfront, open( os.path.join(path_data_write,"lungSegmentfront"), "wb" ),protocol=-1)
-
+                """
                 tabMedfront=pickle.load(open( os.path.join(path_data_write,"tabMedfront"), "rb" ))
                 patch_list_front_slice=pickle.load(open( os.path.join(path_data_write,"patch_list_front_slice"), "rb" ))
                 patch_list_front_slice_sub=pickle.load(open( os.path.join(path_data_write,"patch_list_front_slice_sub"), "rb" ))
                 lungSegmentfront=pickle.load(open( os.path.join(path_data_write,"lungSegmentfront"), "rb" ))
-
-                genethreef(dirf,patch_list_front,proba_front,avgPixelSpacing,dimtabxn,dimtabyn,dimpavx,dimtabx,'front')
                 """
+                genethreef(dirf,patch_list_front,proba_front,avgPixelSpacing,dimtabxn,dimtabyn,dimpavx,dimtabx,'front')
                 tabpx=genecross(proba_cross,dirf,proba_front,patch_list_front,slnt,slicepitch,dimtabxn,dimtabyn,predictout3dn)
         #        pickle.dump(tabpx, open( os.path.join(path_data_write,"tabpx"), "wb" ),protocol=-1)
         #        tabpx=pickle.load(open( os.path.join(path_data_write,"tabpx"), "rb" ),protocol=-1)
@@ -2137,12 +2136,12 @@ def predictrun(indata,path_patient):
                 pickle.dump(patch_list_merge, open( os.path.join(path_data_write,"patch_list_merge"), "wb" ),protocol=-1)
                 pickle.dump(patch_list_merge_slice, open( os.path.join(path_data_write,"patch_list_merge_slice"), "wb" ),protocol=-1)
                 pickle.dump(patch_list_merge_slice_sub, open( os.path.join(path_data_write,"patch_list_merge_slice_sub"), "wb" ),protocol=-1)
-                
+                """
                 proba_merge=pickle.load(open( os.path.join(path_data_write,"proba_merge"), "rb" ))
                 patch_list_merge=pickle.load(open( os.path.join(path_data_write,"patch_list_merge"), "rb" ))
                 patch_list_merge_slice=pickle.load(open( os.path.join(path_data_write,"patch_list_merge_slice"), "rb" ))
                 patch_list_merge_slice_sub=pickle.load(open( os.path.join(path_data_write,"patch_list_merge_slice_sub"), "rb" ))
-                                                
+                """                                              
                 visua(listelabelfinal,dirf,proba_merge,patch_list_merge,dimtabx,dimtabx
                       ,slnt,predictoutmerge,sroi,scan_bmp,source,dicompathdirmerge,True,errorfile)
                 genethreef(dirf,patch_list_merge,proba_merge,slicepitch,dimtabx,dimtabx,dimpavx,slnt,'merge')
