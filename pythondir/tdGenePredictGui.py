@@ -17,6 +17,8 @@ import scipy
 import PIL
 import cPickle as pickle
 import random
+from skimage import measure, morphology, segmentation
+from skimage.segmentation import clear_border
 
 #from PIL import Image as ImagePIL
 from PIL import Image,ImageFont, ImageDraw
@@ -324,7 +326,7 @@ def genebmp(fn,sou):
     RefDs = dicom.read_file(FilesDCM)
     RefDs1 = dicom.read_file(FilesDCM1)
     patientPosition=RefDs.PatientPosition
-    SliceThickness=RefDs.SliceThickness
+#    SliceThickness=RefDs.SliceThickness
     try:
             slicepitch = np.abs(RefDs.ImagePositionPatient[2] - RefDs1.ImagePositionPatient[2])
 #            print RefDs.ImagePositionPatient[2]
@@ -412,44 +414,135 @@ def genebmp(fn,sou):
 
     return tabscan,slnt,dimtabx,slicepitch,lislnn
 
-def genebmplung(fn,lungname,slnt,dimtabx,dimtaby):
+def largest_label_volume(im, bg=-1):
+    vals, counts = np.unique(im, return_counts=True)
+
+    counts = counts[vals != bg]
+    vals = vals[vals != bg]
+
+    if len(counts) > 0:
+        return vals[np.argmax(counts)]
+    else:
+        return None
+
+def segment_lung_mask(image, fill_lung_structures=True):
+
+    # not actually binary, but 1 and 2.
+    # 0 is treated as background, which we do not want
+    binary_image = np.array(image > -320, dtype=np.int8)+1
+#    binary_image = clear_border(binary_image)
+    labels = measure.label(binary_image)
+
+    # Pick the pixel in the very corner to determine which label is air.
+    #   Improvement: Pick multiple background labels from around the patient
+    #   More resistant to "trays" on which the patient lays cutting the air
+    #   around the person in half
+#    print labels.shape[0],labels.shape[1],labels.shape[2]
+#    background_label = labels[0,0,0]
+#    bg={} 
+    ls0=labels.shape[0]-1
+    ls1=labels.shape[1]-1
+    ls2=labels.shape[2]-1
+    for i in range (0,8):
+#        print (i/4)%2, (i/2)%2, i%2
+        background_label=labels[(i/4)%2*ls0,(i/2)%2*ls1,i%2*ls2]
+        binary_image[background_label == labels] = 2
+#    for i in range (0,8):
+#        binary_image[background_label == labels] = 2
+#        background_label = labels[labels.shape[0]-1,labels.shape[1]-1,labels.shape[2]-1]
+
+    #Fill the air around the person
+#    binary_image[background_label == labels] = 2
+
+
+    # Method of filling the lung structures (that is superior to something like
+    # morphological closing)
+    if fill_lung_structures:
+        # For every slice we determine the largest solid structure
+        for i, axial_slice in enumerate(binary_image):
+            axial_slice = axial_slice - 1
+            labeling = measure.label(axial_slice)
+            l_max = largest_label_volume(labeling, bg=0)
+
+            if l_max is not None: #This slice contains some lung
+                binary_image[i][labeling != l_max] = 1
+
+
+    binary_image -= 1 #Make the image actual binary
+    binary_image = 1-binary_image # Invert it, lungs are now 1
+
+    # Remove other air pockets insided body
+    labels = measure.label(binary_image, background=0)
+    l_max = largest_label_volume(labels, bg=0)
+    if l_max is not None: # There are air pockets
+        binary_image[labels != l_max] = 0
+    return binary_image
+
+def morph(imgt,k):
+
+    img=imgt.astype('uint8')
+    img[img>0]=200
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(k,k))
+#    kernel = cv2.getStructuringElement(cv2.MORPH_RECT,(k,k))
+    img = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel)
+    img = cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel)  # <- to remove speckles...
+    img = cv2.morphologyEx(img, cv2.MORPH_DILATE, kernel)
+    img = cv2.morphologyEx(img, cv2.MORPH_DILATE, kernel)
+#    img = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel)
+    img = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel)
+    img = cv2.morphologyEx(img, cv2.MORPH_ERODE, kernel)
+    img = cv2.morphologyEx(img, cv2.MORPH_ERODE, kernel)
+    return img
+
+
+def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan):
     """generate patches from dicom files"""
 
     print ('load dicom files for lung in :',fn)
     (top,tail) =os.path.split(fn)
 
     fmbmp=os.path.join(fn,lungname)
+    if not os.path.exists(fmbmp):
+        os.mkdir(fmbmp)       
     fmbmpbmp=os.path.join(fmbmp,lung_namebmp)
-
     remove_folder(fmbmpbmp)
-
     os.mkdir(fmbmpbmp)
 
     listdcm=[name for name in  os.listdir(fmbmp) if name.lower().find('.dcm')>0]
-
+#    print len(listdcm)
     tabscan = np.zeros((slnt,dimtabx,dimtaby), np.uint8)
-
-    for l in listdcm:
-        FilesDCM =(os.path.join(fmbmp,l))
-        RefDs = dicom.read_file(FilesDCM)
-
-        dsr= RefDs.pixel_array
-        dsr= dsr-dsr.min()
-        c=float(255)/dsr.max()
-        dsr=dsr*c
-        dsr=dsr.astype('uint8')
-
-        fxs=float(RefDs.PixelSpacing[0])/avgPixelSpacing
-        imgresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
-
-        slicenumber=int(RefDs.InstanceNumber)
-        endnumslice=l.find('.dcm')
-
-        imgcoreScan=l[0:endnumslice]+'_'+str(slicenumber)+'.'+typei
-        bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
-        scipy.misc.imsave(bmpfile,imgresize)
-
-        tabscan[slicenumber]=imgresize
+    if len(listdcm)>0:  
+        print 'lung scan'
+        
+    
+        for l in listdcm:
+            FilesDCM =(os.path.join(fmbmp,l))
+            RefDs = dicom.read_file(FilesDCM)
+    
+            dsr= RefDs.pixel_array
+            dsr=normi(dsr)
+    
+            fxs=float(RefDs.PixelSpacing[0])/avgPixelSpacing
+            imgresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
+    
+            slicenumber=int(RefDs.InstanceNumber)
+            endnumslice=l.find('.dcm')
+    
+            imgcoreScan=l[0:endnumslice]+'_'+str(slicenumber)+'.'+typei
+            bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
+            scipy.misc.imsave(bmpfile,imgresize)
+    
+            tabscan[slicenumber]=imgresize
+    else:
+            print 'no lung scan'
+            segmented_lungs_fill = segment_lung_mask(tabscanScan, True)
+#            print segmented_lungs_fill.shape
+            for i in range (1,slnt):
+                tabscan[i]=normi(tabscan[i])
+                tabscan[i]=morph(segmented_lungs_fill[i],13)
+                imgcoreScan='lung_'+str(i)+'.'+typei
+                bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
+                cv2.imwrite(bmpfile,tabscan[i])
     return tabscan
 
 def maxproba(proba):
@@ -2023,7 +2116,7 @@ def predictrun(indata,path_patient):
             pickle.dump(datacross, open( os.path.join(path_data_write,datacrossn), "wb" ),protocol=-1)
             pickle.dump(tabscanScan, open( os.path.join(path_data_write,"tabscanScan"), "wb" ),protocol=-1)
             pickle.dump(lungSegment, open( os.path.join(path_data_write,"lungSegment"), "wb" ),protocol=-1)
-#            """
+            """
             datacross= pickle.load( open( os.path.join(path_data_write,"datacross"), "rb" ))
             tabscanScan= pickle.load( open( os.path.join(path_data_write,"tabscanScan"), "rb" ))
             lungSegment= pickle.load( open( os.path.join(path_data_write,"lungSegment"), "rb" ))
@@ -2035,7 +2128,8 @@ def predictrun(indata,path_patient):
             lissln=datacross[4]
 #            """
 #
-            tabscanLung=genebmplung(dirf,lung_name_gen,slnt,dimtabx,dimtabx)
+            tabscanLung=genebmplung(dirf,lung_name_gen,slnt,dimtabx,dimtabx,tabscanScan)
+            
             subpleurmask=subpleural(dirf,tabscanLung,lungSegment,subErosion,'cross')
             pickle.dump(subpleurmask, open( os.path.join(path_data_write,"subpleurmask"), "wb" ),protocol=-1)
             """
