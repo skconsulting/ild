@@ -103,9 +103,9 @@ def predict(btn):
 #    print(app.getListItems("list"))
 #    print(app.getEntry("Percentage of pad Overlapp"))
     indata['thrpatch']=app.getEntry("Percentage of pad Overlapp")
-    indata['thrproba']=app.getEntry("Treshold proba for predicted image generation")
-    indata['thrprobaMerge']=app.getEntry("Treshold proba for merge cross and front view")
-    indata['thrprobaUIP']=app.getEntry("Treshold proba for volume calculation")
+    indata['thrproba']=app.getEntry("Threshold proba for predicted image generation")
+    indata['thrprobaMerge']=app.getEntry("Threshold proba for merge cross and front view")
+    indata['thrprobaUIP']=app.getEntry("Threshold proba for volume calculation")
     indata['threedpredictrequest']=app.getRadioButton("predict_style")
     indata['picklein_file']=app.getEntry("cross view weight")
     indata['picklein_file_front']= app.getEntry("front view weight")
@@ -140,7 +140,7 @@ def visualisation(btn):
 #    print(app.getListItems("list"))
     indata={}
 #    indata['subErosion']= app.getEntry("subErosion in mm")
-    indata['thrprobaUIP']=app.getEntry("Treshold proba for volume calculation")
+    indata['thrprobaUIP']=app.getEntry("Threshold proba")
     indata['lispatientselect']=selectpatient
 
 #    indata['thrpatch']=app.getEntry("Percentage of pad Overlapp")
@@ -343,14 +343,14 @@ def initDraw():
         app.addLabelNumericEntry("Percentage of pad Overlapp",row,0)
         app.setEntry("Percentage of pad Overlapp", thrpatch)
 
-        app.addLabelNumericEntry("Treshold proba for predicted image generation",row,1)
-        app.setEntry("Treshold proba for predicted image generation", thrproba)
+        app.addLabelNumericEntry("Threshold proba for predicted image generation",row,1)
+        app.setEntry("Threshold proba for predicted image generation", thrproba)
         row = app.getRow()
-        app.addLabelNumericEntry("Treshold proba for volume calculation",row,0)
-        app.setEntry("Treshold proba for volume calculation",thrprobaUIP)
+        app.addLabelNumericEntry("Threshold proba for volume calculation",row,0)
+        app.setEntry("Threshold proba for volume calculation",thrprobaUIP)
 
-        app.addLabelNumericEntry("Treshold proba for merge cross and front view",row,1)
-        app.setEntry("Treshold proba for merge cross and front view", thrprobaMerge)
+        app.addLabelNumericEntry("Threshold proba for merge cross and front view",row,1)
+        app.setEntry("Threshold proba for merge cross and front view", thrprobaMerge)
         row = app.getRow()
 
         app.addLabelNumericEntry("subErosion in mm",row,1)
@@ -439,8 +439,8 @@ def visuDraw():
             row = app.getRow() # get current row
 #            app.addLabelNumericEntry("subErosion in mm",row,1)
 #            app.setEntry("subErosion in mm", subErosion)
-            app.addLabelNumericEntry("Treshold proba for volume calculation",row,0)
-            app.setEntry("Treshold proba for volume calculation",thrprobaUIP)
+            app.addLabelNumericEntry("Threshold proba",row,0)
+            app.setEntry("Threshold proba",thrprobaUIP)
            
 #            app.addLabelNumericEntry("Percentage of pad Overlapp")
 #            app.setEntry("Percentage of pad Overlapp", thrpatch)

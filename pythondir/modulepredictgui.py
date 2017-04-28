@@ -320,7 +320,7 @@ def drawpatch(t,dx,dy,slnum,va,patch_list_cross_slice):
 #                print ll1,listlabelaverage[ll1]
                 delx=int(dy*0.6-120)
                 tagviewn(imgn,ll1,str(round(listlabelaverage[ll1],2)),listlabel[ll1],delx,0)
-    ts='Treshold:'+str(t)
+    ts='Threshold:'+str(t)
 
     cv2.putText(imgn,ts,(0,50),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
     return imgn
@@ -565,7 +565,7 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,patch_list_cro
             
             imgtext = np.zeros((dimtabx,dimtaby,3), np.uint8)
             img = np.zeros((dimtabx,dimtaby,3), np.uint8)
-            cv2.putText(imgtext,'Treshold : '+str(tl),(50,50),cv2.FONT_HERSHEY_PLAIN,1,yellow,1,cv2.LINE_AA)
+            cv2.putText(imgtext,'Threshold : '+str(tl),(50,50),cv2.FONT_HERSHEY_PLAIN,1,yellow,1,cv2.LINE_AA)
             if allview==1:
                 for patt in classif:
                     vol=int(dictP[patt]['all'][0]+dictP[patt]['all'][1] *volelem)         

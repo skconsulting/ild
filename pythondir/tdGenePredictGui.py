@@ -444,9 +444,20 @@ def segment_lung_mask(image, fill_lung_structures=True):
     ls1=labels.shape[1]-1
     ls2=labels.shape[2]-1
     for i in range (0,8):
+#        print  'i:',i
 #        print (i/4)%2, (i/2)%2, i%2
-        background_label=labels[(i/4)%2*ls0,(i/2)%2*ls1,i%2*ls2]
-        binary_image[background_label == labels] = 2
+        for j in range (1,3):
+#            print 'j:',j
+#            print labels[(i/4)%2*ls0,(i/2)%2*ls1,i%2*ls2/j]
+#            print (i/4)%2*ls0,(i/2)%2*ls1,i%2*ls2/j
+#            print (i/4)%2*ls0,(i/2)%2*ls1/j,i%2*ls2
+#            print (i/4)%2*ls0/j,(i/2)%2*ls1,i%2*ls2
+            background_label=labels[(i/4)%2*ls0,(i/2)%2*ls1,i%2*ls2/j]
+            binary_image[background_label == labels] = 2
+            background_label=labels[(i/4)%2*ls0,(i/2)%2*ls1/j,i%2*ls2]
+            binary_image[background_label == labels] = 2
+            background_label=labels[(i/4)%2*ls0/j,(i/2)%2*ls1,i%2*ls2]
+            binary_image[background_label == labels] = 2  
 #    for i in range (0,8):
 #        binary_image[background_label == labels] = 2
 #        background_label = labels[labels.shape[0]-1,labels.shape[1]-1,labels.shape[2]-1]
