@@ -384,10 +384,13 @@ def findmaxvolume(dictSurf,poslung):
 #    patmax=''
     patmax=''
     surfmax=0
-    for pat in classif:
-       if dictSurf[pat][poslung]>surfmax:
-           surfmax=dictSurf[pat][poslung]
-           patmax=pat
+    for pat in classif :
+        if pat not in excluvisu:
+#            print pat
+            if dictSurf[pat][poslung]>surfmax:
+                surfmax=dictSurf[pat][poslung]
+#                print surfmax,pat
+                patmax=pat
 
     return surfmax,patmax
 
@@ -458,6 +461,8 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,patch_list_cro
 
     dictPosImage['left']=lung_left
     dictPosImage['right']=lung_right
+    np.putmask( dictPosImage['left'], dictPosImage['left']>0,255)
+    np.putmask( dictPosImage['right'], dictPosImage['right']>0,255)
 
     dictPosImage['left_lower']=lung_lower_left
     dictPosImage['left_middle']=lung_middle_left
@@ -596,7 +601,11 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,patch_list_cro
 #                    nthresh=cv2.bitwise_not(mgray)
 #                    vis1=cv2.bitwise_and(img,img,mask=nthresh)
                     img=cv2.add(img,lungtw)
-                    cv2.putText(imgtext,str(surfmax[i])+'%',(dictPosTextImage[i][0],dictPosTextImage[i][1]),cv2.FONT_HERSHEY_PLAIN,1.2,white,1,)
+#                    cv2.imshow('a',imgbackg)
+#                    cv2.waitKey(0)
+#                    cv2.destroyAllWindows()
+                    cv2.rectangle(imgtext,(dictPosTextImage[i][0],dictPosTextImage[i][1]-15),(dictPosTextImage[i][0]+55,dictPosTextImage[i][1]),white,-1)
+                    cv2.putText(imgtext,str(surfmax[i])+'%',(dictPosTextImage[i][0],dictPosTextImage[i][1]),cv2.FONT_HERSHEY_PLAIN,1.2,grey,1,)
             else:
                 for i in listPosLung:
                     for pat in classif:
@@ -616,13 +625,18 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,patch_list_cro
 #                             nthresh=cv2.bitwise_not(mgray)
 #                             vis1=cv2.bitwise_and(img,img,mask=nthresh)
                              img=cv2.add(img,lungtw)
-                             cv2.putText(imgtext,str(dictSurf[pat][i])+'%',(dictPosTextImage[i][0],dictPosTextImage[i][1]),cv2.FONT_HERSHEY_PLAIN,1.2,white,1,)
+                             cv2.rectangle(imgtext,(dictPosTextImage[i][0],dictPosTextImage[i][1]-15),(dictPosTextImage[i][0]+55,dictPosTextImage[i][1]),white,-1)
+                             cv2.putText(imgtext,str(dictSurf[pat][i])+'%',(dictPosTextImage[i][0],dictPosTextImage[i][1]),cv2.FONT_HERSHEY_PLAIN,1.2,grey,1,)
 #            break
-            imgtext=cv2.add(imgtext,imgbackg)
-            imgtext=cv2.add(imgtext,img)
-            imgtowrite=cv2.cvtColor(imgtext,cv2.COLOR_BGR2RGB)
+            imgtowrite=cv2.add(imgtext,imgbackg)
+            imgray = cv2.cvtColor(imgtowrite,cv2.COLOR_BGR2GRAY)
+            np.putmask(imgray,imgray>0,255)
+            nthresh=cv2.bitwise_not(imgray)
+            vis1=cv2.bitwise_and(img,img,mask=nthresh)
+            imgtowrite=cv2.add(vis1,imgtowrite)
+#            imgtowrite=cv2.add(imgtext,imgtowrite)
+            imgtowrite=cv2.cvtColor(imgtowrite,cv2.COLOR_BGR2RGB)
             cv2.imshow('imageVol',imgtowrite)
-#            cv2.imshow('image',vis1)
 
             if quitl or cv2.waitKey(20) & 0xFF == 27 :
     #            print 'on quitte', quitl

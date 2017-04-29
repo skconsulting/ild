@@ -1780,7 +1780,7 @@ def cvsarea(p, f, de, dse, s, dc, wf):
         st = s[i[0]][0] + s[i[0]][1]
         if st > 0:
             l = 100 * float(d[i[0]][0] + d[i[0]][1]) / st
-            l = round(l, 2)
+            l = round(l, 1)
         else:
             l = 0
         dictint[i[1]] = l
@@ -1797,7 +1797,7 @@ def cvsarea(p, f, de, dse, s, dc, wf):
 #        oo
         if st > 0:
             l = 100 * float(ds[i[0]][0]) / st
-            l = round(l, 2)
+            l = round(l, 1)
         else:
             l = 0
         dictint[i[1]] = l
@@ -1811,7 +1811,7 @@ def cvsarea(p, f, de, dse, s, dc, wf):
         st = s[i[0]][1]
         if st > 0:
             l = 100 * float(ds[i[0]][1]) / st
-            l = round(l, 2)
+            l = round(l, 1)
         else:
             l = 0
         dictint[i[1]] = l
@@ -1825,7 +1825,7 @@ def cvsarea(p, f, de, dse, s, dc, wf):
         st = s[i[0]][0]
         if st > 0:
             l = 100 * float(d[i[0]][0]) / st
-            l = round(l, 2)
+            l = round(l, 1)
         else:
             l = 0
         dictint[i[1]] = l
@@ -1839,7 +1839,7 @@ def cvsarea(p, f, de, dse, s, dc, wf):
         st = s[i[0]][1]
         if st > 0:
             l = 100 * float(d[i[0]][1]) / st
-            l = round(l, 2)
+            l = round(l, 1)
         else:
             l = 0
         dictint[i[1]] = l
