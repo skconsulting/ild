@@ -110,7 +110,7 @@ cwd=os.getcwd()
 
 (cwdtop,tail)=os.path.split(cwd)
 nameHug='HUG'
-subHUG='ILD0'
+subHUG='ILD1'
 path_HUG=os.path.join(cwdtop,nameHug)
 #path_HUG=os.path.join(nameHug,namsubHug)
 namedirtopc =os.path.join(path_HUG,subHUG)
@@ -354,18 +354,47 @@ def create_test_data(namedirtopcf,pat,tabscan,tabsroi,tabslung):
             pos=l.find('.')      
             ext=l[pos:len(l)]
             numslice=rsliceNum(l,'_',ext)
-            scan_list.append(tabscan[numslice])
-            if numslice==10:
-#                cv2.imwrite ('a10.png', tabscan[numslice],[int(cv2.IMWRITE_PNG_COMPRESSION),0])
-                print tabscan[numslice][0][0],tabscan[numslice][140][140]
-                tabl=tabslung[numslice].copy()
-                tabs=tabscan[numslice].copy()
-                print 'lung',tabl[0][0],tabl[320][150]
-                print 'scan',tabs[0][0],tabs[320][150]
+            tabs=tabscan[numslice].copy()
+            tabl=tabslung[numslice].copy()
+            tablc=tabl.copy().astype(np.int16)
+            taba=cv2.bitwise_and(tabs,tabs,mask=tabl)
+            np.putmask(tablc,tablc==0,-1000)
+            np.putmask(tablc,tablc==1,0)
+            tabab=cv2.bitwise_or(taba,tablc)
+            
+            scan_list.append(tabab)  
+            
             lung_list.append(tabslung[numslice])
             img_maskc = cv2.imread(os.path.join(pathpat2, l), 0)
+            maskr=img_maskc.copy()
+            np.putmask(maskr,maskr>0,1)
+            roi=cv2.bitwise_xor(tabl,maskr)
             np.putmask(img_maskc,img_maskc>0,classif[pat])
-            mask_list.append(img_maskc)
+            roif=cv2.bitwise_or(roi,img_maskc)
+            
+            mask_list.append(roif)
+            
+#            if numslice==10:
+#                roim=normi(roi)
+#                cv2.imwrite('a.bmp',roim)
+##                cv2.imwrite ('a10.png', tabscan[numslice],[int(cv2.IMWRITE_PNG_COMPRESSION),0])              
+#                print 'roi',roif[0][0],roif[236][149],roif[350][216],roif.min(),roif.max()
+#                print 'scano',tabs[0][0],tabs[236][149],tabs[350][216],tabs.min(),tabs.max()
+##                print 'and',taba[0][0],taba[320][150],taba.min(),taba.max()
+#                print 'scan',tabab[0][0],tabab[236][149],tabab[350][216],tabab.min(),tabab.max()
+#                s=normi(tabs)
+#                m=normi(maskr)
+#                l1=normi(tabl)
+#                r=normi(roif)
+#                ab=normi(tabab)
+#                cv2.imshow('scan',s)
+#                cv2.imshow('lung',l1)
+#                cv2.imshow('m',m)
+#                cv2.imshow('r',r)
+#                cv2.waitKey(0)
+#                cv2.destroyAllWindows()
+#                           
+            
             if img_maskc.max()>0:
                vis=contour2(img_maskc,pat)
                if vis.sum()>0:
