@@ -3,6 +3,7 @@
 Created on Tue May 02 15:03:33 2017
 
 @author: sylvain
+generate data for segmentation roi
 """
 #from __future__ import print_function
 
@@ -17,14 +18,29 @@ from PIL import Image, ImageFont, ImageDraw
 import cPickle as pickle
 import shutil
 import time
+cwd=os.getcwd()
 
+
+(cwdtop,tail)=os.path.split(cwd)
+nameHug='HUG'
+subHUG='ILD1'
+path_HUG=os.path.join(cwdtop,nameHug)
+#path_HUG=os.path.join(nameHug,namsubHug)
+namedirtopc =os.path.join(path_HUG,subHUG)
+
+toppatch= 'TOPPATCH'
+#extension for output dir
+extendir='essai'
+
+image_rows = 496
+image_cols = 496
 
 classif ={
         'back_ground':0,
-        'consolidation':1,
+        'healthy':1,
         'HC':2,
         'ground_glass':3,
-        'healthy':4,
+        'consolidation':4,
         'micronodules':5,
         'reticulation':6,
         'air_trapping':7,
@@ -105,23 +121,7 @@ classifc ={
  }
 
 
-cwd=os.getcwd()
 
-
-(cwdtop,tail)=os.path.split(cwd)
-nameHug='HUG'
-subHUG='ILD1'
-path_HUG=os.path.join(cwdtop,nameHug)
-#path_HUG=os.path.join(nameHug,namsubHug)
-namedirtopc =os.path.join(path_HUG,subHUG)
-
-toppatch= 'TOPPATCH'
-#extension for output dir
-extendir='essai'
-
-
-image_rows = 496
-image_cols = 496
 
 patchesdirnametop = toppatch+'_'+extendir
 patchtoppath=os.path.join(path_HUG,patchesdirnametop)
@@ -129,8 +129,6 @@ patchpicklename='picklepatches.pkl'
 picklepath = 'picklepatches'
 picklepathdir =os.path.join(patchtoppath,picklepath)
 
-#patchpath = final/patches
-#remove_folder(patchtoppath)
 if not os.path.isdir(patchtoppath):
     os.mkdir(patchtoppath)
 
@@ -153,7 +151,6 @@ font10 = ImageFont.truetype( 'arial.ttf', 10)
 font20 = ImageFont.truetype( 'arial.ttf', 20)
 patchtoppath=os.path.join(path_HUG,patchesdirnametop)
 avgPixelSpacing=0.734
-
 
 
 def rsliceNum(s,c,e):
@@ -323,78 +320,78 @@ def tagview(tab,label,x,y):
     viseg=cv2.putText(tab,label,(x, y+deltay), font,0.3,col,1)
     return viseg
 
+def peparescan(numslice,tabs,tabl):
+    tablc=tabl.copy().astype(np.int16)
+    taba=cv2.bitwise_and(tabs,tabs,mask=tabl)
+    np.putmask(tablc,tablc==0,-1000)
+    np.putmask(tablc,tablc==1,0)
+    tabab=cv2.bitwise_or(taba,tablc)             
+    datascan[numslice]=tabab
+
+
+def preparroi(namedirtopcf):
+    (top,tail)=os.path.split(namedirtopcf)
+    pathpicklepat=os.path.join(picklepathdir,tail)
+    if not os.path.exists (pathpicklepat):
+                os.mkdir(pathpicklepat)
+    
+    for num in numsliceok:
+        scan_list=[]
+        mask_list=[]
+        scan_list.append(datascan[num] )
+        patchpicklenamepatient=str(num)+'_'+patchpicklename        
+        tabl=tabslung[num].copy()
+        pathpicklepatfile=os.path.join(pathpicklepat,patchpicklenamepatient)
+        
+        maskr=tabroi[num].copy()        
+        np.putmask(maskr,maskr>0,1)
+        roi=cv2.bitwise_xor(tabl,maskr)
+        roif=cv2.bitwise_or(roi,tabroi[num])  
+        
+        mask_list.append(roif)
+        patpickle=(scan_list,mask_list)
+        pickle.dump(patpickle, open(pathpicklepatfile, "wb"),protocol=-1)
 
 def create_test_data(namedirtopcf,pat,tabscan,tabsroi,tabslung):
     
     (top,tail)=os.path.split(namedirtopcf)
     print 'create test data for :', tail, 'pattern :',pat
     pathpat=os.path.join(namedirtopcf,pat)
- 
     list_pos=os.listdir(pathpat)
  
-    pathpicklepat=os.path.join(picklepathdir,pat)
-    if not os.path.exists (pathpicklepat):
-        os.mkdir(pathpicklepat)
- 
+
     for d in list_pos:
         print 'localisation : ',d
-        scan_list=[]
-        mask_list=[]
-        lung_list=[]
         pathpat2=os.path.join(pathpat,d)
         list_image=os.listdir(pathpat2)
-        pathpicklepatl=os.path.join(pathpicklepat,d)
-        patchpicklenamepatient=tail+'_'+patchpicklename
-        if not os.path.exists (pathpicklepatl):
-            os.mkdir(pathpicklepatl)
-            
-        pathpicklepatfile=os.path.join(pathpicklepatl,patchpicklenamepatient)
    
         for l in list_image:
             pos=l.find('.')      
             ext=l[pos:len(l)]
             numslice=rsliceNum(l,'_',ext)
-            tabs=tabscan[numslice].copy()
-            tabl=tabslung[numslice].copy()
-            tablc=tabl.copy().astype(np.int16)
-            taba=cv2.bitwise_and(tabs,tabs,mask=tabl)
-            np.putmask(tablc,tablc==0,-1000)
-            np.putmask(tablc,tablc==1,0)
-            tabab=cv2.bitwise_or(taba,tablc)
-            
-            scan_list.append(tabab)  
-            
-            lung_list.append(tabslung[numslice])
+            if numslice not in numsliceok:
+                numsliceok.append(numslice)
+                peparescan(numslice,tabscan[numslice],tabslung[numslice])
+                tabroi[numslice]=np.zeros((tabscan.shape[1],tabscan.shape[2]), np.uint8)
+
+#            tabl=tabslung[numslice].copy()
             img_maskc = cv2.imread(os.path.join(pathpat2, l), 0)
+            
             maskr=img_maskc.copy()
+            roir=tabroi[numslice].copy()
+            
             np.putmask(maskr,maskr>0,1)
-            roi=cv2.bitwise_xor(tabl,maskr)
+            np.putmask(roir,roir>0,1)
+
+            tabroix=cv2.bitwise_xor(maskr,roir)
+            
             np.putmask(img_maskc,img_maskc>0,classif[pat])
-            roif=cv2.bitwise_or(roi,img_maskc)
             
-            mask_list.append(roif)
+            tabroinum=tabroi[numslice]
+            tabroif=cv2.bitwise_and(tabroinum,tabroinum,mask=tabroix)
             
-#            if numslice==10:
-#                roim=normi(roi)
-#                cv2.imwrite('a.bmp',roim)
-##                cv2.imwrite ('a10.png', tabscan[numslice],[int(cv2.IMWRITE_PNG_COMPRESSION),0])              
-#                print 'roi',roif[0][0],roif[236][149],roif[350][216],roif.min(),roif.max()
-#                print 'scano',tabs[0][0],tabs[236][149],tabs[350][216],tabs.min(),tabs.max()
-##                print 'and',taba[0][0],taba[320][150],taba.min(),taba.max()
-#                print 'scan',tabab[0][0],tabab[236][149],tabab[350][216],tabab.min(),tabab.max()
-#                s=normi(tabs)
-#                m=normi(maskr)
-#                l1=normi(tabl)
-#                r=normi(roif)
-#                ab=normi(tabab)
-#                cv2.imshow('scan',s)
-#                cv2.imshow('lung',l1)
-#                cv2.imshow('m',m)
-#                cv2.imshow('r',r)
-#                cv2.waitKey(0)
-#                cv2.destroyAllWindows()
-#                           
-            
+            tabroi[numslice]=cv2.add(tabroif,img_maskc)
+#                                       
             if img_maskc.max()>0:
                vis=contour2(img_maskc,pat)
                if vis.sum()>0:
@@ -406,31 +403,13 @@ def create_test_data(namedirtopcf,pat,tabscan,tabsroi,tabslung):
                 sroifile='sroi_'+str(numslice)+'.'+typei
                 filenamesroi=os.path.join(sroidir,sroifile)
                 cv2.imwrite(filenamesroi,imn)
-        patpickle=(scan_list,mask_list,lung_list)
-        pickle.dump(patpickle, open(pathpicklepatfile, "wb"),protocol=-1)
-
         
-#        readpkl=pickle.load(open(pathpicklepatfile, "rb"))
-#        print len(readpkl)
-#        print len(readpkl[0])
-#        for i in range (len(readpkl[0])):
-#            s=normi(readpkl[0][i])
-#            m=normi(readpkl[1][i])
-#            l=normi(readpkl[2][i])
-#            t=cv2.add(s,m)
-##            cv2.imshow('scan',s)
-#            cv2.imshow('lung',l)
-#            cv2.imshow(str(i)+' '+tail+' '+pat,t)
-#            cv2.waitKey(0)
-#            cv2.destroyAllWindows()
     return tabsroi
-                        
-            
-    
 
 listdirc= (os.listdir(namedirtopc))
 for f in listdirc:
     print('work on:',f)
+    numsliceok=[]
     namedirtopcf=os.path.join(namedirtopc,f)
     sroidir=os.path.join(namedirtopcf,sroi)
     if os.path.exists(sroidir):
@@ -442,7 +421,29 @@ for f in listdirc:
     dimtabx,dimtaby,slnt = genepara(contenudir)
     tabscan,tabsroi,tabslung=genebmp(namedirtopcf,contenudir,slnt,dimtabx,dimtaby)
     contenupat = [name for name in os.listdir(namedirtopcf) if name in classif]
-
+    datascan={}
+    datamask={}
+    tabroi={}
     for pat in contenupat:
         print 'work on :',pat
         tabsroi=create_test_data(namedirtopcf,pat,tabscan,tabsroi,tabslung)
+    preparroi(namedirtopcf)
+    
+#    (top,tail)=os.path.split(namedirtopcf)
+#    pathpicklepat=os.path.join(picklepathdir,tail)
+#    listpkl=os.listdir(pathpicklepat)
+#    for l in listpkl:
+#        readpkl=pickle.load(open(os.path.join(pathpicklepat,l) ,"rb"))
+#        print len(readpkl)
+#        print len(readpkl[0])
+#        for i in range (len(readpkl[0])):
+#            s=normi(readpkl[0][i])
+#            m=normi(readpkl[1][i])
+#    #            l=normi(readpkl[2][i])
+##            t=cv2.add(s,m)
+#            cv2.imshow('scan',s)
+#            cv2.imshow('mask',m)
+##            cv2.imshow(str(i)+' '+tail,t)
+#            cv2.waitKey(0)
+#            cv2.destroyAllWindows()
+#    
