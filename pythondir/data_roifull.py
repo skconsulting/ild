@@ -6,15 +6,12 @@ Created on Tue May 02 15:03:33 2017
 generate data for segmentation roi
 """
 #from __future__ import print_function
-
+from param_pix import *
 import os
 import dicom
 import numpy as np
 import cv2
-#from keras.utils import np_utils
-from skimage.io import imsave, imread
-from skimage.transform import resize
-from PIL import Image, ImageFont, ImageDraw
+ 
 import cPickle as pickle
 import shutil
 import time
@@ -23,104 +20,16 @@ cwd=os.getcwd()
 
 (cwdtop,tail)=os.path.split(cwd)
 nameHug='HUG'
-subHUG='ILD1'
+subHUG='ILD4'
 path_HUG=os.path.join(cwdtop,nameHug)
 #path_HUG=os.path.join(nameHug,namsubHug)
 namedirtopc =os.path.join(path_HUG,subHUG)
 
 toppatch= 'TOPPATCH'
 #extension for output dir
-extendir='essai'
-
-image_rows = 496
-image_cols = 496
-
-classif ={
-        'back_ground':0,
-        'healthy':1,
-        'HC':2,
-        'ground_glass':3,
-        'consolidation':4,
-        'micronodules':5,
-        'reticulation':6,
-        'air_trapping':7,
-        'cysts':8,
-        'bronchiectasis':9,
-#        'emphysema':10,
-        'GGpret':10
-        } 
-
-usedclassif = [
-        'back_ground',
-        'consolidation',
-        'HC',
-        'fibrosis',
-        'ground_glass',
-        'healthy',
-        'micronodules',
-        'reticulation',
-        'air_trapping',
-        'cysts',
-        'bronchiectasis',
-        'emphysema',
-
-        'bronchial_wall_thickening',
-        'early_fibrosis',
-        'increased_attenuation',
-        'macronodules',
-        'pcp',
-        'peripheral_micronodules',
-        'tuberculosis'
-        ]
-
-red=(255,0,0)
-green=(0,255,0)
-blue=(0,0,255)
-yellow=(255,255,0)
-cyan=(0,255,255)
-purple=(255,0,255)
-white=(255,255,255)
-darkgreen=(11,123,96)
-pink =(255,128,255)
-lightgreen=(125,237,125)
-orange=(255,153,102)
-lowgreen=(0,51,51)
-parme=(234,136,222)
-chatain=(139,108,66)
-col1= (142,180,227)
-col2=(155,215,204)
-col3=(214,226,144)
-col4=(234,136,222)
-col5=(218,163,152)
-
-classifc ={
-'back_ground':darkgreen,
-'consolidation':cyan,
-'HC':blue,
-'ground_glass':red,
-'healthy':darkgreen,
-'micronodules':green,
-'reticulation':yellow,
-'air_trapping':pink,
-'cysts':lightgreen,
- 'bronchiectasis':orange,
- 'HCpret': col1,
- 'HCpbro': col2,
- 'GGpbro': col3,
- 'GGpret': col4,
- 'bropret': col5,
- 'nolung': lowgreen,
- 'bronchial_wall_thickening':white,
- 'early_fibrosis':white,
- 'emphysema':white,
- 'increased_attenuation':white,
- 'macronodules':white,
- 'pcp':white,
- 'peripheral_micronodules':white,
- 'tuberculosis':white
- }
-
-
+#extendir='pix1'
+#extendir='essai3'
+extendir=subHUG
 
 
 patchesdirnametop = toppatch+'_'+extendir
@@ -134,44 +43,8 @@ if not os.path.isdir(patchtoppath):
 
 if not os.path.isdir(picklepathdir):
     os.mkdir(picklepathdir)
-#define the name of directory for normalised patches
-#pickle for patches
 
-patchfile='patchfile'
-bmpname='scan_bmp'
-#directory with lung mask dicom
-lungmask='lung_mask'
-#directory to put  lung mask bmp
-lungmaskbmp='scan_bmp'
-typei='jpg' #can be jpg
-sroi='sroi'
-
-font5 = ImageFont.truetype( 'arial.ttf', 5)
-font10 = ImageFont.truetype( 'arial.ttf', 10)
-font20 = ImageFont.truetype( 'arial.ttf', 20)
 patchtoppath=os.path.join(path_HUG,patchesdirnametop)
-avgPixelSpacing=0.734
-
-
-def rsliceNum(s,c,e):
-    endnumslice=s.find(e)
-    if endnumslice <0:
-        return -1
-    else:
-        posend=endnumslice
-        while s.find(c,posend)==-1:
-            posend-=1
-        debnumslice=posend+1
-        return int((s[debnumslice:endnumslice]))
-    
-def remove_folder(path):
-    """to remove folder"""
-    # check if folder exists
-    if os.path.exists(path):
-#         print 'path exist'
-         # remove if exists
-         shutil.rmtree(path)
-# Now the directory is empty of files
 
 def genepara(fileList):
     fileList =[name for name in  os.listdir(namedirtopcf) if ".dcm" in name.lower()]
@@ -192,15 +65,6 @@ def genepara(fileList):
     dimtabx=int(dsrresize.shape[0])
     dimtaby=int(dsrresize.shape[1])
     return dimtabx,dimtaby,slnt
-
-def normi(img):
-     tabi1=img-img.min()
-     maxt=float(tabi1.max())
-     if maxt==0:
-         maxt=1
-     tabi2=tabi1*(255/maxt)
-     tabi2=tabi2.astype('uint8')
-     return tabi2
 
 def tagviews(tab,text,x,y):
     """write simple text in image """
@@ -341,13 +205,22 @@ def preparroi(namedirtopcf):
         scan_list.append(datascan[num] )
         patchpicklenamepatient=str(num)+'_'+patchpicklename        
         tabl=tabslung[num].copy()
+        np.putmask(tabl,tabl>0,1)
+        
         pathpicklepatfile=os.path.join(pathpicklepat,patchpicklenamepatient)
         
-        maskr=tabroi[num].copy()        
-        np.putmask(maskr,maskr>0,1)
-        roi=cv2.bitwise_xor(tabl,maskr)
-        roif=cv2.bitwise_or(roi,tabroi[num])  
+        maskr=tabroi[num].copy()   
+#        print 'maskr',maskr.min(),maskr.max()
+#        maskrc=maskr.copy()
+
+        np.putmask(maskr,maskr>0,255)
         
+        maskr=np.bitwise_not(maskr)          
+        
+        roi=cv2.bitwise_and(tabl,tabl,mask=maskr)
+        
+        roif=cv2.add(roi,tabroi[num]) 
+
         mask_list.append(roif)
         patpickle=(scan_list,mask_list)
         pickle.dump(patpickle, open(pathpicklepatfile, "wb"),protocol=-1)
@@ -359,7 +232,6 @@ def create_test_data(namedirtopcf,pat,tabscan,tabsroi,tabslung):
     pathpat=os.path.join(namedirtopcf,pat)
     list_pos=os.listdir(pathpat)
  
-
     for d in list_pos:
         print 'localisation : ',d
         pathpat2=os.path.join(pathpat,d)
@@ -375,25 +247,41 @@ def create_test_data(namedirtopcf,pat,tabscan,tabsroi,tabslung):
                 tabroi[numslice]=np.zeros((tabscan.shape[1],tabscan.shape[2]), np.uint8)
 
 #            tabl=tabslung[numslice].copy()
-            img_maskc = cv2.imread(os.path.join(pathpat2, l), 0)
-            
-            maskr=img_maskc.copy()
-            roir=tabroi[numslice].copy()
-            
-            np.putmask(maskr,maskr>0,1)
-            np.putmask(roir,roir>0,1)
+#            np.putmask(tabl,tabl>0,1)
 
-            tabroix=cv2.bitwise_xor(maskr,roir)
+            newroi = cv2.imread(os.path.join(pathpat2, l), 0)            
+            newroic=newroi.copy()
+            np.putmask(newroic,newroic>0,1)            
+
+            oldroi=tabroi[numslice].copy().astype(np.uint8)
+            tabroinum=oldroi.copy()
+            np.putmask(oldroi,oldroi>0,255)
+           
+            oldroi=np.bitwise_not(oldroi)          
+#            np.putmask(oldroi,oldroi<255,0)
+           
             
-            np.putmask(img_maskc,img_maskc>0,classif[pat])
+            tabroix=cv2.bitwise_and(newroic,newroic,mask=oldroi)
             
-            tabroinum=tabroi[numslice]
-            tabroif=cv2.bitwise_and(tabroinum,tabroinum,mask=tabroix)
+            np.putmask(newroi,newroi>0,classif[pat])
             
-            tabroi[numslice]=cv2.add(tabroif,img_maskc)
+            tabroif=cv2.bitwise_and(newroi,newroi,mask=tabroix)
+            tabroif=cv2.add(tabroif,tabroinum)
+            tabroi[numslice]=tabroif
+#            o=normi(oldroi)
+#            n=normi(newroi)
+#            x=normi(tabroix)
+#            f=normi(tabroif)
+#            cv2.imshow('oldroi',o)
+#            cv2.imshow('newroi',n)
+#            cv2.imshow('tabroix',x)
+#            cv2.imshow('tabroif',f)
+#            cv2.waitKey(0)
+#            cv2.destroyAllWindows()
+                
 #                                       
-            if img_maskc.max()>0:
-               vis=contour2(img_maskc,pat)
+            if newroi.max()>0:
+               vis=contour2(newroi,pat)
                if vis.sum()>0:
                 _tabsroi = np.copy(tabsroi[numslice])
                 imn=cv2.add(vis,_tabsroi)
@@ -429,21 +317,3 @@ for f in listdirc:
         tabsroi=create_test_data(namedirtopcf,pat,tabscan,tabsroi,tabslung)
     preparroi(namedirtopcf)
     
-#    (top,tail)=os.path.split(namedirtopcf)
-#    pathpicklepat=os.path.join(picklepathdir,tail)
-#    listpkl=os.listdir(pathpicklepat)
-#    for l in listpkl:
-#        readpkl=pickle.load(open(os.path.join(pathpicklepat,l) ,"rb"))
-#        print len(readpkl)
-#        print len(readpkl[0])
-#        for i in range (len(readpkl[0])):
-#            s=normi(readpkl[0][i])
-#            m=normi(readpkl[1][i])
-#    #            l=normi(readpkl[2][i])
-##            t=cv2.add(s,m)
-#            cv2.imshow('scan',s)
-#            cv2.imshow('mask',m)
-##            cv2.imshow(str(i)+' '+tail,t)
-#            cv2.waitKey(0)
-#            cv2.destroyAllWindows()
-#    
