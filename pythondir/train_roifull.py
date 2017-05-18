@@ -19,15 +19,20 @@ from keras.callbacks import ModelCheckpoint
 from keras import backend as K
 import sklearn.metrics as metrics
 from keras.models import load_model
-#K.set_image_dim_ordering('th') 
-#K.set_image_data_format('channels_first')
-K.set_image_data_format('channels_last')  # TF dimension ordering in this code
 import cPickle as pickle
+import datetime
 print keras.__version__
 print theano.__version__
 
-pickel_dirsource='pickle_ILD4'
+t = datetime.datetime.now()
+today = str('_'+str(t.month)+'-'+str(t.day)+'-'+str(t.year)+'_'+str(t.hour)+'_'+str(t.minute))
+maxepoch=2
+
+K.set_image_data_format('channels_last')  # TF dimension ordering in this code
+
+pickel_dirsource='pickle_ILD0'
 pickel_train=pickel_dirsource
+ 
 
 cwd=os.getcwd()
 
@@ -38,6 +43,8 @@ pickle_dir_train=os.path.join(cwdtop,pickel_train)
 def load_train_data(numpidir):
     X_train = pickle.load( open( os.path.join(numpidir,"X_train.pkl"), "rb" ))
     y_train = pickle.load( open( os.path.join(numpidir,"y_train.pkl"), "rb" ))
+    X_test = pickle.load( open( os.path.join(numpidir,"X_test.pkl"), "rb" ))
+    y_test = pickle.load( open( os.path.join(numpidir,"y_test.pkl"), "rb" ))
     class_weights=pickle.load(open( os.path.join(numpidir,"class_weights.pkl"), "rb" ))
     num_class= y_train.shape[3]
     img_rows=y_train.shape[1]
@@ -50,59 +57,60 @@ def load_train_data(numpidir):
     print 'weights for classes:'
     for i in range (0,num_class):
                     print i, clas_weigh_l[i]
-   
-    return X_train, y_train,num_class,img_rows,img_cols,num_images,clas_weigh_l
-
+  
+    return X_train, y_train, X_test, y_test,num_class,img_rows,img_cols,num_images,clas_weigh_l
+ 
 
 coefcon={}
 coefcon[1]=32 #32 for 320
+#coefcon[1]=4 #32 for 320
 for i in range (2,6):
     coefcon[i]=coefcon[i-1]*2
 print coefcon
 
-
 def get_unet(num_class,img_rows,img_cols):
+    kernel_size=(3,3)
     inputs = Input((img_rows, img_cols, 1))
-    conv1 = Conv2D(coefcon[1], (3, 3), activation='relu', padding='same')(inputs)
-    conv1 = Conv2D(coefcon[1], (3, 3), activation='relu', padding='same')(conv1)
+    conv1 = Conv2D(coefcon[1], kernel_size, activation='relu', padding='same')(inputs)
+    conv1 = Conv2D(coefcon[1], kernel_size, activation='relu', padding='same')(conv1)
     pool1 = MaxPooling2D(pool_size=(2, 2))(conv1)
 
-    conv2 = Conv2D(coefcon[2], (3, 3), activation='relu', padding='same')(pool1)
-    conv2 = Conv2D(coefcon[2], (3, 3), activation='relu', padding='same')(conv2)
+    conv2 = Conv2D(coefcon[2], kernel_size, activation='relu', padding='same')(pool1)
+    conv2 = Conv2D(coefcon[2], kernel_size, activation='relu', padding='same')(conv2)
     pool2 = MaxPooling2D(pool_size=(2, 2))(conv2)
 
-    conv3 = Conv2D(coefcon[3], (3, 3), activation='relu', padding='same')(pool2)
-    conv3 = Conv2D(coefcon[3], (3, 3), activation='relu', padding='same')(conv3)
+    conv3 = Conv2D(coefcon[3], kernel_size, activation='relu', padding='same')(pool2)
+    conv3 = Conv2D(coefcon[3], kernel_size, activation='relu', padding='same')(conv3)
     pool3 = MaxPooling2D(pool_size=(2, 2))(conv3)
 
-    conv4 = Conv2D(coefcon[4], (3, 3), activation='relu', padding='same')(pool3)
-    conv4 = Conv2D(coefcon[4], (3, 3), activation='relu', padding='same')(conv4)
+    conv4 = Conv2D(coefcon[4], kernel_size, activation='relu', padding='same')(pool3)
+    conv4 = Conv2D(coefcon[4], kernel_size, activation='relu', padding='same')(conv4)
     pool4 = MaxPooling2D(pool_size=(2, 2))(conv4)
 
-    conv5 = Conv2D(coefcon[5], (3, 3), activation='relu', padding='same')(pool4)
-    conv5 = Conv2D(coefcon[5], (3, 3), activation='relu', padding='same')(conv5)
+    conv5 = Conv2D(coefcon[5], kernel_size, activation='relu', padding='same')(pool4)
+    conv5 = Conv2D(coefcon[5], kernel_size, activation='relu', padding='same')(conv5)
 #    print conv5.shape
 
     up6 = concatenate([UpSampling2D(size=(2, 2))(conv5), conv4],axis=3)
 #    up6 = concatenate([conv5, conv4],axis=3)
  
-    conv6 = Conv2D(coefcon[4], (3, 3), activation='relu', padding='same')(up6)
-    conv6 = Conv2D(coefcon[4], (3, 3), activation='relu', padding='same')(conv6)
+    conv6 = Conv2D(coefcon[4], kernel_size, activation='relu', padding='same')(up6)
+    conv6 = Conv2D(coefcon[4], kernel_size, activation='relu', padding='same')(conv6)
 
     up7 = concatenate([UpSampling2D(size=(2, 2))(conv6), conv3], axis=3)
 
-    conv7 = Conv2D(coefcon[3], (3, 3), activation='relu', padding='same')(up7)
-    conv7 = Conv2D(coefcon[3], (3, 3), activation='relu', padding='same')(conv7)
+    conv7 = Conv2D(coefcon[3], kernel_size, activation='relu', padding='same')(up7)
+    conv7 = Conv2D(coefcon[3], kernel_size, activation='relu', padding='same')(conv7)
 
     up8 = concatenate([UpSampling2D(size=(2, 2))(conv7), conv2], axis=3)
-    conv8 = Conv2D(coefcon[2], (3, 3), activation='relu', padding='same')(up8)
-    conv8 = Conv2D(coefcon[2], (3, 3), activation='relu', padding='same')(conv8)
+    conv8 = Conv2D(coefcon[2],kernel_size, activation='relu', padding='same')(up8)
+    conv8 = Conv2D(coefcon[2], kernel_size, activation='relu', padding='same')(conv8)
 
     up9 = concatenate([UpSampling2D(size=(2, 2))(conv8), conv1], axis=3)
-    conv9 = Conv2D(coefcon[1], (3, 3), activation='relu', padding='same')(up9)
-    conv9 = Conv2D(coefcon[1], (3, 3), activation='relu', padding='same')(conv9)
+    conv9 = Conv2D(coefcon[1], kernel_size, activation='relu', padding='same')(up9)
+    conv9 = Conv2D(coefcon[1], kernel_size, activation='relu', padding='same')(conv9)
 
-    conv10 = Conv2D(int(num_class), (1, 1), activation='softmax')(conv9)
+    conv10 = Conv2D(int(num_class), (1,1), activation='softmax')(conv9)
 #    conv11 =Reshape((3, 3))(conv10)
 #    conv12 =Activation('softmax')(conv11)
 
@@ -110,7 +118,7 @@ def get_unet(num_class,img_rows,img_cols):
 
 #    model.compile(optimizer=Adam(lr=1e-5), loss=dice_coef_loss, metrics=[dice_coef])
 #    model.compile(optimizer=Adam(lr=1e-5), loss='categorical_crossentropy', metrics=['categorical_accuracy'])
-    model.compile(optimizer='Adam', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
+    model.compile(optimizer=Adam(lr=1e-5), loss='categorical_crossentropy', metrics=['categorical_accuracy'])
 
 #    model.compile(optimizer=Adagrad, loss='binary_crossentropy',
 #               metrics=['accuracy'])
@@ -118,10 +126,13 @@ def get_unet(num_class,img_rows,img_cols):
 
 
 
-def evaluate(actual,pred):
+def evaluate(actual,pred,num_class):
     fscore = metrics.f1_score(actual, pred, average='macro')
     acc = metrics.accuracy_score(actual, pred)
-    cm = metrics.confusion_matrix(actual,pred)
+    labl=[]
+    for i in range(num_class):
+        labl.append(i)
+    cm = metrics.confusion_matrix(actual,pred,labels=labl)
     return fscore, acc, cm
 
 def load_model_set(pickle_dir_train):
@@ -149,7 +160,11 @@ def load_model_set(pickle_dir_train):
     model=load_model(namelastc)
     return model
 
+def store_model(model):
 
+#    open('../pickle/ILD_CNN_model.json', 'w').write(json_string)
+    name_model=os.path.join('../pickle',str(today)+'_Pixelmap_CNN_model.hdf5')
+    model.save(name_model)
 
 def train():
     
@@ -165,13 +180,15 @@ def train():
     
 #        print numpi, numpidirb
         numpidir =os.path.join(pickle_dir,numpi)
-        X_train, y_train,num_class,img_rows,img_cols,num_images,class_weights = load_train_data(numpidir)
+        x_train, y_train, x_val, y_val, num_class,img_rows,img_cols,num_images,class_weights = load_train_data(numpidir)
         
 #        print num_class
         
         if fp:
-            print 'shape X_train :',X_train.shape
+            print 'shape x_train :',x_train.shape
             print 'shape y_train :',y_train.shape
+            print 'shape x_val :',x_val.shape
+            print 'shape y_val :',y_val.shape
             print('-'*30)
             print 'number of images:', num_images
             print 'number of classes:', num_class
@@ -196,11 +213,63 @@ def train():
         numpidirb=os.path.join(pickle_dir,numpi)
         
         model_checkpoint = ModelCheckpoint(os.path.join(numpidir,'weights.{epoch:02d}-{val_loss:.2f}.hdf5'), monitor='val_loss', save_best_only=True)
-    
+        rese=os.path.join('../pickle',str(today)+'_e.csv')
+        resBest=os.path.join('../pickle',str(today)+'_Best.csv')
+        open(rese, 'a').write('Epoch, Val_fscore, Val_acc, Train_loss, Val_loss\n')
+        open(resBest, 'a').write('Epoch, Val_fscore, Val_acc, Train_loss, Val_loss\n')
+
         print('-'*30)
         print('Fitting model...')
         print('-'*30)
-        model.fit(X_train, y_train, batch_size=1, epochs=20, verbose=1, shuffle=True,
-                  validation_split=0.2,  callbacks=[model_checkpoint],class_weight=class_weights)
+        
+        tolerance =1.005
+
+        maxf         = 0
+        maxacc       = 0
+        maxit        = 0
+        maxtrainloss = 0
+        maxvaloss    = np.inf
+        best_model   = model
+        it           = 0    
+        p            = 0
+        while p < maxepoch:
+            p += 1
+            print('Epoch: ' + str(it))
+            history= model.fit(x_train, y_train, batch_size=1, epochs=1, verbose =1,
+                      validation_data=(x_val,y_val), shuffle=True,callbacks=[model_checkpoint],class_weight=class_weights)
+            print('Predict model...')
+            print('-'*30)
+            y_score = model.predict(x_val, batch_size=3)
+            yvf= np.argmax(y_val, axis=3).flatten()
+#            print yvf[0]
+            ysf=  np.argmax(y_score, axis=3).flatten()   
+#            print ysf[0]     
+#            print type(ysf[0])                
+#            print(history.history.keys())
+            fscore, acc, cm = evaluate(yvf,ysf,num_class)
+            print('Val F-score: '+str(fscore)+'\tVal acc: '+str(acc))         
+            open(rese, 'a').write(str(str(it)+', '+str(fscore)+', '+str(acc)+', '+str(np.max(history.history['loss']))+', '+str(np.max(history.history['val_loss']))+'\n'))
+
+        # check if current state of the model is the best and write evaluation metrics to file
+            if fscore > maxf*tolerance:  # if fscore > maxf*params['tolerance']:
+                print 'fscore is bigger than last iterations + 5%'
+                #p            = 0  # restore patience counter
+                best_model   = model  # store current model state
+                maxf         = fscore 
+                maxacc       = acc
+                maxit        = it
+                maxtrainloss = np.max(history.history['loss'])
+                maxvaloss    = np.max(history.history['val_loss'])
+    
+    #            print(np.round(100*cm/np.sum(cm,axis=1)))
+    #            print 'cm'
+    #            print cm
+    #            print 'cmfloat'
+                print(np.round(100.0*cm/np.sum(cm,axis=1).astype(float),1))
+    
+    
+                open(resBest, 'a').write(str(str(maxit)+', '+str(maxf)+', '+str(maxacc)+', '+str(maxtrainloss)+', '+str(maxvaloss)+'\n'))
+                store_model(best_model)
+            it += 1
         
 train()

@@ -8,8 +8,10 @@ import os
 import shutil
 #from __future__ import print_function
 
-image_rows = 496
-image_cols = 496
+image_rows = 512
+image_cols = 512
+image_rows = 400
+image_cols = 400
 
 MIN_BOUND = -1000.0
 MAX_BOUND = 400.0
@@ -24,7 +26,7 @@ lungmaskbmp='scan_bmp'
 
 typei='jpg' #can be jpg
 sroi='sroi'
-avgPixelSpacing=0.734
+#avgPixelSpacing=0.734
 
 black=(0,0,0)
 red=(255,0,0)
@@ -57,7 +59,7 @@ classif ={
         'GGpret':10
         } 
 classifnotvisu=['back_ground','healthy']
-#classifnotvisu=['']
+classifnotvisu=['back_ground']
 
 classifc ={
     'back_ground':chatain,
@@ -72,8 +74,6 @@ classifc ={
     'bronchiectasis':orange,
     'emphysema':chatain,
     'GGpret': parme,
-
-
 
      'nolung': lowgreen,
      'bronchial_wall_thickening':white,

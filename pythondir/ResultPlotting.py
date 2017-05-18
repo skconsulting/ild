@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 cwd=os.getcwd()
 (cwdtop,tail)=os.path.split(cwd)
 #print cwd
-namedirtop='pickle_ex/pickle_ex71'
+#namedirtop='pickle_ex/pickle_ex71'
 namedirtop='pickle'
 pfile = os.path.join(cwdtop,namedirtop)
 print pfile
@@ -25,10 +25,10 @@ for f in fileis:
        
 #       if ".csv" in f.lower():
 #           print f
-           if f.find("Best")>0  and f.find ("res")==0:
+           if f.find("Best")>0  :
 #               print 'best:', f
                fb= f
-           elif f.find("res")==0:
+           else:
 #               print 'all:',f
 
                ft=f

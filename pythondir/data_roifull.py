@@ -17,10 +17,9 @@ import shutil
 import time
 cwd=os.getcwd()
 
-
 (cwdtop,tail)=os.path.split(cwd)
 nameHug='HUG'
-subHUG='ILD4'
+subHUG='ILD0'
 path_HUG=os.path.join(cwdtop,nameHug)
 #path_HUG=os.path.join(nameHug,namsubHug)
 namedirtopc =os.path.join(path_HUG,subHUG)
@@ -57,14 +56,7 @@ def genepara(fileList):
             slnt=scanNumber
     print 'number of slices', slnt
     slnt=slnt+1
-    fxs=float(RefDs.PixelSpacing[0])/avgPixelSpacing
-    dsr= RefDs.pixel_array
-    dsr= dsr-dsr.min()
-    dsr=dsr.astype('uint16')
-    dsrresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
-    dimtabx=int(dsrresize.shape[0])
-    dimtaby=int(dsrresize.shape[1])
-    return dimtabx,dimtaby,slnt
+    return slnt
 
 def tagviews(tab,text,x,y):
     """write simple text in image """
@@ -72,7 +64,7 @@ def tagviews(tab,text,x,y):
     viseg=cv2.putText(tab,text,(x, y), font,0.3,white,1)
     return viseg
  
-def genebmp(dirName,fileList,slnt,dimtabx,dimtaby):
+def genebmp(dirName,fileList,slnt):
     """generate patches from dicom files and sroi"""
     print ('generate  bmp files from dicom files in :',f)
     (top,tail)=os.path.split(dirName)
@@ -88,19 +80,17 @@ def genebmp(dirName,fileList,slnt,dimtabx,dimtaby):
     
     lunglist = [name for name in os.listdir(lung_dir) if ".dcm" in name.lower()]
 
-    tabscan=np.zeros((slnt,dimtabx,dimtaby),np.int16)
-    tabslung=np.zeros((slnt,dimtabx,dimtaby),np.uint8)
-    tabsroi=np.zeros((slnt,dimtabx,dimtaby,3),np.uint8)
+    tabscan=np.zeros((slnt,image_rows,image_cols),np.int16)
+    tabslung=np.zeros((slnt,image_rows,image_cols),np.uint8)
+    tabsroi=np.zeros((slnt,image_rows,image_cols,3),np.uint8)
 #    os.listdir(lung_dir)
     for filename in fileList:
 #            print(filename)
-#        if ".dcm" in filename.lower():  # check whether the file's DICOM
             FilesDCM =(os.path.join(dirName,filename))
             RefDs = dicom.read_file(FilesDCM)
             dsr= RefDs.pixel_array
             dsr=dsr.astype('int16')
-            fxs=float(RefDs.PixelSpacing[0])/avgPixelSpacing
-#                print 'fxs',fxs
+
             scanNumber=int(RefDs.InstanceNumber)
             endnumslice=filename.find('.dcm')
             imgcoredeb=filename[0:endnumslice]+'_'+str(scanNumber)+'.'
@@ -115,8 +105,9 @@ def genebmp(dirName,fileList,slnt,dimtabx,dimtaby):
 
             dsr += np.int16(intercept)
             dsr = dsr.astype('int16')
-#                        print dsr.min(),dsr.max(),dsr.shape
-            dsr=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
+
+            dsr=cv2.resize(dsr,(image_cols, image_rows),interpolation=cv2.INTER_LINEAR)
+
             dsrforimage=normi(dsr)
 
             tabscan[scanNumber]=dsr
@@ -142,7 +133,7 @@ def genebmp(dirName,fileList,slnt,dimtabx,dimtaby):
                 RefDs = dicom.read_file(FilesDCM)
                 dsr= RefDs.pixel_array
                 dsr=dsr.astype('int16')
-                fxs=float(RefDs.PixelSpacing[0])/avgPixelSpacing
+#                fxs=float(RefDs.PixelSpacing[0])/avgPixelSpacing
 #                print 'fxs',fxs
                 scanNumber=int(RefDs.InstanceNumber)
                 endnumslice=filename.find('.dcm')
@@ -150,7 +141,8 @@ def genebmp(dirName,fileList,slnt,dimtabx,dimtaby):
                 imgcore=imgcoredeb+typei
                 bmpfile=os.path.join(lung_bmp_dir,imgcore)
                 dsr=normi(dsr)
-                dsrresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
+                dsrresize=cv2.resize(dsr,(image_cols, image_rows),interpolation=cv2.INTER_LINEAR)
+
                 cv2.imwrite (bmpfile, dsrresize)
 #                np.putmask(dsrresize,dsrresize==1,0)
                 np.putmask(dsrresize,dsrresize>0,1)
@@ -160,7 +152,7 @@ def genebmp(dirName,fileList,slnt,dimtabx,dimtaby):
 
 def contour2(im,l):
     col=classifc[l]
-    vis = np.zeros((dimtabx,dimtaby,3), np.uint8)
+    vis = np.zeros((image_rows,image_cols,3), np.uint8)
 #    im=im.astype('uint8')
     ret,thresh = cv2.threshold(im,0,255,0)
     im2,contours0, hierarchy = cv2.findContours(thresh,cv2.RETR_TREE,\
@@ -174,12 +166,9 @@ def tagview(tab,label,x,y):
     font = cv2.FONT_HERSHEY_SIMPLEX
     col=classifc[label]
     labnow=classif[label]
-#    print (labnow, text)
-    if label == 'back_ground':
-        deltay=30
-    else:
-#        deltay=25*((labnow-1)%5)
-        deltay=40+10*(labnow-1)
+
+ 
+    deltay=40+10*labnow
 
     viseg=cv2.putText(tab,label,(x, y+deltay), font,0.3,col,1)
     return viseg
@@ -222,7 +211,20 @@ def preparroi(namedirtopcf):
         roif=cv2.add(roi,tabroi[num]) 
 
         mask_list.append(roif)
+#        if num==13:
+#            o=normi(roif)
+#            n=normi(datascan[num] )
+##            x=normi(tabroix)
+##            f=normi(tabroif)
+#            cv2.imshow('roif',o)
+#            cv2.imshow('datascan[num] ',n)
+##            cv2.imshow('tabroix',x)
+##            cv2.imshow('tabroif',f)
+#            cv2.waitKey(0)
+#            cv2.destroyAllWindows()
+            
         patpickle=(scan_list,mask_list)
+#        print len(scan_list)
         pickle.dump(patpickle, open(pathpicklepatfile, "wb"),protocol=-1)
 
 def create_test_data(namedirtopcf,pat,tabscan,tabsroi,tabslung):
@@ -249,7 +251,8 @@ def create_test_data(namedirtopcf,pat,tabscan,tabsroi,tabslung):
 #            tabl=tabslung[numslice].copy()
 #            np.putmask(tabl,tabl>0,1)
 
-            newroi = cv2.imread(os.path.join(pathpat2, l), 0)            
+            newroi = cv2.imread(os.path.join(pathpat2, l), 0) 
+            newroi=cv2.resize(newroi,(image_cols, image_rows),interpolation=cv2.INTER_LINEAR)
             newroic=newroi.copy()
             np.putmask(newroic,newroic>0,1)            
 
@@ -258,8 +261,6 @@ def create_test_data(namedirtopcf,pat,tabscan,tabsroi,tabslung):
             np.putmask(oldroi,oldroi>0,255)
            
             oldroi=np.bitwise_not(oldroi)          
-#            np.putmask(oldroi,oldroi<255,0)
-           
             
             tabroix=cv2.bitwise_and(newroic,newroic,mask=oldroi)
             
@@ -306,8 +307,8 @@ for f in listdirc:
     os.mkdir(sroidir)
     contenudir = [name for name in os.listdir(namedirtopcf) if name.find('.dcm')>0]
 
-    dimtabx,dimtaby,slnt = genepara(contenudir)
-    tabscan,tabsroi,tabslung=genebmp(namedirtopcf,contenudir,slnt,dimtabx,dimtaby)
+    slnt = genepara(contenudir)
+    tabscan,tabsroi,tabslung=genebmp(namedirtopcf,contenudir,slnt)
     contenupat = [name for name in os.listdir(namedirtopcf) if name in classif]
     datascan={}
     datamask={}

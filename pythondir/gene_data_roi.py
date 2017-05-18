@@ -11,14 +11,21 @@ from param_pix import *
 import os
 import cv2
 import numpy as np
+import keras
+import theano
 from keras.utils import np_utils
 import cPickle as pickle
 import collections
+from sklearn.utils import class_weight
+from sklearn.model_selection import train_test_split
 
+
+print keras.__version__
+print theano.__version__
 nameHug='HUG'
 toppatch= 'TOPPATCH'
 #extension for output dir
-extendir='ILD4'
+extendir='ILD0'
 pklnum=1
 #extendir='pix1'
 pickel_dirsource_root='pickle'
@@ -74,17 +81,32 @@ def readclasses1(usedpatient):
                                 
                 scan=readpkl[0][i]
                 mask=readpkl[1][i]    
+#                if numslice=='13':
+#                    o=normi(mask)
+#                    n=normi(scan )
+#        #            x=normi(tabroix)
+#        #            f=normi(tabroif)
+#                    cv2.imshow('roif',o)
+#                    cv2.imshow('datascan[num] ',n)
+#        #            cv2.imshow('tabroix',x)
+#        #            cv2.imshow('tabroif',f)
+#                    cv2.waitKey(0)
+#                    cv2.destroyAllWindows()
                            
-                scanr=cv2.resize(scan,(image_cols, image_rows),interpolation=cv2.INTER_LINEAR)
-                maskr=cv2.resize(mask,(image_cols, image_rows),interpolation=cv2.INTER_LINEAR)
+#                scanr=cv2.resize(scan,(image_cols, image_rows),interpolation=cv2.INTER_LINEAR)
+#                maskr=cv2.resize(mask,(image_cols, image_rows),interpolation=cv2.INTER_LINEAR)
 #                print scanr.min(),scanr.max()
-                scanm=norm(scanr)
+                scanm=norm(scan)
 #                print scanm.min(),scanm.max()
                 patch_list.append(scanm)
-                label_list.append(maskr)
+                label_list.append(mask)
   
 #   y_train = np.array(label_list)
+
     y_train = np.array(label_list)
+#    y_flatten=y_train.flatten()
+#    class_weight2 = class_weight.compute_class_weight('balanced', np.unique(y_flatten), y_flatten)
+#    print 'class_weight2',class_weight2
     uniquelbls = np.unique(y_train)
     for pat in uniquelbls:
 #        print pat
@@ -105,79 +127,39 @@ def numbclasses(y):
     print ('number of classes :', int(nb_classes)) 
     y_flatten=y_train.flatten()
     class_weights= get_class_weights(y_flatten)
+#    class_weights[0]=class_weights[0]/10
+#    class_weights[1]=class_weights[1]/10
+    
     return int(nb_classes),class_weights
 
 def readclasses2(num_classes,X_trainl,y_trainl):
-    
-    X_train = np.asarray(np.expand_dims(X_trainl,3))           
 
-    y_train = np.array(y_trainl)
-    lyt=y_train.shape[0]-1
+    X_traini, X_testi, y_traini, y_testi = train_test_split(X_trainl,
+                                        y_trainl,test_size=0.2, random_state=42)
+    
+    X_train = np.asarray(np.expand_dims(X_traini,3)) 
+    X_test = np.asarray(np.expand_dims(X_testi,3))           
+
+    y_train = np.array(y_traini)
+    y_test = np.array(y_testi)
+     
+    lytrain=y_train.shape[0]-1
+    lytest=y_test.shape[0]-1
     
     ytrainr=np.zeros((y_train.shape[0],image_rows, image_cols,int(num_classes)),np.uint8)
+    ytestr=np.zeros((y_test.shape[0],image_rows, image_cols,int(num_classes)),np.uint8)
 
-    for i in range (lyt):
+    for i in range (lytrain):
         for j in range (0,image_rows):
-                ytrainr[i][j] = np_utils.to_categorical(y_train[i][j], num_classes)        
+            ytrainr[i][j] = np_utils.to_categorical(y_train[i][j], num_classes)
+
+    for i in range (lytest):
+        for j in range (0,image_rows):
+            ytestr[i][j] = np_utils.to_categorical(y_test[i][j], num_classes)
 
 #    print class_weights
-    return X_train, ytrainr       
+    return X_train, X_test, ytrainr, ytestr       
    
-def readclasses(usedpatient):
-    patch_list=[]
-    label_list=[]
-
-    for category in usedpatient:
-        category_dir = os.path.join(picklepathdir, category)
-        print  'work on: ', category
-        image_files = [name for name in os.listdir(category_dir) if name.find('.pkl') > 0 ]
-        for filei in image_files:
-            pos=filei.find('_')
-            numslice=filei[0:pos]
-#            usedpatient[category]=usedpatient[category]+1
-            usedpatientlist[category].append(numslice)
-            readpkl=pickle.load(open(os.path.join(category_dir,filei), "rb"))
-            for i in range (len(readpkl[0])):
-                                
-                scan=readpkl[0][i]
-                mask=readpkl[1][i]    
-                           
-                scanr=cv2.resize(scan,(image_cols, image_rows),interpolation=cv2.INTER_LINEAR)
-                maskr=cv2.resize(mask,(image_cols, image_rows),interpolation=cv2.INTER_LINEAR)
-#                print scanr.min(),scanr.max()
-                scanm=norm(scanr)
-#                print scanm.min(),scanm.max()
-                patch_list.append(scanm)
-                label_list.append(maskr)
-  
-    X_train = np.asarray(np.expand_dims(patch_list,3))           
-
-    y_train = np.array(label_list)
-    uniquelbls = np.unique(y_train)
-    for pat in uniquelbls:
-#        print pat
-        print  fidclass(pat,classif)
-    
-    nb_classes = int( uniquelbls.shape[0])
-    print ('number of classes :', int(nb_classes)) 
-    ytrainr=np.zeros((y_train.shape[0],image_rows, image_cols,int(nb_classes)),np.uint8)
-
-    for i in range (y_train.shape[0]-1):
-        for j in range (0,image_rows):
-                ytrainr[i][j] = np_utils.to_categorical(y_train[i][j], nb_classes)        
-#                if  y_train[i][j][120]!=0:
-#                    print y_train[i][j][120]
-#                    print ytrainr[i][j][120]
-#                    print argmax(ytrainr[i][j][120])
-#    ooo
-#    print y_train.shape
-#    for i in range(y_train.shape[0]):
-    y_flatten=y_train.flatten()
-    class_weights= get_class_weights(y_flatten)
-#    print class_weights
-    return X_train, ytrainr   ,class_weights            
-
-
 usedpatient={}
 usedpatientlist={}
 
@@ -221,8 +203,14 @@ for i in range(pklnum):
     diri=os.path.join(pickle_dir,str(i))
     remove_folder(diri)
     os.mkdir(diri)
-    X_train,y_train=readclasses2(num_classes,X_trainl[i],y_trainl[i])
+    X_train, X_test, y_train, y_test =readclasses2(num_classes,X_trainl[i],y_trainl[i])
+    print 'shape X_train :',X_train.shape
+    print 'shape X_test :',X_test.shape
+    print 'shape y_train :',y_train.shape
+    print 'shape y_test :',y_test.shape
     pickle.dump(X_train, open( os.path.join(diri,"X_train.pkl"), "wb" ),protocol=-1)
     pickle.dump(y_train, open( os.path.join(diri,"y_train.pkl"), "wb" ),protocol=-1)
+    pickle.dump(X_test, open( os.path.join(diri,"X_test.pkl"), "wb" ),protocol=-1)
+    pickle.dump(y_test, open( os.path.join(diri,"y_test.pkl"), "wb" ),protocol=-1)
     pickle.dump(class_weights, open( os.path.join(diri,"class_weights.pkl"), "wb" ),protocol=-1)
     
