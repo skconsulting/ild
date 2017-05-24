@@ -25,11 +25,21 @@ print theano.__version__
 nameHug='HUG'
 toppatch= 'TOPPATCH'
 #extension for output dir
-extendir='ILD0'
+extendir='ILD_TXT'
+#extendir='ILD6'
+
+extendir2=''
 pklnum=1
-#extendir='pix1'
 pickel_dirsource_root='pickle'
-pickel_dirsource=pickel_dirsource_root+'_'+extendir
+
+##############################################################
+
+sepextend2=''
+if len (extendir2)>0:
+    sepextend2='_'
+
+pickel_dirsource=pickel_dirsource_root+'_'+extendir+sepextend2+extendir2
+
 
 cwd=os.getcwd()
 
@@ -43,7 +53,7 @@ def get_class_weights(y):
     majority = max(counter.values())
 #    for cls, count in counter.items():
 #        print cls, count
-    return  {cls: min(float(majority/count),1000) for cls, count in counter.items()}
+    return  {cls: float(majority/count) for cls, count in counter.items()}
 
 #remove_folder(pickle_dir)
 
@@ -80,40 +90,18 @@ def readclasses1(usedpatient):
             for i in range (len(readpkl[0])):
                                 
                 scan=readpkl[0][i]
-                mask=readpkl[1][i]    
-#                if numslice=='13':
-#                    o=normi(mask)
-#                    n=normi(scan )
-#        #            x=normi(tabroix)
-#        #            f=normi(tabroif)
-#                    cv2.imshow('roif',o)
-#                    cv2.imshow('datascan[num] ',n)
-#        #            cv2.imshow('tabroix',x)
-#        #            cv2.imshow('tabroif',f)
-#                    cv2.waitKey(0)
-#                    cv2.destroyAllWindows()
-                           
-#                scanr=cv2.resize(scan,(image_cols, image_rows),interpolation=cv2.INTER_LINEAR)
-#                maskr=cv2.resize(mask,(image_cols, image_rows),interpolation=cv2.INTER_LINEAR)
-#                print scanr.min(),scanr.max()
+                mask=readpkl[1][i] 
                 scanm=norm(scan)
-#                print scanm.min(),scanm.max()
+#                o=normi(scan)
+#                on=normi(scanm)
+#                n=normi(mask)
+#                cv2.imshow('scan',o)
+#                cv2.imshow('scann',on)
+#                cv2.imshow('mask',n)
+#                cv2.waitKey(0)
+#                cv2.destroyAllWindows()
                 patch_list.append(scanm)
                 label_list.append(mask)
-  
-#   y_train = np.array(label_list)
-
-    y_train = np.array(label_list)
-#    y_flatten=y_train.flatten()
-#    class_weight2 = class_weight.compute_class_weight('balanced', np.unique(y_flatten), y_flatten)
-#    print 'class_weight2',class_weight2
-    uniquelbls = np.unique(y_train)
-    for pat in uniquelbls:
-#        print pat
-        print  fidclass(pat,classif)
-    
-    nb_classes = int( uniquelbls.shape[0])
-    print ('number of classes :', int(nb_classes)) 
     return patch_list, label_list   
 
 def numbclasses(y):
@@ -127,8 +115,8 @@ def numbclasses(y):
     print ('number of classes :', int(nb_classes)) 
     y_flatten=y_train.flatten()
     class_weights= get_class_weights(y_flatten)
-#    class_weights[0]=class_weights[0]/10
-#    class_weights[1]=class_weights[1]/10
+#    class_weights[0]=class_weights[0]/200.0
+#    class_weights[1]=class_weights[1]/100.0
     
     return int(nb_classes),class_weights
 
@@ -137,27 +125,31 @@ def readclasses2(num_classes,X_trainl,y_trainl):
     X_traini, X_testi, y_traini, y_testi = train_test_split(X_trainl,
                                         y_trainl,test_size=0.2, random_state=42)
     
-    X_train = np.asarray(np.expand_dims(X_traini,3)) 
-    X_test = np.asarray(np.expand_dims(X_testi,3))           
-
+    X_train = np.asarray(np.expand_dims(X_traini,1)) 
+#    X_train = np.repeat(X_train,3,axis=3) 
+    X_test = np.asarray(np.expand_dims(X_testi,1))    
+#    X_test = np.repeat(X_test,3,axis=3)        
+#    X_train = np.asarray(X_traini)
+#    X_test = np.asarray(X_testi) 
     y_train = np.array(y_traini)
     y_test = np.array(y_testi)
      
-    lytrain=y_train.shape[0]-1
-    lytest=y_test.shape[0]-1
+    lytrain=y_train.shape[0]
+    lytest=y_test.shape[0]
     
-    ytrainr=np.zeros((y_train.shape[0],image_rows, image_cols,int(num_classes)),np.uint8)
-    ytestr=np.zeros((y_test.shape[0],image_rows, image_cols,int(num_classes)),np.uint8)
+    ytrainr=np.zeros((lytrain,image_rows, image_cols,int(num_classes)),np.uint8)
+    ytestr=np.zeros((lytest,image_rows, image_cols,int(num_classes)),np.uint8)
 
     for i in range (lytrain):
         for j in range (0,image_rows):
             ytrainr[i][j] = np_utils.to_categorical(y_train[i][j], num_classes)
-
+    
+    ytrainr=np.moveaxis(ytrainr,3,1)
     for i in range (lytest):
         for j in range (0,image_rows):
             ytestr[i][j] = np_utils.to_categorical(y_test[i][j], num_classes)
-
 #    print class_weights
+    ytestr=np.moveaxis(ytestr,3,1)
     return X_train, X_test, ytrainr, ytestr       
    
 usedpatient={}
@@ -187,18 +179,14 @@ for i in range(pklnum):
     listp=spl[i]
     print 'set number :',i,' ',listp
     print('-' * 30)
-    X_trainl[i],y_trainl[i]=readclasses1(listp)
-#    print len(X_trainl[i]),len(y_trainl[i])
- 
+    X_trainl[i],y_trainl[i]=readclasses1(listp)     
     y_trainlist=y_trainlist+y_trainl[i]
 
-#print len(y_trainlist)
 num_classes,class_weights=numbclasses(y_trainlist)
 print "weights"
 for key,value in class_weights.items():
-   print key, value 
+   print key, fidclass (key,classif), value
 print('-' * 30)
-#
 for i in range(pklnum):
     diri=os.path.join(pickle_dir,str(i))
     remove_folder(diri)

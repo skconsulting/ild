@@ -11,37 +11,23 @@ import os
 import keras
 import theano
 import cv2
+from keras.optimizers import Adam,Adagrad
 
 from skimage.io import imsave
 import numpy as np
-from keras.models import load_model
-#from keras.models import Model
-#from keras.models import Sequential
-#from keras.layers import Input, concatenate, Conv2D, MaxPooling2D, UpSampling2D 
-#from keras.optimizers import Adam,Adagrad
-#from keras.callbacks import ModelCheckpoint
 from keras import backend as K
-#from keras.layers.core import Dense, Dropout,   Reshape, Activation
-import sklearn.metrics as metrics
-#from keras.utils import np_utils
+K.set_image_dim_ordering('th')
+ 
 from numpy import argmax,amax
 import shutil
 import time
 import dicom
-#K.set_image_dim_ordering('th') 
-#K.set_image_data_format('channels_first')
-K.set_image_data_format('channels_last')  # TF dimension ordering in this code
-#import cPickle as pickle
+import cPickle as pickle
+ 
 print keras.__version__
 print theano.__version__
 predict_source='predict_new'
-pickel_train='pickle_last'
-
-#image_rows = 496
-#image_cols = 496
-#MIN_BOUND = -1000.0
-#MAX_BOUND = 400.0
-#PIXEL_MEAN = 0.25
+pickel_train='pickle_ILD6/0'
 
 cwd=os.getcwd()
 
@@ -50,105 +36,9 @@ namedirtopc=os.path.join(cwdtop,predict_source)
 
 pickle_dir_train=os.path.join(cwdtop,pickel_train)
 
-#bmpname='scan_bmp'
-##directory with lung mask dicom
-#lungmask='lung_mask'
-##directory to put  lung mask bmp
-#lungmaskbmp='scan_bmp'
 predict_result='predict_result'
 
-#typei='jpg' #can be jpg
-#sroi='sroi'
 
-#
-#black=(0,0,0)
-#red=(255,0,0)
-#green=(0,255,0)
-#blue=(0,0,255)
-#yellow=(255,255,0)
-#cyan=(0,255,255)
-#purple=(255,0,255)
-#white=(255,255,255)
-#darkgreen=(11,123,96)
-#pink =(255,128,255)
-#lightgreen=(125,237,125)
-#orange=(255,153,102)
-#lowgreen=(0,51,51)
-#parme=(234,136,222)
-#chatain=(139,108,66)
-#
-
-#classif ={
-#        'back_ground':0,
-#        'healthy':1,
-#        'ground_glass':2,
-#        'reticulation':3,
-#        'HC':4,      
-#        'consolidation':5,
-#        'micronodules':6,
-#        
-#        'air_trapping':7,
-#        'cysts':8,
-#        'bronchiectasis':9,
-##        'emphysema':10,
-#        'GGpret':10
-#        } 
-#classifnotvisu=['back_ground','healthy']
-#
-#classifc ={
-#    'back_ground':black,
-#    'consolidation':cyan,
-#    'HC':blue,
-#    'ground_glass':red,
-#    'healthy':black,
-#    'micronodules':green,
-#    'reticulation':yellow,
-#    'air_trapping':pink,
-#    'cysts':lightgreen,
-#    'bronchiectasis':orange,
-#    'emphysema':chatain,
-#    'GGpret': parme,
-#
-#
-#
-#     'nolung': lowgreen,
-#     'bronchial_wall_thickening':white,
-#     'early_fibrosis':white,
-#
-#     'increased_attenuation':white,
-#     'macronodules':white,
-#     'pcp':white,
-#     'peripheral_micronodules':white,
-#     'tuberculosis':white
-# }
-
-#
-#def normalize(image):
-#    image1= (image - MIN_BOUND) / (MAX_BOUND - MIN_BOUND)
-#    image1[image1>1] = 1.
-#    image1[image1<0] = 0.
-#    return image1
-#
-#def zero_center(image):
-#    image1 = image - PIXEL_MEAN
-#    return image1
-#
-#def norm(image):
-#    image1=normalize(image)
-#    image2=zero_center(image1)
-#    return image2
-#
-#def fidclass(numero,classn):
-#    """return class from number"""
-#    found=False
-##    print numero
-#    for cle, valeur in classn.items():
-#
-#        if valeur == numero:
-#            found=True
-#            return cle
-#    if not found:
-#        return 'unknown'
 
 def genepara(fileList):
     fileList =[name for name in  os.listdir(namedirtopcf) if ".dcm" in name.lower()]
@@ -163,37 +53,9 @@ def genepara(fileList):
             slnt=scanNumber
     print 'number of slices', slnt
     slnt=slnt+1
-#    fxs=float(RefDs.PixelSpacing[0])/avgPixelSpacing
-#    dsr= RefDs.pixel_array
-#    dsr= dsr-dsr.min()
-#    dsr=dsr.astype('uint16')
-##    dsrresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
-#    dsrresize=cv2.resize(dsr,(image_rows, image_cols),interpolation=cv2.INTER_LINEAR)
-#
-#    dimtabx=int(dsrresize.shape[0])
-#    dimtaby=int(dsrresize.shape[1])
+
     return slnt
 
-
-#def normi(tabi):
-#     """ normalise patches"""
-#
-#     max_val=float(np.max(tabi))
-#     min_val=float(np.min(tabi))
-#
-#     mm=max_val-min_val
-#     mm=max(mm,1.0)
-##     print 'tabi1',min_val, max_val,imageDepth/float(max_val)
-#     tabi2=(tabi-min_val)*(255/mm)
-#     tabi2=tabi2.astype('uint8')
-#     return tabi2
-
-def evaluate(actual,pred):
-    fscore = metrics.f1_score(actual, pred, average='macro')
-    acc = metrics.accuracy_score(actual, pred)
-    cm = metrics.confusion_matrix(actual,pred)
-
-    return fscore, acc, cm
 
 def maxproba(proba):
     """looks for max probability in result"""
@@ -225,21 +87,12 @@ def load_model_set(pickle_dir_train):
 
     ordlistc=sorted(ordlist,key=lambda col:col[1],reverse=True)
 
-#    namelast=ordlistc[0][0]
-#        posp=name.find('.')+1
-#        post=name.find('-')
-#        numepoch=int(name[posp:post])
-#        tt=(name,numepoch)
-#        ordlist.append (tt)
-#
-#    ordlistc=sorted(ordlist,key=lambda col:col[1],reverse=True)
-
     namelast=ordlistc[0][0]
 
     namelastc=os.path.join(pickle_dir_train,namelast)
     print 'last weights :',namelast
-    model=load_model(namelastc)
-    return model
+
+    return namelastc
 
 
 def predictr(X_predict,dimtabx,dimtaby,num_list):
@@ -248,7 +101,6 @@ def predictr(X_predict,dimtabx,dimtaby,num_list):
     print('Predicting masks on test data...')
 
     imgs_mask_test = model.predict(X_predict, verbose=1,batch_size=1)
-#    print imgs_mask_test[10][200][200]
 #   
 #    print imgs_mask_test.shape
     return imgs_mask_test
@@ -282,13 +134,18 @@ def visu(namedirtopcf,imgs_mask_test,num_list,dimtabx,dimtaby,tabscan,sroidir):
             tabroi[nums]=os.path.join(sroidir,roil)
     
     imgs = np.zeros((imgs_mask_test.shape[0], dimtabx, dimtaby,3), dtype=np.uint8)
+    patlistf=[]
     for i in range (imgs_mask_test.shape[0]):
+        imi=imgs_mask_test[i]
+        imi=np.moveaxis(imi,0,2)
         patlist=[]
         for j in range (0,dimtabx):
             for k in range(dimtaby):
-                proba=imgs_mask_test[i][j][k]
+                proba=imi[j][k]
                 numpat=argmax(proba)
+                 
                 pat=fidclass(numpat,classif)
+                patlistf.append(pat)
                 if pat not in classifnotvisu:
                     if pat not in patlist:
                         patlist.append(pat)
@@ -298,7 +155,8 @@ def visu(namedirtopcf,imgs_mask_test,num_list,dimtabx,dimtaby,tabscan,sroidir):
             delx=int(dimtaby*0.6-120)
             imgs[i]=tagviewn(imgs[i],p,delx,0)
 
-
+    uniquelbls = np.unique(patlistf)
+    print 'list of patterns',uniquelbls
     print('-' * 30)
     print('Saving predicted masks to files...')
     print('-' * 30)
@@ -316,6 +174,8 @@ def visu(namedirtopcf,imgs_mask_test,num_list,dimtabx,dimtaby,tabscan,sroidir):
             imgn=normi(tabscan[image_id])
             imgnc= cv2.cvtColor(imgn,cv2.COLOR_GRAY2BGR)
         image2=cv2.add(image,imgnc)
+#        image2=image
+
         imsave(os.path.join(pred_dir, str(image_id) + '.'+typei), image2)
 
 
@@ -436,15 +296,67 @@ def preparscan(namedirtopcf,tabscan,tabslung):
         scan_list.append(tababn)
 #        print tabab.min(),tabab.max()
         num_list.append(num)
-    X_train = np.asarray(np.expand_dims(scan_list,3))      
+    X_train = np.asarray(np.expand_dims(scan_list,1))      
    
     return X_train,num_list
 
 listdirc= (os.listdir(namedirtopc))
 
 
+def load_train_data(numpidir):
 
-model =load_model_set(pickle_dir_train)
+    class_weights=pickle.load(open( os.path.join(numpidir,"class_weights.pkl"), "rb" ))
+    clas_weigh_l=[]
+    num_class=len(class_weights)
+    print 'number of classes :',num_class
+    for i in range (0,num_class):
+#            print i,class_weights[i]
+            clas_weigh_l.append(class_weights[i])
+    print 'weights for classes:'
+    for i in range (0,num_class):
+                    print i, clas_weigh_l[i]
+    class_weights_r=np.array(clas_weigh_l)
+#    numpatl={}
+#    for pat in usedclassif:
+#        numpatl[pat]=0
+##        print fidclass(classif[pat],classif)
+##        print pat, numpatl[pat]
+#    y_test1=np.moveaxis(y_test,1,3)
+#    for i in range (y_test1.shape[0]):
+#        for j in range (0,y_test1.shape[1]):
+#            for k in range(y_test1.shape[2]):
+#                proba=y_test1[i][j][k]
+#                numpat=argmax(proba)     
+#                pat=fidclass(numpat,classif)
+#                numpatl[pat]+=1
+#     
+#    for pat in usedclassif:
+#        print pat,numpatl[pat]
+#    tot=numpatl['back_ground']*1.0
+#    for pat in usedclassif:
+#        print pat,tot/numpatl[pat]
+#        
+
+   
+  
+    return class_weights_r,num_class
+
+def loadmodel():
+
+    weights,num_class=load_train_data(pickle_dir_train)
+ 
+#    model = get_unet(num_class,image_rows,image_cols)
+    model = get_model(num_class,image_rows,image_cols,weights)
+#    mloss = weighted_categorical_crossentropy(weights).myloss
+#    model.compile(optimizer=Adam(lr=1e-5), loss=mloss, metrics=['categorical_accuracy'])
+#    model.compile(optimizer=Adam(lr=1e-5), loss='categorical_crossentropy', metrics=['categorical_accuracy'])
+
+    namelastc=load_model_set(pickle_dir_train)
+    model.load_weights(namelastc)
+    return model
+#model =load_model_set(pickle_dir_train)
+
+model=loadmodel()
 
 for f in listdirc:
     print('work on:',f)

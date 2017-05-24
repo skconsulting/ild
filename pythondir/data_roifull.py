@@ -19,17 +19,17 @@ cwd=os.getcwd()
 
 (cwdtop,tail)=os.path.split(cwd)
 nameHug='HUG'
-subHUG='ILD0'
+#subHUG='ILD6'
+subHUG='ILD_TXT'
+
 path_HUG=os.path.join(cwdtop,nameHug)
 #path_HUG=os.path.join(nameHug,namsubHug)
 namedirtopc =os.path.join(path_HUG,subHUG)
 
 toppatch= 'TOPPATCH'
 #extension for output dir
-#extendir='pix1'
-#extendir='essai3'
-extendir=subHUG
 
+extendir=subHUG
 
 patchesdirnametop = toppatch+'_'+extendir
 patchtoppath=os.path.join(path_HUG,patchesdirnametop)
@@ -194,7 +194,7 @@ def preparroi(namedirtopcf):
         scan_list.append(datascan[num] )
         patchpicklenamepatient=str(num)+'_'+patchpicklename        
         tabl=tabslung[num].copy()
-        np.putmask(tabl,tabl>0,1)
+        np.putmask(tabl,tabl>0,classif['healthy'])
         
         pathpicklepatfile=os.path.join(pathpicklepat,patchpicklenamepatient)
         
@@ -214,12 +214,14 @@ def preparroi(namedirtopcf):
 #        if num==13:
 #            o=normi(roif)
 #            n=normi(datascan[num] )
-##            x=normi(tabroix)
+#            x=normi(tabroi[num])
 ##            f=normi(tabroif)
 #            cv2.imshow('roif',o)
 #            cv2.imshow('datascan[num] ',n)
-##            cv2.imshow('tabroix',x)
+#            cv2.imshow('tabroix',x)
 ##            cv2.imshow('tabroif',f)
+#            cv2.imwrite('a.bmp',o)
+#            cv2.imwrite('b.bmp',roif)
 #            cv2.waitKey(0)
 #            cv2.destroyAllWindows()
             
@@ -279,7 +281,7 @@ def create_test_data(namedirtopcf,pat,tabscan,tabsroi,tabslung):
 #            cv2.imshow('tabroif',f)
 #            cv2.waitKey(0)
 #            cv2.destroyAllWindows()
-                
+#                
 #                                       
             if newroi.max()>0:
                vis=contour2(newroi,pat)
@@ -309,7 +311,7 @@ for f in listdirc:
 
     slnt = genepara(contenudir)
     tabscan,tabsroi,tabslung=genebmp(namedirtopcf,contenudir,slnt)
-    contenupat = [name for name in os.listdir(namedirtopcf) if name in classif]
+    contenupat = [name for name in os.listdir(namedirtopcf) if name in usedclassif]
     datascan={}
     datamask={}
     tabroi={}
