@@ -4,14 +4,12 @@ Created on Sun Apr 02 09:52:27 2017
 Updated April 20 2017
 @author: sylvain
 """
-import os
-import sys
-from appJar import gui
-from modulepredictgui import *
-import cPickle as pickle
-import webbrowser
+from param_pix_p import *
+from tdGenePredictGui import *
 
-#print os.environ['TMP']
+from modulepredictgui import *
+
+
 print os.environ['USERPROFILE']
 print os.environ['LOCALAPPDATA']
 #print os.environ['APPDATA']
@@ -25,9 +23,6 @@ modulepython='modulepython'
 moduledoc='doc'
 
 
-#empofile=os.path.join(os.environ['TMP'],picklefileglobal)
-#workingdir= os.path.join(os.environ['USERPROFILE'],workdiruser)
-#instdir=os.path.join(os.environ['LOCALAPPDATA'],instdirMHK)
 pathMedikEye=os.path.join(os.environ['PROGRAMDATA'],instdirMedikey)
 pathPredict=os.path.join(pathMedikEye,instdirPredict)
 pathPredictModulepython=os.path.join(pathPredict,modulepython)
@@ -63,13 +58,6 @@ if not os.path.exists(paramsaveDir):
 paramsaveDirf=os.path.join(paramsaveDir,paramname)
 
 paramdict={}
-
-#cwd=os.getcwd()
-#(cwdtop,tail)=os.path.split(cwd)
-
-#path_pickle='CNNparameters'
-
-
 
 if os.path.exists(paramsaveDir):
     if os.path.exists(paramsaveDirf):
@@ -150,11 +138,9 @@ def visualisation(btn):
     else:
         indata['3dasked']=False
     indata['viewstyle']=app.getRadioButton("planar")
-#    if len(indata['lispatient']) >0:
-#    roirun(app.getListItems("list"),lisdir)
+
     visuarun(indata,lisdir)
-#    else:
-#        app.errorBox('error', 'no patient selected for visu')
+
     app.stop(Stop)
     continuevisu=True
     visuDraw()
@@ -165,16 +151,7 @@ def redraw(app):
 
 def visuDrawl(btn):
     global frontpredict,continuevisu,selectpatient,app
-#    print(app.getListItems("list"))
-#    print(app.getEntry("Percentage of pad Overlapp"))
-#    indata['thrpatch']=app.getEntry("Percentage of pad Overlapp")
-#    indata['thrproba']=app.getEntry("Treshold proba for predicted image generation")
-#    indata['thrprobaMerge']=app.getEntry("Treshold proba for merge cross and front view")
-#    indata['thrprobaUIP']=app.getEntry("Treshold proba for volume calculation")
-#    indata['threedpredictrequest']=app.getRadioButton("predict_style")
-#    indata['picklein_file']=app.getEntry("cross view weight")
-#    indata['picklein_file_front']= app.getEntry("front view weight")
-#    indata['subErosion']= app.getEntry("subErosion in mm")
+
     selectvisu=app.getListItems("list")
     if len(selectvisu) >0:
          selectpatient=selectvisu[0]
@@ -202,12 +179,9 @@ def boutonStop(btn):
     ans= app.yesNoBox("Confirm Exit", "Are you sure you want to exit the application?")
     if ans:
 #        app.stop(Stop)
-
         sys.exit(1)
-
     else:
         redraw(app)
-
 
 def selection(btn):
     global frontpredict,continuevisu,selectpatient,app
@@ -230,7 +204,6 @@ def gobackselection(btn):
     continuevisu=False
     app.stop(Stop)
     visuDraw()
-
 
 
 def selectPatientDir():

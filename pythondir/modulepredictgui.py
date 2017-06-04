@@ -4,95 +4,9 @@ Created on Mon Mar 20 17:21:22 2017
 
 @author: sylvain
 """
-import os
-import cv2
-import shutil
+from param_pix_p import *
 from tdGenePredictGui import *
-import cPickle as pickle
-import numpy as np
-import webbrowser
 
-dimpavx=16
-dimpavy=16
-pxy=float(dimpavx*dimpavy)
-avgPixelSpacing=0.734   # average pixel spacing
-volelem=avgPixelSpacing*avgPixelSpacing*avgPixelSpacing
-
-htmldir='html'
-threeFile='uip.html'
-threeFileMerge='uipMerge.html'
-threeFile3d='uip3d.html'
-
-lungimage='lungimage'
-path_data='data'
-source_name='source'
-scan_bmp='scan_bmp'
-transbmp='trans_bmp'
-typei='jpg'
-excluvisu=['back_ground','healthy']
-datafrontn='datafront'
-datacrossn='datacross'
-
-#reservedparm=[ 'thrpatch','thrproba','thrprobaUIP','thrprobaMerge','picklein_file',
-#                      'picklein_file_front','tdornot','threedpredictrequest',
-#                      'onlyvisuaasked','cross','front','merge']
-classif ={
-        'consolidation':0,
-        'HC':1,
-        'ground_glass':2,
-        'healthy':3,
-        'micronodules':4,
-        'reticulation':5,
-        'air_trapping':6,
-        'cysts':7,
-        'bronchiectasis':8,
-#        'emphysema':10,
-        'GGpret':9
-        }
-
-black=(0,0,0)
-grey=(100,100,100)
-red=(255,0,0)
-green=(0,255,0)
-blue=(0,0,255)
-yellow=(255,255,0)
-cyan=(0,255,255)
-purple=(255,0,255)
-white=(255,255,255)
-darkgreen=(11,123,96)
-pink =(255,128,255)
-lightgreen=(125,237,125)
-orange=(255,153,102)
-lowgreen=(0,51,51)
-parme=(234,136,222)
-chatain=(139,108,66)
-
-classifc ={
-    'back_ground':darkgreen,
-    'consolidation':cyan,
-    'HC':blue,
-    'ground_glass':red,
-    'healthy':darkgreen,
-    'micronodules':green,
-    'reticulation':yellow,
-    'air_trapping':pink,
-    'cysts':lightgreen,
-    'bronchiectasis':orange,
-    'emphysema':chatain,
-    'GGpret': parme,
-
-
-
-     'nolung': lowgreen,
-     'bronchial_wall_thickening':white,
-     'early_fibrosis':white,
-
-     'increased_attenuation':white,
-     'macronodules':white,
-     'pcp':white,
-     'peripheral_micronodules':white,
-     'tuberculosis':white
- }
 
 def lisdirprocess(d):
 #    a=os.listdir(d)
@@ -117,18 +31,6 @@ def lisdirprocess(d):
 
     return a,stsdir
 
-cwd=os.getcwd()
-
-def remove_folder(path):
-    """to remove folder"""
-    # check if folder exists
-    if os.path.exists(path):
-         # remove if exists
-         shutil.rmtree(path,ignore_errors=True)
-
-
-
-
 def predict(indata,path_patient):
     print 'module predict'
     listdir=[]
@@ -138,12 +40,6 @@ def predict(indata,path_patient):
     except KeyError:
             print 'No patient selected'
             nota=False
-#    print 'length de listdiri',len(listdiri)
-#    for key, value in indata.items():
-#        print key
-#        print value
-#            if key not in reservedparm:
-#                listdir.append(key)
     if nota:
         predictrun(indata,path_patient)
         if type(listdiri)==unicode:
@@ -191,16 +87,6 @@ def draw_circle(event,x,y,flags,img):
             quitl=True
 
 
-def rsliceNum(s,c,e):
-    ''' look for  afile according to slice number'''
-    #s: file name, c: delimiter for snumber, e: end of file extension
-    endnumslice=s.find(e)
-    posend=endnumslice
-    while s.find(c,posend)==-1:
-        posend-=1
-    debnumslice=posend+1
-    return int((s[debnumslice:endnumslice]))
-
 def contrasti(im,r):
 #     tabi = np.array(im)
      r1=0.5+r/100.0
@@ -216,29 +102,6 @@ def lumi(tabi,r):
     tabi2=np.clip(tabi1,0,255)
     tabi3=tabi2.astype(np.uint8)
     return tabi3
-
-def maxproba(proba):
-    """looks for max probability in result"""
-    lenp = len(proba)
-    m=0
-    for i in range(0,lenp):
-        if proba[i]>m:
-            m=proba[i]
-            im=i
-    return im,m
-
-def fidclass(numero,classn):
-    """return class from number"""
-    found=False
-#    print numero
-    for cle, valeur in classn.items():
-
-        if valeur == numero:
-            found=True
-            return cle
-
-    if not found:
-        return 'unknown'
 
 def addpatchn(col,lab, xt,yt,imgn):
 #    print col,lab
@@ -272,12 +135,6 @@ def drawpatch(t,dx,dy,slnum,va,patch_list_cross_slice):
     ill = 0
 #    endnumslice=k.find('.bmp')
     slicenumber=slnum
-#    print imgcore
-#    posend=endnumslice
-#    while k.find('-',posend)==-1:
-#            posend-=1
-#    debnumslice=posend+1
-#    slicenumber=int((k[debnumslice:endnumslice]))
     th=t/100.0
     listlabel={}
     listlabelaverage={}
@@ -339,8 +196,6 @@ def retrievepatch(x,y,sln,dx,dy,patch_list_cross_slice):
             ys=ll[0][1]
         #we find max proba from prediction
             
-   
-
 #            print xs,ys
             if x>xs and x < xs+dimpavx and y>ys and y<ys+dimpavy:
                      print x, y
@@ -577,12 +432,9 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,patch_list_cro
 #                    print patt,vol
                     cv2.putText(imgtext,'Vol ml: '+str(vol),(dictpostotal[patt][0],dictpostotal[patt][1]),
                                 cv2.FONT_HERSHEY_PLAIN,1.0,classifc[patt],1 )
-#                    cv2.putText(imgtext,'Vol : '+str(vol),(dictpostotal[patt][0],dictpostotal[patt][1]),1.0,classifc[key1],1)
-#                                cv2.FONT_HERSHEY_PLAIN,1,yellow,1,cv2.LINE_AA)
 #                break
 
                 for i in listPosLung:
-#                    lungtw = np.zeros((dimtabx,dimtaby,3), np.uint8)
 
     #                dictPosImage[i]=colorimage(dictPosImage[i],black)
                     surfmax[i],patmax[i] =findmaxvolume(dictSurf,i)
@@ -595,11 +447,7 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,patch_list_cro
 
     #                print i,surfmax[i],patmax[i],colori
                     lungtw=colorimage(dictPosImage[i],colori)
-#
-#                    mgray = cv2.cvtColor(lungtw,cv2.COLOR_BGR2GRAY)
-#                    np.putmask(mgray,mgray>0,255)
-#                    nthresh=cv2.bitwise_not(mgray)
-#                    vis1=cv2.bitwise_and(img,img,mask=nthresh)
+
                     img=cv2.add(img,lungtw)
 #                    cv2.imshow('a',imgbackg)
 #                    cv2.waitKey(0)
@@ -620,10 +468,6 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,patch_list_cro
                              else:
                                  colori=grey
                              lungtw=colorimage(dictPosImage[i],colori)
-#                             mgray = cv2.cvtColor(lungtw,cv2.COLOR_BGR2GRAY)
-#                             np.putmask(mgray,mgray>0,255)
-#                             nthresh=cv2.bitwise_not(mgray)
-#                             vis1=cv2.bitwise_and(img,img,mask=nthresh)
                              img=cv2.add(img,lungtw)
                              cv2.rectangle(imgtext,(dictPosTextImage[i][0],dictPosTextImage[i][1]-15),(dictPosTextImage[i][0]+55,dictPosTextImage[i][1]),white,-1)
                              cv2.putText(imgtext,str(dictSurf[pat][i])+'%',(dictPosTextImage[i][0],dictPosTextImage[i][1]),cv2.FONT_HERSHEY_PLAIN,1.2,grey,1,)
@@ -664,9 +508,11 @@ def openfichier(ti,datacross,patch_list,proba,path_img,thrprobaUIP,patch_list_cr
     if ti =="cross view" or ti =="merge view":
         sn=scan_bmp
         corectnumber=1
+#        psroi=os.path.join(path_img,sroi)
     else:
         sn=transbmp
         corectnumber=0
+#        psroi=os.path.join(path_img,sroi3d)
 
     pdirk = os.path.join(path_img,source_name)
     pdirk = os.path.join(pdirk,sn)
@@ -674,14 +520,19 @@ def openfichier(ti,datacross,patch_list,proba,path_img,thrprobaUIP,patch_list_cr
     cdelimter='_'
     extensionimage='.'+typei
 #    print pdirk
+#    if os.path.exists(psroi):
+#        pdirk=psroi
     limage=[name for name in os.listdir(pdirk) if name.find('.'+typei,1)>0 ]
-
+    if len(limage)==0:
+         limage=[name for name in os.listdir(pdirk) if name.find('.'+typei1,1)>0 ]
+         extensionimage='.'+typei1
+        
     if ((ti =="cross view" or ti =="merge view") and len(limage)+1==slnt) or ti =="front view":
 
 #        for iimage in range(0,slnt-1):
         for iimage in limage:
 
-    #        print iimage
+#            print iimage
 #            s=limage[iimage]
                 #s: file name, c: delimiter for snumber, e: end of file extension
             sln=rsliceNum(iimage,cdelimter,extensionimage)
@@ -746,8 +597,7 @@ def openfichier(ti,datacross,patch_list,proba,path_img,thrprobaUIP,patch_list_cr
 
     #        print 'imcontrast',imcontrast.shape, imcontrast.dtype
             imgn= drawpatch(tl,dimtabx,dimtaby,slicenumber,viewasked,patch_list_cross_slice)
-#            imgn=drawpatch(tl,listnamepatch,preprob,list_image[slicenumber],dimtabx,dimtaby,slicenumber,viewasked)
-    #        imgn=cv2.cvtColor(imgn,cv2.COLOR_BGR2RGB)
+
             imgngray = cv2.cvtColor(imgn,cv2.COLOR_BGR2GRAY)
     #        print 'imgray',imgngray.shape, imgngray.dtype
             mask_inv = cv2.bitwise_not(imgngray)
@@ -934,14 +784,11 @@ def visuarun(indata,path_patient):
             patch_list_front_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_front_slice"), "rb" ))
             patch_list_front_slice_sub= pickle.load( open( os.path.join(path_data_dir,"patch_list_front_slice_sub"), "rb" ))
             patch_list_front= pickle.load( open( os.path.join(path_data_dir,"patch_list_front"), "rb" ))
-#            tabscanLung= pickle.load( open( os.path.join(path_data_dir,"tabscanLung"), "r" ))
             lungSegmentfront= pickle.load( open( os.path.join(path_data_dir,"lungSegmentfront"), "rb" ))
-#            subpleurmask= pickle.load( open( os.path.join(path_data_dir,"subpleurmask"), "r" ))
+
             tabMedfront= pickle.load( open( os.path.join(path_data_dir,"tabMedfront"), "rb" ))
             thrprobaUIP=float(indata['thrprobaUIP'])
-#            thrpatch=float(indata['thrpatch'])
-#            subErosion=float(indata['subErosion'])
-            
+
             messageout = openfichiervolume(listHug,path_patient,patch_list_front_slice,patch_list_front,
                       lungSegmentfront,tabMedfront,thrprobaUIP,patch_list_front_slice_sub)
 
