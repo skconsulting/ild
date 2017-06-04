@@ -24,25 +24,6 @@ For more information please read the README file. The files can also
 be found at: https://github.com/intact-project/ild-cnn
 '''
 
-import argparse
-import numpy as np
-import keras
-from keras.utils import np_utils
-from keras import backend as K
-from keras.models import load_model
-print keras.__version__
-#if keras.__version__ =='1.1.2':
-K.set_image_dim_ordering('th')
-#
-#from keras.models import model_from_json
-import sklearn.metrics as metrics
-import cPickle as pickle
-#import sys
-import os
-#import h5py
-
-#from keras.models import load_model
-
 # debug
 # from ipdb import set_trace as bp
 
@@ -73,31 +54,14 @@ def load_data(imageDepth):
     X_val = pickle.load( open( "../pickle/X_val.pkl", "rb" ) )
     y_val = pickle.load( open( "../pickle/y_val.pkl", "rb" ) )
     
-
-    
-
-    # adding a singleton dimension and rescale to [0,1]
-#    X_train = np.asarray(np.expand_dims(X_train,1))/float(255)
     X_train = np.asarray(np.expand_dims(X_train,1))/float(imageDepth)
     
-#    X_train1 = np.asarray(np.expand_dims(X_train,1))
 
     print ('Xtrain :',X_train.shape)
-  
-#    meantraining=np.mean(X_train1)
-##    print np.mean(X_train/float(255))
-#    print 'mean of Xtrain :',meantraining
-#
-#    X_train=X_train1-meantraining
+    print 'X_train min max :',X_train.min(),X_train.max()
+
     
     X_val = np.asarray(np.expand_dims(X_val,1))/float(imageDepth)
-#    X_val1 = np.asarray(np.expand_dims(X_val,1))
-
-#    n=np.mean(X_val1)
-#    print 'calculated mean of X_val :',n
-##    print 'applied mean of X_val :',meantraining
-#    X_val=X_val1-n
-#    ooo
 
     # labels to categorical vectors
     uniquelbls = np.unique(y_train)
@@ -123,30 +87,6 @@ def load_data(imageDepth):
     return (X_train, y_train), (X_val, y_val),clas_weigh_l
 #    return (X_train, y_train), (X_val, y_val),class_weights
 
-def load_testdata(imageDepth):
-
-    # load the dataset as X_train and as a copy the X_val
-    X_test = pickle.load( open( "../pickle/X_test.pkl", "rb" ) )
-    y_test = pickle.load( open( "../pickle/y_test.pkl", "rb" ) )
-   
-
-    # adding a singleton dimension and rescale to [0,1]
-    X_test = np.asarray(np.expand_dims(X_test,1))/float(imageDepth)
-#    t=np.mean(X_test1)
-#    print 'actual mean of Xtest :',t
-##    print 'allocated  mean of Xtest :',tmean
-#    
-#    X_test=X_test1-t
-
-    # labels to categorical vectors
-#    uniquelbls = np.unique(y_test)
-#    nb_classes = uniquelbls.shape[0]
-#    zbn = np.min(uniquelbls) # zero based numbering
-##    # only used to make fscore,cm, acc calculation, single dimension required
-#    y_test = np_utils.to_categorical(y_test - zbn, nb_classes)
-#    
-
-    return (X_test, y_test)
 
 def evaluate(actual,pred):
     fscore = metrics.f1_score(actual, pred, average='macro')
@@ -155,24 +95,9 @@ def evaluate(actual,pred):
 
     return fscore, acc, cm
 
-def store_modelold(model):
-    json_string = model.to_json()
-    open('../pickle/ILD_CNN_model.json', 'w').write(json_string)
-    model.save_weights('../pickle/ILD_CNN_model_weights',overwrite=True)
-
-    return json_string
     
 def store_model(model):
 
 #    open('../pickle/ILD_CNN_model.json', 'w').write(json_string)
     model.save('../pickle/ILD_CNN_model.h5')
     
-#def load_model():
-#
-#    model = model_from_json(open('../pickle/ILD_CNN_model.json').read())
-#
-#    model.load_weights('../pickle/ILD_CNN_model_weights')
-#
-#
-#
-#    return model

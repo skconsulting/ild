@@ -23,22 +23,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 For more information please read the README file. The files can also 
 be found at: https://github.com/intact-project/ild-cnn
 '''
-import os
-import sys
-import cv2
-import cPickle as pickle
-import numpy as np
-import ild_helpers as H
-#import h5py
-import keras
-import theano
-from keras.models import Sequential
-from keras.layers.core import Dense, Dropout, Flatten, Activation
-from keras.layers.convolutional import Convolution2D, MaxPooling2D,AveragePooling2D
-from keras.layers.advanced_activations import LeakyReLU,PReLU
-from keras.models import load_model
-print keras.__version__
-print theano.__version__
 # debug
 # from ipdb import set_trace as bp
 
@@ -73,7 +57,7 @@ def get_model(input_shape, output_shape, params):
     # Add convolutional layers to model
     # model.add(Convolution2D(params['k']*get_FeatureMaps(1, params['fp']), 2, 2, init='orthogonal', activation=LeakyReLU(params['a']), input_shape=input_shape[1:]))
     # added by me
-    model.add(Convolution2D(params['k']*get_FeatureMaps(1, params['fp']), 2, 2, init='orthogonal', input_shape=input_shape[1:]))
+    model.add(Conv2D(params['k']*get_FeatureMaps(1, params['fp']), (2, 2), kernel_initializer='orthogonal', input_shape=input_shape[1:]))
     # model.add(Activation('relu'))
     #SK
     model.add(LeakyReLU(alpha=params['a']))
@@ -85,8 +69,9 @@ def get_model(input_shape, output_shape, params):
 
 
     for i in range(2, params['cl']+1):
+        print i, params['k']*get_FeatureMaps(i, params['fp'])
         # model.add(Convolution2D(params['k']*get_FeatureMaps(i, params['fp']), 2, 2, init='orthogonal', activation=LeakyReLU(params['a'])))
-        model.add(Convolution2D(params['k']*get_FeatureMaps(i, params['fp']), 2, 2, init='orthogonal'))
+        model.add(Conv2D(params['k']*get_FeatureMaps(i, params['fp']), (2, 2), kernel_initializer='orthogonal'))
         # model.add(Activation('relu'))
         model.add(LeakyReLU(alpha=params['a']))
         print 'Layer',  i, ' parameters settings:'
@@ -112,7 +97,7 @@ def get_model(input_shape, output_shape, params):
 
     # Add Dense layers and Output to model
     # model.add(Dense(int(params['k']*get_FeatureMaps(params['cl'], params['fp']))/params['pf']*6, init='he_uniform', activation=LeakyReLU(0)))
-    model.add(Dense(int(params['k']*get_FeatureMaps(params['cl'], params['fp']))/params['pf']*6, init='he_uniform'))
+    model.add(Dense(int(params['k']*get_FeatureMaps(params['cl'], params['fp']))/params['pf']*6, kernel_initializer='he_uniform'))
     
     print 'output_dimension : ', int(params['k']*get_FeatureMaps(params['cl'], params['fp']))/params['pf']*6
 
@@ -122,11 +107,12 @@ def get_model(input_shape, output_shape, params):
 
     
     # model.add(Dense(int(params['k']*get_FeatureMaps(params['cl'], params['fp']))/params['pf']*2, init='he_uniform', activation=LeakyReLU(0)))
-    model.add(Dense(int(params['k']*get_FeatureMaps(params['cl'], params['fp']))/params['pf']*2, init='he_uniform'))
+    model.add(Dense(int(params['k']*get_FeatureMaps(params['cl'], params['fp']))/params['pf']*2, kernel_initializer='he_uniform'))
     #  model.add(Activation('relu'))
     model.add(LeakyReLU(alpha=params['a']))
     model.add(Dropout(params['do']))
-    model.add(Dense(output_shape[1], init='he_uniform', activation='softmax'))
+    model.add(Dense(output_shape[1], kernel_initializer='he_uniform', activation='softmax'))
+  
 
 
 
@@ -214,7 +200,7 @@ def train(x_train, y_train, x_val, y_val, params,class_weights):
 
         # Fit the model for one epoch
         print('Epoch: ' + str(it))
-        history = model.fit(x_train, y_train, batch_size=250, nb_epoch=1, validation_data=(x_val,y_val), shuffle=True,class_weight=class_weights)
+        history = model.fit(x_train, y_train, batch_size=250, epochs=1, validation_data=(x_val,y_val), shuffle=True,class_weight=class_weights)
 
     
         # Evaluate models
