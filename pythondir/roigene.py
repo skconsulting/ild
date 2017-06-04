@@ -5,100 +5,16 @@ Created on Tue Mar 28 16:48:43 2017
 @author: sylvain
 tool for roi generation
 """
+from param_pix_r import *
 
-# import the necessary packages
-import numpy as np
-import cv2
-import os
-import dicom
-import time
 
-source_name='source'
 pattern=''
-typei='bmp'
-scan_bmp='scan_bmp'
-imageDepth=255
-dimtabx=512
-dimtaby=512
+
 quitl=False
 images={}
 tabroi={}
 tabroifinal={}
 tabroinumber={}
-path_patient='path_patient'
-
-classif ={
-        'back_ground':0,
-        'consolidation':1,
-        'HC':2,
-        'ground_glass':3,
-        'healthy':4,
-        'micronodules':5,
-        'reticulation':6,
-        'air_trapping':7,
-        'cysts':8,
-        'bronchiectasis':9,
-        'emphysema':10,
-        'GGpret':11
-        }
-
-black=(0,0,0)
-red=(255,0,0)
-green=(0,255,0)
-blue=(0,0,255)
-yellow=(255,255,0)
-cyan=(0,255,255)
-purple=(255,0,255)
-white=(255,255,255)
-darkgreen=(11,123,96)
-pink =(255,128,255)
-lightgreen=(125,237,125)
-orange=(255,153,102)
-lowgreen=(0,51,51)
-parme=(234,136,222)
-chatain=(139,108,66)
-
-
-
-classifc ={
-    'back_ground':darkgreen,
-    'consolidation':cyan,
-    'HC':blue,
-    'ground_glass':red,
-    'healthy':darkgreen,
-    'micronodules':green,
-    'reticulation':yellow,
-    'air_trapping':pink,
-    'cysts':lightgreen,
-    'bronchiectasis':orange,
-    'emphysema':chatain,
-    'GGpret': parme,
-
-
-
-     'nolung': lowgreen,
-     'bronchial_wall_thickening':white,
-     'early_fibrosis':white,
-
-     'increased_attenuation':white,
-     'macronodules':white,
-     'pcp':white,
-     'peripheral_micronodules':white,
-     'tuberculosis':white
- }
-
-def remove_folder(path):
-    """to remove folder"""
-    # check if folder exists
-    if os.path.exists(path):
-         print 'remove folder'
-         print path
-         l =os.listdir(path)
-         for i in l:
-             os.remove(os.path.join(path,i))
-         os.rmdir(path)
-#         shutil.rmtree(path,ignore_errors=True)
-
 
 def contour3(vis,im,l):
     col=classifc[l]
@@ -113,10 +29,7 @@ def contour3(vis,im,l):
         cv2.fillPoly(visi, [np.array(im)],col)
         vis1=cv2.bitwise_and(visi,visi,mask=nthresh)
         vis2=cv2.add(vis,vis1)
-
-
     return vis2
-
 
 def click_and_crop(event, x, y, flags, param):
     global quitl,pattern,dirpath_patient

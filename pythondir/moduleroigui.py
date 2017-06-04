@@ -4,7 +4,7 @@ Created on Mon Mar 20 17:21:22 2017
 
 @author: sylvain
 """
-import os
+from param_pix_r import *
 from roigene import *
 
 def lisdirprocess(directorytocheck):

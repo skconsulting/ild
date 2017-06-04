@@ -4,12 +4,9 @@ Created on Sun Apr 05 09:52:27 2017
 Version 1.0
 @author: sylvain
 """
-import os
-import sys
-from appJar import gui
+from param_pix_r import *
 from moduleroigui import *
-import cPickle as pickle
-import webbrowser
+
 
 #print os.environ['TMP']
 #print os.environ['USERPROFILE']
@@ -21,11 +18,15 @@ instdirroiGene='Roi_Gene'
 instdirMedikey='MedikEye'
 instdirroiGeneLocal='Roi_Gene'
 instdirMedikeyLocal='MedikEye'
+modulepython='modulepython'
+moduledoc='doc'
 #empofile=os.path.join(os.environ['TMP'],picklefileglobal)
 #workingdir= os.path.join(os.environ['USERPROFILE'],workdiruser)
 #instdir=os.path.join(os.environ['LOCALAPPDATA'],instdirMHK)
 pathMedikEye=os.path.join(os.environ['PROGRAMDATA'],instdirMedikey)
 pathRoiGene=os.path.join(pathMedikEye,instdirroiGene)
+pathRoiGeneModulepython=os.path.join(pathRoiGene,modulepython)
+pathRoiGeneDoc=os.path.join(pathRoiGene,moduledoc)
 
 pathMedikEyelocal=os.path.join(os.environ['LOCALAPPDATA'],instdirMedikeyLocal)
 pathRoiGenelocal=os.path.join(pathMedikEyelocal,instdirroiGeneLocal)
@@ -78,7 +79,7 @@ def press(btn):
 def presshelp(btn):
 #    print 'help'
 
-    filehelp=os.path.join(pathRoiGene,'doc.pdf')
+    filehelp=os.path.join(pathRoiGeneDoc,'doc.pdf')
 #    print filehelp
 #    webbrowser.open_new(r'file://C:\Users\sylvain\Documents\boulot\startup\radiology\roittool\modulepython\doc.pdf')
     webbrowser.open_new(r'file://'+filehelp)
@@ -116,7 +117,7 @@ def selectPatientDir():
     lisdir=os.path.realpath(app.directoryBox(title='path patient',dirName=lisdir))
     pbg=False
 #    print lisdir
-    if lisdir ==pathRoiGene:
+    if lisdir ==pathRoiGeneModulepython:
 #        print 'exit'
         sys.exit(1)
     if os.path.exists(lisdir):
