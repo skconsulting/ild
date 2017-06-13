@@ -27,6 +27,7 @@ def lisdirprocess(directorytocheck):
 
 def roirun(indata,path_patient):
     listHug=indata
+
     pos=str(indata).find(' ROI!:')
     if pos >0:
         listHug=str(indata)[3:pos]

@@ -116,15 +116,15 @@ def click_and_crop(event, x, y, flags, param):
             print 'add point',pattern
             if len(pattern)>0:
 #                print 'len pattern >0'
-                print 'fxs,x0',fxs,x0new
+#                print 'fxs,x0',fxs,x0new
 #                global fxs,x0new,y0new
                 xnew=int((x+x0new)/fxs)
                 ynew=int((y+y0new)/fxs)
-                print x,y,xnew,ynew
+#                print x,y,xnew,ynew
                 numeropoly=tabroinumber[pattern][scannumber]
-                print 'length last pattent',len(tabroi[pattern][scannumber][numeropoly])
+#                print 'length last pattent',len(tabroi[pattern][scannumber][numeropoly])
                 tabroi[pattern][scannumber][numeropoly].append((xnew, ynew))
-                print numeropoly, tabroi[pattern][scannumber][numeropoly]
+#                print numeropoly, tabroi[pattern][scannumber][numeropoly]
                 cv2.rectangle(images[scannumber], (xnew,ynew),
                               (xnew,ynew), classifc[pattern], 1)
 
@@ -181,7 +181,7 @@ def completed(imagename,dirpath_patient):
 
 #        cv2.imshow('a',tabroifinal[key][scannumber])
         imagemax= cv2.countNonZero(imgray)
-        print key,imagemax
+#        print key,imagemax
         if imagemax>0:
                 dirroi=os.path.join(dirpath_patient,key)
                 if not os.path.exists(dirroi):
@@ -253,14 +253,14 @@ def dellast():
 #    global images
     numeropoly=tabroinumber[pattern][scannumber]
     if len(tabroi[pattern][scannumber][numeropoly])>0:
-        print 'len>0'
+#        print 'len>0'
         for l in range(0,len(tabroi[pattern][scannumber][numeropoly])-1):
             cv2.line(images[scannumber], (tabroi[pattern][scannumber][numeropoly][l][0],tabroi[pattern][scannumber][numeropoly][l][1]),
                      (tabroi[pattern][scannumber][numeropoly][l+1][0],tabroi[pattern][scannumber][numeropoly][l+1][1]), black, 1)
         tabroi[pattern][scannumber][numeropoly]=[]
 #        tabroinumber[pattern][scannumber]=max(numeropoly-1,0)
     elif numeropoly >0 :
-        print 'len=0 and num>0'
+#        print 'len=0 and num>0'
         numeropoly=numeropoly-1
         tabroinumber[pattern][scannumber]=numeropoly
         for l in range(0,len(tabroi[pattern][scannumber][numeropoly])-1):
@@ -455,22 +455,23 @@ def tagviews (tab,t0,x0,y0,t1,x1,y1,t2,x2,y2,t3,x3,y3,t4,x4,y4,t5,x5,y5):
 
 
 
-def genebmp(fn):
+def genebmp(fn,nosource):
     """generate patches from dicom files"""
 
     print ('load dicom files in :',fn)
     (top,tail) =os.path.split(fn)
     (top1,tail1) =os.path.split(top)
 
-    print 'fn' ,fn
-    if os.path.exists(fn):
-        print 'path exist'
-    else:
+#    print 'fn' ,fn
+    if not os.path.exists(fn):
         print 'path does not exists'
+
     fmbmpbmp=os.path.join(fn,scan_bmp)
     remove_folder(fmbmpbmp)
     os.mkdir(fmbmpbmp)
-
+    if nosource:
+        fn=top
+     
     listdcm=[name for name in  os.listdir(fn) if name.lower().find('.dcm')>0]
 
     FilesDCM =(os.path.join(fn,listdcm[0]))
@@ -634,7 +635,13 @@ def openfichierroi(patient,patient_path_complet):
     global dirpath_patient,dimtabx,dimtaby
     dirpath_patient=os.path.join(patient_path_complet,patient)
     dirsource=os.path.join(dirpath_patient,source_name)
-    slnt,dimtabx,dimtaby=genebmp(dirsource)
+    if not os.path.exists(dirsource):
+         os.mkdir(dirsource)
+    listdcm=[name for name in os.listdir(dirsource) if name.find('.dcm')>0]
+    nosource=True
+    if len(listdcm)>0:
+        nosource=False
+    slnt,dimtabx,dimtaby=genebmp(dirsource,nosource)
     dirsourcescan=os.path.join(dirsource,scan_bmp)
     initmenus(slnt,dirpath_patient)
     loop(slnt,dirsourcescan,dirpath_patient)

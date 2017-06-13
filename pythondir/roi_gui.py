@@ -10,9 +10,9 @@ from moduleroigui import *
 
 #print os.environ['TMP']
 #print os.environ['USERPROFILE']
-print os.environ['LOCALAPPDATA']
+#print os.environ['LOCALAPPDATA']
 #print os.environ['APPDATA']
-print os.environ['PROGRAMDATA']
+#print os.environ['PROGRAMDATA']
 
 instdirroiGene='Roi_Gene'
 instdirMedikey='MedikEye'
