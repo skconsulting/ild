@@ -231,7 +231,8 @@ def retrievepatch(x,y,sln,dx,dy,patch_list_cross_slice):
 
 
 def colorimage(image,color):
-    im=image.copy()
+#    im=image.copy()
+    im = cv2.cvtColor(image,cv2.COLOR_GRAY2BGR)
     np.putmask(im,im>0,color)
     return im
 
@@ -294,21 +295,21 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,patch_list_cro
     lung_left=cv2.imread(os.path.join(path_img,'lung_left.bmp'),1)
     lung_right=cv2.imread(os.path.join(path_img,'lung_right.bmp'),1)
 
-    lung_lower_right=cv2.imread(os.path.join(path_img,'lung_lower_right.bmp'),1)
-    lung_middle_right=cv2.imread(os.path.join(path_img,'lung_middle_right.bmp'),1)
-    lung_upper_right=cv2.imread(os.path.join(path_img,'lung_upper_right.bmp'),1)
+    lung_lower_right=cv2.imread(os.path.join(path_img,'lung_lower_right.bmp'),0)
+    lung_middle_right=cv2.imread(os.path.join(path_img,'lung_middle_right.bmp'),0)
+    lung_upper_right=cv2.imread(os.path.join(path_img,'lung_upper_right.bmp'),0)
 
-    lung_lower_left=cv2.imread(os.path.join(path_img,'lung_lower_left.bmp'),1)
-    lung_middle_left=cv2.imread(os.path.join(path_img,'lung_middle_left.bmp'),1)
-    lung_upper_left=cv2.imread(os.path.join(path_img,'lung_upper_left.bmp'),1)
+    lung_lower_left=cv2.imread(os.path.join(path_img,'lung_lower_left.bmp'),0)
+    lung_middle_left=cv2.imread(os.path.join(path_img,'lung_middle_left.bmp'),0)
+    lung_upper_left=cv2.imread(os.path.join(path_img,'lung_upper_left.bmp'),0)
 
-    lung_sub_lower_right=cv2.imread(os.path.join(path_img,'lung_sub_lower_right.bmp'),1)
-    lung_sub_middle_right=cv2.imread(os.path.join(path_img,'lung_sub_middle_right.bmp'),1)
-    lung_sub_upper_right=cv2.imread(os.path.join(path_img,'lung_sub_upper_right.bmp'),1)
+    lung_sub_lower_right=cv2.imread(os.path.join(path_img,'lung_sub_lower_right.bmp'),0)
+    lung_sub_middle_right=cv2.imread(os.path.join(path_img,'lung_sub_middle_right.bmp'),0)
+    lung_sub_upper_right=cv2.imread(os.path.join(path_img,'lung_sub_upper_right.bmp'),0)
 
-    lung_sub_lower_left=cv2.imread(os.path.join(path_img,'lung_sub_lower_left.bmp'),1)
-    lung_sub_middle_left=cv2.imread(os.path.join(path_img,'lung_sub_middle_left.bmp'),1)
-    lung_sub_upper_left=cv2.imread(os.path.join(path_img,'lung_sub_upper_left.bmp'),1)
+    lung_sub_lower_left=cv2.imread(os.path.join(path_img,'lung_sub_lower_left.bmp'),0)
+    lung_sub_middle_left=cv2.imread(os.path.join(path_img,'lung_sub_middle_left.bmp'),0)
+    lung_sub_upper_left=cv2.imread(os.path.join(path_img,'lung_sub_upper_left.bmp'),0)
 
 
     dictPosImage={}

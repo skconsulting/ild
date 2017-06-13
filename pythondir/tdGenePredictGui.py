@@ -13,17 +13,19 @@ def reshapeScan(tabscan,slnt,dimtabx):
     tabres=np.moveaxis(tabscan,0,1)
     return tabres
 
-def genebmp(fn,sou):
+def genebmp(fn,sou,nosource):
     """generate patches from dicom files"""
     global picklein_file
     print ('load dicom files in :',fn)
     (top,tail) =os.path.split(fn)
     lislnn=[]
     fmbmp=os.path.join(fn,sou)
-
     fmbmpbmp=os.path.join(fmbmp,scan_bmp)
     remove_folder(fmbmpbmp)
     os.mkdir(fmbmpbmp)
+    
+    if nosource:
+        fmbmp=fn
 
     listdcm=[name for name in  os.listdir(fmbmp) if name.lower().find('.dcm')>0]
 
@@ -278,7 +280,7 @@ def pavgene(dirf,dimtabx,dimtaby,tabscanScan,tabscanLung,slnt,jpegpath):
              np.putmask(tablung,tablung>0,1)
              np.putmask(tabfrgb,tabfrgb>0,100)
              tabfrgb= cv2.cvtColor(tabfrgb,cv2.COLOR_GRAY2BGR)
-             tabf=tabscanScan[img]
+             tabf=norm(tabscanScan[img])
 #             print nz1
              nz= tablung.max()
 
@@ -306,11 +308,11 @@ def pavgene(dirf,dimtabx,dimtaby,tabscanScan,tabscanLung,slnt,jpegpath):
     #                        ooo
                             imgray = tabf[j:j+dimpavy,i:i+dimpavx]
 
-                            imagemax= cv2.countNonZero(imgray)
+#                            imagemax= cv2.countNonZero(imgray)
                             min_val, max_val, min_loc,max_loc = cv2.minMaxLoc(imgray)
 
-                            if imagemax > 0 and min_val != max_val:
-                                imgray= norm(imgray)
+                            if  min_val != max_val:
+#                                imgray= norm(imgray)
  
                                 patch_list.append((img,i,j,imgray))
                                 tablung[j:j+dimpavy,i:i+dimpavx]=0
@@ -339,7 +341,7 @@ def ILDCNNpredict(patch_list,model):
     # look if the predict source is empty
     # predict and store  classification and probabilities if not empty
     if X0 > 0:
-        proba = model.predict_proba(pa, batch_size=100)
+        proba = model.predict_proba(pa, batch_size=100,verbose=1)
 
     else:
         print (' no patch in selected slice')
@@ -360,7 +362,7 @@ def wtebres(wridir,dirf,tab,dimtabx,slicepitch,lungm,ty):
 #    print avgPixelSpacing
     fxs=float(slicepitch/avgPixelSpacing )
     lislnn=[]
-    print 'fxs',fxs
+#    print 'fxs',fxs
 
 #    print tab[0].shape[0]
     ntd=int(round(fxs*tab[0].shape[0],0))
@@ -423,7 +425,7 @@ def modelCompilation(t,picklein_file,picklein_file_front):
 
     if os.path.exists(modelpath):
         model = load_model(modelpath)
-        model.compile(optimizer='Adam', loss=CNN4.get_Obj('ce'))
+#        model.compile(optimizer='Adam', loss=CNN4.get_Obj('ce'))
         return model
     else:
         print 'weight dos not exist',modelpath
@@ -464,9 +466,10 @@ def tagviewn(tab,label,pro,nbr,x,y):
     viseg=cv2.putText(tab,str(nbr)+' '+label+' '+pro,(x+deltax, y+deltay+10), font,gro,col,1)
     return viseg
 
-def  visua(listelabelfinal,dirf,probaInput,patch_list,dimtabx,dimtaby,
-           slnt,predictout,sroi,scan_bmp,sou,dcmf,dct,errorfile):
+def  visua(listelabelfinal,dirf,patch_list,dimtabx,dimtaby,
+           slnt,predictout,sroi,scan_bmp,sou,dcmf,dct,errorfile,nosource):
     global thrproba,picklein_file,picklein_file_front
+    tv=mytime()
     print('visualisation',scan_bmp)
     rsuid=random.randint(0,1000)
 
@@ -481,13 +484,16 @@ def  visua(listelabelfinal,dirf,probaInput,patch_list,dimtabx,dimtaby,
 #        print 'visua dptail', topdir
         listelabelfinal[fidclass(i,classif)]=0
     #directory name with predict out dabasase, will be created in current directory
-    preprob=probaInput
 
+    
     dirpatientfdbsource1=os.path.join(dirf,sou)
+         
     dirpatientfdbsource=os.path.join(dirpatientfdbsource1,scan_bmp)
     dirpatientfdbsroi=os.path.join(dirf,sroi)
     listbmpscan=os.listdir(dirpatientfdbsource)
     if dct:
+        if nosource:
+            dirpatientfdbsource1=dirf
         listdcm=[name for name in  os.listdir(dirpatientfdbsource1) if name.lower().find('.dcm')>0]
 
 
@@ -542,17 +548,23 @@ def  visua(listelabelfinal,dirf,probaInput,patch_list,dimtabx,dimtaby,
         tablscan=cv2.imread(imgc,1)
 
         foundp=False
-        for ll in range(0,len(patch_list)):
-            slicename=patch_list[ll][0]
-            xpat=patch_list[ll][1]
-            ypat=patch_list[ll][2]
-            proba=preprob[ll]
+        pn=patch_list[slicenumber]
+        for ll in range(0,len(pn)):
+#            slicename=patch_list[ll][0]
+            xpat=pn[ll][0][0]
+            ypat=pn[ll][0][1]
+            proba=pn[ll][1]
+#            print 'slicenumber, pn' ,slicenumber, pn
+#            print 'proba',proba
+#            print 'xpat',xpat
+#            print 'ypat',ypat
+#            ooo
             prec, mprobai = maxproba(proba)
             mproba=round(mprobai,2)
             classlabel=fidclass(prec,classif)
             classcolor=classifc[classlabel]
 #            print xpat,ypat,mprobai,slicename
-            if slicenumber == slicename and classlabel not in excluvisu:
+            if  classlabel not in excluvisu:
                     foundp=True
                     if classlabel in listlabel:
                         numl=listlabel[classlabel]
@@ -564,7 +576,7 @@ def  visua(listelabelfinal,dirf,probaInput,patch_list,dimtabx,dimtaby,
                         listlabelf[classlabel]=nlt+1
                     else:
                         listlabelf[classlabel]=1
-            if mprobai >=thrproba and slicenumber == slicename and classlabel not in excluvisu:
+            if mprobai >=thrproba and classlabel not in excluvisu:
                     if slicenumber not in sliceok:
                         sliceok.append(slicenumber)
                     if classlabel in listlabelrec:
@@ -616,14 +628,15 @@ def  visua(listelabelfinal,dirf,probaInput,patch_list,dimtabx,dimtaby,
         imn = cv2.cvtColor(imn, cv2.COLOR_BGR2RGB)
         predict_outFile=os.path.join( predictout_dir,img)
         cv2.imwrite(predict_outFile,imn)
-        errorfile.write('\n'+'number of labels in :'+str(dptop)+' '+str(dptail)+str (img)+'\n' )
+#        errorfile.write('\n'+'number of labels in :'+str(dptop)+' '+str(dptail)+str (img)+'\n' )
 #    print listlabelf
     for classlabel in listlabelf:
           listelabelfinal[classlabel]=listlabelf[classlabel]
           print 'patient: ',dptail,', label:',classlabel,': ',listlabelf[classlabel]
-          stringtw=str(classlabel)+': '+str(listlabelf[classlabel])+'\n'
+          stringtw=dptail+': '+str(classlabel)+': '+str(listlabelf[classlabel])+'\n'
 #          print string
           errorfile.write(stringtw )
+    print "visua time:",round(mytime()-tv,3),"s"
     return
 
 def genethreef(dirpatientdb,patchPositions,probabilities_raw,slicepitch,dimtabx,dimtaby,dimpavx,lsn,v):
@@ -733,7 +746,7 @@ def genethreef(dirpatientdb,patchPositions,probabilities_raw,slicepitch,dimtabx,
         volumefile.write( 'var boxGeometry = new THREE.BoxGeometry( '+BGx+' , '+\
         BGy+' , '+BGz+' ) ;\n')
 
-        print 'pz',pz
+#        print 'pz',pz
 #        volumefilejs.write('camera.position.set(0 '+', -'+str(dimtaby)+', 0 );\n')
 #        volumefilejs.write('controls.target.set(0 , 0 , 0 );\n')
 #
@@ -818,7 +831,7 @@ def genecross(proba_cross,dirf,proba_front,patch_list_front,slnt,slicepitch,dimt
     tabpatch={}
 
     listp=[name for name in usedclassif if name not in excluvisu]
-    print 'used patterns :',listp
+#    print 'used patterns :',listp
 
     for i in usedclassif:
         plfd[i]=[]
@@ -885,7 +898,7 @@ def reshapepatern(dirf,tabpx,dimtabxn,dimtaby,slnt,slicepitch,predictout,sou,dcm
     os.mkdir(predictout_dir)
 
     listp=[name for name in usedclassif if name not in excluvisu]
-    print 'used patterns :',listp
+#    print 'used patterns :',listp
     fxs=float(avgPixelSpacing/slicepitch )
 
     dirpatientfdb1=os.path.join(dirf,sou)
@@ -1074,7 +1087,7 @@ def mergeproba(dirf,prx,plx,tabx,slnt,dimtabx,dimtaby)  :
     prxd={}
 
     listp=[name for name in usedclassif if name not in excluvisu]
-    print 'used patterns :',listp
+#    print 'used patterns :',listp
 
     for i in usedclassif:
 
@@ -1131,7 +1144,7 @@ def mergeproba(dirf,prx,plx,tabx,slnt,dimtabx,dimtaby)  :
                 proba_merge,patch_list_merge=pavf(prx,dirf,p,i,tab2,dimpavx,dimpavy,
                 dimtabx,dimtaby,jpegpadirm,patch_list_merge,proba_merge,True)
 
-    print ' end excluvisu'
+#    print ' end excluvisu'
 #                if len(pr)>0:
 #                    proba_merge.append(pr)
 #                    patch_list_merge.append(pl)
@@ -1521,6 +1534,7 @@ def uipTree(dirf,patch_list_cross_slice,lungSegment,tabMed,dictPS,
             dictP,dictSubP,dictSurf,thrprobaUIP,patch_list_cross_slice_sub):
     '''calculate the number of reticulation and HC in total and subpleural
     and diffuse micronodules'''
+    print 'calculate volume'
     (top,tail)=os.path.split(dirf)
 #    print 'calculate volume in : ',tail
 
@@ -1618,10 +1632,7 @@ def genepatchlistslice(patch_list_cross,proba_cross,lissln,subpleurmask,thrpatch
 
                 if targ > thrpatch:
                         ressub[i].append(t)  
-
-            ii+=1
-            
-            
+            ii+=1                   
     return res,ressub
 
 def predictrun(indata,path_patient):
@@ -1668,23 +1679,33 @@ def predictrun(indata,path_patient):
 #        print dirHUG
 #        print listHug
 
-        eferror=os.path.join(dirHUG,'gp3d.txt')
+       
         for f in listHug:
+           
             print 'work on patient',f
             lungSegment={}
             patch_list_cross_slice={}
-            errorfile = open(eferror, 'a')
+            
             listelabelfinal={}
             dirf=os.path.join(dirHUG,f)
-#            """
-            tabMed = {}  # dictionary with position of median between lung
-
             wridirsource=os.path.join(dirf,source)
+           
+            listdcm= [name for name in os.listdir(dirf) if name.find('.dcm')>0]
+            nosource=False
+            if len(listdcm)>0:
+                nosource=True
+                if not os.path.exists(wridirsource):
+                    os.mkdir(wridirsource)
+           
+            tabMed = {}  # dictionary with position of median between lung
+        
             wridir=os.path.join(wridirsource,transbmp)
             remove_folder(wridir)
             os.mkdir(wridir)
 #            """
             path_data_write=os.path.join(dirf,path_data)
+            eferror=os.path.join(path_data_write,'log.txt')
+            errorfile = open(eferror, 'a')
 #            """
 #            remove_folder(path_data_write)
             if not os.path.exists(path_data_write):
@@ -1715,7 +1736,7 @@ def predictrun(indata,path_patient):
             os.mkdir(dicompathdirmerge)
 
             
-            tabscanScan,slnt,dimtabx,slicepitch,lissln=genebmp(dirf,source)
+            tabscanScan,slnt,dimtabx,slicepitch,lissln=genebmp(dirf,source,nosource)
             lungSegment=selectposition(lissln)
 
 #                print 'slnt',slnt
@@ -1764,9 +1785,9 @@ def predictrun(indata,path_patient):
             patch_list_cross= pickle.load( open( os.path.join(path_data_write,"patch_list_cross"), "rb" ))
             tabMed= pickle.load( open( os.path.join(path_data_write,"tabMed"), "rb" ))
             """
-            
-            visua(listelabelfinal,dirf,proba_cross,patch_list_cross,dimtabx,
-                  dimtabx,slnt,predictout,sroi,scan_bmp,source,dicompathdircross,True,errorfile)            
+#            print 'patch_list_cross_slice[1]',patch_list_cross_slice[1]
+            visua(listelabelfinal,dirf,patch_list_cross_slice,dimtabx,
+                  dimtabx,slnt,predictout,sroi,scan_bmp,source,dicompathdircross,True,errorfile,nosource)            
             genethreef(dirf,patch_list_cross,proba_cross,slicepitch,dimtabx,dimtabx,dimpavx,slnt,'cross')
 #            """
     ###       cross
@@ -1796,10 +1817,6 @@ def predictrun(indata,path_patient):
                 """
                 proba_front=pickle.load(open( os.path.join(path_data_write,"proba_front"), "rb" ))
                 patch_list_front=pickle.load(open( os.path.join(path_data_write,"patch_list_front"), "rb" ))
-                """                
-                visua(listelabelfinal,dirf,proba_front,patch_list_front,dimtabxn,dimtabx,
-                      dimtabyn,predictout3d,sroid,transbmp,source,dicompathdirfront,False,errorfile)
-                """
                 proba_cross=pickle.load(open( os.path.join(path_data_write,"proba_cross"), "rb" ))
                 patch_list_cross=pickle.load(open( os.path.join(path_data_write,"patch_list_cross"), "rb" ))
                 proba_front=pickle.load(open( os.path.join(path_data_write,"proba_front"), "rb" ))
@@ -1809,6 +1826,8 @@ def predictrun(indata,path_patient):
                 subpleurmaskfront=subpleural(dirf,tabLung3d,lungSegmentfront,subErosion,'front')
                 patch_list_front_slice,patch_list_front_slice_sub=genepatchlistslice(patch_list_front,
                                                             proba_front,lisslnfront,subpleurmaskfront,thrpatch)
+                visua(listelabelfinal,dirf,patch_list_front_slice,dimtabxn,dimtabx,
+                      dimtabyn,predictout3d,sroid,transbmp,source,dicompathdirfront,False,errorfile,nosource)
                 tabMedfront = calcMed(tabLung3d,lungSegmentfront)
                 
                 pickle.dump(tabMedfront, open( os.path.join(path_data_write,"tabMedfront"), "wb" ),protocol=-1)
@@ -1843,8 +1862,8 @@ def predictrun(indata,path_patient):
                 patch_list_merge_slice=pickle.load(open( os.path.join(path_data_write,"patch_list_merge_slice"), "rb" ))
                 patch_list_merge_slice_sub=pickle.load(open( os.path.join(path_data_write,"patch_list_merge_slice_sub"), "rb" ))
                 """                                              
-                visua(listelabelfinal,dirf,proba_merge,patch_list_merge,dimtabx,dimtabx
-                      ,slnt,predictoutmerge,sroi,scan_bmp,source,dicompathdirmerge,True,errorfile)
+                visua(listelabelfinal,dirf,patch_list_merge_slice,dimtabx,dimtabx
+                      ,slnt,predictoutmerge,sroi,scan_bmp,source,dicompathdirmerge,True,errorfile,nosource)
                 genethreef(dirf,patch_list_merge,proba_merge,slicepitch,dimtabx,dimtabx,dimpavx,slnt,'merge')
 
             errorfile.write('completed :'+f)

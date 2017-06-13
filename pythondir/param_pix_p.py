@@ -14,6 +14,7 @@ from numpy import argmax,amax
 import os
 import random
 import scipy
+from scipy.misc import bytescale
 import shutil
 from skimage import measure
 import sklearn.metrics as metrics
@@ -21,6 +22,7 @@ import sys
 import time
 from time import time as mytime
 import webbrowser
+
 
 import keras
 import theano
@@ -285,14 +287,15 @@ def remove_folder(path):
 
 def normi(tabi):
      """ normalise patches"""
-     max_val=float(np.max(tabi))
-     min_val=float(np.min(tabi))
-     mm=max_val-min_val
-     if mm ==0:
-         mm=1
-#     print 'tabi1',min_val, max_val,imageDepth/float(max_val)
-     tabi2=(tabi-min_val)*(255/mm)
-     tabi2=tabi2.astype('uint8')
+     tabi2=bytescale(tabi, low=0, high=255)
+#     max_val=float(np.max(tabi))
+#     min_val=float(np.min(tabi))
+#     mm=max_val-min_val
+#     if mm ==0:
+#         mm=1
+##     print 'tabi1',min_val, max_val,imageDepth/float(max_val)
+#     tabi2=(tabi-min_val)*(255/mm)
+#     tabi2=tabi2.astype('uint8')
      return tabi2
  
 def fidclass(numero,classn):

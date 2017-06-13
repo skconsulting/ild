@@ -77,7 +77,7 @@ if os.path.exists(paramsaveDir):
 
     else:
         lisdir=os.environ['USERPROFILE']
-        thrpatch= 0.8
+        thrpatch= 0.95
         thrproba=0.6
         thrprobaMerge=0.6
         thrprobaUIP= 0.6
@@ -212,7 +212,7 @@ def selectPatientDir():
 #    print 'select dir'
     lisdir=os.path.realpath(app.directoryBox(title='path patient',dirName=lisdir))
     pbg=False
-#    print lisdir,pathPredict
+#    print 'lisdir,pathPredict',lisdir,pathPredict
     if lisdir ==pathPredictModulepython:
         print 'exit'
         app.stop(Stop)
@@ -220,10 +220,13 @@ def selectPatientDir():
 
     if os.path.exists(lisdir):
         lisstdirec= os.walk(lisdir).next()[1]
+#        print 'lisstdirec',lisstdirec
         for i in lisstdirec:
             sourced=os.path.join(os.path.join(lisdir,i),source)
+            print 'sourced',sourced
             if os.path.exists(sourced):
                 paramdict['path_patient']=lisdir
+#                print 'paramdict',paramdict
                 pickle.dump(paramdict,open( paramsaveDirf, "wb" ))
                 if pbg==False:
                     pbg=True
@@ -440,7 +443,7 @@ def visuDraw():
 
                 app.addRadioButton("planar","from cross predict",row,1)
                 row = app.getRow() # get current row
-                app.addRadioButton("planar","volume view",row,0)
+                app.addRadioButton("planar","volume view from cross",row,0)
             else:
                 row = app.getRow() # get current row
                 app.addLabel("l1", "Type of planar view,select one",row,0)
