@@ -1483,30 +1483,27 @@ def posP(sln, lungSegment):
         psp = 'lowerset'
     return psp
 
-
 def calculSurface(dirf,posp, midx,lungSegment,dictPS):
     (top,tail)=os.path.split(dirf)
 #    print 'calculate surface for :',tail
-    ill = 0
-#    print posp[0]
-#    oooo
+
     for ll in posp:
-        xpat = ll[1]
-        sln=ll[0]
-#        print xpat,sln
+        sln=ll
         psp=posP(sln, lungSegment)
+        midsln=midx[sln]
+        for ii in range(len(posp[ll])):
+            xpat = posp[ll][ii][0][0]
+    
+            if xpat >= midsln:
+                pospr = 0
+                pospl = 1
+            else:
+                pospr = 1
+                pospl = 0
+    
+            dictPS[psp] = (dictPS[psp][0] + pospl, dictPS[psp][1] + pospr)
+            dictPS['all'] = (dictPS['all'][0] + pospl, dictPS['all'][1] + pospr)
 
-        if xpat >= midx[sln]:
-            pospr = 0
-            pospl = 1
-        else:
-            pospr = 1
-            pospl = 0
-
-        dictPS[psp] = (dictPS[psp][0] + pospl, dictPS[psp][1] + pospr)
-        dictPS['all'] = (dictPS['all'][0] + pospl, dictPS['all'][1] + pospr)
-
-        ill += 1
     return dictPS
 
 def writedict(dirf, dx):
@@ -1534,7 +1531,7 @@ def uipTree(dirf,patch_list_cross_slice,lungSegment,tabMed,dictPS,
             dictP,dictSubP,dictSurf,thrprobaUIP,patch_list_cross_slice_sub):
     '''calculate the number of reticulation and HC in total and subpleural
     and diffuse micronodules'''
-    print 'calculate volume'
+#    print 'calculate volume'
     (top,tail)=os.path.split(dirf)
 #    print 'calculate volume in : ',tail
 
@@ -1704,13 +1701,14 @@ def predictrun(indata,path_patient):
             os.mkdir(wridir)
 #            """
             path_data_write=os.path.join(dirf,path_data)
-            eferror=os.path.join(path_data_write,'log.txt')
-            errorfile = open(eferror, 'a')
-#            """
+            
 #            remove_folder(path_data_write)
             if not os.path.exists(path_data_write):
                 os.mkdir(path_data_write)
 
+            eferror=os.path.join(path_data_write,'log.txt')
+            errorfile = open(eferror, "w")
+#            """
             jpegpathdir=os.path.join(dirf,jpegpadirm)
             remove_folder(jpegpathdir)
             os.mkdir(jpegpathdir)
@@ -1742,7 +1740,7 @@ def predictrun(indata,path_patient):
 #                print 'slnt',slnt
             datacross=(slnt,dimtabx,dimtabx,slicepitch,lissln)
             pickle.dump(datacross, open( os.path.join(path_data_write,datacrossn), "wb" ),protocol=-1)
-            pickle.dump(tabscanScan, open( os.path.join(path_data_write,"tabscanScan"), "wb" ),protocol=-1)
+#            pickle.dump(tabscanScan, open( os.path.join(path_data_write,"tabscanScan"), "wb" ),protocol=-1)
             pickle.dump(lungSegment, open( os.path.join(path_data_write,"lungSegment"), "wb" ),protocol=-1)
             """
             datacross= pickle.load( open( os.path.join(path_data_write,"datacross"), "rb" ))
@@ -1759,7 +1757,7 @@ def predictrun(indata,path_patient):
             tabscanLung=genebmplung(dirf,lung_name_gen,slnt,dimtabx,dimtabx,tabscanScan)
             
             subpleurmask=subpleural(dirf,tabscanLung,lungSegment,subErosion,'cross')
-            pickle.dump(subpleurmask, open( os.path.join(path_data_write,"subpleurmask"), "wb" ),protocol=-1)
+#            pickle.dump(subpleurmask, open( os.path.join(path_data_write,"subpleurmask"), "wb" ),protocol=-1)
             """
             subpleurmask= pickle.load( open( os.path.join(path_data_write,"subpleurmask"), "rb" ))
             """
@@ -1771,11 +1769,11 @@ def predictrun(indata,path_patient):
                                                             proba_cross,lissln,subpleurmask,thrpatch)
             tabMed = calcMed(tabscanLung,lungSegment)
 
-            pickle.dump(proba_cross, open( os.path.join(path_data_write,"proba_cross"), "wb" ),protocol=-1)
+#            pickle.dump(proba_cross, open( os.path.join(path_data_write,"proba_cross"), "wb" ),protocol=-1)
             pickle.dump(patch_list_cross_slice, open( os.path.join(path_data_write,"patch_list_cross_slice"), "wb" ),protocol=-1)
             pickle.dump(patch_list_cross_slice_sub, open( os.path.join(path_data_write,"patch_list_cross_slice_sub"), "wb" ),protocol=-1)
-            pickle.dump(tabscanLung, open( os.path.join(path_data_write,"tabscanLung"), "wb" ),protocol=-1)
-            pickle.dump(patch_list_cross, open( os.path.join(path_data_write,"patch_list_cross"), "wb" ),protocol=-1)
+#            pickle.dump(tabscanLung, open( os.path.join(path_data_write,"tabscanLung"), "wb" ),protocol=-1)
+#            pickle.dump(patch_list_cross, open( os.path.join(path_data_write,"patch_list_cross"), "wb" ),protocol=-1)
             pickle.dump(tabMed, open( os.path.join(path_data_write,"tabMed"), "wb" ),protocol=-1)
             """
             proba_cross= pickle.load( open( os.path.join(path_data_write,"proba_cross"),"rb" ))
@@ -1812,8 +1810,8 @@ def predictrun(indata,path_patient):
                 model=modelCompilation('front',picklein_file,picklein_file_front)
                 proba_front=ILDCNNpredict(patch_list_front,model)
                 
-                pickle.dump(proba_front, open( os.path.join(path_data_write,"proba_front"), "wb" ),protocol=-1)
-                pickle.dump(patch_list_front, open( os.path.join(path_data_write,"patch_list_front"), "wb" ),protocol=-1)
+#                pickle.dump(proba_front, open( os.path.join(path_data_write,"proba_front"), "wb" ),protocol=-1)
+#                pickle.dump(patch_list_front, open( os.path.join(path_data_write,"patch_list_front"), "wb" ),protocol=-1)
                 """
                 proba_front=pickle.load(open( os.path.join(path_data_write,"proba_front"), "rb" ))
                 patch_list_front=pickle.load(open( os.path.join(path_data_write,"patch_list_front"), "rb" ))
@@ -1852,8 +1850,8 @@ def predictrun(indata,path_patient):
                 patch_list_merge_slice,patch_list_merge_slice_sub=genepatchlistslice(patch_list_merge,
                                                             proba_merge,lissln,subpleurmask,thrpatch)
                 
-                pickle.dump(proba_merge, open( os.path.join(path_data_write,"proba_merge"), "wb" ),protocol=-1)
-                pickle.dump(patch_list_merge, open( os.path.join(path_data_write,"patch_list_merge"), "wb" ),protocol=-1)
+#                pickle.dump(proba_merge, open( os.path.join(path_data_write,"proba_merge"), "wb" ),protocol=-1)
+#                pickle.dump(patch_list_merge, open( os.path.join(path_data_write,"patch_list_merge"), "wb" ),protocol=-1)
                 pickle.dump(patch_list_merge_slice, open( os.path.join(path_data_write,"patch_list_merge_slice"), "wb" ),protocol=-1)
                 pickle.dump(patch_list_merge_slice_sub, open( os.path.join(path_data_write,"patch_list_merge_slice_sub"), "wb" ),protocol=-1)
                 """

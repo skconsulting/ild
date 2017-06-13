@@ -259,9 +259,10 @@ def initdictP(d, p):
     return d
 
 
-
-def openfichiervolume(listHug,path_patient,patch_list_cross_slice,patch_list_cross,
+def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
                       lungSegment,tabMed,thrprobaUIP,patch_list_cross_slice_sub):
+#def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
+#                      lungSegment,tabMed,thrprobaUIP,patch_list_cross_slice_sub):
     global  quitl,dimtabx,dimtaby,patchi,ix,iy
     print 'openfichiervolume start',path_patient
     quitl=False
@@ -276,7 +277,8 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,patch_list_cro
     dictPS['middleset'] = (0, 0)
     dictPS['lowerset'] = (0, 0)
     dictPS['all'] = (0, 0)
-    dictPS = calculSurface(dirf,patch_list_cross, tabMed,lungSegment,dictPS)
+    dictPS = calculSurface(dirf,patch_list_cross_slice, tabMed,lungSegment,dictPS)
+
 
     for patt in classif:
         dictP = initdictP(dictP, patt)
@@ -345,11 +347,11 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,patch_list_cro
     dictPosTextImage['right_upper']=(200,215)
 
     dictPosTextImage['left_sub_lower']=(480,660)
-    dictPosTextImage['left_sub_middle']=(610,380)
+    dictPosTextImage['left_sub_middle']=(625,380) #610
     dictPosTextImage['left_sub_upper']=(450,150)
 
     dictPosTextImage['right_sub_lower']=(170,660)
-    dictPosTextImage['right_sub_middle']=(70,380)
+    dictPosTextImage['right_sub_middle']=(43,380)
     dictPosTextImage['right_sub_upper']=(200,150)
 
     dimtabx=lung_left.shape[0]
@@ -494,7 +496,7 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,patch_list_cro
     return ''
 
 
-def openfichier(ti,datacross,patch_list,proba,path_img,thrprobaUIP,patch_list_cross_slice):
+def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice):
     global  quitl,dimtabx,dimtaby,patchi,ix,iy
     print 'openfichier start'
     quitl=False
@@ -721,12 +723,12 @@ def visuarun(indata,path_patient):
             listHug=(lpt[0:pos])
             messageout="no predict!for "+listHug
             return messageout
-#    print 'listhug',listHug
+
     patient_path_complet=os.path.join(path_patient,listHug)
-#    print patient_path_complet
+
     path_data_dir=os.path.join(patient_path_complet,path_data)
     viewstyle=indata['viewstyle']
-#    print 'viewstyle',viewstyle
+
     pathhtml=os.path.join(patient_path_complet,htmldir)
     if viewstyle=='from cross predict':
             namefilehtml=listHug+'_'+threeFile
@@ -748,67 +750,50 @@ def visuarun(indata,path_patient):
 
     elif viewstyle=='cross view':
             datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "rb" ))
-            patch_list= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross"), "rb" ))
-            proba= pickle.load( open( os.path.join(path_data_dir,"proba_cross"), "rb" ))
             patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice"), "rb" ))
             thrprobaUIP=float(indata['thrprobaUIP'])
-            messageout=openfichier(viewstyle,datarep,patch_list,proba,patient_path_complet,thrprobaUIP,patch_list_cross_slice)
+            messageout=openfichier(viewstyle,datarep,patient_path_complet,thrprobaUIP,patch_list_cross_slice)
             
     elif viewstyle=='front view':
             datarep= pickle.load( open( os.path.join(path_data_dir,"datafront"), "rb" ))
-            patch_list= pickle.load( open( os.path.join(path_data_dir,"patch_list_front"), "rb" ))
-            proba= pickle.load( open( os.path.join(path_data_dir,"proba_front"), "rb" ))
             patch_list_front_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_front_slice"), "rb" ))
             thrprobaUIP=float(indata['thrprobaUIP'])
-            messageout=openfichier(viewstyle,datarep,patch_list,proba,patient_path_complet,thrprobaUIP,patch_list_front_slice)
+            messageout=openfichier(viewstyle,datarep,patient_path_complet,thrprobaUIP,patch_list_front_slice)
             
     elif viewstyle=='volume view from cross':
-#            dictSurf= pickle.load( open( os.path.join(path_data_dir,"dictSurf"), "r" ))
-#            proba_cross= pickle.load( open( os.path.join(path_data_dir,"proba_cross"), "r" ))
+
             patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice"), "rb" ))
             patch_list_cross_slice_sub= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice_sub"), "rb" ))
-            patch_list_cross= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross"), "rb" ))
-#            tabscanLung= pickle.load( open( os.path.join(path_data_dir,"tabscanLung"), "r" ))
             lungSegment= pickle.load( open( os.path.join(path_data_dir,"lungSegment"), "rb" ))
-#            subpleurmask= pickle.load( open( os.path.join(path_data_dir,"subpleurmask"), "r" ))
             tabMed= pickle.load( open( os.path.join(path_data_dir,"tabMed"), "rb" ))
             thrprobaUIP=float(indata['thrprobaUIP'])
-#            thrpatch=float(indata['thrpatch'])
-#            subErosion=float(indata['subErosion'])
             
-            messageout = openfichiervolume(listHug,path_patient,patch_list_cross_slice,patch_list_cross,
+            messageout = openfichiervolume(listHug,path_patient,patch_list_cross_slice,
                       lungSegment,tabMed,thrprobaUIP,patch_list_cross_slice_sub)
     
     elif viewstyle=='volume view from front':
-#            dictSurf= pickle.load( open( os.path.join(path_data_dir,"dictSurf"), "r" ))
-#            proba_cross= pickle.load( open( os.path.join(path_data_dir,"proba_cross"), "r" ))
             patch_list_front_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_front_slice"), "rb" ))
             patch_list_front_slice_sub= pickle.load( open( os.path.join(path_data_dir,"patch_list_front_slice_sub"), "rb" ))
-            patch_list_front= pickle.load( open( os.path.join(path_data_dir,"patch_list_front"), "rb" ))
             lungSegmentfront= pickle.load( open( os.path.join(path_data_dir,"lungSegmentfront"), "rb" ))
-
             tabMedfront= pickle.load( open( os.path.join(path_data_dir,"tabMedfront"), "rb" ))
             thrprobaUIP=float(indata['thrprobaUIP'])
-
-            messageout = openfichiervolume(listHug,path_patient,patch_list_front_slice,patch_list_front,
+            
+            messageout = openfichiervolume(listHug,path_patient,patch_list_front_slice,
                       lungSegmentfront,tabMedfront,thrprobaUIP,patch_list_front_slice_sub)
 
     elif viewstyle=='merge view':
 
             thrprobaUIP=float(indata['thrprobaUIP'])
             datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "rb" ))
-            patch_list_merge= pickle.load( open( os.path.join(path_data_dir,"patch_list_merge"), "rb" ))
-            proba_merge= pickle.load( open( os.path.join(path_data_dir,"proba_merge"), "rb" ))
+#            patch_list_merge= pickle.load( open( os.path.join(path_data_dir,"patch_list_merge"), "rb" ))
+#            proba_merge= pickle.load( open( os.path.join(path_data_dir,"proba_merge"), "rb" ))
             patch_list_merge_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_merge_slice"), "rb" ))
-            messageout=openfichier(viewstyle,datarep,patch_list_merge,proba_merge,patient_path_complet,thrprobaUIP,patch_list_merge_slice)
+            messageout=openfichier(viewstyle,datarep,patient_path_complet,thrprobaUIP,patch_list_merge_slice)
     
     elif viewstyle=='front projected view':
 
             thrprobaUIP=float(indata['thrprobaUIP'])
-#            datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "rb" ))
             tabfromfront= pickle.load( open( os.path.join(path_data_dir,"tabfromfront"), "rb" ))
-#            proba_merge= pickle.load( open( os.path.join(path_data_dir,"proba_merge"), "rb" ))
-#            patch_list_merge_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_merge_slice"), "rb" ))
             messageout=openfichierfrpr(path_patient,tabfromfront,thrprobaUIP)
     
     else:
