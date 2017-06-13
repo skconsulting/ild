@@ -467,10 +467,10 @@ def tagviewn(tab,label,pro,nbr,x,y):
     return viseg
 
 def  visua(listelabelfinal,dirf,patch_list,dimtabx,dimtaby,
-           slnt,predictout,sroi,scan_bmp,sou,dcmf,dct,errorfile,nosource):
+           slnt,predictout,sroi,scan_bmp,sou,dcmf,dct,errorfile,nosource,typevi):
     global thrproba,picklein_file,picklein_file_front
     tv=mytime()
-    print('visualisation',scan_bmp)
+    print('visualisation',typevi)
     rsuid=random.randint(0,1000)
 
     sliceok=[]
@@ -554,11 +554,7 @@ def  visua(listelabelfinal,dirf,patch_list,dimtabx,dimtaby,
             xpat=pn[ll][0][0]
             ypat=pn[ll][0][1]
             proba=pn[ll][1]
-#            print 'slicenumber, pn' ,slicenumber, pn
-#            print 'proba',proba
-#            print 'xpat',xpat
-#            print 'ypat',ypat
-#            ooo
+
             prec, mprobai = maxproba(proba)
             mproba=round(mprobai,2)
             classlabel=fidclass(prec,classif)
@@ -596,12 +592,8 @@ def  visua(listelabelfinal,dirf,patch_list,dimtabx,dimtaby,
         tablscan = cv2.cvtColor(tablscan, cv2.COLOR_BGR2RGB)
 
         vis=drawContour(imgt,listlabel,dimtabx,dimtaby)
-#        print slicenumber,dsr.shape, type(dsr[0][0][0]),type(vis[0][0][0]),vis.shape,type(tablscan[0][0][0]),tablscan.shape
-#        ooo
-#        print slicenumber
+
         imn=cv2.add(tablscan,vis)
-
-
 
         if foundp:
             for ll in listlabelrec:
@@ -609,7 +601,7 @@ def  visua(listelabelfinal,dirf,patch_list,dimtabx,dimtaby,
                 imn=tagviewn(imn,ll,str(listlabelaverage[ll]),listlabelrec[ll],delx,0)
             t0='average probability'
         else:
-                errorfile.write('no recognised label in: '+str(dptail)+' '+str (img)+'\n' )
+#                errorfile.write('no recognised label in: '+str(dptail)+' '+str (img)+'\n' )
                 t0='no recognised label'
         t1=''
         t2=' '
@@ -630,6 +622,7 @@ def  visua(listelabelfinal,dirf,patch_list,dimtabx,dimtaby,
         cv2.imwrite(predict_outFile,imn)
 #        errorfile.write('\n'+'number of labels in :'+str(dptop)+' '+str(dptail)+str (img)+'\n' )
 #    print listlabelf
+    errorfile.write('type :'+typevi+'\n')
     for classlabel in listlabelf:
           listelabelfinal[classlabel]=listlabelf[classlabel]
           print 'patient: ',dptail,', label:',classlabel,': ',listlabelf[classlabel]
@@ -1785,7 +1778,7 @@ def predictrun(indata,path_patient):
             """
 #            print 'patch_list_cross_slice[1]',patch_list_cross_slice[1]
             visua(listelabelfinal,dirf,patch_list_cross_slice,dimtabx,
-                  dimtabx,slnt,predictout,sroi,scan_bmp,source,dicompathdircross,True,errorfile,nosource)            
+                  dimtabx,slnt,predictout,sroi,scan_bmp,source,dicompathdircross,True,errorfile,nosource,'cross')            
             genethreef(dirf,patch_list_cross,proba_cross,slicepitch,dimtabx,dimtabx,dimpavx,slnt,'cross')
 #            """
     ###       cross
@@ -1825,7 +1818,7 @@ def predictrun(indata,path_patient):
                 patch_list_front_slice,patch_list_front_slice_sub=genepatchlistslice(patch_list_front,
                                                             proba_front,lisslnfront,subpleurmaskfront,thrpatch)
                 visua(listelabelfinal,dirf,patch_list_front_slice,dimtabxn,dimtabx,
-                      dimtabyn,predictout3d,sroid,transbmp,source,dicompathdirfront,False,errorfile,nosource)
+                      dimtabyn,predictout3d,sroid,transbmp,source,dicompathdirfront,False,errorfile,nosource,'front')
                 tabMedfront = calcMed(tabLung3d,lungSegmentfront)
                 
                 pickle.dump(tabMedfront, open( os.path.join(path_data_write,"tabMedfront"), "wb" ),protocol=-1)
@@ -1861,7 +1854,7 @@ def predictrun(indata,path_patient):
                 patch_list_merge_slice_sub=pickle.load(open( os.path.join(path_data_write,"patch_list_merge_slice_sub"), "rb" ))
                 """                                              
                 visua(listelabelfinal,dirf,patch_list_merge_slice,dimtabx,dimtabx
-                      ,slnt,predictoutmerge,sroi,scan_bmp,source,dicompathdirmerge,True,errorfile,nosource)
+                      ,slnt,predictoutmerge,sroi,scan_bmp,source,dicompathdirmerge,True,errorfile,nosource,'merge')
                 genethreef(dirf,patch_list_merge,proba_merge,slicepitch,dimtabx,dimtabx,dimpavx,slnt,'merge')
 
             errorfile.write('completed :'+f)

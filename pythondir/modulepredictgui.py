@@ -90,14 +90,15 @@ def draw_circle(event,x,y,flags,img):
 def contrasti(im,r):
 #     tabi = np.array(im)
      r1=0.5+r/100.0
+     im=im.astype(np.uint16)
      tabi1=im*r1
      tabi2=np.clip(tabi1,0,255)
      tabi3=tabi2.astype(np.uint8)
      return tabi3
 
 def lumi(tabi,r):
-#    tabi = np.array(im)
     r1=r
+    tabi=tabi.astype(np.uint16)
     tabi1=tabi+r1
     tabi2=np.clip(tabi1,0,255)
     tabi3=tabi2.astype(np.uint8)
@@ -130,11 +131,11 @@ def tagviewn(fig,label,pro,nbr,x,y):
 
 
 
-def drawpatch(t,dx,dy,slnum,va,patch_list_cross_slice):
+def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice):
     imgn = np.zeros((dx,dy,3), np.uint8)
     ill = 0
 #    endnumslice=k.find('.bmp')
-    slicenumber=slnum
+#    slicenumber=slnum
     th=t/100.0
     listlabel={}
     listlabelaverage={}
@@ -515,16 +516,13 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice):
     else:
         sn=transbmp
         corectnumber=0
-#        psroi=os.path.join(path_img,sroi3d)
 
     pdirk = os.path.join(path_img,source_name)
     pdirk = os.path.join(pdirk,sn)
     list_image={}
     cdelimter='_'
     extensionimage='.'+typei
-#    print pdirk
-#    if os.path.exists(psroi):
-#        pdirk=psroi
+
     limage=[name for name in os.listdir(pdirk) if name.find('.'+typei,1)>0 ]
     if len(limage)==0:
          limage=[name for name in os.listdir(pdirk) if name.find('.'+typei1,1)>0 ]
@@ -532,12 +530,8 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice):
         
     if ((ti =="cross view" or ti =="merge view") and len(limage)+1==slnt) or ti =="front view":
 
-#        for iimage in range(0,slnt-1):
         for iimage in limage:
 
-#            print iimage
-#            s=limage[iimage]
-                #s: file name, c: delimiter for snumber, e: end of file extension
             sln=rsliceNum(iimage,cdelimter,extensionimage)
             list_image[sln]=iimage
 
@@ -593,18 +587,22 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice):
             slicenumber=fl+corectnumber
             imagel=os.path.join(pdirk,list_image[slicenumber])
             img = cv2.imread(imagel,1)
-
+            
             imglumi=lumi(img,l)
             imcontrast=contrasti(imglumi,c)
+            if int(slicenumber) ==13:
+                print img[40][40],imglumi[40][40],imcontrast[40][40]
+                
             imcontrast=cv2.cvtColor(imcontrast,cv2.COLOR_BGR2RGB)
 
     #        print 'imcontrast',imcontrast.shape, imcontrast.dtype
             imgn= drawpatch(tl,dimtabx,dimtaby,slicenumber,viewasked,patch_list_cross_slice)
 
             imgngray = cv2.cvtColor(imgn,cv2.COLOR_BGR2GRAY)
+            np.putmask(imgngray,imgngray>0,255)
     #        print 'imgray',imgngray.shape, imgngray.dtype
             mask_inv = cv2.bitwise_not(imgngray)
-    #        print 'mask_inv',mask_inv.shape, mask_inv.dtype
+#            print 'mask_inv',mask_inv.shape, mask_inv.min(),mask_inv.max()
             outy=cv2.bitwise_and(imcontrast,imcontrast,mask=mask_inv)
 
     #        print 'imgn',imgn.shape, imgn.dtype

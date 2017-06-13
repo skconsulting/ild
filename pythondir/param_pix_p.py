@@ -187,36 +187,8 @@ if setdata=='set2':
         ]
 else:
     print 'error: not defined set'
-    
-#usedclassif=[
-#        'back_ground',
-#        'healthy',
-#        'ground_glass',
-#        'reticulation',
-#        'HC',
-#        'micronodules',
-#        'consolidation',
-#        'air_trapping',
-#        'cysts',
-#        'bronchiectasis',
-#        ]
-#
-#notusedclassif=[]
-#for i in classif:
-#    if i not in usedclassif:
-#        notusedclassif.append(i)
 
 
-#classifnotvisu=['back_ground',
-#        'healthy',
-#        'reticulation',
-##        'HC',
-#        'micronodules',
-#        'consolidation',
-#        'air_trapping',
-#        'cysts',
-##        'bronchiectasis'
-#        ]
 
 classifc ={
     'back_ground':chatain,
