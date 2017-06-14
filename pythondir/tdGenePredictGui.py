@@ -16,8 +16,8 @@ def reshapeScan(tabscan,slnt,dimtabx):
 def genebmp(fn,sou,nosource):
     """generate patches from dicom files"""
     global picklein_file
-    print ('load dicom files in :',fn)
     (top,tail) =os.path.split(fn)
+    print ('load scan dicom files in:' ,tail)
     lislnn=[]
     fmbmp=os.path.join(fn,sou)
     fmbmpbmp=os.path.join(fmbmp,scan_bmp)
@@ -199,9 +199,9 @@ def morph(imgt,k):
 def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan):
     """generate patches from dicom files"""
 
-    print ('load dicom files for lung in :',fn)
+    
     (top,tail) =os.path.split(fn)
-
+    print ('load lung segmented dicom files in :',tail)
     fmbmp=os.path.join(fn,lungname)
     if not os.path.exists(fmbmp):
         os.mkdir(fmbmp)       
@@ -532,9 +532,12 @@ def  visua(listelabelfinal,dirf,patch_list,dimtabx,dimtaby,
 
 
         imgt = np.zeros((dimtabx,dimtaby,3), np.uint8)
+       
         listlabelaverage={}
         listlabel={}
         listlabelrec={}
+        foundroi=False
+#        tablscan=np.zeros((dimtabx,dimtaby,3), np.uint8)
         if sroiE:
             for imgsroi in listbmpsroi:
                 slicenumbersroi=rsliceNum(imgsroi,'_','.'+typeiroi1)
@@ -542,10 +545,16 @@ def  visua(listelabelfinal,dirf,patch_list,dimtabx,dimtaby,
                     slicenumbersroi=rsliceNum(imgsroi,'_','.'+typeiroi2)
                 if slicenumbersroi==slicenumber:
                     imgc=os.path.join(dirpatientfdbsroi,imgsroi)
+                    tablscan=cv2.imread(imgc,1)
+                    foundroi=True
                     break
+            if not foundroi:
+                 imgc=os.path.join(dirpatientfdbsource,img)
+                 tablscan=cv2.imread(imgc,1)
+#                 tablscan=np.zeros((dimtabx,dimtaby,3), np.uint8)
         else:
             imgc=os.path.join(dirpatientfdbsource,img)
-        tablscan=cv2.imread(imgc,1)
+            tablscan=cv2.imread(imgc,1)
 
         foundp=False
         pn=patch_list[slicenumber]
@@ -592,7 +601,6 @@ def  visua(listelabelfinal,dirf,patch_list,dimtabx,dimtaby,
         tablscan = cv2.cvtColor(tablscan, cv2.COLOR_BGR2RGB)
 
         vis=drawContour(imgt,listlabel,dimtabx,dimtaby)
-
         imn=cv2.add(tablscan,vis)
 
         if foundp:
@@ -1632,11 +1640,14 @@ def predictrun(indata,path_patient):
 #        print path_patient
 #        print indata
 #        ooo
-        
+        print '-------------------'
         if indata['threedpredictrequest']=='Cross Only':
            td=False
+           
+           print 'CROSS PREDICT'
         else:
             td=True
+            print 'CROSS +FRONT PREDICT'
         thrproba=float(indata['thrproba'])
         thrprobaMerge=float(indata['thrprobaMerge'])
         thrprobaUIP=float(indata['thrprobaUIP'])
@@ -1671,7 +1682,7 @@ def predictrun(indata,path_patient):
 
        
         for f in listHug:
-           
+            print '------------------'
             print 'work on patient',f
             lungSegment={}
             patch_list_cross_slice={}
@@ -1726,7 +1737,9 @@ def predictrun(indata,path_patient):
             remove_folder(dicompathdirmerge)
             os.mkdir(dicompathdirmerge)
 
-            
+            print '------------------'
+            print 'START PREDICT CROSS'
+            print '------------------'
             tabscanScan,slnt,dimtabx,slicepitch,lissln=genebmp(dirf,source,nosource)
             lungSegment=selectposition(lissln)
 
@@ -1784,6 +1797,8 @@ def predictrun(indata,path_patient):
     ###       cross
             if td:
 #                """
+                print 'START PREDICT FRONT'
+                print '------------------'
                 tabresScan=reshapeScan(tabscanScan,slnt,dimtabx)
                 dimtabxn,dimtabyn,tabScan3d,lisslnfront=wtebres(wridir,dirf,tabresScan,dimtabx,slicepitch,lung_name_gen,'scan')
                 tabresLung=reshapeScan(tabscanLung,slnt,dimtabx)               
@@ -1859,9 +1874,11 @@ def predictrun(indata,path_patient):
 
             errorfile.write('completed :'+f)
             errorfile.close()
+            print 'PREDICT  COMPLETED'
+            print '------------------'
 
 
 #errorfile.close()
-print "predict time:",round(mytime()-t0,3),"s"
+        print "predict time:",round(mytime()-t0,3),"s"
 
 #ILDCNNpredict(bglist)

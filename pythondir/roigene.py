@@ -290,6 +290,7 @@ def delall():
 def contrasti(im,r):
 
      r1=0.5+r/100.0
+     im=im.astype(np.uint16)
      tabi1=im*r1
      tabi2=np.clip(tabi1,0,imageDepth)
      tabi3=tabi2.astype(np.uint8)
@@ -298,6 +299,7 @@ def contrasti(im,r):
 def lumi(tabi,r):
 
     r1=r
+    tabi1=tabi1.astype(np.uint16)
     tabi1=tabi+r1
     tabi2=np.clip(tabi1,0,imageDepth)
     tabi3=tabi2.astype(np.uint8)
