@@ -15,23 +15,28 @@ cwd=os.getcwd()
 (cwdtop,tail)=os.path.split(cwd)
 #print cwd
 #namedirtop='pickle_ex/pickle_ex71'
-namedirtop='pickle'
+namedirtop='pickle_e'
 pfile = os.path.join(cwdtop,namedirtop)
 print pfile
 # which file is the source
 fileis = [name for name in os.listdir(pfile) if ".csv" in name.lower()]
 #print filei
+ordfb=[]
+ordf=[]
 for f in fileis:
-       
-#       if ".csv" in f.lower():
-#           print f
-           if f.find("Best")>0  :
-#               print 'best:', f
-               fb= f
-           else:
-#               print 'all:',f
-
-               ft=f
+   nbs = os.path.getmtime(os.path.join(pfile,f))
+   tt=(f,nbs)
+   if f.find("Best")>0  :              
+        ordfb.append(tt)               
+   else:
+        ordf.append(tt)
+ordlistfb=sorted(ordfb,key=lambda col:col[1],reverse=True)
+#print ordlistfb
+fb=ordlistfb[0][0]
+ordlistft=sorted(ordf,key=lambda col:col[1],reverse=True)
+#print ordlistft
+ft=ordlistft[0][0]
+ 
 print 'all:', ft
 print 'best :',fb
 ##total file
@@ -46,7 +51,6 @@ with open(filei, 'rb') as csvfile:
     x = []
 #    print reader
     for row in reader:
-#        print row
         fscore.append([float(row[' Val_fscore'])])
         val_accuracy.append([float(row[' Val_acc'])])
         train_loss.append([float(row[' Train_loss'])])
@@ -59,6 +63,7 @@ print ' Val_fscore',' Val_acc',' Train_loss',' Val_loss'
 print (row[' Val_fscore'][0:6],row[' Val_acc'][0:6],\
        row[' Train_loss'][0:6],row[' Val_loss'][0:6])
 print '--------------'
+
 # plotting
 
 fig = plt.figure()
@@ -74,17 +79,23 @@ ax.yaxis.set_label_position("right")
 ax.yaxis.set_ticks_position('both')
 
 
-plt.ylim(0.6,0.8)
+#plt.ylim(0.6,0.8)
 plt.ylim(0,1)
 ax.plot(x,fscore, label='fscore');
 ax.plot(x,val_accuracy, label='val_acc');
-ax.plot(x,train_loss, label='train_loss');
-ax.plot(x,val_loss, label='val_loss');
+#ax.plot(x,train_loss, label='train_loss');
+#ax.plot(x,val_loss, label='val_loss');
 
 legend = ax.legend(loc='lower left', shadow=True,fontsize=10)
-#plt.show()
+plt.show()
+fig = plt.figure()
+ax = fig.add_subplot(1,1,1)
+ax.plot(x,train_loss, label='train_loss');
+ax.plot(x,val_loss, label='val_loss');
+legend = ax.legend(loc='lower left', shadow=True,fontsize=10)
+plt.show()
 
-
+print '--------'*10
 filei = os.path.join(pfile,fb)
 with open(filei, 'rb') as csvfile:
     reader = csv.DictReader(csvfile)

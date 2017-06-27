@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sun Apr 05 09:52:27 2017
-Version 1.0
-@author: sylvain
+V1.0 Created on Sun Apr 05 09:52:27 2017
+
+@author: sylvain Kritter 
+
+Version 1.1 15-June-2017
+bug fixed:
+    1
 """
 from param_pix_r import *
 from moduleroigui import *
@@ -79,7 +83,7 @@ def press(btn):
 def presshelp(btn):
 #    print 'help'
 
-    filehelp=os.path.join(pathRoiGeneDoc,'doc.pdf')
+    filehelp=os.path.join(pathRoiGeneDoc,'doc_roi.pdf')
 #    print filehelp
 #    webbrowser.open_new(r'file://C:\Users\sylvain\Documents\boulot\startup\radiology\roittool\modulepython\doc.pdf')
     webbrowser.open_new(r'file://'+filehelp)
@@ -130,6 +134,14 @@ def selectPatientDir():
                     pbg=True
 #                print 'exist',pbg
                 break
+            else:
+               ldcm= [name for name in os.listdir(os.path.join(lisdir,i)) if name.find('.dcm')>0]
+               if len(ldcm)>0:
+                    pickle.dump(lisdir,open( paramsaveDirf, "wb" ))
+#                print 'paramdict',paramdict
+                    if pbg==False:
+                        pbg=True
+                    break
     if pbg:
         app.stop(Stop)
         goodir=True

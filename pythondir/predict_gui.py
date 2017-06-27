@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sun Apr 02 09:52:27 2017
-Updated April 20 2017
-@author: sylvain
+V1.0 Created on Sun Apr 05 09:52:27 2017
+
+@author: sylvain Kritter 
+
+Version 1.1 15-June-2017
+bug fixed:
+    1
 """
 from param_pix_p import *
 from tdGenePredictGui import *
@@ -73,14 +77,14 @@ if os.path.exists(paramsaveDir):
             thrprobaUIP= paramdict['thrprobaUIP']
             picklein_file= paramdict['picklein_file']
             picklein_file_front= paramdict['picklein_file_front']
-            subErosion = paramdict['subErosion']
+            subErosion = paramdict['subErosion in mm']
 
     else:
         lisdir=os.environ['USERPROFILE']
         thrpatch= 0.95
-        thrproba=0.6
-        thrprobaMerge=0.6
-        thrprobaUIP= 0.6
+        thrproba=0.7
+        thrprobaMerge=0.7
+        thrprobaUIP= 0.7
         picklein_file= "pickle_ex80"
         picklein_file_front= "pickle_ex81"
         subErosion = 15  # erosion factor for subpleura in mm
@@ -231,6 +235,16 @@ def selectPatientDir():
                 if pbg==False:
                     pbg=True
                 break
+            else:
+               ldcm= [name for name in os.listdir(os.path.join(lisdir,i)) if name.find('.dcm')>0]
+               if len(ldcm)>0:
+                    paramdict['path_patient']=lisdir
+#                print 'paramdict',paramdict
+                    pickle.dump(paramdict,open( paramsaveDirf, "wb" ))
+                    if pbg==False:
+                        pbg=True
+                    break
+                   
 
     if pbg:
         app.stop(Stop)
@@ -248,7 +262,7 @@ def selectPatientDirB(btn):
 
 
 def presshelp(btn):
-    filehelp=os.path.join(pathPredictDoc,'doc.pdf')
+    filehelp=os.path.join(pathPredictDoc,'doc_predict.pdf')
 #    print filehelp
 #    webbrowser.open_new(r'file://C:\Users\sylvain\Documents\boulot\startup\radiology\roittool\modulepython\doc.pdf')
     webbrowser.open_new(r'file://'+filehelp)

@@ -3,24 +3,15 @@
 Created on Tue May 02 15:03:33 2017
 
 @author: sylvain
-generate data for segmentation roi
+generate data from dicom images for segmentation roi -1st step
 """
 #from __future__ import print_function
 from param_pix import *
-import os
-import dicom
-import numpy as np
-import cv2
- 
-import cPickle as pickle
-import shutil
-import time
-cwd=os.getcwd()
 
-(cwdtop,tail)=os.path.split(cwd)
-nameHug='HUG'
-#subHUG='ILD6'
-subHUG='ILD_TXT'
+#nameHug='HUG'
+nameHug='CHU'
+#subHUG='ILD5'
+subHUG='UIP2'
 
 path_HUG=os.path.join(cwdtop,nameHug)
 #path_HUG=os.path.join(nameHug,namsubHug)
@@ -45,11 +36,12 @@ if not os.path.isdir(picklepathdir):
 
 patchtoppath=os.path.join(path_HUG,patchesdirnametop)
 
-def genepara(fileList):
-    fileList =[name for name in  os.listdir(namedirtopcf) if ".dcm" in name.lower()]
+def genepara(fileList,namedir):
+    print 'gene parametres'
+    fileList =[name for name in  os.listdir(namedir) if ".dcm" in name.lower()]
     slnt=0
     for filename in fileList:
-        FilesDCM =(os.path.join(namedirtopcf,filename))
+        FilesDCM =(os.path.join(namedir,filename))
         RefDs = dicom.read_file(FilesDCM)
         scanNumber=int(RefDs.InstanceNumber)
         if scanNumber>slnt:
@@ -64,7 +56,7 @@ def tagviews(tab,text,x,y):
     viseg=cv2.putText(tab,text,(x, y), font,0.3,white,1)
     return viseg
  
-def genebmp(dirName,fileList,slnt):
+def genebmp(dirName,fileList,slnt,hug):
     """generate patches from dicom files and sroi"""
     print ('generate  bmp files from dicom files in :',f)
     (top,tail)=os.path.split(dirName)
@@ -73,7 +65,17 @@ def genebmp(dirName,fileList,slnt):
     bmp_dir = os.path.join(dirName, bmpname)
     remove_folder(bmp_dir)
     os.mkdir(bmp_dir)
-    lung_dir = os.path.join(dirName, lungmask)
+    if hug:
+        lung_dir = os.path.join(dirName, lungmask)
+        if not os.path.exists(lung_dir):
+            lung_dir = os.path.join(dirName, lungmask1)
+        
+    else:
+        (top,tail)=os.path.split(dirName)
+        lung_dir = os.path.join(top, lungmask)
+        if not os.path.exists(lung_dir):
+            lung_dir = os.path.join(top, lungmask1)
+        
     lung_bmp_dir = os.path.join(lung_dir,lungmaskbmp)
     remove_folder(lung_bmp_dir)
     os.mkdir(lung_bmp_dir)
@@ -195,6 +197,7 @@ def preparroi(namedirtopcf):
         patchpicklenamepatient=str(num)+'_'+patchpicklename        
         tabl=tabslung[num].copy()
         np.putmask(tabl,tabl>0,classif['healthy'])
+#        np.putmask(tabl,tabl==0,classif['back_ground'])
         
         pathpicklepatfile=os.path.join(pathpicklepat,patchpicklenamepatient)
         
@@ -211,7 +214,7 @@ def preparroi(namedirtopcf):
         roif=cv2.add(roi,tabroi[num]) 
 
         mask_list.append(roif)
-#        if num==13:
+#        if num==178:
 #            o=normi(roif)
 #            n=normi(datascan[num] )
 #            x=normi(tabroi[num])
@@ -235,72 +238,161 @@ def create_test_data(namedirtopcf,pat,tabscan,tabsroi,tabslung):
     print 'create test data for :', tail, 'pattern :',pat
     pathpat=os.path.join(namedirtopcf,pat)
     list_pos=os.listdir(pathpat)
+    list_image=[name for name in os.listdir(pathpat) if name.find('.dcm')>0] 
+  
+    if len(list_image)>0:
+            print 'it is CHU'
+            bmp_dir = os.path.join(pathpat, bmpname)
+            remove_folder(bmp_dir)
+            os.mkdir(bmp_dir)
+            for filename in list_image:
+                FilesDCM =(os.path.join(pathpat,filename))
+                RefDs = dicom.read_file(FilesDCM)
+                dsr= RefDs.pixel_array
+                dsr=dsr.astype('int16')
+                if dsr.max()>0:
+                    numslice=int(RefDs.InstanceNumber)
+                    if numslice not in numsliceok:
+                        numsliceok.append(numslice)
+                    peparescan(numslice,tabscan[numslice],tabslung[numslice])
+                    tabroi[numslice]=np.zeros((tabscan.shape[1],tabscan.shape[2]), np.uint8)
+                    endnumslice=filename.find('.dcm')
+                    imgcoredeb=filename[0:endnumslice]+'_'+str(numslice)+'.'
+        #            bmpfile=os.path.join(dirFilePbmp,imgcore)
+                    dsr[dsr == -2000] = 0
+                    intercept = RefDs.RescaleIntercept
+        #            print intercept
+                    slope = RefDs.RescaleSlope
+                    if slope != 1:
+                        dsr = slope * dsr.astype(np.float64)
+                        dsr = dsr.astype(np.int16)      
+                    dsr += np.int16(intercept)
+                    dsr = dsr.astype('int16')      
+                    dsr=cv2.resize(dsr,(image_cols, image_rows),interpolation=cv2.INTER_LINEAR)      
+                    dsrforimage=normi(dsr)               
+                    imgcored=imgcoredeb+typei
+                    bmpfiled=os.path.join(bmp_dir,imgcored)
+        #            print imgcoresroi,bmpfileroi   
+                    cv2.imwrite (bmpfiled, dsrforimage,[int(cv2.IMWRITE_PNG_COMPRESSION),0])
+                    
+                    np.putmask(dsrforimage,dsrforimage==1,0)
+                    newroic=dsrforimage.copy()
+                    np.putmask(newroic,newroic>0,1)            
+
+                    oldroi=tabroi[numslice].copy().astype(np.uint8)
+                    tabroinum=oldroi.copy()
+                    np.putmask(oldroi,oldroi>0,255)
+           
+                    oldroi=np.bitwise_not(oldroi)          
+            
+                    tabroix=cv2.bitwise_and(newroic,newroic,mask=oldroi)
+            
+                    np.putmask(dsrforimage,dsrforimage>0,classif[pat])
+            
+                    tabroif=cv2.bitwise_and(dsrforimage,dsrforimage,mask=tabroix)
+                    tabroif=cv2.add(tabroif,tabroinum)
+                    tabroi[numslice]=tabroif
+#                    o=normi(oldroi)
+#                    n=normi(dsrforimage)
+#                    x=normi(tabroix)
+#                    f=normi(tabroif)
+#                    cv2.imshow('oldroi',o)
+#                    cv2.imshow('newroi',n)
+#                    cv2.imshow('tabroix',x)
+#                    cv2.imshow('tabroif',f)
+#                    cv2.waitKey(0)
+#                    cv2.destroyAllWindows()
+##                
+#                                       
+                    if dsrforimage.max()>0:
+                       vis=contour2(dsrforimage,pat)
+                       if vis.sum()>0:
+                        _tabsroi = np.copy(tabsroi[numslice])
+                        imn=cv2.add(vis,_tabsroi)
+                        imn=tagview(imn,pat,0,100)
+                        tabsroi[numslice]=imn
+                        imn = cv2.cvtColor(imn, cv2.COLOR_BGR2RGB)
+                        sroifile='sroi_'+str(numslice)+'.'+typei
+                        filenamesroi=os.path.join(sroidir,sroifile)
+                        cv2.imwrite(filenamesroi,imn)
+            
+                 
  
-    for d in list_pos:
-        print 'localisation : ',d
-        pathpat2=os.path.join(pathpat,d)
-        list_image=os.listdir(pathpat2)
-   
-        for l in list_image:
-            pos=l.find('.')      
-            ext=l[pos:len(l)]
-            numslice=rsliceNum(l,'_',ext)
-            if numslice not in numsliceok:
-                numsliceok.append(numslice)
+    else:
+        for d in list_pos:
+            print 'localisation : ',d
+            pathpat2=os.path.join(pathpat,d)
+            list_image=os.listdir(pathpat2)
+       
+            for l in list_image:
+                pos=l.find('.')      
+                ext=l[pos:len(l)]
+                numslice=rsliceNum(l,'_',ext)
+                if numslice not in numsliceok:
+                    numsliceok.append(numslice)
                 peparescan(numslice,tabscan[numslice],tabslung[numslice])
                 tabroi[numslice]=np.zeros((tabscan.shape[1],tabscan.shape[2]), np.uint8)
-
-#            tabl=tabslung[numslice].copy()
-#            np.putmask(tabl,tabl>0,1)
-
-            newroi = cv2.imread(os.path.join(pathpat2, l), 0) 
-            newroi=cv2.resize(newroi,(image_cols, image_rows),interpolation=cv2.INTER_LINEAR)
-            newroic=newroi.copy()
-            np.putmask(newroic,newroic>0,1)            
-
-            oldroi=tabroi[numslice].copy().astype(np.uint8)
-            tabroinum=oldroi.copy()
-            np.putmask(oldroi,oldroi>0,255)
-           
-            oldroi=np.bitwise_not(oldroi)          
-            
-            tabroix=cv2.bitwise_and(newroic,newroic,mask=oldroi)
-            
-            np.putmask(newroi,newroi>0,classif[pat])
-            
-            tabroif=cv2.bitwise_and(newroi,newroi,mask=tabroix)
-            tabroif=cv2.add(tabroif,tabroinum)
-            tabroi[numslice]=tabroif
-#            o=normi(oldroi)
-#            n=normi(newroi)
-#            x=normi(tabroix)
-#            f=normi(tabroif)
-#            cv2.imshow('oldroi',o)
-#            cv2.imshow('newroi',n)
-#            cv2.imshow('tabroix',x)
-#            cv2.imshow('tabroif',f)
-#            cv2.waitKey(0)
-#            cv2.destroyAllWindows()
-#                
-#                                       
-            if newroi.max()>0:
-               vis=contour2(newroi,pat)
-               if vis.sum()>0:
-                _tabsroi = np.copy(tabsroi[numslice])
-                imn=cv2.add(vis,_tabsroi)
-                imn=tagview(imn,pat,0,100)
-                tabsroi[numslice]=imn
-                imn = cv2.cvtColor(imn, cv2.COLOR_BGR2RGB)
-                sroifile='sroi_'+str(numslice)+'.'+typei
-                filenamesroi=os.path.join(sroidir,sroifile)
-                cv2.imwrite(filenamesroi,imn)
+    
+    #            tabl=tabslung[numslice].copy()
+    #            np.putmask(tabl,tabl>0,1)
+    
+                newroi = cv2.imread(os.path.join(pathpat2, l), 0) 
+                newroi=cv2.resize(newroi,(image_cols, image_rows),interpolation=cv2.INTER_LINEAR)
+                newroic=newroi.copy()
+                np.putmask(newroic,newroic>0,1)            
+    
+                oldroi=tabroi[numslice].copy().astype(np.uint8)
+                tabroinum=oldroi.copy()
+                np.putmask(oldroi,oldroi>0,255)
+               
+                oldroi=np.bitwise_not(oldroi)          
+                
+                tabroix=cv2.bitwise_and(newroic,newroic,mask=oldroi)
+                
+                np.putmask(newroi,newroi>0,classif[pat])
+                
+                tabroif=cv2.bitwise_and(newroi,newroi,mask=tabroix)
+                tabroif=cv2.add(tabroif,tabroinum)
+                tabroi[numslice]=tabroif
+#                if numslice==16:
+#                    print newroi.min(),newroi.max()
+#                    o=normi(oldroi)
+#                    n=normi(newroi)
+#                    x=normi(tabroix)
+#                    f=normi(tabroif)
+#                    cv2.imshow('oldroi',o)
+#                    cv2.imshow('newroi',n)
+#                    cv2.imshow('tabroix',x)
+#                    cv2.imshow('tabroif',f)
+#                    cv2.waitKey(0)
+#                    cv2.destroyAllWindows()
+    #                
+    #                                       
+                if newroi.max()>0:
+                   vis=contour2(newroi,pat)
+                   if vis.sum()>0:
+                    _tabsroi = np.copy(tabsroi[numslice])
+                    imn=cv2.add(vis,_tabsroi)
+                    imn=tagview(imn,pat,0,100)
+                    tabsroi[numslice]=imn
+                    imn = cv2.cvtColor(imn, cv2.COLOR_BGR2RGB)
+                    sroifile='sroi_'+str(numslice)+'.'+typei
+                    filenamesroi=os.path.join(sroidir,sroifile)
+                    cv2.imwrite(filenamesroi,imn)
         
     return tabsroi
 
 listdirc= (os.listdir(namedirtopc))
+listpat=[]
+listslicetot={}
+listpatf={}
+print 'work on: ',namedirtopc
 for f in listdirc:
+    print '-----------------'
     print('work on:',f)
+    print '-----------------'
     numsliceok=[]
+    listslicetot[f]=0
     namedirtopcf=os.path.join(namedirtopc,f)
     sroidir=os.path.join(namedirtopcf,sroi)
     if os.path.exists(sroidir):
@@ -308,15 +400,53 @@ for f in listdirc:
         time.sleep(1)
     os.mkdir(sroidir)
     contenudir = [name for name in os.listdir(namedirtopcf) if name.find('.dcm')>0]
-
-    slnt = genepara(contenudir)
-    tabscan,tabsroi,tabslung=genebmp(namedirtopcf,contenudir,slnt)
-    contenupat = [name for name in os.listdir(namedirtopcf) if name in usedclassif]
+    if len(contenudir)>0:
+        slnt = genepara(contenudir,namedirtopcf)
+        tabscan,tabsroi,tabslung=genebmp(namedirtopcf,contenudir,slnt,True)
+    else:
+          namedirtopcfs=os.path.join(namedirtopcf,sourcedcm)
+          contenudir = [name for name in os.listdir(namedirtopcfs) if name.find('.dcm')>0]
+          slnt = genepara(contenudir,namedirtopcfs)
+          tabscan,tabsroi,tabslung=genebmp(namedirtopcfs,contenudir,slnt,False)
+         
+    contenupat = [name for name in os.listdir(namedirtopcf) if name in classif]
     datascan={}
     datamask={}
     tabroi={}
+    listpatf[f]=contenupat
     for pat in contenupat:
         print 'work on :',pat
+        if pat not in listpat:
+            listpat.append(pat)
         tabsroi=create_test_data(namedirtopcf,pat,tabscan,tabsroi,tabslung)
     preparroi(namedirtopcf)
+    listslicetot[f]=len(numsliceok)
+    print 'number of images :',len(numsliceok)
+
+print '-----------------------------'
+print 'list of patterns :',listpat
+print '-----------------------------'
+totsln=0
+for f in listdirc:
+    print 'patient :',f
+    print 'number of images for :',listslicetot[f]
+    print 'list of patterns :',listpatf[f]
+    print '-----------------------------'
+    totsln=totsln+listslicetot[f]
+print 'number total of images',totsln
+pathpatfile=os.path.join(patchtoppath,'listpat.txt')
+file = open(pathpatfile,"w")
+pat='back_ground'
+file.write(pat+' '+str(classif[pat])+ '\n')
+pat='healthy'
+file.write(pat+' '+str(classif[pat])+ '\n')
+file.write('--------------------\n')
+for pat in listpat:
+    file.write(pat+' '+str(classif[pat])+ '\n')
+for f in listdirc:
+    file.write('patient :'+f+'\n')
+    file.write('number of images for :'+str(listslicetot[f]) +'\n')
+    file.write('list of patterns :'+str(listpatf[f]) +'\n')
+    file.write('--------------------\n')
+file.close()
     

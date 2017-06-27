@@ -1,6 +1,7 @@
 # coding: utf-8
 #sylvain Kritter 04-Apr-2017
 '''predict on lung scan front view and cross view
+version 1.0
  '''
 from param_pix_p import *
 
@@ -31,8 +32,8 @@ def genebmp(fn,sou,nosource):
 
     FilesDCM =(os.path.join(fmbmp,listdcm[0]))
     FilesDCM1 =(os.path.join(fmbmp,listdcm[1]))
-    RefDs = dicom.read_file(FilesDCM)
-    RefDs1 = dicom.read_file(FilesDCM1)
+    RefDs = dicom.read_file(FilesDCM,force=True)
+    RefDs1 = dicom.read_file(FilesDCM1,force=True)
     patientPosition=RefDs.PatientPosition
 #    SliceThickness=RefDs.SliceThickness
     try:
@@ -55,7 +56,7 @@ def genebmp(fn,sou,nosource):
     for l in listdcm:
 
         FilesDCM =(os.path.join(fmbmp,l))
-        RefDs = dicom.read_file(FilesDCM)
+        RefDs = dicom.read_file(FilesDCM,force=True)
         slicenumber=int(RefDs.InstanceNumber)
         lislnn.append(slicenumber)
         if slicenumber> slnt:
@@ -67,7 +68,7 @@ def genebmp(fn,sou,nosource):
     for l in listdcm:
 #        print l
         FilesDCM =(os.path.join(fmbmp,l))
-        RefDs = dicom.read_file(FilesDCM)
+        RefDs = dicom.read_file(FilesDCM,force=True)
         slicenumber=int(RefDs.InstanceNumber)
 
         dsr= RefDs.pixel_array
@@ -217,7 +218,7 @@ def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan):
            
         for l in listdcm:
             FilesDCM =(os.path.join(fmbmp,l))
-            RefDs = dicom.read_file(FilesDCM)
+            RefDs = dicom.read_file(FilesDCM,force=True)
     
             dsr= RefDs.pixel_array
             dsr=normi(dsr)
@@ -264,6 +265,7 @@ def tagviews (tab,t0,x0,y0,t1,x1,y1,t2,x2,y2,t3,x3,y3,t4,x4,y4,t5,x5,y5):
 def pavgene(dirf,dimtabx,dimtaby,tabscanScan,tabscanLung,slnt,jpegpath):
         """ generate patches from scan"""
         global thrpatch
+
         tpav=mytime()
         
         patch_list=[]
@@ -294,7 +296,7 @@ def pavgene(dirf,dimtabx,dimtaby,tabscanScan,tabscanLung,slnt,jpegpath):
                  ymin=atabf[0].min()
                  ymax=atabf[0].max()
 
-                 i=xmin
+                 i=xmin                           
                  while i < xmax:
                      j=ymin
                      while j<ymax:
@@ -313,11 +315,11 @@ def pavgene(dirf,dimtabx,dimtaby,tabscanScan,tabscanLung,slnt,jpegpath):
 
                             if  min_val != max_val:
 #                                imgray= norm(imgray)
- 
                                 patch_list.append((img,i,j,imgray))
                                 tablung[j:j+dimpavy,i:i+dimpavx]=0
                                 cv2.rectangle(tabfw,(i,j),(i+dimpavx,j+dimpavy),yellow,0)
                                 j+=dimpavy-1
+
                          j+=1
                      i+=1
 
@@ -326,6 +328,7 @@ def pavgene(dirf,dimtabx,dimtaby,tabscanScan,tabscanLung,slnt,jpegpath):
                  tabjpeg=cv2.add(tabfw,tabfrgb)
                  scipy.misc.imsave(namepatchImage,tabjpeg)
         print "pav time:",round(mytime()-tpav,3),"s"
+
         return patch_list
 
 
@@ -509,7 +512,7 @@ def  visua(listelabelfinal,dirf,patch_list,dimtabx,dimtaby,
         if dct:
             for imgdcm in listdcm:
                  FilesDCM =(os.path.join(dirpatientfdbsource1,imgdcm))
-                 RefDs = dicom.read_file(FilesDCM)
+                 RefDs = dicom.read_file(FilesDCM,force=True)
                  slicenumberdicom=int(RefDs.InstanceNumber)
                  if slicenumberdicom==slicenumber:
                      dsr= RefDs.pixel_array
@@ -959,7 +962,7 @@ def reshapepatern(dirf,tabpx,dimtabxn,dimtaby,slnt,slicepitch,predictout,sou,dcm
 
                 for imgdcm in listdcm:
                  FilesDCM =(os.path.join(dirpatientfdb1,imgdcm))
-                 RefDs = dicom.read_file(FilesDCM)
+                 RefDs = dicom.read_file(FilesDCM,force=True)
                  slicenumberdicom=int(RefDs.InstanceNumber)
                  if slicenumberdicom==scan:
                      dsr= RefDs.pixel_array
@@ -1312,7 +1315,7 @@ def subpleural(dirf,tabscanLung,lungSegment,subErosion,crfr):
 
 def calcSupNp(dirf, patch_list_cross_slice, pat, tabMed,
               dictSubP,dictP,thrprobaUIP,lungSegment,patch_list_cross_slice_sub):
-    '''calculate the number of pat in subpleural'''
+    '''calculate the number of pat in lungsegment and in subpleural according to thrprobaUIP'''
     (top,tail)=os.path.split(dirf)
 #    print 'number of subpleural for :',tail, 'pattern :', pat
 
@@ -1374,7 +1377,15 @@ def calcSupNp(dirf, patch_list_cross_slice, pat, tabMed,
 
 
 def cvsarea(p, f, de, dse, s, dc, wf):
-    '''calculate area of patches related to total area'''
+    '''calculate area of patches related to total area
+      p: pat
+      f: volumefile
+      de:  dictP
+      dse:  dictSubP,
+      s:      dictPS
+      dc:      dictSurf,
+      wf:      writeFile
+     ''' 
     dictint = {}
     d = de[p]
     ds = dse[p]
@@ -1486,6 +1497,7 @@ def posP(sln, lungSegment):
 
 def calculSurface(dirf,posp, midx,lungSegment,dictPS):
     (top,tail)=os.path.split(dirf)
+    '''calculate surface of lung in term of number of rectangles pavement'''
 #    print 'calculate surface for :',tail
 
     for ll in posp:

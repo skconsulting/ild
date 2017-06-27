@@ -3,6 +3,7 @@
 Created on Mon Mar 20 17:21:22 2017
 
 @author: sylvain
+version 1.0
 """
 from param_pix_p import *
 from tdGenePredictGui import *
@@ -248,7 +249,6 @@ def findmaxvolume(dictSurf,poslung):
                 surfmax=dictSurf[pat][poslung]
 #                print surfmax,pat
                 patmax=pat
-
     return surfmax,patmax
 
 def initdictP(d, p):
@@ -279,7 +279,7 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
     dictPS['lowerset'] = (0, 0)
     dictPS['all'] = (0, 0)
     dictPS = calculSurface(dirf,patch_list_cross_slice, tabMed,lungSegment,dictPS)
-
+    voltotal=int(round(((dictPS['all'][0]+dictPS['all'][1])*volelem),0))
 
     for patt in classif:
         dictP = initdictP(dictP, patt)
@@ -372,16 +372,24 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
         cv2.createTrackbar( key,'SliderVol',0,1,nothings)
     imgbackg = np.zeros((dimtabx,dimtaby,3), np.uint8)
     posrc=0
+    xr=800
+    xrn=xr+10
     for key1 in classif:
-        xr=800
         yr=15*posrc
-        xrn=xr+10
+
         yrn=yr+10
         cv2.rectangle(imgbackg, (xr, yr),(xrn,yrn), classifc[key1], -1)
         cv2.putText(imgbackg,key1,(xr+15,yr+10),cv2.FONT_HERSHEY_PLAIN,1.0,classifc[key1],1 )
-        dictpostotal[key1]=(xr-110,yr+10)
+        dictpostotal[key1]=(xr-130,yr+10)
         posrc+=1
-
+    #for total volume
+    posrc+=1
+    yr=15*posrc
+    yrn=yr+10
+    cv2.rectangle(imgbackg, (xr, yr),(xrn,yrn), white, -1)
+    cv2.putText(imgbackg,key1,(xr+15,yr+10),cv2.FONT_HERSHEY_PLAIN,1.0,white,1 )
+    dictpostotal['total']=(xr-130,yr+10)
+    
     dxrect=(dimtaby/2)
     cv2.rectangle(imgbackg,(dxrect,dimtabx-30),(dxrect+40,dimtabx-10),red,-1)
     #        cv2.rectangle(imgt,(172,358),(192,368),white,-1)
@@ -422,7 +430,9 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
             thrprobaUIP=tl
             dictP, dictSubP, dictSurf= uipTree(dirf,patch_list_cross_slice,lungSegment,tabMed,dictPS,
                                                dictP,dictSubP,dictSurf,thrprobaUIP,patch_list_cross_slice_sub)
-            
+#            filet= open ('a.txt',"w")
+#            filet.write(str(dictP))
+#            filet.close()
 #            break
             surfmax={}
             patmax={}
@@ -431,13 +441,16 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
             img = np.zeros((dimtabx,dimtaby,3), np.uint8)
             cv2.putText(imgtext,'Threshold : '+str(tl),(50,50),cv2.FONT_HERSHEY_PLAIN,1,yellow,1,cv2.LINE_AA)
             if allview==1:
+
                 for patt in classif:
-                    vol=int(dictP[patt]['all'][0]+dictP[patt]['all'][1] *volelem)         
+                    vol=int(round(((dictP[patt]['all'][0]+dictP[patt]['all'][1] )*volelem),0))    
+
 #                    print patt,vol
                     cv2.putText(imgtext,'Vol ml: '+str(vol),(dictpostotal[patt][0],dictpostotal[patt][1]),
                                 cv2.FONT_HERSHEY_PLAIN,1.0,classifc[patt],1 )
-#                break
-
+                #total volume
+                cv2.putText(imgtext,'Total ml: '+str(voltotal),(dictpostotal['total'][0],dictpostotal['total'][1]),
+                                cv2.FONT_HERSHEY_PLAIN,1.0,white,1 )
                 for i in listPosLung:
 
     #                dictPosImage[i]=colorimage(dictPosImage[i],black)
@@ -463,7 +476,8 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
                     for pat in classif:
 #                        img = np.zeros((dimtabx,dimtaby,3), np.uint8)
                         if viewasked[pat]==True:
-                             vol=int(dictP[pat]['all'][0]+dictP[pat]['all'][1] *volelem)         
+                             vol=int(round(((dictP[pat]['all'][0]+dictP[pat]['all'][1] )*volelem),0)) 
+#                             vol=int((dictP[pat]['all'][0]+dictP[pat]['all'][1]) *volelem)         
 #                    print patt,vol
                              cv2.putText(imgtext,'Vol ml: '+str(vol),(dictpostotal[pat][0],dictpostotal[pat][1]),
                                 cv2.FONT_HERSHEY_PLAIN,1.0,classifc[pat],1 )
@@ -476,6 +490,8 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
                              cv2.rectangle(imgtext,(dictPosTextImage[i][0],dictPosTextImage[i][1]-15),(dictPosTextImage[i][0]+55,dictPosTextImage[i][1]),white,-1)
                              cv2.putText(imgtext,str(dictSurf[pat][i])+'%',(dictPosTextImage[i][0],dictPosTextImage[i][1]),cv2.FONT_HERSHEY_PLAIN,1.2,grey,1,)
 #            break
+                cv2.putText(imgtext,'Total ml: '+str(voltotal),(dictpostotal['total'][0],dictpostotal['total'][1]),
+                                cv2.FONT_HERSHEY_PLAIN,1.0,white,1 )
             imgtowrite=cv2.add(imgtext,imgbackg)
             imgray = cv2.cvtColor(imgtowrite,cv2.COLOR_BGR2GRAY)
             np.putmask(imgray,imgray>0,255)

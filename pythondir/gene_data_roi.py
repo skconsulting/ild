@@ -1,32 +1,25 @@
 # -*- coding: utf-8 -*-
 """
 Created on Tue May 02 15:04:39 2017
-
+Create Xtrain etc data for training 2nd step
 @author: sylvain
-prepare data for segmentation ROI
+
 """
 
 #from __future__ import print_function
 from param_pix import *
-import os
-import cv2
-import numpy as np
-import keras
-import theano
-from keras.utils import np_utils
-import cPickle as pickle
-import collections
-from sklearn.utils import class_weight
-from sklearn.model_selection import train_test_split
 
-
-print keras.__version__
-print theano.__version__
-nameHug='HUG'
+#nameHug='HUG'
+#nameHug='HUG'
+nameHUG='DUMMY'
 toppatch= 'TOPPATCH'
 #extension for output dir
-extendir='ILD_TXT'
-#extendir='ILD6'
+#extendir='ILD_TXT'
+#extendir='ILD0'
+#extendir='S3'
+extendir='lu_f2'
+#extendir='UIP'
+ldummy=False#True for geometric images
 
 extendir2=''
 pklnum=1
@@ -41,12 +34,12 @@ if len (extendir2)>0:
 pickel_dirsource=pickel_dirsource_root+'_'+extendir+sepextend2+extendir2
 
 
-cwd=os.getcwd()
-
-(cwdtop,tail)=os.path.split(cwd)
+#cwd=os.getcwd()
+#
+#(cwdtop,tail)=os.path.split(cwd)
 pickle_dir=os.path.join(cwdtop,pickel_dirsource)
-if not os.path.exists(pickle_dir):
-    os.mkdir(pickle_dir)
+remove_folder(pickle_dir)
+os.mkdir(pickle_dir)
 
 def get_class_weights(y):
     counter = collections.Counter(y)
@@ -73,7 +66,9 @@ def countclasses():
         for filei in image_files:
             usedpatient[category]=usedpatient[category]+1
 
-def readclasses1(usedpatient):
+
+
+def readclasses1(usedpatient,ldummy):
     patch_list=[]
     label_list=[]
 
@@ -90,8 +85,11 @@ def readclasses1(usedpatient):
             for i in range (len(readpkl[0])):
                                 
                 scan=readpkl[0][i]
-                mask=readpkl[1][i] 
-                scanm=norm(scan)
+                mask=readpkl[1][i]    
+                if not ldummy:
+                    scanm=norm(scan)
+                else:
+                     scanm=preprocess_batch(scan)
 #                o=normi(scan)
 #                on=normi(scanm)
 #                n=normi(mask)
@@ -100,6 +98,7 @@ def readclasses1(usedpatient):
 #                cv2.imshow('mask',n)
 #                cv2.waitKey(0)
 #                cv2.destroyAllWindows()
+#                ooo
                 patch_list.append(scanm)
                 label_list.append(mask)
     return patch_list, label_list   
@@ -108,7 +107,6 @@ def numbclasses(y):
     y_train = np.array(y)
     uniquelbls = np.unique(y_train)
     for pat in uniquelbls:
-#        print pat
         print  fidclass(pat,classif)
     
     nb_classes = int( uniquelbls.shape[0])
@@ -120,37 +118,94 @@ def numbclasses(y):
     
     return int(nb_classes),class_weights
 
-def readclasses2(num_classes,X_trainl,y_trainl):
+def readclasses2(num_classes,X_trainl,y_trainl,ldummy):
 
     X_traini, X_testi, y_traini, y_testi = train_test_split(X_trainl,
                                         y_trainl,test_size=0.2, random_state=42)
     
-    X_train = np.asarray(np.expand_dims(X_traini,1)) 
-#    X_train = np.repeat(X_train,3,axis=3) 
-    X_test = np.asarray(np.expand_dims(X_testi,1))    
-#    X_test = np.repeat(X_test,3,axis=3)        
-#    X_train = np.asarray(X_traini)
-#    X_test = np.asarray(X_testi) 
+    
+    if not ldummy:
+        X_train = np.asarray(np.expand_dims(X_traini,3)) 
+
+        X_test = np.asarray(np.expand_dims(X_testi,3))  
+        if num_bit==3:
+            X_train=np.repeat(X_train,3,axis=3)
+            X_test=np.repeat(X_test,3,axis=3)
+            
+    else:
+        if num_bit==3:
+            X_train = np.asarray(X_traini) 
+            X_test = np.asarray(X_testi)  
+        else:
+            X_train = np.asarray(X_traini) 
+            X_train = np.expand_dims(X_train,3) 
+            X_test = np.asarray(X_testi)  
+            X_test = np.expand_dims(X_test,3)
     y_train = np.array(y_traini)
     y_test = np.array(y_testi)
-     
+#    print X_train.shape
+#    print y_train.shape
+#    print y_train[3].min(),y_train[3].max()
+#    o=normi(X_train[3])
+#    x=normi(y_train[3])
+#    print x.min(),x.max()
+##            f=normi(tabroif)
+#    cv2.imshow('maski',o)
+#    cv2.imshow('tabroix',x)
+##            cv2.imshow('tabroif',f)
+#    cv2.imwrite('a.bmp',o)
+#    cv2.imwrite('b.bmp',x)
+#    cv2.imwrite('c.bmp',y_train[3])
+#    cv2.waitKey(0)
+#    cv2.destroyAllWindows()
+
     lytrain=y_train.shape[0]
     lytest=y_test.shape[0]
     
-    ytrainr=np.zeros((lytrain,image_rows, image_cols,int(num_classes)),np.uint8)
+   
+    ytrainr=np.zeros((lytrain,image_rows,image_cols,int(num_classes)),np.uint8)
     ytestr=np.zeros((lytest,image_rows, image_cols,int(num_classes)),np.uint8)
-
+    
+    
     for i in range (lytrain):
         for j in range (0,image_rows):
+#            print 'y_train[i][j]',y_train[i][j]
+#            print y_train[i][j].shape
+            
             ytrainr[i][j] = np_utils.to_categorical(y_train[i][j], num_classes)
-    
-    ytrainr=np.moveaxis(ytrainr,3,1)
+#            print 'ytrainr[i][j]',ytrainr[i][j]
+
     for i in range (lytest):
         for j in range (0,image_rows):
             ytestr[i][j] = np_utils.to_categorical(y_test[i][j], num_classes)
-#    print class_weights
-    ytestr=np.moveaxis(ytestr,3,1)
-    return X_train, X_test, ytrainr, ytestr       
+    """
+    for i in range (lytrain):
+#        yt=y_train[i].reshape(image_rows*image_cols)
+        yt=y_train[i]
+
+#        print yt.shape
+        ytrainr[i]=np_utils.to_categorical(yt, num_classes)
+    for i in range (lytest):
+#        yt=y_train[i].reshape(image_rows*image_cols)
+        yt=y_train[i]
+        print 'yt.shape',yt.shape
+        ytestr[i]=np_utils.to_categorical(yt, num_classes)
+        print 'ytestr[i].shape',ytestr[i].shape
+    
+    print ytrainr.shape
+    print ytestr.shape
+#    ooo
+    """
+#    print 'ytestr[i].shape',ytestr[0].shape
+#    print 'ytestr[i].shape',ytestr[0][100][100]
+        
+    
+    return X_train, X_test, ytrainr, ytestr  
+#    return X_train, X_test, y_train, y_test   
+
+
+#start main
+
    
 usedpatient={}
 usedpatientlist={}
@@ -164,7 +219,8 @@ countclasses()
 print ('patients found:')
 print ( usedpatient)
 print('----------------------------')
-
+if ldummy :print 'this is dummy'
+print('----------------------------')
 list_patient=[]
 for k,value in usedpatient.items():   
     list_patient.append(k)
@@ -179,7 +235,7 @@ for i in range(pklnum):
     listp=spl[i]
     print 'set number :',i,' ',listp
     print('-' * 30)
-    X_trainl[i],y_trainl[i]=readclasses1(listp)     
+    X_trainl[i],y_trainl[i]=readclasses1(listp,ldummy)     
     y_trainlist=y_trainlist+y_trainl[i]
 
 num_classes,class_weights=numbclasses(y_trainlist)
@@ -187,11 +243,12 @@ print "weights"
 for key,value in class_weights.items():
    print key, fidclass (key,classif), value
 print('-' * 30)
+
 for i in range(pklnum):
     diri=os.path.join(pickle_dir,str(i))
     remove_folder(diri)
     os.mkdir(diri)
-    X_train, X_test, y_train, y_test =readclasses2(num_classes,X_trainl[i],y_trainl[i])
+    X_train, X_test, y_train, y_test =readclasses2(num_classes,X_trainl[i],y_trainl[i],ldummy)
     print 'shape X_train :',X_train.shape
     print 'shape X_test :',X_test.shape
     print 'shape y_train :',y_train.shape
@@ -200,5 +257,28 @@ for i in range(pklnum):
     pickle.dump(y_train, open( os.path.join(diri,"y_train.pkl"), "wb" ),protocol=-1)
     pickle.dump(X_test, open( os.path.join(diri,"X_test.pkl"), "wb" ),protocol=-1)
     pickle.dump(y_test, open( os.path.join(diri,"y_test.pkl"), "wb" ),protocol=-1)
-    pickle.dump(class_weights, open( os.path.join(diri,"class_weights.pkl"), "wb" ),protocol=-1)
+pickle.dump(class_weights, open( os.path.join(pickle_dir,"class_weights.pkl"), "wb" ),protocol=-1)
+debug=True
+if debug:
+    xt=  pickle.load(open( os.path.join(diri,"X_train.pkl"), "rb" ))
+    yt=pickle.load(open( os.path.join(diri,"y_train.pkl"), "rb" ))
     
+    print 'xt', xt.shape
+    print 'xt', xt[0][:,:,0].shape
+    print 'xt[0][0][0]',xt[0][0][0]
+    print 'xt[0][10][10]',xt[0][10][10]
+    print 'yt', yt.shape
+    print 'yt[0][0][0]',yt[0][0][0]
+    print 'yt[0][10][10]',yt[0][10][10]
+    print 'xt min max', xt[0].min(), xt[0].max()
+    print 'yt min max',yt[0].min(), yt[0].max()
+    plt.figure(figsize = (5, 5))
+    #    plt.subplot(1,3,1)
+    #    plt.title('image')
+    #    plt.imshow( np.asarray(crpim) )
+    plt.subplot(1,2,1)
+    plt.title('image')
+    plt.imshow( normi(xt[0][:,:,0]*10).astype(np.uint8) )
+    plt.subplot(1,2,2)
+    plt.title('label')
+    plt.imshow( np.argmax(yt[0],axis=2) )

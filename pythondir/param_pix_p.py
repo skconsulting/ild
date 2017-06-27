@@ -57,6 +57,7 @@ pxy=float(dimpavx*dimpavy)
 
 avgPixelSpacing=0.734   # average pixel spacing
 volelem=avgPixelSpacing*avgPixelSpacing*avgPixelSpacing
+#print volelem
 
 modelname='ILD_CNN_model.h5'
 pathjs='../static'
