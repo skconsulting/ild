@@ -8,10 +8,12 @@ generate data from dicom images for segmentation roi -1st step
 #from __future__ import print_function
 from param_pix import *
 
-#nameHug='HUG'
-nameHug='CHU'
-#subHUG='ILD5'
-subHUG='UIP2'
+nameHug='HUG'
+#nameHug='CHU'
+subHUG='ILD5'
+#subHUG='ILD_TXT'
+
+#subHUG='UIP'
 
 path_HUG=os.path.join(cwdtop,nameHug)
 #path_HUG=os.path.join(nameHug,namsubHug)
@@ -238,6 +240,13 @@ def create_test_data(namedirtopcf,pat,tabscan,tabsroi,tabslung):
     print 'create test data for :', tail, 'pattern :',pat
     pathpat=os.path.join(namedirtopcf,pat)
     list_pos=os.listdir(pathpat)
+#    print list_pos
+    if not front_enabled:
+        try:
+            list_pos.remove(transbmp)
+        except:
+                print 'no trans'
+#    print list_pos
     list_image=[name for name in os.listdir(pathpat) if name.find('.dcm')>0] 
   
     if len(list_image)>0:
@@ -254,8 +263,8 @@ def create_test_data(namedirtopcf,pat,tabscan,tabsroi,tabslung):
                     numslice=int(RefDs.InstanceNumber)
                     if numslice not in numsliceok:
                         numsliceok.append(numslice)
-                    peparescan(numslice,tabscan[numslice],tabslung[numslice])
-                    tabroi[numslice]=np.zeros((tabscan.shape[1],tabscan.shape[2]), np.uint8)
+                        peparescan(numslice,tabscan[numslice],tabslung[numslice])
+                        tabroi[numslice]=np.zeros((tabscan.shape[1],tabscan.shape[2]), np.uint8)
                     endnumslice=filename.find('.dcm')
                     imgcoredeb=filename[0:endnumslice]+'_'+str(numslice)+'.'
         #            bmpfile=os.path.join(dirFilePbmp,imgcore)
@@ -292,6 +301,20 @@ def create_test_data(namedirtopcf,pat,tabscan,tabsroi,tabslung):
                     tabroif=cv2.bitwise_and(dsrforimage,dsrforimage,mask=tabroix)
                     tabroif=cv2.add(tabroif,tabroinum)
                     tabroi[numslice]=tabroif
+#                    if  numslice==91:
+#                        print tabroinum.min(),tabroinum.max()
+#                        o=normi(oldroi)
+#                        n=normi(tabroinum)
+#                        x=normi(tabroix)
+#                        f=normi(tabroif)
+#                        g=normi(tabroi[numslice])
+#                        cv2.imshow('oldroi',o)
+#                        cv2.imshow('tabroinum',n)
+#                        cv2.imshow('tabroix',x)
+#                        cv2.imshow('tabroif',f)
+#                        cv2.imshow('tabroi[numslice]',g)
+#                        cv2.waitKey(0)
+#                        cv2.destroyAllWindows()
 #                    o=normi(oldroi)
 #                    n=normi(dsrforimage)
 #                    x=normi(tabroix)
@@ -320,6 +343,7 @@ def create_test_data(namedirtopcf,pat,tabscan,tabsroi,tabslung):
  
     else:
         for d in list_pos:
+            
             print 'localisation : ',d
             pathpat2=os.path.join(pathpat,d)
             list_image=os.listdir(pathpat2)
@@ -330,8 +354,8 @@ def create_test_data(namedirtopcf,pat,tabscan,tabsroi,tabslung):
                 numslice=rsliceNum(l,'_',ext)
                 if numslice not in numsliceok:
                     numsliceok.append(numslice)
-                peparescan(numslice,tabscan[numslice],tabslung[numslice])
-                tabroi[numslice]=np.zeros((tabscan.shape[1],tabscan.shape[2]), np.uint8)
+                    peparescan(numslice,tabscan[numslice],tabslung[numslice])
+                    tabroi[numslice]=np.zeros((tabscan.shape[1],tabscan.shape[2]), np.uint8)
     
     #            tabl=tabslung[numslice].copy()
     #            np.putmask(tabl,tabl>0,1)
@@ -354,7 +378,7 @@ def create_test_data(namedirtopcf,pat,tabscan,tabsroi,tabslung):
                 tabroif=cv2.bitwise_and(newroi,newroi,mask=tabroix)
                 tabroif=cv2.add(tabroif,tabroinum)
                 tabroi[numslice]=tabroif
-#                if numslice==16:
+#                if pat=='ground_glass' and  numslice==15:
 #                    print newroi.min(),newroi.max()
 #                    o=normi(oldroi)
 #                    n=normi(newroi)
@@ -410,6 +434,7 @@ for f in listdirc:
           tabscan,tabsroi,tabslung=genebmp(namedirtopcfs,contenudir,slnt,False)
          
     contenupat = [name for name in os.listdir(namedirtopcf) if name in classif]
+
     datascan={}
     datamask={}
     tabroi={}
@@ -429,7 +454,7 @@ print '-----------------------------'
 totsln=0
 for f in listdirc:
     print 'patient :',f
-    print 'number of images for :',listslicetot[f]
+    print 'number of images :',listslicetot[f]
     print 'list of patterns :',listpatf[f]
     print '-----------------------------'
     totsln=totsln+listslicetot[f]
@@ -445,8 +470,9 @@ for pat in listpat:
     file.write(pat+' '+str(classif[pat])+ '\n')
 for f in listdirc:
     file.write('patient :'+f+'\n')
-    file.write('number of images for :'+str(listslicetot[f]) +'\n')
+    file.write('number of images :'+str(listslicetot[f]) +'\n')
     file.write('list of patterns :'+str(listpatf[f]) +'\n')
     file.write('--------------------\n')
+file.write ('number total of images: '+str(totsln))
 file.close()
     

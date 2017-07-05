@@ -7,14 +7,14 @@ from param_pix import *
 
 t = datetime.datetime.now()
 today = str('d_'+str(t.month)+'-'+str(t.day)+'-'+str(t.year)+'_'+str(t.hour)+'_'+str(t.minute))
-maxepoch=20
 
-pickel_dirsource='pickle_lu_f'
-pickel_dirsource='pickle_S3'
+
+#pickel_dirsource='pickle_lu_f2'
+pickel_dirsource='pickle_ILD1'
 
 #pickel_train=pickel_dirsource
-model_dir='pickle_e'
-#model_dir=pickel_dirsource
+#model_dir='pickle'
+model_dir=pickel_dirsource
 
 
 cwd=os.getcwd()
@@ -238,7 +238,7 @@ def train():
         yvf= np.argmax(y_val, axis=3).flatten()
         ysf=  np.argmax(y_score, axis=3).flatten()   
 
-        f=open (pickle_dir+'/res.txt','w')
+        f=open (pickle_dir+'/'+numpi+'_res.txt','w')
         fscore, acc, cm = evaluate(yvf,ysf,num_class)
 
         print('Val F-score: '+str(fscore)+'\tVal acc: '+str(acc))    

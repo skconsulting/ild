@@ -4,7 +4,9 @@ Created on Tue May 02 15:04:39 2017
 
 @author: sylvain
 """
-setdata='S2'
+setdata='CHU'
+#setdata='S2'
+
 
 
 import collections
@@ -41,7 +43,7 @@ from keras.layers import Reshape,Permute,Conv2DTranspose,BatchNormalization
 from keras.optimizers import Adam,Adagrad,SGD
 from keras.layers.advanced_activations import LeakyReLU,PReLU
 from keras.models import load_model,Model,Sequential
-from keras.callbacks import ModelCheckpoint
+from keras.callbacks import ModelCheckpoint,ReduceLROnPlateau,CSVLogger,EarlyStopping
 from keras.utils import np_utils,layer_utils
 from keras.utils.data_utils import get_file
 from keras import backend as K
@@ -63,13 +65,17 @@ modelName='unet'
 #modelName='zf'
 image_rows = 512
 image_cols = 512
+#image_rows = 96
+#image_cols = 96
+
+
 num_bit=1
 learning_rate=1e-4
 #image_rows = 16
 #image_cols = 16
 #image_rows = 400
 #image_cols = 400
-
+front_enabled=False #defined if front predict is enabled or not
 cwd=os.getcwd()
 #
 (cwdtop,tail)=os.path.split(cwd)
@@ -79,6 +85,7 @@ MAX_BOUND = 400.0
 PIXEL_MEAN = 0.25
 
 bmpname='scan_bmp'
+transbmp='trans_bmp'
 #directory with lung mask dicom
 lungmask='lung'
 lungmask1='lung_mask'
@@ -283,7 +290,7 @@ def normi(img):
      if maxt==0:
          maxt=1
      tabi2=tabi1*(255/maxt)
-     tabi2=tabi2.astype('uint8')
+     tabi2=tabi2.astype(np.uint8)
      return tabi2
  
 def fidclass(numero,classn):
@@ -310,11 +317,11 @@ def zero_center(image):
 
 def norm(image):
     image1=normalize(image)
-    image2=zero_center(image1)
+    image2=zero_center(image1).astype(np.float32)
     return image2
 
 def preprocess_batch(batch):
-    batch=batch.astype(np.float64)
+    batch=batch.astype(np.float32)
     batch /= 256
     batch -= 0.5
     return batch
@@ -352,17 +359,25 @@ def evaluate(actual,pred,num_class):
 
 def double_conv_layerunet(x, size, dropout, batch_norm):
     kernel_size=(3,3)
-#    conv = Conv2D(size,kernel_size,  kernel_constraint=maxnorm(3.),padding='same')(x)
-    conv = Conv2D(size,kernel_size,activation='relu',padding='same')(x)
+    conv = Conv2D(size,kernel_size, activation='relu',kernel_constraint=maxnorm(4.),padding='same')(x)
+#    conv = Conv2D(size,kernel_size,kernel_constraint=maxnorm(4.),padding='same')(x)
+
+#    conv = BatchNormalization()(conv)
+#    conv = Activation('elu')(conv)
+#    conv = Conv2D(size,kernel_size,activation='relu',padding='same')(x)
 
     if batch_norm == True:
-        conv = BatchNormalization( axis=3)(conv)
+        conv = BatchNormalization( axis=-1)(conv)
 #    conv = Activation('relu')(conv)
-#    conv = Conv2D(size, kernel_size,kernel_constraint=maxnorm(3.), padding='same')(conv)
-    conv = Conv2D(size, kernel_size, activation='relu',padding='same')(conv)
+    conv = Conv2D(size, kernel_size,activation='relu',kernel_constraint=maxnorm(4.), padding='same')(conv)
+#    conv = Conv2D(size,kernel_size,padding='same')(conv)
+
+#    conv = BatchNormalization()(conv)
+#    conv = Activation('elu')(conv)
+#    conv = Conv2D(size, kernel_size, activation='relu',padding='same')(conv)
 
     if batch_norm == True:
-        conv = BatchNormalization( axis=3)(conv)
+        conv = BatchNormalization( axis=-1)(conv)
 #    conv = Activation('relu')(conv)
 #    conv = LeakyReLU(alpha=0.15)(conv)
     if dropout > 0:
@@ -381,10 +396,10 @@ def get_unet(num_class,num_bit,img_rows,img_cols):
         coefcon[i]=coefcon[i-1]*2
     print coefcon
     dor={}
-    dor[1]=0.02 #0.04 f
+    dor[1]=0.04 #0.04 f
 
     for i in range (2,6):
-        dor[i]=dor[i-1]*2
+        dor[i]=min(dor[i-1]*2,0.5)
     print 'do coeff :',dor
     batch_norm=False
     print 'barchnorm :', batch_norm
@@ -678,7 +693,7 @@ def get_model(num_class,num_bit,img_rows,img_cols,mat_t_k,weights):
 
 if __name__ == "__main__":
    weights=[]
-   image_size=512
+   image_size=96
    num_bit=1
    num_class=3
    model=get_model(num_class,num_bit,image_size,image_size,False,weights)
@@ -695,10 +710,10 @@ if __name__ == "__main__":
 #   file.write(mjson)
 #   file.close()
    
-   
-   orig_stdout = sys.stdout
-   f = open('out1.txt', 'w')
-   sys.stdout = f
-   print(model.summary())
-   sys.stdout = orig_stdout
-   f.close()
+#   
+#   orig_stdout = sys.stdout
+#   f = open('out1.txt', 'w')
+#   sys.stdout = f
+#   print(model.summary())
+#   sys.stdout = orig_stdout
+#   f.close()

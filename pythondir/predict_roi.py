@@ -8,17 +8,17 @@ Created on Tue May 02 15:04:39 2017
 #from __future__ import print_function
 from param_pix import *
 
-predict_source='predict_dum'
-#predict_source='predict_new'
+#predict_source='predict_dum'
+predict_source='predict_new'
 #predict_source='predict_1'
 
+classifnotvisu=['back_ground','healthy']
 
+pickel_train='pickle_lu_f4'
+#pickel_train='pickle_ILD1'
 
-#pickel_train='pickle_lu_f'
-pickel_train='pickle_S3'
-
-thrproba=0.7
-ldummy=True
+thrproba=0.1
+ldummy=False
 
 attn=0.4 #attenuation color
 if ldummy:
@@ -157,7 +157,7 @@ def visu(namedirtopcf,imgs_mask_test,num_list,dimtabx,dimtaby,tabscan,sroidir):
                 zz=classifc[key]
 #                print zz
                 for z in range(3):
-                    blc.append(int(zz[z]))
+                    blc.append(int(zz[z]*0.5))
 #                print imcc[200][200][z]*0.5)
 #                print blc
         
