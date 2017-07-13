@@ -9,20 +9,20 @@ Create Xtrain etc data for training 2nd step
 #from __future__ import print_function
 from param_pix import *
 
-#nameHug='HUG'
+nameHug='HUG'
 #nameHug='CHU'
-nameHug='DUMMY'
-toppatch= 'TOPPATCH'
+#nameHug='DUMMY'
+
 #extension for output dir
 #extendir='ILD_TXT'
 #extendir='UIP'
-#extendir='ILD6'
-#extendir='ILD5'
-
-
+#extendir='ILD1'
+extendir='ILD6'
 #extendir='S3'
-extendir='lu_f4'
+#extendir='lu_predic'
 #extendir='small1'
+
+toppatch= 'TOPPATCH'
 ldummy=False#True for geometric images
 
 extendir2=''
@@ -58,6 +58,7 @@ def get_class_weights(y):
 path_HUG=os.path.join(cwdtop,nameHug)
 patchesdirnametop = toppatch+'_'+extendir
 patchtoppath=os.path.join(path_HUG,patchesdirnametop)
+print 'work on :',patchtoppath
 patchpicklename='picklepatches.pkl'
 picklepath = 'picklepatches'
 picklepathdir =os.path.join(patchtoppath,picklepath)
@@ -314,10 +315,12 @@ if debug:
     plt.figure(figsize = (5, 5))
     #    plt.subplot(1,3,1)
     #    plt.title('image')
+    
     #    plt.imshow( np.asarray(crpim) )
     plt.subplot(1,2,1)
     plt.title('image')
-    plt.imshow( normi(xt[3][:,:,0]*10).astype(np.uint8) )
+    plt.imshow( normi(xt[0][:,:,0]*10).astype(np.uint8) )
     plt.subplot(1,2,2)
     plt.title('label')
-    plt.imshow( np.argmax(yt[3],axis=2) )
+    plt.imshow( np.argmax(yt[0],axis=2) )
+    plt.show()

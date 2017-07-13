@@ -6,14 +6,14 @@ Created on Tue May 02 15:04:39 2017
 
 from param_pix import *
 
-maxepoch=1
-nb_epoch=100
+maxepoch=3
+nb_epoch=30
 
 pickel_top='pickle'
-pickel_ext='lu_f4'
+#pickel_ext='lu_f6'
 #pickel_ext='S3'
 #pickel_ext='ILD_TXT'
-#pickel_ext='ILD5'
+pickel_ext='ILD6'
 
 
 pickle_store_ext= 'pickle'
@@ -160,7 +160,7 @@ def train():
                 print 'number of epoch per subset :',maxepoch
                 print('-'*30)
         
-                early_stopping=EarlyStopping(monitor='val_loss', patience=5, verbose=0)                     
+                early_stopping=EarlyStopping(monitor='val_loss', patience=15, verbose=0)                     
                 model_checkpoint = ModelCheckpoint(os.path.join(pickle_dir,'weights.{epoch:02d}-{val_loss:.2f}.hdf5'), 
                                 monitor='val_loss', save_best_only=True,save_weights_only=True)       
                 reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2,

@@ -10,7 +10,7 @@ from param_pix import *
 
 nameHug='HUG'
 #nameHug='CHU'
-subHUG='ILD5'
+subHUG='ILD6'
 #subHUG='ILD_TXT'
 
 #subHUG='UIP'

@@ -14,10 +14,12 @@ predict_source='predict_new'
 
 classifnotvisu=['back_ground','healthy']
 
-pickel_train='pickle_lu_f4'
-#pickel_train='pickle_ILD1'
+#pickel_train='pickle_lu_f6'
+pickel_train='best_we'
 
-thrproba=0.1
+#pickel_train='pickle_ILD_TXT'
+
+thrproba=0.5
 ldummy=False
 
 attn=0.4 #attenuation color

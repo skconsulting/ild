@@ -53,7 +53,8 @@ K.set_image_dim_ordering('tf')
 from utils import fcn32_blank, fcn_32s_to_8s,prediction
 #from nicolovmodel import add_softmax,nicolov
 from zf_unet_224_model import *
-
+import cnn_model
+import ild_helpers
 print keras.__version__
 print theano.__version__
 print ' keras.backend.image_data_format :',keras.backend.image_data_format()
@@ -236,7 +237,7 @@ classifnotvisu=['back_ground']
 #        ]
 
 classifc ={
-    'back_ground':chatain,
+    'back_ground':black,
     'consolidation':cyan,
     'HC':blue,
     'ground_glass':red,
@@ -260,7 +261,6 @@ classifc ={
      'tuberculosis':white
  }
 
-
 def rsliceNum(s,c,e):
     endnumslice=s.find(e)
     if endnumslice <0:
@@ -281,7 +281,6 @@ def remove_folder(path):
          shutil.rmtree(path)
          time.sleep(1)
 # Now the directory is empty of files
-
 
 def normi(img):
 #     tabi2=bytescale(img, low=0, high=255)
@@ -320,6 +319,13 @@ def norm(image):
     image2=zero_center(image1).astype(np.float32)
     return image2
 
+def normHU(image): #normalize HU images
+    image1= (image - MIN_BOUND) / (MAX_BOUND - MIN_BOUND)
+    image1[image1>1] = 1.
+    image1[image1<0] = 0.
+    image2=image1 - PIXEL_MEAN
+    return image2
+
 def preprocess_batch(batch):
     batch=batch.astype(np.float32)
     batch /= 256
@@ -332,21 +338,17 @@ def dice_coef(y_true, y_pred):
     intersection = K.sum(y_true_f * y_pred_f)
     return (2.0 * intersection + 1.0) / (K.sum(y_true_f) + K.sum(y_pred_f) + 1.0)
 
-
 def jacard_coef(y_true, y_pred):
     y_true_f = K.flatten(y_true)
     y_pred_f = K.flatten(y_pred)
     intersection = K.sum(y_true_f * y_pred_f)
     return (intersection + 1.0) / (K.sum(y_true_f) + K.sum(y_pred_f) - intersection + 1.0)
 
-
 def jacard_coef_loss(y_true, y_pred):
     return -jacard_coef(y_true, y_pred)
 
-
 def dice_coef_loss(y_true, y_pred):
     return -dice_coef(y_true, y_pred)
-
 
 def evaluate(actual,pred,num_class):
     fscore = metrics.f1_score(actual, pred, average='weighted')
@@ -360,24 +362,20 @@ def evaluate(actual,pred,num_class):
 def double_conv_layerunet(x, size, dropout, batch_norm):
     kernel_size=(3,3)
     conv = Conv2D(size,kernel_size, activation='relu',kernel_constraint=maxnorm(4.),padding='same')(x)
-#    conv = Conv2D(size,kernel_size,kernel_constraint=maxnorm(4.),padding='same')(x)
-
-#    conv = BatchNormalization()(conv)
-#    conv = Activation('elu')(conv)
-#    conv = Conv2D(size,kernel_size,activation='relu',padding='same')(x)
+#    conv = Conv2D(size,kernel_size,kernel_constraint=maxnorm(4.,axis=-1),padding='same')(x)
 
     if batch_norm == True:
-        conv = BatchNormalization( axis=-1)(conv)
+        conv = BatchNormalization( )(conv)
 #    conv = Activation('relu')(conv)
-    conv = Conv2D(size, kernel_size,activation='relu',kernel_constraint=maxnorm(4.), padding='same')(conv)
-#    conv = Conv2D(size,kernel_size,padding='same')(conv)
+#    conv = LeakyReLU(alpha=0.15)(conv)
+#    if dropout > 0:
+#        conv = Dropout(dropout)(conv)
 
-#    conv = BatchNormalization()(conv)
-#    conv = Activation('elu')(conv)
-#    conv = Conv2D(size, kernel_size, activation='relu',padding='same')(conv)
+    conv = Conv2D(size, kernel_size,activation='relu',kernel_constraint=maxnorm(4.), padding='same')(conv)
+#    conv = Conv2D(size,kernel_size,kernel_constraint=maxnorm(4.,axis=-1),padding='same')(conv)
 
     if batch_norm == True:
-        conv = BatchNormalization( axis=-1)(conv)
+        conv = BatchNormalization()(conv)
 #    conv = Activation('relu')(conv)
 #    conv = LeakyReLU(alpha=0.15)(conv)
     if dropout > 0:
@@ -390,13 +388,14 @@ def get_unet(num_class,num_bit,img_rows,img_cols):
     
 #    weights=w
     coefcon={}
-    coefcon[1]=64 #32 for 320
+    coefcon[1]=16 #32 for 320
 #coefcon[1]=16 #32 for 320
     for i in range (2,6):
         coefcon[i]=coefcon[i-1]*2
     print coefcon
     dor={}
     dor[1]=0.04 #0.04 f
+#    dor[1]=0 #0.04 f
 
     for i in range (2,6):
         dor[i]=min(dor[i-1]*2,0.5)
@@ -405,7 +404,7 @@ def get_unet(num_class,num_bit,img_rows,img_cols):
     print 'barchnorm :', batch_norm
    
     inputs = Input((img_rows, img_cols,num_bit))
-    conv1=double_conv_layerunet(inputs, coefcon[1], dor[1], batch_norm)
+    conv1=double_conv_layerunet(inputs, coefcon[1], dor[1], False)
     pool1 = MaxPooling2D(pool_size=(2, 2))(conv1)
 
     conv2=double_conv_layerunet(pool1, coefcon[2], dor[2], batch_norm)
@@ -433,10 +432,9 @@ def get_unet(num_class,num_bit,img_rows,img_cols):
 
     up9 = concatenate([UpSampling2D(size=(2, 2))(conv8), conv1], axis=3)
     
-    conv9=double_conv_layerunet(up9, coefcon[1], dor[1], batch_norm)    
+    conv9=double_conv_layerunet(up9, coefcon[1], dor[1], False)    
      
     conv10 = Conv2D(int(num_class), (1,1), activation='softmax',padding='same')(conv9) #softmax?
-
     
     model = Model(inputs=[inputs], outputs=[conv10])
     print model.layers[-1].output_shape
@@ -444,77 +442,6 @@ def get_unet(num_class,num_bit,img_rows,img_cols):
 #    print model.layers[-1].output_shape #== (None, 16, 16, 21)
     
     return model
-
-
-def get_unet_old(num_class,num_bit,img_rows,img_cols):
-#    global weights
-    print 'this is model UNET'
-    
-#    weights=w
-    coefcon={}
-    coefcon[1]=64 #32 for 320
-#coefcon[1]=16 #32 for 320
-    for i in range (2,6):
-        coefcon[i]=coefcon[i-1]*2
-    print coefcon
-    kernel_size=(3,3)
-    inputs = Input((img_rows, img_cols,num_bit))
-    conv1 = Conv2D(coefcon[1], kernel_size, activation='relu', padding='same')(inputs)
-    conv1 = Conv2D(coefcon[1], kernel_size, activation='relu', padding='same')(conv1)
-    pool1 = MaxPooling2D(pool_size=(2, 2))(conv1)
-
-    conv2 = Conv2D(coefcon[2], kernel_size, activation='relu', padding='same')(pool1)
-    conv2 = Conv2D(coefcon[2], kernel_size, activation='relu', padding='same')(conv2)
-    pool2 = MaxPooling2D(pool_size=(2, 2))(conv2)
-
-    conv3 = Conv2D(coefcon[3], kernel_size, activation='relu', padding='same')(pool2)
-    conv3 = Conv2D(coefcon[3], kernel_size, activation='relu', padding='same')(conv3)
-    pool3 = MaxPooling2D(pool_size=(2, 2))(conv3)
-
-    conv4 = Conv2D(coefcon[4], kernel_size, activation='relu', padding='same')(pool3)
-    conv4 = Conv2D(coefcon[4], kernel_size, activation='relu', padding='same')(conv4)
-    pool4 = MaxPooling2D(pool_size=(2, 2))(conv4)
-
-    conv5 = Conv2D(coefcon[5], kernel_size, activation='relu', padding='same')(pool4)
-    conv5 = Conv2D(coefcon[5], kernel_size, activation='relu', padding='same')(conv5)
-#    print conv5.shape
-
-    up6 = concatenate([UpSampling2D(size=(2, 2))(conv5), conv4],axis=3)
-#    up6 = concatenate([Conv2DTranspose(coefcon[4], (2, 2), strides=(2, 2), padding='same')(conv5), conv4], axis=3)
-#    up6 = concatenate([conv5, conv4],axis=3)
- 
-    conv6 = Conv2D(coefcon[4], kernel_size, activation='relu', padding='same')(up6)
-    conv6 = Conv2D(coefcon[4], kernel_size, activation='relu', padding='same')(conv6)
-
-    up7 = concatenate([UpSampling2D(size=(2, 2))(conv6), conv3], axis=3)
-#    up7 = concatenate([Conv2DTranspose(coefcon[3], (2, 2), strides=(2, 2), padding='same')(conv6), conv3], axis=3)
-    conv7 = Conv2D(coefcon[3], kernel_size, activation='relu', padding='same')(up7)
-    conv7 = Conv2D(coefcon[3], kernel_size, activation='relu', padding='same')(conv7)
-
-    up8 = concatenate([UpSampling2D(size=(2, 2))(conv7), conv2], axis=3)
-#    up8 = concatenate([Conv2DTranspose(coefcon[2], (2, 2), strides=(2, 2), padding='same')(conv7), conv2], axis=3)
-    conv8 = Conv2D(coefcon[2],kernel_size, activation='relu', padding='same')(up8)
-    conv8 = Conv2D(coefcon[2], kernel_size, activation='relu', padding='same')(conv8)
-
-    up9 = concatenate([UpSampling2D(size=(2, 2))(conv8), conv1], axis=3)
-#    up9 = concatenate([Conv2DTranspose(coefcon[1], (2, 2), strides=(2, 2), padding='same')(conv8), conv1], axis=3)
-    conv9 = Conv2D(coefcon[1], kernel_size, activation='relu', padding='same')(up9)
-    conv9 = Conv2D(coefcon[1], kernel_size, activation='relu', padding='same')(conv9)
-    
-    
-    conv10 = Conv2D(int(num_class), (1,1), activation='softmax',padding='same')(conv9) #softmax?
-    model = Model(inputs=[inputs], outputs=[conv10])
-#    print model.layers[-1].output_shape
-#    conv11=Reshape((int(num_class),img_rows*img_cols))(conv10)
-#    conv12=Permute((2,1))(conv11)
-#    model = Model(inputs=[inputs], outputs=[conv12])
-    print model.layers[-1].output_shape
-    
-#    model = Model(inputs=[inputs], outputs=[conv10])
-#    print model.layers[-1].output_shape #== (None, 16, 16, 21)
-    
-    return model
-
 
 def VGG_16(num_class,num_bit,img_rows,img_cols):
     
@@ -561,10 +488,7 @@ def VGG_16(num_class,num_bit,img_rows,img_cols):
     model.load_weights(weights_path)
     '''
     return model
-
-#    print i,clname
- 
-    
+   
 def copy_mat_to_keras(kmodel, verbose=True):   
     print 'copy mat to keras'
     kerasnames = [lr.name for lr in kmodel.layers]
@@ -610,7 +534,6 @@ def copy_mat_to_keras(kmodel, verbose=True):
         else:
             print 'not found : ', str(matname)
 
-
 class weighted_categorical_crossentropy(object):
     """
     A weighted version of keras.objectives.categorical_crossentropy  
@@ -632,7 +555,6 @@ class weighted_categorical_crossentropy(object):
         loss =-K.sum(loss,-1)
         return loss
  
-
 def get_model(num_class,num_bit,img_rows,img_cols,mat_t_k,weights):
     if modelName == 'unet':
 #    unet

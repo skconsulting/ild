@@ -9,8 +9,8 @@ t = datetime.datetime.now()
 today = str('d_'+str(t.month)+'-'+str(t.day)+'-'+str(t.year)+'_'+str(t.hour)+'_'+str(t.minute))
 
 
-#pickel_dirsource='pickle_lu_f2'
-pickel_dirsource='pickle_ILD1'
+#pickel_dirsource='pickle_lu_f6'
+pickel_dirsource='pickle_ILDTXT'
 
 #pickel_train=pickel_dirsource
 #model_dir='pickle'
@@ -35,7 +35,23 @@ def load_train_data(numpidir):
     img_rows=X_test.shape[1]
     img_cols=X_test.shape[2]
     num_images=X_test.shape[0]
-
+    print X_test[0].min(),X_test[0].max()
+    print y_test[0].min(),y_test[0].max()
+    print y_test[0][0][0]
+    print np.argmax(y_test[0][0][0])
+    print np.unique(y_test[0])
+    lab=[]
+    for i in range(512):
+        for j in range(512):
+            if np.argmax(y_test[0][i][j]) not in lab:
+                lab.append( np.argmax(y_test[0][i][j]))
+                if np.argmax(y_test[0][i][j])== 10:
+                    print i, j
+    print np.unique(np.argmax((y_test[0])))
+    print lab
+    print y_test[0][0][80]
+    print np.argmax((y_test[0][0][80]))
+  
 #    numpatl={}
 #    for pat in usedclassif:
 #        numpatl[pat]=0

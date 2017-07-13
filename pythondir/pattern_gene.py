@@ -13,19 +13,21 @@ import numpy as np
 import random
 
 #nameHug='DUMMY' #name of top directory for patches pivkle from dicom
-nameHug='DUMMY' #name of top directory for patches pivkle from dicom
+nameHug='HUG' #name of top directory for patches pivkle from dicom
 
-subHUG='lu_f'#subdirectory from nameHug input pickle
+#subHUG='lu_f'#subdirectory from nameHug input pickle
+subHUG='classpatch'#subdirectory from nameHug input pickle
+
 #subHUG='S3'#subdirectory from nameHug input pickle
 
 
 toppatch= 'TOPPATCH' #name of top directory for image and label generation
-subtop_patch='lu_f4'#subdirectory for top patch
+subtop_patch='lu_full'#subdirectory for top patch
 
 lpatch=True #to generate images from  lung patch (True) or geometrical
 col = False # to generate color patterns (True), NOT TESTED
 
-slnt=100 # number of images to generate
+slnt=5 # number of images to generate
 numfig=200 # for geometrical, number of figuress per type 
 randomdim=False #True to generate big figures, False for small dimensions
 image_rows = 512
@@ -506,13 +508,15 @@ if not lpatch:
         preparroi(namedirtopc,tabscan,tabsroi)
         
 else:
+    print 'based on patches'
     sroidir=os.path.join(namedirtopc,sroi)
     remove_folder(sroidir)
     os.mkdir(sroidir)
-    classifused={
-    'back_ground':0,
-        'healthy':1,    
-        'ground_glass':2}
+#    classifused={
+#    'back_ground':0,
+#        'healthy':1,    
+#        'ground_glass':2}
+    classifused=classif
     tabscan,tabsroi=genebmppatch(namedirtopcpickle,slnt,classifused)
     namedirtopcf=namedirtopc
     preparroi(namedirtopc,tabscan,tabsroi)
