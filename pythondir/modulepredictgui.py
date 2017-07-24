@@ -167,8 +167,8 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice):
                 tagviewn(imgn,ll1,str(round(listlabelaverage[ll1],2)),listlabel[ll1],sul,surftotf,delx,0)
     ts='Threshold:'+str(t)
     surfunkn=surftotf-surftotpat
-    surfp=str(round(100-(100.0*surftotpat/surftotf),1))
-    sulunk='surface unknow :'+str(round(surfunkn,1))+'mm2 ='+surfp+'%'
+    surfp=str(abs(round(100-(100.0*surftotpat/surftotf),1)))
+    sulunk='surface unknow :'+str(abs(round(surfunkn,1)))+'mm2 ='+surfp+'%'
     cv2.putText(imgn,ts,(0,50),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
     cv2.putText(imgn,surftot,(delx,70),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
     cv2.putText(imgn,sulunk,(delx,80),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
@@ -252,8 +252,6 @@ def initdictP(d, p):
 
 def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
                       lungSegment,tabMed,thrprobaUIP,patch_list_cross_slice_sub):
-#def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
-#                      lungSegment,tabMed,thrprobaUIP,patch_list_cross_slice_sub):
     global  quitl,dimtabx,dimtaby,patchi,ix,iy
     print 'openfichiervolume start',path_patient
     quitl=False
@@ -707,11 +705,7 @@ def openfichierfrpr(path_patient,tabfromfront,thrprobaUIP):
     #    print 'on quitte 2'
     cv2.destroyWindow("imagefrpr")
     cv2.destroyWindow("SliderVolumefrpr")
-
     return ''
-
-
-
 
 def visuarun(indata,path_patient):
 

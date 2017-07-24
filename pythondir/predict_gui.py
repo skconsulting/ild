@@ -103,6 +103,7 @@ def predict(btn):
     indata['picklein_file_front']= app.getEntry("front view weight")
     indata['subErosion']= app.getEntry("subErosion in mm")
     indata['lispatientselect']=app.getListItems("list")
+    indata['Fast']=app.getCheckBox("Fast")
 
 #    roirun(app.getListItems("list"),lisdir)
     if len(indata['lispatientselect']) >0:
@@ -365,6 +366,10 @@ def initDraw():
         app.addLabelEntry("front view weight",row,0)
         app.setEntry("front view weight",picklein_file_front)
         app.addRadioButton("predict_style", "Cross + Front",row,1)
+        row = app.getRow()
+        app.addLabel("Fast","Tick  for fast run (without store of results):",row,0)
+        app.addCheckBox("Fast",row,1)
+        app.setCheckBox("Fast",ticked=True,callFunction=False)
 
 #        app.setFont(10)
         app.setSticky("n")
