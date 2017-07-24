@@ -32,7 +32,7 @@ def contour3(vis,im,l):
     return vis2
 
 def click_and_crop(event, x, y, flags, param):
-    global quitl,pattern,dirpath_patient
+    global quitl,pattern,dirpath_patient,dirroit
 
     if event == cv2.EVENT_LBUTTONDOWN:
         cv2.rectangle(menus, (150,12), (370,32), black, -1)
@@ -90,7 +90,7 @@ def click_and_crop(event, x, y, flags, param):
         if x>posxcomp and x<posxcomp+10 and y>posycomp and y< posycomp+10:
             print 'this is completed for all'
             labelfound=True
-            completed(imagename,dirpath_patient)
+            completed(imagename,dirpath_patient,dirroit)
 
         if x>posxreset and x<posxreset+10 and y>posyreset and y< posyreset+10:
             print 'this is reset'
@@ -161,7 +161,8 @@ def suppress():
             l+=1
     cv2.putText(menus,'delete last entry',(215,20),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
 
-def completed(imagename,dirpath_patient):
+def completed(imagename,dirpath_patient,dirroit):
+    print 'completed start'
     for key in classif:
         numeropoly=tabroinumber[key][scannumber]
         for n in range (0,numeropoly+1):
@@ -172,6 +173,7 @@ def completed(imagename,dirpath_patient):
 
 #            vis=contour3(tabroi[key][scannumber],key,dimtabx,dimtaby)
                 images[scannumber]=contour3(images[scannumber],tabroi[key][scannumber][n],key)
+#                cv2.imshow('images',images[scannumber])
                 tabroi[key][scannumber][n]=[]
                 tabroifinal[key][scannumber]=cv2.add(images[scannumber],tabroifinal[key][scannumber])
 
@@ -189,12 +191,17 @@ def completed(imagename,dirpath_patient):
 #                print dirroi
 #                print imagename,scannumber
                 posext=imagename.find('.'+typei)
-                imgcoreScan=imagename[0:posext]+'.'+typei
-                imgcoreScan=os.path.join(dirroi,imgcoreScan)
+                imgcoreScans=imagename[0:posext]+'.'+typei
+                imgcoreScan=os.path.join(dirroi,imgcoreScans)
+                imgcoreRoi=os.path.join(dirroit,imgcoreScans) 
                 if os.path.exists(imgcoreScan):
                     cv2.putText(menus,'ROI '+key+' slice:'+str(scannumber)+' overwritten',(150,30),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
                 tabtowrite=cv2.cvtColor(tabroifinal[key][scannumber],cv2.COLOR_BGR2RGB)
                 cv2.imwrite(imgcoreScan,tabtowrite)
+                mroi=cv2.imread(imgcoreRoi,1)
+                mroiaroi=cv2.add(mroi,tabtowrite)
+                cv2.imwrite(imgcoreRoi,mroiaroi)
+                
                 cv2.putText(menus,'Slice ROI stored',(215,20),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
     images[scannumber]=np.zeros((dimtabx,dimtaby,3), np.uint8)
 
@@ -297,10 +304,9 @@ def contrasti(im,r):
      return tabi3
 
 def lumi(tabi,r):
-
     r1=r
-    tabi1=tabi1.astype(np.uint16)
-    tabi1=tabi+r1
+    tabi1=tabi.astype(np.uint16)
+    tabi1=tabi1+r1
     tabi2=np.clip(tabi1,0,imageDepth)
     tabi3=tabi2.astype(np.uint8)
     return tabi3
@@ -340,7 +346,7 @@ def zoomfunction(im,z,px,py):
     return crop_img
 
 
-def loop(slnt,pdirk,dirpath_patient):
+def loop(slnt,pdirk,dirpath_patient,dirroi):
     global quitl,scannumber,imagename
     quitl=False
     list_image={}
@@ -382,7 +388,7 @@ def loop(slnt,pdirk,dirpath_patient):
 
         if key == ord("c"):
                 print 'completed'
-                completed(imagename,dirpath_patient)
+                completed(imagename,dirpath_patient,dirroi)
 
         elif key == ord("d"):
                 print 'delete entry'
@@ -457,7 +463,7 @@ def tagviews (tab,t0,x0,y0,t1,x1,y1,t2,x2,y2,t3,x3,y3,t4,x4,y4,t5,x5,y5):
 
 
 
-def genebmp(fn,nosource):
+def genebmp(fn,nosource,dirroi):
     """generate patches from dicom files"""
 
     print ('load dicom files in :',fn)
@@ -469,6 +475,7 @@ def genebmp(fn,nosource):
         print 'path does not exists'
 
     fmbmpbmp=os.path.join(fn,scan_bmp)
+
     remove_folder(fmbmpbmp)
     os.mkdir(fmbmpbmp)
     if nosource:
@@ -509,6 +516,7 @@ def genebmp(fn,nosource):
         endnumslice=l.find('.dcm')
         imgcoreScan=l[0:endnumslice]+'_'+str(slicenumber)+'.'+typei
         bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
+        roibmpfile=os.path.join(dirroi,imgcoreScan)
 
         t2='Prototype Not for medical use'
         t1='Pt: '+tail1
@@ -520,6 +528,7 @@ def genebmp(fn,nosource):
         resized_image=tagviews(resized_image,t0,dimtabx-80,dimtaby-10,t1,0,dimtaby-20,t2,dimtabx-250,dimtaby-10,
                      t3,0,dimtaby-30,t4,0,dimtaby-10,t5,0,dimtaby-20)
         cv2.imwrite(bmpfile,resized_image)
+        cv2.imwrite(roibmpfile,resized_image)
 #        cv2.imshow('dd',dsr)
     return slnt,dimtabx,dimtaby
 
@@ -634,17 +643,20 @@ def initmenus(slnt,dirpath_patient):
 
 
 def openfichierroi(patient,patient_path_complet):
-    global dirpath_patient,dimtabx,dimtaby
+    global dirpath_patient,dimtabx,dimtaby,dirroit
     dirpath_patient=os.path.join(patient_path_complet,patient)
     dirsource=os.path.join(dirpath_patient,source_name)
+    dirroit=os.path.join(dirpath_patient,roi_name)
     if not os.path.exists(dirsource):
          os.mkdir(dirsource)
+    if not os.path.exists(dirroit):
+         os.mkdir(dirroit)
     listdcm=[name for name in os.listdir(dirsource) if name.find('.dcm')>0]
     nosource=True
     if len(listdcm)>0:
         nosource=False
-    slnt,dimtabx,dimtaby=genebmp(dirsource,nosource)
+    slnt,dimtabx,dimtaby=genebmp(dirsource,nosource,dirroit)
     dirsourcescan=os.path.join(dirsource,scan_bmp)
     initmenus(slnt,dirpath_patient)
-    loop(slnt,dirsourcescan,dirpath_patient)
+    loop(slnt,dirsourcescan,dirpath_patient,dirroit)
     return 'completed'

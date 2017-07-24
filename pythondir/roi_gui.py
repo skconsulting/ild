@@ -164,21 +164,11 @@ def initDraw():
     app.setStopFunction(Stop)
     app.addLabel("top", "Select patient directory:", 0, 0)
     if not goodir: selectPatientDir()
-#    aa=app.directoryBox(title='path patient',dirName=lisdir)
-#    print aa
-#    app.addEntry("path_patient")
-#    app.setEntry("path_patient", lisdir)
-#    app.setFocus("path_patient")
-#    app.addButton("select dir",  selectPatientDir)
-#    app.addHorizontalSeparator( colour="red")
+
     app.addButton("HELP",  presshelp)
     app.setLabelBg("top", "green")
-#    print goodir
-    if goodir:
 
-#        app.addLabel("top1", "Select one patient:")
-#        app.setLabelBg("top1", "blue")
-#        app.setLabelFg("top1", "yellow")
+    if goodir:
         some_sg,stsdir=lisdirprocess(lisdir)
 
         listannotated=[]

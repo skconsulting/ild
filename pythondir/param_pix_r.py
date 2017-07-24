@@ -25,6 +25,7 @@ imageDepth=255
 dimtabx=512
 dimtaby=512
 source_name='source'
+roi_name='sroi'
 path_patient='path_patient'
 scan_bmp='scan_bmp'
 source='source'
