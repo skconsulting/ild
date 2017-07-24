@@ -185,24 +185,24 @@ def completed(imagename,dirpath_patient,dirroit):
         imagemax= cv2.countNonZero(imgray)
 #        print key,imagemax
         if imagemax>0:
-                dirroi=os.path.join(dirpath_patient,key)
-                if not os.path.exists(dirroi):
-                    os.mkdir(dirroi)
+            dirroi=os.path.join(dirpath_patient,key)
+            if not os.path.exists(dirroi):
+                os.mkdir(dirroi)
 #                print dirroi
 #                print imagename,scannumber
-                posext=imagename.find('.'+typei)
-                imgcoreScans=imagename[0:posext]+'.'+typei
-                imgcoreScan=os.path.join(dirroi,imgcoreScans)
-                imgcoreRoi=os.path.join(dirroit,imgcoreScans) 
-                if os.path.exists(imgcoreScan):
-                    cv2.putText(menus,'ROI '+key+' slice:'+str(scannumber)+' overwritten',(150,30),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
-                tabtowrite=cv2.cvtColor(tabroifinal[key][scannumber],cv2.COLOR_BGR2RGB)
-                cv2.imwrite(imgcoreScan,tabtowrite)
-                mroi=cv2.imread(imgcoreRoi,1)
-                mroiaroi=cv2.add(mroi,tabtowrite)
-                cv2.imwrite(imgcoreRoi,mroiaroi)
-                
-                cv2.putText(menus,'Slice ROI stored',(215,20),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
+            posext=imagename.find('.'+typei)
+            imgcoreScans=imagename[0:posext]+'.'+typei
+            imgcoreScan=os.path.join(dirroi,imgcoreScans)
+            imgcoreRoi=os.path.join(dirroit,imgcoreScans) 
+            if os.path.exists(imgcoreScan):
+                cv2.putText(menus,'ROI '+key+' slice:'+str(scannumber)+' overwritten',(150,30),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
+            tabtowrite=cv2.cvtColor(tabroifinal[key][scannumber],cv2.COLOR_BGR2RGB)
+            cv2.imwrite(imgcoreScan,tabtowrite)
+            mroi=cv2.imread(imgcoreRoi,1)
+            mroiaroi=cv2.addWeighted(mroi,1,tabtowrite,0.5,0)
+            cv2.imwrite(imgcoreRoi,mroiaroi)
+            
+            cv2.putText(menus,'Slice ROI stored',(215,20),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
     images[scannumber]=np.zeros((dimtabx,dimtaby,3), np.uint8)
 
 
