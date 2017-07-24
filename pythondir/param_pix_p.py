@@ -55,8 +55,11 @@ dimpavx=16
 dimpavy=16
 pxy=float(dimpavx*dimpavy)
 
-avgPixelSpacing=0.734   # average pixel spacing
-volelem=avgPixelSpacing*avgPixelSpacing*avgPixelSpacing
+avgPixelSpacing=0.734   # average pixel spacing in mm
+
+surfelem=avgPixelSpacing*avgPixelSpacing
+volelem=surfelem*avgPixelSpacing
+
 #print volelem
 
 modelname='ILD_CNN_model.h5'
@@ -109,6 +112,8 @@ typeiroi1='jpg'
 typeiroi2='bmp'
 
 excluvisu=['healthy']
+excluvisu=['']
+
 
 bmpname='scan_bmp'
 
@@ -188,8 +193,6 @@ if setdata=='set2':
         ]
 else:
     print 'error: not defined set'
-
-
 
 classifc ={
     'back_ground':chatain,

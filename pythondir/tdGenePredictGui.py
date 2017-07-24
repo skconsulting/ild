@@ -344,7 +344,7 @@ def ILDCNNpredict(patch_list,model):
     # look if the predict source is empty
     # predict and store  classification and probabilities if not empty
     if X0 > 0:
-        proba = model.predict_proba(pa, batch_size=100,verbose=1)
+        proba = model.predict_proba(pa, batch_size=200,verbose=1)
 
     else:
         print (' no patch in selected slice')
@@ -421,6 +421,7 @@ def wtebres(wridir,dirf,tab,dimtabx,slicepitch,lungm,ty):
 
 
 def modelCompilation(t,picklein_file,picklein_file_front):
+    print 'model compilation',t
     if t=='cross':
         modelpath = os.path.join(picklein_file, modelname)
     if t=='front':
@@ -1667,6 +1668,8 @@ def predictrun(indata,path_patient):
         picklein_filet=indata['picklein_file']
         picklein_file_frontt=indata['picklein_file_front']
         subErosion=indata['subErosion']
+#        wvisu=indata['wvisu']
+        wvisu=False
 #        print thrproba,thrprobaMerge,thrprobaUIP
         listHug=[]
 #        print indata
@@ -1802,7 +1805,8 @@ def predictrun(indata,path_patient):
             tabMed= pickle.load( open( os.path.join(path_data_write,"tabMed"), "rb" ))
             """
 #            print 'patch_list_cross_slice[1]',patch_list_cross_slice[1]
-            visua(listelabelfinal,dirf,patch_list_cross_slice,dimtabx,
+            if wvisu:
+                visua(listelabelfinal,dirf,patch_list_cross_slice,dimtabx,
                   dimtabx,slnt,predictout,sroi,scan_bmp,source,dicompathdircross,True,errorfile,nosource,'cross')            
             genethreef(dirf,patch_list_cross,proba_cross,slicepitch,dimtabx,dimtabx,dimpavx,slnt,'cross')
 #            """
@@ -1844,7 +1848,8 @@ def predictrun(indata,path_patient):
                 subpleurmaskfront=subpleural(dirf,tabLung3d,lungSegmentfront,subErosion,'front')
                 patch_list_front_slice,patch_list_front_slice_sub=genepatchlistslice(patch_list_front,
                                                             proba_front,lisslnfront,subpleurmaskfront,thrpatch)
-                visua(listelabelfinal,dirf,patch_list_front_slice,dimtabxn,dimtabx,
+                if wvisu:
+                    visua(listelabelfinal,dirf,patch_list_front_slice,dimtabxn,dimtabx,
                       dimtabyn,predictout3d,sroid,transbmp,source,dicompathdirfront,False,errorfile,nosource,'front')
                 tabMedfront = calcMed(tabLung3d,lungSegmentfront)
                 
@@ -1880,7 +1885,9 @@ def predictrun(indata,path_patient):
                 patch_list_merge_slice=pickle.load(open( os.path.join(path_data_write,"patch_list_merge_slice"), "rb" ))
                 patch_list_merge_slice_sub=pickle.load(open( os.path.join(path_data_write,"patch_list_merge_slice_sub"), "rb" ))
                 """                                              
-                visua(listelabelfinal,dirf,patch_list_merge_slice,dimtabx,dimtabx
+                
+                if wvisu:
+                    visua(listelabelfinal,dirf,patch_list_merge_slice,dimtabx,dimtabx
                       ,slnt,predictoutmerge,sroi,scan_bmp,source,dicompathdirmerge,True,errorfile,nosource,'merge')
                 genethreef(dirf,patch_list_merge,proba_merge,slicepitch,dimtabx,dimtabx,dimpavx,slnt,'merge')
 

@@ -110,41 +110,31 @@ def addpatchn(col,lab, xt,yt,imgn):
     cv2.rectangle(imgn,(xt,yt),(xt+dimpavx,yt+dimpavy),col,1)
     return imgn
 
-def tagviewn(fig,label,pro,nbr,x,y):
+def tagviewn(fig,label,pro,nbr,surface,surftot,x,y):
     """write text in image according to label and color"""
 
     col=classifc[label]
-#    print col, label
     labnow=classif[label]
-#    print (labnow, text)
-    if label == 'back_ground':
-        x=0
-        y=0
-        deltax=0
-        deltay=60
-    else:
-        deltax=130*((labnow)//5)
-        deltay=11*((labnow)%5)
-    gro=-x*0.0027+0.9
-#    if label=='ground_glass':
-#            print label,x,deltax, y,deltay,labnow,gro
-    cv2.putText(fig,str(nbr)+' '+label+' '+pro,(x+deltax, y+deltay+10),cv2.FONT_HERSHEY_PLAIN,gro,col,1)
-
+    
+    deltax=110+155*(((labnow)//5)-1)
+    deltay=11*((labnow)%5)
+    gro=-x*0.0027+1.1
+    pc=str(int(round(100.*surface/surftot,0)))
+    cv2.putText(fig,label+' '+str(surface)+'mm2 '+pc+'%',(x+deltax, y+deltay+10),cv2.FONT_HERSHEY_PLAIN,gro,col,1)
 
 
 def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice):
     imgn = np.zeros((dx,dy,3), np.uint8)
-    ill = 0
-#    endnumslice=k.find('.bmp')
-#    slicenumber=slnum
     th=t/100.0
+    numl=0
     listlabel={}
     listlabelaverage={}
-#    print slicenumber,th
+    surflabel={}
+    surftot=len(patch_list_cross_slice[slicenumber])
+    surftotf=surftot*surfelem
+    surftot='surface totale :'+str(round(surftotf,1))+'mm2'
+    surftotpat=0
     for ll in patch_list_cross_slice[slicenumber]:
-
-#            print ll
-#            slicename=ll[0]
             xpat=ll[0][0]
             ypat=ll[0][1]
         #we find max proba from prediction
@@ -155,33 +145,33 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice):
             classlabel=fidclass(prec,classif)
             classcolor=classifc[classlabel]
 
-
             if mprobai >th and classlabel not in excluvisu and va[classlabel]==True:
-#                    print classlabel
-                    if classlabel in listlabel:
+                if classlabel in listlabel:
 #                        print 'found'
-                        numl=listlabel[classlabel]
-                        listlabel[classlabel]=numl+1
-                        cur=listlabelaverage[classlabel]
-#                               print (numl,cur)
-                        averageproba= round((cur*numl+mprobai)/(numl+1),2)
-                        listlabelaverage[classlabel]=averageproba
-                    else:
-                        listlabel[classlabel]=1
-                        listlabelaverage[classlabel]=mprobai
+                    numl=listlabel[classlabel]
+                    listlabel[classlabel]=numl+1
+                    surflabel[classlabel]= (numl+1)*surfelem
+                    cur=listlabelaverage[classlabel]
+                    averageproba= round((cur*numl+mprobai)/(numl+1),2)
+                    listlabelaverage[classlabel]=averageproba
+                else:
+                    listlabel[classlabel]=1
+                    surflabel[classlabel]=surfelem
+                    listlabelaverage[classlabel]=mprobai
 
-                    imgn= addpatchn(classcolor,classlabel,xpat,ypat,imgn)
-
-
-            ill+=1
-#            print listlabel
-    for ll1 in listlabel:
-#                print ll1,listlabelaverage[ll1]
-                delx=int(dy*0.6-120)
-                tagviewn(imgn,ll1,str(round(listlabelaverage[ll1],2)),listlabel[ll1],delx,0)
+                imgn= addpatchn(classcolor,classlabel,xpat,ypat,imgn)
+    delx=int(dy*0.6-120)
+    for ll1 in listlabel:               
+                sul=round(surflabel[ll1],1)
+                surftotpat=surftotpat+surflabel[ll1]
+                tagviewn(imgn,ll1,str(round(listlabelaverage[ll1],2)),listlabel[ll1],sul,surftotf,delx,0)
     ts='Threshold:'+str(t)
-
+    surfunkn=surftotf-surftotpat
+    surfp=str(round(100-(100.0*surftotpat/surftotf),1))
+    sulunk='surface unknow :'+str(round(surfunkn,1))+'mm2 ='+surfp+'%'
     cv2.putText(imgn,ts,(0,50),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
+    cv2.putText(imgn,surftot,(delx,70),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
+    cv2.putText(imgn,sulunk,(delx,80),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
     return imgn
 
 
@@ -380,15 +370,15 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
         yrn=yr+10
         cv2.rectangle(imgbackg, (xr, yr),(xrn,yrn), classifc[key1], -1)
         cv2.putText(imgbackg,key1,(xr+15,yr+10),cv2.FONT_HERSHEY_PLAIN,1.0,classifc[key1],1 )
-        dictpostotal[key1]=(xr-130,yr+10)
+        dictpostotal[key1]=(xr-135,yr+10)
         posrc+=1
     #for total volume
     posrc+=1
     yr=15*posrc
     yrn=yr+10
-    cv2.rectangle(imgbackg, (xr, yr),(xrn,yrn), white, -1)
-    cv2.putText(imgbackg,key1,(xr+15,yr+10),cv2.FONT_HERSHEY_PLAIN,1.0,white,1 )
-    dictpostotal['total']=(xr-130,yr+10)
+
+    dictpostotal['total']=(xr-135,yr+10)
+    dictpostotal['totalh']=(xr-135,yr+25)
     
     dxrect=(dimtaby/2)
     cv2.rectangle(imgbackg,(dxrect,dimtabx-30),(dxrect+40,dimtabx-10),red,-1)
@@ -430,10 +420,6 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
             thrprobaUIP=tl
             dictP, dictSubP, dictSurf= uipTree(dirf,patch_list_cross_slice,lungSegment,tabMed,dictPS,
                                                dictP,dictSubP,dictSurf,thrprobaUIP,patch_list_cross_slice_sub)
-#            filet= open ('a.txt',"w")
-#            filet.write(str(dictP))
-#            filet.close()
-#            break
             surfmax={}
             patmax={}
             
@@ -441,15 +427,27 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
             img = np.zeros((dimtabx,dimtaby,3), np.uint8)
             cv2.putText(imgtext,'Threshold : '+str(tl),(50,50),cv2.FONT_HERSHEY_PLAIN,1,yellow,1,cv2.LINE_AA)
             if allview==1:
-
+                pervoltot=0
                 for patt in classif:
                     vol=int(round(((dictP[patt]['all'][0]+dictP[patt]['all'][1] )*volelem),0))    
+                    pervol=int(round(vol*100./voltotal,0))
+                    pervoltot=pervoltot+pervol
+                    
+                    fillblank=''
+                    if vol<10:
+                        fillblank='   '
+                    elif vol <100:
+                        fillblank='  '
+                    elif vol <1000:
+                        fillblank=' '                        
 
 #                    print patt,vol
-                    cv2.putText(imgtext,'Vol ml: '+str(vol),(dictpostotal[patt][0],dictpostotal[patt][1]),
+                    cv2.putText(imgtext,'V: '+str(vol)+'ml '+fillblank+str(pervol)+'%',(dictpostotal[patt][0],dictpostotal[patt][1]),
                                 cv2.FONT_HERSHEY_PLAIN,1.0,classifc[patt],1 )
                 #total volume
-                cv2.putText(imgtext,'Total ml: '+str(voltotal),(dictpostotal['total'][0],dictpostotal['total'][1]),
+                cv2.putText(imgtext,'Volume Total: '+str(voltotal)+'ml',(dictpostotal['total'][0],dictpostotal['total'][1]),
+                                cv2.FONT_HERSHEY_PLAIN,1.0,white,1 )
+                cv2.putText(imgtext,'Total unknown: '+str(100-pervoltot)+'%',(dictpostotal['totalh'][0],dictpostotal['totalh'][1]),
                                 cv2.FONT_HERSHEY_PLAIN,1.0,white,1 )
                 for i in listPosLung:
 
@@ -472,26 +470,44 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
                     cv2.rectangle(imgtext,(dictPosTextImage[i][0],dictPosTextImage[i][1]-15),(dictPosTextImage[i][0]+55,dictPosTextImage[i][1]),white,-1)
                     cv2.putText(imgtext,str(surfmax[i])+'%',(dictPosTextImage[i][0],dictPosTextImage[i][1]),cv2.FONT_HERSHEY_PLAIN,1.2,grey,1,)
             else:
+
+
                 for i in listPosLung:
+                    olo=0
                     for pat in classif:
 #                        img = np.zeros((dimtabx,dimtaby,3), np.uint8)
                         if viewasked[pat]==True:
+                             olo+=1
                              vol=int(round(((dictP[pat]['all'][0]+dictP[pat]['all'][1] )*volelem),0)) 
-#                             vol=int((dictP[pat]['all'][0]+dictP[pat]['all'][1]) *volelem)         
-#                    print patt,vol
-                             cv2.putText(imgtext,'Vol ml: '+str(vol),(dictpostotal[pat][0],dictpostotal[pat][1]),
-                                cv2.FONT_HERSHEY_PLAIN,1.0,classifc[pat],1 )
-                             if dictSurf[pat][i]>0:
-                                 colori=classifc[pat]
+                             pervol=int(round(vol*100./voltotal,0))
+                             fillblank=''
+                             if vol<10:
+                                fillblank='   '
+                             elif vol <100:
+                                fillblank='  '
+                             elif vol <1000:
+                                fillblank=' '
+                             cv2.putText(imgtext,'V: '+str(vol)+'ml '+fillblank+str(pervol)+'%',(dictpostotal[pat][0],
+                                         dictpostotal[pat][1]),
+                                         cv2.FONT_HERSHEY_PLAIN,1.0,classifc[pat],1 )
+                             if olo==1:
+                                 if dictSurf[pat][i]>0:
+                                     colori=classifc[pat]
+                                 else:
+                                     colori=grey
+                                 lungtw=colorimage(dictPosImage[i],colori)
+                                 img=cv2.add(img,lungtw)
+                                 cv2.rectangle(imgtext,(dictPosTextImage[i][0],dictPosTextImage[i][1]-15),(dictPosTextImage[i][0]+55,dictPosTextImage[i][1]),white,-1)
+                                 cv2.putText(imgtext,str(dictSurf[pat][i])+'%',(dictPosTextImage[i][0],dictPosTextImage[i][1]),cv2.FONT_HERSHEY_PLAIN,1.2,grey,1,)
                              else:
-                                 colori=grey
-                             lungtw=colorimage(dictPosImage[i],colori)
-                             img=cv2.add(img,lungtw)
-                             cv2.rectangle(imgtext,(dictPosTextImage[i][0],dictPosTextImage[i][1]-15),(dictPosTextImage[i][0]+55,dictPosTextImage[i][1]),white,-1)
-                             cv2.putText(imgtext,str(dictSurf[pat][i])+'%',(dictPosTextImage[i][0],dictPosTextImage[i][1]),cv2.FONT_HERSHEY_PLAIN,1.2,grey,1,)
-#            break
-                cv2.putText(imgtext,'Total ml: '+str(voltotal),(dictpostotal['total'][0],dictpostotal['total'][1]),
+                                 img = np.zeros((dimtabx,dimtaby,3), np.uint8)
+                                 imgtext = np.zeros((dimtabx,dimtaby,3), np.uint8)
+                             
+#                                 lungtw=colorimage(dictPosImage[i],grey)
+#                                 img=cv2.add(img,lungtw)
+                cv2.putText(imgtext,'Volume Total: '+str(voltotal)+'ml',(dictpostotal['total'][0],dictpostotal['total'][1]),
                                 cv2.FONT_HERSHEY_PLAIN,1.0,white,1 )
+
             imgtowrite=cv2.add(imgtext,imgbackg)
             imgray = cv2.cvtColor(imgtowrite,cv2.COLOR_BGR2GRAY)
             np.putmask(imgray,imgray>0,255)
@@ -573,10 +589,9 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice):
 #            print key1
             viewasked[key1]=True
             cv2.createTrackbar( key1,'Slidercr',0,1,nothings)
-#        return
 
         while(1):
-#            print "corectnumber",corectnumber
+
             cv2.setMouseCallback('imagecr',draw_circle,img)
             c = cv2.getTrackbarPos('Contrast','Slidercr')
             l = cv2.getTrackbarPos('Brightness','Slidercr')
@@ -597,60 +612,35 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice):
                 else:
                      viewasked[key2]=True
 
-
-    #        img,pdirk= opennew(dirk, fl,L)
-    #        print pdirk
             slicenumber=fl+corectnumber
             imagel=os.path.join(pdirk,list_image[slicenumber])
-            img = cv2.imread(imagel,1)
-            
+            img = cv2.imread(imagel,1)          
             imglumi=lumi(img,l)
-            imcontrast=contrasti(imglumi,c)
-            if int(slicenumber) ==13:
-                print img[40][40],imglumi[40][40],imcontrast[40][40]
-                
+            imcontrast=contrasti(imglumi,c)                
             imcontrast=cv2.cvtColor(imcontrast,cv2.COLOR_BGR2RGB)
-
-    #        print 'imcontrast',imcontrast.shape, imcontrast.dtype
+            
             imgn= drawpatch(tl,dimtabx,dimtaby,slicenumber,viewasked,patch_list_cross_slice)
-
+            
             imgngray = cv2.cvtColor(imgn,cv2.COLOR_BGR2GRAY)
             np.putmask(imgngray,imgngray>0,255)
-    #        print 'imgray',imgngray.shape, imgngray.dtype
             mask_inv = cv2.bitwise_not(imgngray)
-#            print 'mask_inv',mask_inv.shape, mask_inv.min(),mask_inv.max()
             outy=cv2.bitwise_and(imcontrast,imcontrast,mask=mask_inv)
-
-    #        print 'imgn',imgn.shape, imgn.dtype
-    #        print 'outy',outy.shape, outy.dtype
             imgt=cv2.add(imgn,outy)
-    #        imgt=np.add(imgn,outy)
-    #        imgt=np.clip(imgt,0,255)
-
             dxrect=(dimtaby/2)
-    #        print dxrect,dimtaby,dimtabx
-    #        dxrect=100
             cv2.rectangle(imgt,(dxrect,dimtabx-30),(dxrect+20,dimtabx-10),red,-1)
-    #        cv2.rectangle(imgt,(172,358),(192,368),white,-1)
             cv2.putText(imgt,'quit',(dxrect+10,dimtabx-10),cv2.FONT_HERSHEY_PLAIN,1,yellow,1,cv2.LINE_AA)
             imgtoshow=cv2.add(imgt,imgtext)
-
             imgtoshow=cv2.cvtColor(imgtoshow,cv2.COLOR_BGR2RGB)
-
             cv2.imshow('imagecr',imgtoshow)
-
 
             if patchi :
                 print 'retrieve patch asked'
                 imgtext= retrievepatch(ix,iy,slicenumber,dimtabx,dimtaby,patch_list_cross_slice)
-#                imgtext=retrievepatch(ix,iy,fl+corectnumber,preprob,listnamepatch,dimtabx,dimtaby)
                 patchi=False
 
             if quitl or cv2.waitKey(20) & 0xFF == 27 :
-    #            print 'on quitte', quitl
                 break
         quitl=False
-    #    print 'on quitte 2'
         cv2.destroyWindow("imagecr")
         cv2.destroyWindow("Slidercr")
 
