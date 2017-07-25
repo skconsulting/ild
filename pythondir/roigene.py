@@ -241,7 +241,8 @@ def completed(imagename,dirpath_patient,dirroit):
 #            cv2.waitKey(0)
 #            cv2.destroyAllWindows()
             mroiaroi=cv2.add(mroi,ctkey)
-            cv2.imwrite(imgcoreRoi,mroiaroi)
+            imgresize=cv2.resize(mroiaroi,None,fx=fxssicom,fy=fxssicom,interpolation=cv2.INTER_LINEAR)
+            cv2.imwrite(imgcoreRoi,imgresize)
     images[scannumber]=np.zeros((dimtabx,dimtaby,3), np.uint8)
 
 def visua():
@@ -512,9 +513,9 @@ def tagviews (tab,t0,x0,y0,t1,x1,y1,t2,x2,y2,t3,x3,y3,t4,x4,y4,t5,x5,y5):
 
 
 
-def genebmp(fn,nosource):
+def genebmp(fn,nosource,dirroit):
     """generate patches from dicom files"""
-
+    global fxssicom
     print ('load dicom files in :',fn)
     (top,tail) =os.path.split(fn)
     (top1,tail1) =os.path.split(top)
@@ -534,9 +535,11 @@ def genebmp(fn,nosource):
 
     FilesDCM =(os.path.join(fn,listdcm[0]))
     RefDs = dicom.read_file(FilesDCM)
+    fxssicom=float(RefDs.PixelSpacing[0])/avgPixelSpacing
+    
     dsr= RefDs.pixel_array
-    dimtabx=dsr.shape[0]
-    dimtaby=dsr.shape[1]
+#    dimtabx=dsr.shape[0]
+#    dimtaby=dsr.shape[1]
 #    print dimtabx, dimtaby
     slnt=0
     for l in listdcm:
@@ -565,7 +568,7 @@ def genebmp(fn,nosource):
         endnumslice=l.find('.dcm')
         imgcoreScan=l[0:endnumslice]+'_'+str(slicenumber)+'.'+typei
         bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
-#        roibmpfile=os.path.join(dirroi,imgcoreScan)
+        roibmpfile=os.path.join(dirroit,imgcoreScan)
 
         t2='Prototype Not for medical use'
         t1='Pt: '+tail1
@@ -577,9 +580,11 @@ def genebmp(fn,nosource):
         resized_image=tagviews(resized_image,t0,dimtabx-80,dimtaby-10,t1,0,dimtaby-20,t2,dimtabx-250,dimtaby-10,
                      t3,0,dimtaby-30,t4,0,dimtaby-10,t5,0,dimtaby-20)
         cv2.imwrite(bmpfile,resized_image)
-#        cv2.imwrite(roibmpfile,resized_image)
+        imgresize=cv2.resize(resized_image,None,fx=fxssicom,fy=fxssicom,interpolation=cv2.INTER_LINEAR)
+        if not os.path.exists(roibmpfile):
+            cv2.imwrite(roibmpfile,imgresize)
 #        cv2.imshow('dd',dsr)
-    return slnt,dimtabx,dimtaby
+    return slnt
 
 def nothing(x):
     pass
@@ -700,7 +705,7 @@ def openfichierroi(patient,patient_path_complet):
     nosource=True
     if len(listdcm)>0:
         nosource=False
-    slnt,dimtabx,dimtaby=genebmp(dirsource,nosource)
+    slnt=genebmp(dirsource,nosource,dirroit)
     dirsourcescan=os.path.join(dirsource,scan_bmp)
     initmenus(slnt,dirpath_patient)
     loop(slnt,dirsourcescan,dirpath_patient,dirroit)

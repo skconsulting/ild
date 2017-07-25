@@ -20,7 +20,7 @@ import webbrowser
 
 setdata='set2'
 
-
+avgPixelSpacing=0.734   # average pixel spacing in mm
 imageDepth=255
 dimtabx=512
 dimtaby=512
