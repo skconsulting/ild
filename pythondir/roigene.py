@@ -17,7 +17,7 @@ tabroifinal={}
 tabroinumber={}
 
 def contours(im,pat):
-    print 'contour'
+    print 'contour',pat
     imgray = cv2.cvtColor(im,cv2.COLOR_BGR2GRAY)
     ret,thresh = cv2.threshold(imgray,1,255,0)
     _,contours,heirarchy=cv2.findContours(thresh,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
@@ -26,28 +26,20 @@ def contours(im,pat):
     im2=cv2.cvtColor(im2,cv2.COLOR_BGR2RGB)
     return im2
     
-def contour3(vis,im,l):
+
+def contour3(im,l):
+#    print 'im',im
     col=classifc[l]
     visi = np.zeros((dimtabx,dimtaby,3), np.uint8)
-    vis2= np.zeros((dimtabx,dimtaby,3), np.uint8)
     imagemax= cv2.countNonZero(np.array(im))
     if imagemax>0:
-        mgray = cv2.cvtColor(vis,cv2.COLOR_BGR2GRAY)
-        np.putmask(mgray,mgray>0,255)
-        nthresh=cv2.bitwise_not(mgray)
-
         cv2.fillPoly(visi, [np.array(im)],col)
-        vis1=cv2.bitwise_and(visi,visi,mask=nthresh)
-        vis2=cv2.add(vis,vis1)
-        
-#        cv2.waitKey(0)
-#        cv2.destroyAllWindows()
-    return vis2
+    return visi
 
 def contour4(vis,im):
 
     visi = np.zeros((dimtabx,dimtaby,3), np.uint8)
-    vis2= np.zeros((dimtabx,dimtaby,3), np.uint8)
+#    vis2= np.zeros((dimtabx,dimtaby,3), np.uint8)
     imagemax= cv2.countNonZero(np.array(im))
     if imagemax>0:
         cv2.fillPoly(visi, [np.array(im)],white)
@@ -55,11 +47,11 @@ def contour4(vis,im):
         np.putmask(mgray,mgray>0,255)
         nthresh=cv2.bitwise_not(mgray)
         vis2=cv2.bitwise_and(vis,vis,mask=nthresh)
-        cv2.imshow("vis", vis)
-        cv2.imshow("visi", visi)
-        cv2.imshow("nthresh", nthresh)
-        cv2.imshow("vis2", vis2)
-        cv2.waitKey(0)
+#        cv2.imshow("vis", vis)
+#        cv2.imshow("visi", visi)
+#        cv2.imshow("nthresh", nthresh)
+#        cv2.imshow("vis2", vis2)
+#        cv2.waitKey(0)
 
     return vis2
 
@@ -211,15 +203,16 @@ def completed(imagename,dirpath_patient,dirroit):
 #        print key,numeropoly,scannumber
         for n in range (0,numeropoly+1):
             if len(tabroi[key][scannumber][n])>0:
-                for l in range(0,len(tabroi[key][scannumber][n])-1):
-                        cv2.line(images[scannumber], (tabroi[key][scannumber][n][l][0],tabroi[key][scannumber][n][l][1]),
-                                      (tabroi[key][scannumber][n][l+1][0],tabroi[key][scannumber][n][l+1][1]), black, 1)
-                images[scannumber]=contour3(images[scannumber],tabroi[key][scannumber][n],key)
-#                cv2.imshow('images',images[scannumber])
-                tabroi[key][scannumber][n]=[]
-                tabroifinal[key][scannumber]=cv2.add(images[scannumber],tabroifinal[key][scannumber])
+#                for l in range(0,len(tabroi[key][scannumber][n])-1):
+#                        cv2.line(images[scannumber], (tabroi[key][scannumber][n][l][0],tabroi[key][scannumber][n][l][1]),
+#                                      (tabroi[key][scannumber][n][l+1][0],tabroi[key][scannumber][n][l+1][1]), black, 1)
+                ctc=contour3(tabroi[key][scannumber][n],key)
+
+                tabroifinal[key][scannumber]=cv2.add(tabroifinal[key][scannumber],ctc)
+
+                images[scannumber]=cv2.addWeighted(images[scannumber],1,tabroifinal[key][scannumber],0.01,0)
 #        cv2.imshow(key, tabroifinal[key][scannumber])
-        tabroinumber[key][scannumber]=0
+#        tabroinumber[key][scannumber]=0
 
         imgray = cv2.cvtColor(tabroifinal[key][scannumber],cv2.COLOR_BGR2GRAY)
         imagemax= cv2.countNonZero(imgray)
@@ -240,15 +233,15 @@ def completed(imagename,dirpath_patient,dirroit):
             cv2.imwrite(imgcoreScan,tabtowrite)                       
             cv2.putText(menus,'Slice ROI stored',(215,20),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
             
-        mroi=cv2.imread(imgcoreRoi,1)
-        ctkey=contours(tabtowrite,key)
-#        cv2.imshow("mroi", mroi)
-#        cv2.imshow("tabtowrite", tabtowrite)
-#        cv2.imshow("ctkey", ctkey)
-#        cv2.waitKey(0)
-#        cv2.destroyAllWindows()
-        mroiaroi=cv2.add(mroi,ctkey)
-        cv2.imwrite(imgcoreRoi,mroiaroi)
+            mroi=cv2.imread(imgcoreRoi,1)
+            ctkey=contours(tabtowrite,key)
+#            cv2.imshow("mroi", mroi)
+#            cv2.imshow("tabtowrite", tabtowrite)
+#            cv2.imshow("ctkey", ctkey)
+#            cv2.waitKey(0)
+#            cv2.destroyAllWindows()
+            mroiaroi=cv2.add(mroi,ctkey)
+            cv2.imwrite(imgcoreRoi,mroiaroi)
     images[scannumber]=np.zeros((dimtabx,dimtaby,3), np.uint8)
 
 def visua():
@@ -256,10 +249,13 @@ def visua():
         numeropoly=tabroinumber[key][scannumber]
         for n in range (0,numeropoly+1):
             if len(tabroi[key][scannumber][n])>0:
-                    for l in range(0,len(tabroi[key][scannumber][n])-1):
-                        cv2.line(images[scannumber], (tabroi[key][scannumber][n][l][0],tabroi[key][scannumber][n][l][1]),
-                                      (tabroi[key][scannumber][n][l+1][0],tabroi[key][scannumber][n][l+1][1]), black, 1)
-                    images[scannumber]=contour3(images[scannumber],tabroi[key][scannumber][n],key)
+#                    for l in range(0,len(tabroi[key][scannumber][n])-1):
+#                        cv2.line(images[scannumber], (tabroi[key][scannumber][n][l][0],tabroi[key][scannumber][n][l][1]),
+#                                      (tabroi[key][scannumber][n][l+1][0],tabroi[key][scannumber][n][l+1][1]), black, 1)
+                    ctc=contour3(tabroi[key][scannumber][n],key)
+#                    print key,n,scannumber
+#                    images[scannumber]=cv2.add(images[scannumber],ctc)
+                    images[scannumber]=cv2.addWeighted(images[scannumber],1,ctc,0.5,0)
     cv2.putText(menus,' Visualization ROI',(150,30),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
 
 def eraseroi(imagename,dirpath_patient,dirroit):
@@ -337,7 +333,7 @@ def delall():
         for l in range(0,len(tabroi[pattern][scannumber][n])-1):
             cv2.line(images[scannumber], (tabroi[pattern][scannumber][n][l][0],tabroi[pattern][scannumber][n][l][1]),
                 (tabroi[pattern][scannumber][n][l+1][0],tabroi[pattern][scannumber][n][l+1][1]), black, 1)
-            images[scannumber]=contour4(images[scannumber],tabroi[pattern][scannumber][numeropoly])
+            images[scannumber]=contour4(images[scannumber],tabroi[pattern][scannumber][n])
         tabroi[pattern][scannumber][n]=[]
     tabroinumber[pattern][scannumber]=0
 #    visua()
@@ -495,7 +491,9 @@ def loop(slnt,pdirk,dirpath_patient,dirroi):
         imageview=cv2.add(imageview,menus)
         for key1 in classif:
                 tabroifinalview=zoomfunction(tabroifinal[key1][scannumber],z,px,py)
-                imageview=cv2.add(imageview,tabroifinalview)
+#                imageview=cv2.add(imageview,tabroifinalview)
+                imageview=cv2.addWeighted(imageview,1,tabroifinalview,0.5,0)
+                
         imageview=cv2.cvtColor(imageview,cv2.COLOR_BGR2RGB)
         cv2.imshow("image", imageview)
 
