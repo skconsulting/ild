@@ -80,24 +80,28 @@ def press(btn):
         app.errorBox('error', 'no  patient selected')
         redraw(app)
 
+def presslung(btn):
+    global app
+#    print(app.getListItems("list"))
+    ll =app.getListItems("list")
+#    print ll
+    if len(ll)>0:
+        roirunlung(ll,lisdir)
+        redraw(app)
+    else:
+        app.errorBox('error', 'no  patient selected')
+        redraw(app)
+
 def presshelp(btn):
 #    print 'help'
 
     filehelp=os.path.join(pathRoiGeneDoc,'doc_roi.pdf')
-#    print filehelp
-#    webbrowser.open_new(r'file://C:\Users\sylvain\Documents\boulot\startup\radiology\roittool\modulepython\doc.pdf')
     webbrowser.open_new(r'file://'+filehelp)
-
-#    app.infoBox( 'help', 'aa')
-
 
 def redraw(app):
 
     app.stop(Stop)
     initDraw()
-
-#def checkStop():
-#    return app.yesNoBox("Confirm Exit", "Are you sure you want to exit the application?")
 
 def Stop():
 
@@ -162,10 +166,13 @@ def initDraw():
     global app
     app = gui("ROI form"+version,"1000x400")
     app.setStopFunction(Stop)
+#    row = app.getRow()
     app.addLabel("top", "Select patient directory:", 0, 0)
+    row = app.getRow()
+    app.addButton("HELP",  presshelp,row,1)
     if not goodir: selectPatientDir()
-
-    app.addButton("HELP",  presshelp)
+    
+#    app.addButton("HELP",  presshelp,row,1)
     app.setLabelBg("top", "green")
 
     if goodir:
@@ -181,10 +188,13 @@ def initDraw():
             else:
                 listannotated.append(user+' noROI! ')
 
-        app.addListBox("list",listannotated)
+        app.addListBox("list",listannotated,row,0)
         app.setListBoxRows("list",10)
 #        app.setLabelBg("list", "blue")
-        app.addButton("Generate ROI",  press)
+        row = app.getRow()
+        app.addButton("Generate ROI",  press,row,0)
+        app.addButton("Generate Lung_Mask",  presslung,row,1)
+        row = app.getRow()
         app.addHorizontalSeparator( colour="red")
     app.addButton("Quit",  boutonStop)
     app.go()

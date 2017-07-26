@@ -17,6 +17,7 @@ import sys
 import time
 from time import time as mytime
 import webbrowser
+from skimage import measure
 
 setdata='set2'
 
@@ -30,6 +31,8 @@ path_patient='path_patient'
 scan_bmp='scan_bmp'
 source='source'
 typei='bmp'
+lung_mask='lung_mask'
+lung_mask_bmp='bmp'
 
 
 black=(0,0,0)

@@ -39,3 +39,18 @@ def roirun(indata,path_patient):
 #    print 'path_patient',path_patient
     messageout=openfichierroi(listHug,path_patient)
     return messageout
+
+def roirunlung(indata,path_patient):
+    listHug=indata
+
+    pos=str(indata).find(' ROI!:')
+    if pos >0:
+        listHug=str(indata)[3:pos]
+    else:
+        pos=str(indata).find(' noROI!')
+        listHug=str(indata)[3:pos]
+#    print 'listhug',listHug
+#    print 'indata',indata
+#    print 'path_patient',path_patient
+    messageout=openfichierroilung(listHug,path_patient)
+    return messageout

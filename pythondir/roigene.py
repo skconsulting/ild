@@ -171,6 +171,7 @@ def closepolygon():
             tabroi[pattern][scannumber][numeropoly]=[]
         else:
             'wait for new point'
+        cv2.rectangle(menus, (150,12), (370,52), black, -1)
         cv2.putText(menus,'polygone closed',(215,20),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
 
 def suppress():
@@ -184,18 +185,19 @@ def suppress():
             cv2.line(images[scannumber], (tabroi[pattern][scannumber][numeropoly][l][0],tabroi[pattern][scannumber][numeropoly][l][1]),
                      (tabroi[pattern][scannumber][numeropoly][l+1][0],tabroi[pattern][scannumber][numeropoly][l+1][1]), classifc[pattern], 1)
             l+=1
+    cv2.rectangle(menus, (150,12), (370,52), black, -1)
     cv2.putText(menus,'delete last entry',(215,20),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
 
 def completed(imagename,dirpath_patient,dirroit):
     print 'completed start'
     closepolygon()
 #    print dirpath_patient
-    imgcoreRoi=os.path.join(dirpath_patient,source_name) 
-    imgcoreRoi=os.path.join(imgcoreRoi,scan_bmp) 
-    imgcoreRoi=os.path.join(imgcoreRoi,imagename)
-  
-    mroi=cv2.imread(imgcoreRoi,1)
+    imgcoreRoi1=os.path.join(dirpath_patient,source_name) 
+    imgcoreRoi2=os.path.join(imgcoreRoi1,scan_bmp) 
+    imgcoreRoi3=os.path.join(imgcoreRoi2,imagename) 
+    mroi=cv2.imread(imgcoreRoi3,1)
     imgcoreRoi=os.path.join(dirroit,imagename)
+    mroi=cv2.resize(mroi,None,fx=fxssicom,fy=fxssicom,interpolation=cv2.INTER_LINEAR)
     cv2.imwrite(imgcoreRoi,mroi)
 #    cv2.imshow("mroi", mroi)
     for key in classif:
@@ -228,21 +230,26 @@ def completed(imagename,dirpath_patient,dirroit):
             if not os.path.exists(dirroi):
                 os.mkdir(dirroi)                        
             if os.path.exists(imgcoreScan):
+                cv2.rectangle(menus, (150,12), (370,52), black, -1)
                 cv2.putText(menus,'ROI '+key+' slice:'+str(scannumber)+' overwritten',(150,30),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
             
             cv2.imwrite(imgcoreScan,tabtowrite)                       
             cv2.putText(menus,'Slice ROI stored',(215,20),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
             
             mroi=cv2.imread(imgcoreRoi,1)
+#            mroi=cv2.resize(mroi,None,fx=fxssicom,fy=fxssicom,interpolation=cv2.INTER_LINEAR)
             ctkey=contours(tabtowrite,key)
+            ctkey=cv2.resize(ctkey,None,fx=fxssicom,fy=fxssicom,interpolation=cv2.INTER_LINEAR)
 #            cv2.imshow("mroi", mroi)
 #            cv2.imshow("tabtowrite", tabtowrite)
-#            cv2.imshow("ctkey", ctkey)
+#            cv2.imshow(key+"ctkey", ctkey)
 #            cv2.waitKey(0)
 #            cv2.destroyAllWindows()
+            print key, mroi.shape,ctkey.shape
             mroiaroi=cv2.add(mroi,ctkey)
-            imgresize=cv2.resize(mroiaroi,None,fx=fxssicom,fy=fxssicom,interpolation=cv2.INTER_LINEAR)
-            cv2.imwrite(imgcoreRoi,imgresize)
+#            cv2.imshow(key+"mroiaroi", mroiaroi)
+#            imgresize=cv2.resize(mroiaroi,None,fx=fxssicom,fy=fxssicom,interpolation=cv2.INTER_LINEAR)
+            cv2.imwrite(imgcoreRoi,mroiaroi)
     images[scannumber]=np.zeros((dimtabx,dimtaby,3), np.uint8)
 
 def visua():
@@ -257,6 +264,7 @@ def visua():
 #                    print key,n,scannumber
 #                    images[scannumber]=cv2.add(images[scannumber],ctc)
                     images[scannumber]=cv2.addWeighted(images[scannumber],1,ctc,0.5,0)
+    cv2.rectangle(menus, (150,12), (370,52), black, -1)
     cv2.putText(menus,' Visualization ROI',(150,30),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
 
 def eraseroi(imagename,dirpath_patient,dirroit):
@@ -270,10 +278,12 @@ def eraseroi(imagename,dirpath_patient,dirroit):
         imgcoreScan=os.path.join(dirroi,imagename)
         if os.path.exists(imgcoreScan):
             os.remove(imgcoreScan)
-            completed(imagename,dirpath_patient,dirroit)                
+            completed(imagename,dirpath_patient,dirroit)   
+            cv2.rectangle(menus, (150,12), (370,52), black, -1)             
             cv2.putText(menus,'ROI '+pattern+' slice:'+str(scannumber)+' erased',(150,30),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
         else:
-                    cv2.putText(menus,'ROI '+pattern+' slice:'+str(scannumber)+' not exist',(150,30),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
+            cv2.rectangle(menus, (150,12), (370,52), black, -1)
+            cv2.putText(menus,'ROI '+pattern+' slice:'+str(scannumber)+' not exist',(150,30),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
     else:
         cv2.putText(menus,' no pattern defined',(150,30),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
 
@@ -291,6 +301,7 @@ def reseted():
                 tabroi[key][scannumber][n]=[]
 #        tabroifinal[key][scannumber]=np.zeros((dimtabx,dimtaby,3), np.uint8)
     images[scannumber]=np.zeros((dimtabx,dimtaby,3), np.uint8)
+    cv2.rectangle(menus, (150,12), (370,52), black, -1)
     cv2.putText(menus,' Delete all drawings',(150,30),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
 
 def dellast():
@@ -319,6 +330,7 @@ def dellast():
         tabroi[pattern][scannumber][numeropoly]=[]
     else:
         print'length null'
+    cv2.rectangle(menus, (150,12), (370,52), black, -1)
     cv2.putText(menus,' Delete last polygon',(150,30),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
 
 def delall():
@@ -340,6 +352,7 @@ def delall():
 #    visua()
 #    images[scannumber]=np.zeros((dimtabx,dimtaby,3), np.uint8)
 #    visua()
+    cv2.rectangle(menus, (150,12), (370,52), black, -1)
     cv2.putText(menus,' Delete all polygons',(150,30),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
 
 def contrasti(im,r):
@@ -511,6 +524,142 @@ def tagviews (tab,t0,x0,y0,t1,x1,y1,t2,x2,y2,t3,x3,y3,t4,x4,y4,t5,x5,y5):
     viseg=cv2.putText(viseg,t5,(x5, y5), font,0.3,col,1)
     return viseg
 
+def largest_label_volume(im, bg=-1):
+    vals, counts = np.unique(im, return_counts=True)
+
+    counts = counts[vals != bg]
+    vals = vals[vals != bg]
+
+    if len(counts) > 0:
+        return vals[np.argmax(counts)]
+    else:
+        return None
+def segment_lung_mask(image, fill_lung_structures=True):
+
+    # not actually binary, but 1 and 2.
+    # 0 is treated as background, which we do not want
+    binary_image = np.array(image > -320, dtype=np.int8)+1
+#    binary_image = clear_border(binary_image)
+    labels = measure.label(binary_image)
+
+    # Pick the pixel in the very corner to determine which label is air.
+    #   Improvement: Pick multiple background labels from around the patient
+    #   More resistant to "trays" on which the patient lays cutting the air
+    #   around the person in half
+#    print labels.shape[0],labels.shape[1],labels.shape[2]
+#    background_label = labels[0,0,0]
+#    bg={} 
+    ls0=labels.shape[0]-1
+    ls1=labels.shape[1]-1
+    ls2=labels.shape[2]-1
+    for i in range (0,8):
+#        print  'i:',i
+#        print (i/4)%2, (i/2)%2, i%2
+        for j in range (1,3):
+#            print 'j:',j
+#            print labels[(i/4)%2*ls0,(i/2)%2*ls1,i%2*ls2/j]
+#            print (i/4)%2*ls0,(i/2)%2*ls1,i%2*ls2/j
+#            print (i/4)%2*ls0,(i/2)%2*ls1/j,i%2*ls2
+#            print (i/4)%2*ls0/j,(i/2)%2*ls1,i%2*ls2
+            background_label=labels[(i/4)%2*ls0,(i/2)%2*ls1,i%2*ls2/j]
+            binary_image[background_label == labels] = 2
+            background_label=labels[(i/4)%2*ls0,(i/2)%2*ls1/j,i%2*ls2]
+            binary_image[background_label == labels] = 2
+            background_label=labels[(i/4)%2*ls0/j,(i/2)%2*ls1,i%2*ls2]
+            binary_image[background_label == labels] = 2  
+#    for i in range (0,8):
+#        binary_image[background_label == labels] = 2
+#        background_label = labels[labels.shape[0]-1,labels.shape[1]-1,labels.shape[2]-1]
+
+    #Fill the air around the person
+#    binary_image[background_label == labels] = 2
+
+
+    # Method of filling the lung structures (that is superior to something like
+    # morphological closing)
+    if fill_lung_structures:
+        # For every slice we determine the largest solid structure
+        for i, axial_slice in enumerate(binary_image):
+            axial_slice = axial_slice - 1
+            labeling = measure.label(axial_slice)
+            l_max = largest_label_volume(labeling, bg=0)
+
+            if l_max is not None: #This slice contains some lung
+                binary_image[i][labeling != l_max] = 1
+
+
+    binary_image -= 1 #Make the image actual binary
+    binary_image = 1-binary_image # Invert it, lungs are now 1
+
+    # Remove other air pockets insided body
+    labels = measure.label(binary_image, background=0)
+    l_max = largest_label_volume(labels, bg=0)
+    if l_max is not None: # There are air pockets
+        binary_image[labels != l_max] = 0
+    return binary_image
+
+def morph(imgt,k):
+
+    img=imgt.astype('uint8')
+    img[img>0]=200
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(k,k))
+#    kernel = cv2.getStructuringElement(cv2.MORPH_RECT,(k,k))
+    img = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel)
+    img = cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel)  # <- to remove speckles...
+    img = cv2.morphologyEx(img, cv2.MORPH_DILATE, kernel)
+    img = cv2.morphologyEx(img, cv2.MORPH_DILATE, kernel)
+#    img = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel)
+    img = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel)
+    img = cv2.morphologyEx(img, cv2.MORPH_ERODE, kernel)
+    img = cv2.morphologyEx(img, cv2.MORPH_ERODE, kernel)
+    return img
+
+def genebmplung(fn,tabscanScan,slnt,dimtabxdicom,dimtabydicom):
+    """generate lung mask from dicom files"""
+   
+    (top,tail) =os.path.split(fn)
+    print ('load lung segmented dicom files in :',tail)
+    fmbmp=os.path.join(top,lung_mask)
+
+    if not os.path.exists(fmbmp):
+        os.mkdir(fmbmp)       
+    fmbmpbmp=os.path.join(fmbmp,lung_mask_bmp)
+    remove_folder(fmbmpbmp)
+    os.mkdir(fmbmpbmp)
+
+    listdcm=[name for name in  os.listdir(fmbmp) if name.lower().find('.dcm')>0]
+#    print len(listdcm),fmbmp
+    tabscan = np.zeros((slnt,dimtabxdicom,dimtabydicom), np.uint8)
+    if len(listdcm)>0:  
+        print 'lung scan exists'
+           
+        for l in listdcm:
+            FilesDCM =(os.path.join(fmbmp,l))
+            RefDs = dicom.read_file(FilesDCM,force=True)
+    
+            dsr= RefDs.pixel_array
+            dsr=normi(dsr)
+    
+            fxs=float(RefDs.PixelSpacing[0])/avgPixelSpacing
+            imgresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
+    
+            slicenumber=int(RefDs.InstanceNumber)
+            endnumslice=l.find('.dcm')
+    
+            imgcoreScan=l[0:endnumslice]+'_'+str(slicenumber)+'.'+typei
+            bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
+            cv2.imwrite(bmpfile,imgresize)
+    else:
+            print 'no lung scan'
+            segmented_lungs_fill = segment_lung_mask(tabscanScan, True)
+#            print segmented_lungs_fill.shape
+            for i in range (1,slnt):
+                tabscan[i]=normi(tabscan[i])
+                tabscan[i]=morph(segmented_lungs_fill[i],13)
+                imgcoreScan='lung_'+str(i)+'.'+typei
+                bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
+                cv2.imwrite(bmpfile,tabscan[i])
+    return tabscan
 
 
 def genebmp(fn,nosource,dirroit):
@@ -519,7 +668,7 @@ def genebmp(fn,nosource,dirroit):
     print ('load dicom files in :',fn)
     (top,tail) =os.path.split(fn)
     (top1,tail1) =os.path.split(top)
-
+   
 #    print 'fn' ,fn
     if not os.path.exists(fn):
         print 'path does not exists'
@@ -538,9 +687,10 @@ def genebmp(fn,nosource,dirroit):
     fxssicom=float(RefDs.PixelSpacing[0])/avgPixelSpacing
     
     dsr= RefDs.pixel_array
-#    dimtabx=dsr.shape[0]
-#    dimtaby=dsr.shape[1]
-#    print dimtabx, dimtaby
+    imgresize=cv2.resize(dsr,None,fx=fxssicom,fy=fxssicom,interpolation=cv2.INTER_LINEAR)
+    dimtabxdicom=imgresize.shape[0]
+    dimtabydicom=imgresize.shape[1]
+
     slnt=0
     for l in listdcm:
 
@@ -552,6 +702,7 @@ def genebmp(fn,nosource,dirroit):
 
 #    print 'number of slices', slnt
     slnt=slnt+1
+    tabscan = np.zeros((slnt,dimtabxdicom,dimtabydicom), np.int16)
     for l in listdcm:
 #        print l
         FilesDCM =(os.path.join(fn,l))
@@ -559,6 +710,19 @@ def genebmp(fn,nosource,dirroit):
         slicenumber=int(RefDs.InstanceNumber)
 
         dsr= RefDs.pixel_array
+        dsr = dsr.astype('int16')
+        dsr[dsr == -2000] = 0
+        intercept = RefDs.RescaleIntercept
+        slope = RefDs.RescaleSlope
+        if slope != 1:
+             dsr = slope * dsr.astype(np.float64)
+             dsr = dsr.astype(np.int16)
+
+        dsr += np.int16(intercept)
+        
+        imgresize=cv2.resize(dsr,None,fx=fxssicom,fy=fxssicom,interpolation=cv2.INTER_LINEAR)
+        tabscan[slicenumber]=imgresize      
+               
         dsr= dsr-dsr.min()
         c=float(imageDepth)/dsr.max()
         dsr=dsr*c
@@ -584,7 +748,7 @@ def genebmp(fn,nosource,dirroit):
         if not os.path.exists(roibmpfile):
             cv2.imwrite(roibmpfile,imgresize)
 #        cv2.imshow('dd',dsr)
-    return slnt
+    return slnt,tabscan,dimtabxdicom,dimtabydicom
 
 def nothing(x):
     pass
@@ -690,8 +854,6 @@ def initmenus(slnt,dirpath_patient):
     zonehorizontal=((0,0),(dimtabx,20))
     zoneverticaldroite=((dimtabx-25,0),(dimtabx,dimtaby))
 
-
-
 def openfichierroi(patient,patient_path_complet):
     global dirpath_patient,dimtabx,dimtaby,dirroit
     dirpath_patient=os.path.join(patient_path_complet,patient)
@@ -705,8 +867,25 @@ def openfichierroi(patient,patient_path_complet):
     nosource=True
     if len(listdcm)>0:
         nosource=False
-    slnt=genebmp(dirsource,nosource,dirroit)
+    slnt,tabscanScan,dimtabxdicom,dimtabydicom=genebmp(dirsource,nosource,dirroit)
     dirsourcescan=os.path.join(dirsource,scan_bmp)
     initmenus(slnt,dirpath_patient)
     loop(slnt,dirsourcescan,dirpath_patient,dirroit)
+    return 'completed'
+
+def openfichierroilung(patient,patient_path_complet):
+    global dirpath_patient,dimtabx,dimtaby,dirroit
+    dirpath_patient=os.path.join(patient_path_complet,patient)
+    dirsource=os.path.join(dirpath_patient,source_name)
+    dirroit=os.path.join(dirpath_patient,roi_name)
+    if not os.path.exists(dirsource):
+         os.mkdir(dirsource)
+    if not os.path.exists(dirroit):
+         os.mkdir(dirroit)
+    listdcm=[name for name in os.listdir(dirsource) if name.find('.dcm')>0]
+    nosource=True
+    if len(listdcm)>0:
+        nosource=False
+    slnt,tabscanScan,dimtabxdicom,dimtabydicom=genebmp(dirsource,nosource,dirroit)
+    genebmplung(dirsource,tabscanScan,slnt,dimtabxdicom,dimtabydicom)
     return 'completed'
