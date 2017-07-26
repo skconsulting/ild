@@ -241,12 +241,15 @@ def completed(imagename,dirpath_patient,dirroit):
         posext=imagename.find('.'+typei)
         imgcoreScans=imagename[0:posext]+'.'+typei
         dirroi=os.path.join(dirpath_patient,key)
+        if key in classifcontour:        
+            dirroi=os.path.join(dirroi,lung_mask_bmp)
         imgcoreScan=os.path.join(dirroi,imgcoreScans)
         imgcoreRoi=os.path.join(dirroit,imgcoreScans)         
         tabtowrite=cv2.cvtColor(tabroifinal[key][scannumber],cv2.COLOR_BGR2RGB)
 
 #        print key,imagemax
-        if imagemax>0:            
+        if imagemax>0:     
+            
             if not os.path.exists(dirroi):
                 os.mkdir(dirroi)      
             cv2.rectangle(menus, (150,12), (370,52), black, -1)                  
@@ -294,6 +297,8 @@ def eraseroi(imagename,dirpath_patient,dirroit):
         delall()
         tabroifinal[pattern][scannumber]=np.zeros((dimtabx,dimtaby,3), np.uint8)
         dirroi=os.path.join(dirpath_patient,pattern)
+        if pattern in classifcontour:        
+            dirroi=os.path.join(dirroi,lung_mask_bmp)
         imgcoreScan=os.path.join(dirroi,imagename)
         if os.path.exists(imgcoreScan):
             os.remove(imgcoreScan)
@@ -620,9 +625,9 @@ def genebmplung(fn,tabscanScan,slnt,listsln):
 
     if not os.path.exists(fmbmp):
         os.mkdir(fmbmp)       
-#    fmbmpbmp=os.path.join(fmbmp,lung_mask_bmp)
-#    remove_folder(fmbmpbmp)
-#    os.mkdir(fmbmpbmp)
+    fmbmpbmp=os.path.join(fmbmp,lung_mask_bmp)
+    remove_folder(fmbmpbmp)
+    os.mkdir(fmbmpbmp)
 
     listdcm=[name for name in  os.listdir(fmbmp) if name.lower().find('.dcm')>0]
 #    print len(listdcm),fmbmp
@@ -662,7 +667,7 @@ def genebmplung(fn,tabscanScan,slnt,listsln):
                 tabscanlung[i]=morph(segmented_lungs_fill[i],13)
 #                tabscanlung[i]=normi(tabscanlung[i])
                 imgcoreScan=tabscanScan[i][0]
-                bmpfile=os.path.join(fmbmp,imgcoreScan)
+                bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
                 cv2.imwrite(bmpfile,tabscanlung[i])
     return tabscan
 
@@ -822,24 +827,25 @@ def menudraw(slnt):
 def populate(pp,sl):
 #    print 'populate'
     for key in classif:
-        
-            dirroi=os.path.join(pp,key)
+        dirroi=os.path.join(pp,key)
+        if key in classifcontour:        
+            dirroi=os.path.join(dirroi,lung_mask_bmp)            
     #        print dirroi,sl
-            if os.path.exists(dirroi):
-                    listroi =[name for name in  os.listdir(dirroi) if name.lower().find('.'+typei)>0]
-                    for roiimage in listroi:
-    #                    tabroi[key][sl]=genepoly(os.path.join(dirroi,roiimage))
-                        img=os.path.join(dirroi,roiimage)
-                        imageroi= cv2.imread(img,1)
-    #                    imageroi=zoomfunction(imageroi,z)
-                        cdelimter='_'
-                        extensionimage='.'+typei
-                        slicenumber=rsliceNum(roiimage,cdelimter,extensionimage)
-                        imageview=cv2.cvtColor(imageroi,cv2.COLOR_RGB2BGR)
-                        if key not in classifcontour:
-                            tabroifinal[key][slicenumber]=imageview
-                        else:
-                            tabroifinal[key][slicenumber]=contours(imageview,key)
+        if os.path.exists(dirroi):
+                listroi =[name for name in  os.listdir(dirroi) if name.lower().find('.'+typei)>0]
+                for roiimage in listroi:
+#                    tabroi[key][sl]=genepoly(os.path.join(dirroi,roiimage))
+                    img=os.path.join(dirroi,roiimage)
+                    imageroi= cv2.imread(img,1)
+#                    imageroi=zoomfunction(imageroi,z)
+                    cdelimter='_'
+                    extensionimage='.'+typei
+                    slicenumber=rsliceNum(roiimage,cdelimter,extensionimage)
+                    imageview=cv2.cvtColor(imageroi,cv2.COLOR_RGB2BGR)
+                    if key not in classifcontour:
+                        tabroifinal[key][slicenumber]=imageview
+                    else:
+                        tabroifinal[key][slicenumber]=contours(imageview,key)
                         
 #                    cv2.imshow('imageroi',imageroi)
 

@@ -16,6 +16,8 @@ def lisdirprocess(directorytocheck):
         ddd=os.path.join(directorytocheck,dd)
         for key in classif:
             datadir=os.path.join(ddd,key)
+            if key in classifcontour:        
+                datadir=os.path.join(datadir,lung_mask_bmp)           
             if os.path.exists(datadir):
                 listfile=os.listdir(datadir)
                 if len(listfile)>0:

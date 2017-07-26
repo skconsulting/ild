@@ -32,7 +32,7 @@ scan_bmp='scan_bmp'
 source='source'
 typei='bmp'
 lung_mask='lung'
-lung_mask_bmp=''
+lung_mask_bmp='bmp'
 
 
 black=(0,0,0)
