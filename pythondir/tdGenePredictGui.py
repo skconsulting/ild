@@ -3,14 +3,48 @@
 '''predict on lung scan front view and cross view
 version 1.0
  '''
-from param_pix_p import *
+#from param_pix_p import *
+from param_pix_p import scan_bmp,remove_folder,avgPixelSpacing,typei,normi,dimpavx,dimpavy,typeid
+from param_pix_p import lung_namebmp,rsliceNum,norm,white,typeiroi1,typej,modelname,lung_name_gen,jpegpath
+from param_pix_p import datacrossn,classifc,classif,pathjs,fidclass,maxproba,yellow,pxy
+from param_pix_p import threeFileTop0,threeFileTop1,threeFileTop2,htmldir,source,predictoutmerge,dicomcross_merge
+from param_pix_p import dicomfront,dicomcross,threeFile,threeFile3d,threeFileTxt,transbmp,threeFileMerge
+from param_pix_p import typeiroi2,excluvisu,threeFileTxtMerge,volcol,sroi,threeFileTxt3d,threeFileBot,predictout3d1
+from param_pix_p import  predictout3dn,predictout3d,jpegpath3d,predictout,usedclassif
+from param_pix_p import jpegpadirm,dicompadirm,volumeweb,source_name,writeFile,datafrontn,path_data,dirpickle,cwdtop
+
+import time
+from time import time as mytime
+import numpy as np
+#from numpy import argmax,amax
+import os
+import cv2
+import dicom
+import random
+import scipy
+import shutil
+from skimage import measure
+import cPickle as pickle
+
+import keras
+from keras.models import load_model
+
+
 
 t0=mytime()
 
-def reshapeScan(tabscan,slnt,dimtabx):
+def reshapeScan(tabscanScan,slnt,lissln,dimtabx,dimtaby):
     print 'reshape'
+    tabscan = np.zeros((slnt,dimtabx,dimtaby), np.int16)
+    for i in lissln:
+                tabscan[i]=tabscanScan[i][1]
 
 #    print tabscan.shape
+    tabres=np.moveaxis(tabscan,0,1)
+    return tabres
+
+def reshapeScanl(tabscan):
+    print 'reshape lung'
     tabres=np.moveaxis(tabscan,0,1)
     return tabres
 
@@ -64,7 +98,10 @@ def genebmp(fn,sou,nosource):
 
     print 'number of slices', slnt
     slnt=slnt+1
-    tabscan = np.zeros((slnt,dimtabx,dimtaby), np.int16)
+    tabscan = {}
+    for i in range(slnt):
+        tabscan[i] = []
+#    tabscan = np.zeros((slnt,dimtabx,dimtaby), np.int16)
     for l in listdcm:
 #        print l
         FilesDCM =(os.path.join(fmbmp,l))
@@ -83,12 +120,15 @@ def genebmp(fn,sou,nosource):
         dsr += np.int16(intercept)
         dsr = dsr.astype('int16')
         imgresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
-
-        tabscan[slicenumber]=imgresize
-        imtowrite=normi(imgresize)
-
         endnumslice=l.find('.dcm')
         imgcoreScan=l[0:endnumslice]+'_'+str(slicenumber)+'.'+typei
+        tt=(imgcoreScan,imgresize)
+        tabscan[slicenumber]=tt
+#        tabscan[slicenumber]=imgresize
+        imtowrite=normi(imgresize)
+
+#        endnumslice=l.find('.dcm')
+#        imgcoreScan=l[0:endnumslice]+'_'+str(slicenumber)+'.'+typei
         bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
 
         t2='Not for medical use'
@@ -197,7 +237,7 @@ def morph(imgt,k):
     return img
 
 
-def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan):
+def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan,listsln):
     """generate patches from dicom files"""
 
     
@@ -227,21 +267,27 @@ def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan):
             imgresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
     
             slicenumber=int(RefDs.InstanceNumber)
-            endnumslice=l.find('.dcm')
+#            endnumslice=l.find('.dcm')
     
-            imgcoreScan=l[0:endnumslice]+'_'+str(slicenumber)+'.'+typei
+#            imgcoreScan=l[0:endnumslice]+'_'+str(slicenumber)+'.'+typei
+            imgcoreScan=tabscanScan[slicenumber][0]
             bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
             scipy.misc.imsave(bmpfile,imgresize)
     
             tabscan[slicenumber]=imgresize
     else:
             print 'no lung scan'
-            segmented_lungs_fill = segment_lung_mask(tabscanScan, True)
+            tabscan = np.zeros((slnt,dimtabx,dimtaby), np.int16)
+#            tabscanlung = np.zeros((slnt,dimtabx,dimtaby), np.uint8)
+            for i in listsln:
+                tabscan[i]=tabscanScan[i][1]
+            segmented_lungs_fill = segment_lung_mask(tabscan, True)
 #            print segmented_lungs_fill.shape
-            for i in range (1,slnt):
+            for i in listsln:
 #                tabscan[i]=normi(tabscan[i])
                 tabscan[i]=morph(segmented_lungs_fill[i],13)
-                imgcoreScan='lung_'+str(i)+'.'+typei
+#                imgcoreScan='lung_'+str(i)+'.'+typei
+                imgcoreScan=tabscanScan[i][0]
                 bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
                 cv2.imwrite(bmpfile,tabscan[i])
     return tabscan
@@ -262,7 +308,7 @@ def tagviews (tab,t0,x0,y0,t1,x1,y1,t2,x2,y2,t3,x3,y3,t4,x4,y4,t5,x5,y5):
 
     return viseg
 
-def pavgene(dirf,dimtabx,dimtaby,tabscanScan,tabscanLung,slnt,jpegpath):
+def pavgene(dirf,dimtabx,dimtaby,tabscanScan,tabscanLung,slnt,jpegpath,listsln):
         """ generate patches from scan"""
         global thrpatch
 
@@ -274,7 +320,11 @@ def pavgene(dirf,dimtabx,dimtaby,tabscanScan,tabscanLung,slnt,jpegpath):
         jpegpathdir=os.path.join(dirf,jpegpath)
         remove_folder(jpegpathdir)
         os.mkdir(jpegpathdir)
-        for img in range (0,slnt):
+        tabscan = np.zeros((slnt,dimtabx,dimtaby), np.int16)
+#        for i in listsln:
+                
+        for img in listsln:
+             tabscan[img]=tabscanScan[img][1]
 
              tabfw = np.zeros((dimtabx,dimtaby,3), np.uint8)
              tablung = np.copy(tabscanLung[img])
@@ -282,7 +332,7 @@ def pavgene(dirf,dimtabx,dimtaby,tabscanScan,tabscanLung,slnt,jpegpath):
              np.putmask(tablung,tablung>0,1)
              np.putmask(tabfrgb,tabfrgb>0,100)
              tabfrgb= cv2.cvtColor(tabfrgb,cv2.COLOR_GRAY2BGR)
-             tabf=norm(tabscanScan[img])
+             tabf=norm(tabscan[img])
 #             print nz1
              nz= tablung.max()
 
@@ -331,6 +381,61 @@ def pavgene(dirf,dimtabx,dimtaby,tabscanScan,tabscanLung,slnt,jpegpath):
 
         return patch_list
 
+def pavgenefront(dirf,dimtabx,dimtaby,tabscanScan,tabscanLung,slnt,jpegpath):
+        """ generate patches from scan"""
+        global thrpatch
+        tpav=mytime()        
+        patch_list=[]
+        (dptop,dptail)=os.path.split(dirf)
+        print('generate patches on: ',dptail)
+        jpegpathdir=os.path.join(dirf,jpegpath)
+        remove_folder(jpegpathdir)
+        os.mkdir(jpegpathdir)
+        for img in range (0,slnt):
+             tabfw = np.zeros((dimtabx,dimtaby,3), np.uint8)
+             tablung = np.copy(tabscanLung[img])
+             tabfrgb=np.copy(tablung)
+             np.putmask(tablung,tablung>0,1)
+             np.putmask(tabfrgb,tabfrgb>0,100)
+             tabfrgb= cv2.cvtColor(tabfrgb,cv2.COLOR_GRAY2BGR)
+             tabf=norm(tabscanScan[img])
+#             print nz1
+             nz= tablung.max()             
+
+             if nz>0:
+                 atabf = np.nonzero(tablung)
+                #tab[y][x]  convention
+                 xmin=atabf[1].min()
+                 xmax=atabf[1].max()
+                 ymin=atabf[0].min()
+                 ymax=atabf[0].max()
+                 i=xmin                           
+                 while i < xmax:
+                     j=ymin
+                     while j<ymax:
+                         tabpatch=tablung[j:j+dimpavy,i:i+dimpavx]
+                         area= tabpatch.sum()
+                         targ=float(area)/pxy
+                         if targ>=thrpatch:
+                            imgray = tabf[j:j+dimpavy,i:i+dimpavx]
+
+                            min_val, max_val, min_loc,max_loc = cv2.minMaxLoc(imgray)
+                            if  min_val != max_val:
+#                                imgray= norm(imgray)
+                                patch_list.append((img,i,j,imgray))
+                                tablung[j:j+dimpavy,i:i+dimpavx]=0
+                                cv2.rectangle(tabfw,(i,j),(i+dimpavx,j+dimpavy),yellow,0)
+                                j+=dimpavy-1
+
+                         j+=1
+                     i+=1
+
+                 nameslijpeg='s_'+str(img)+'.'+typej
+                 namepatchImage=os.path.join(jpegpathdir,nameslijpeg)
+                 tabjpeg=cv2.add(tabfw,tabfrgb)
+                 scipy.misc.imsave(namepatchImage,tabjpeg)
+        print "pav time:",round(mytime()-tpav,3),"s"
+        return patch_list
 
 
 def ILDCNNpredict(patch_list,model):
@@ -1137,17 +1242,18 @@ def mergeproba(dirf,prx,plx,tabx,slnt,dimtabx,dimtaby)  :
                 proba_merge,patch_list_merge=pavf(prx,dirf,p,i,tab2,dimpavx,dimpavy,
                 dimtabx,dimtaby,jpegpadirm,patch_list_merge,proba_merge,False)
     print 'merge exclu'
-    for p in excluvisu:
-        print'excluvisu', p
-        for i in range (1, slnt):
-            tab2=np.zeros((dimtabx,dimtaby),np.uint8)
-            for ll in range(0,len(plxd[p])):
-                if plxd[p][ll][0]==i:
-                    tab2[plxd[p][ll][2]:plxd[p][ll][2]+dimpavy,plxd[p][ll][1]:plxd[p][ll][1]+dimpavx]=100
-            nz= np.count_nonzero(tab2)
-            if nz>0:
-                proba_merge,patch_list_merge=pavf(prx,dirf,p,i,tab2,dimpavx,dimpavy,
-                dimtabx,dimtaby,jpegpadirm,patch_list_merge,proba_merge,True)
+    if len(excluvisu)>1:
+        for p in excluvisu:
+            print'excluvisu', p
+            for i in range (1, slnt):
+                tab2=np.zeros((dimtabx,dimtaby),np.uint8)
+                for ll in range(0,len(plxd[p])):
+                    if plxd[p][ll][0]==i:
+                        tab2[plxd[p][ll][2]:plxd[p][ll][2]+dimpavy,plxd[p][ll][1]:plxd[p][ll][1]+dimpavx]=100
+                nz= np.count_nonzero(tab2)
+                if nz>0:
+                    proba_merge,patch_list_merge=pavf(prx,dirf,p,i,tab2,dimpavx,dimpavy,
+                    dimtabx,dimtaby,jpegpadirm,patch_list_merge,proba_merge,True)
 
 #    print ' end excluvisu'
 #                if len(pr)>0:
@@ -1767,14 +1873,14 @@ def predictrun(indata,path_patient):
             lissln=datacross[4]
 #            """
 #
-            tabscanLung=genebmplung(dirf,lung_name_gen,slnt,dimtabx,dimtabx,tabscanScan)
+            tabscanLung=genebmplung(dirf,lung_name_gen,slnt,dimtabx,dimtabx,tabscanScan,lissln)
             
             subpleurmask=subpleural(dirf,tabscanLung,lungSegment,subErosion,'cross')
 #            pickle.dump(subpleurmask, open( os.path.join(path_data_write,"subpleurmask"), "wb" ),protocol=-1)
             """
             subpleurmask= pickle.load( open( os.path.join(path_data_write,"subpleurmask"), "rb" ))
             """
-            patch_list_cross=pavgene(dirf,dimtabx,dimtabx,tabscanScan,tabscanLung,slnt,jpegpath)
+            patch_list_cross=pavgene(dirf,dimtabx,dimtabx,tabscanScan,tabscanLung,slnt,jpegpath,lissln)
             
             model=modelCompilation('cross',picklein_file,picklein_file_front)
             proba_cross=ILDCNNpredict(patch_list_cross,model)
@@ -1807,9 +1913,9 @@ def predictrun(indata,path_patient):
 #                """
                 print 'START PREDICT FRONT'
                 print '------------------'
-                tabresScan=reshapeScan(tabscanScan,slnt,dimtabx)
+                tabresScan=reshapeScan(tabscanScan,slnt,lissln,dimtabx,dimtabx)
                 dimtabxn,dimtabyn,tabScan3d,lisslnfront=wtebres(wridir,dirf,tabresScan,dimtabx,slicepitch,lung_name_gen,'scan')
-                tabresLung=reshapeScan(tabscanLung,slnt,dimtabx)               
+                tabresLung=reshapeScanl(tabscanLung)               
                 dimtabxn,dimtabyn,tabLung3d,a=wtebres(wridir,dirf,tabresLung,dimtabx,slicepitch,lung_name_gen,'lung')
                 datafront=(dimtabx,dimtabxn,dimtabyn,slicepitch,lisslnfront)
                 
@@ -1822,7 +1928,7 @@ def predictrun(indata,path_patient):
                 slicepitch=datafront[3]
                 lisslnfront=datafront[4]
                 """
-                patch_list_front=pavgene(dirf,dimtabxn,dimtabx,tabScan3d,tabLung3d,dimtabyn,jpegpath3d)
+                patch_list_front=pavgenefront(dirf,dimtabxn,dimtabx,tabScan3d,tabLung3d,dimtabyn,jpegpath3d)
                 model=modelCompilation('front',picklein_file,picklein_file_front)
                 proba_front=ILDCNNpredict(patch_list_front,model)
                 

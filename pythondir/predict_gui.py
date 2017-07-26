@@ -8,11 +8,16 @@ Version 1.1 15-June-2017
 bug fixed:
     1
 """
-from param_pix_p import *
-from tdGenePredictGui import *
+#from param_pix_p import *
+from tdGenePredictGui import predictrun
+from modulepredictgui import visuarun,lisdirprocess
 
-from modulepredictgui import *
+from appJar import gui
+import os
+import sys
+import webbrowser
 
+import cPickle as pickle
 
 print os.environ['USERPROFILE']
 print os.environ['LOCALAPPDATA']

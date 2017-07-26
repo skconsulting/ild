@@ -5,9 +5,19 @@ Created on Mon Mar 20 17:21:22 2017
 @author: sylvain
 version 1.0
 """
-from param_pix_p import *
-from tdGenePredictGui import *
+#from param_pix_p import *
+from param_pix_p import path_data,datafrontn,datacrossn,dimpavx,dimpavy,classifc,classif,surfelem
+from param_pix_p import maxproba,excluvisu,white,red,yellow,grey,typei,fidclass,volelem
+from param_pix_p import lungimage,source_name,sroi,sroi3d,scan_bmp,typeid,typei1,transbmp
+from param_pix_p import threeFileMerge,htmldir,threeFile,rsliceNum,threeFile3d
 
+from tdGenePredictGui import predictrun,calculSurface,uipTree
+
+import cPickle as pickle
+import os
+import cv2
+import numpy as np
+import webbrowser
 
 def lisdirprocess(d):
 #    a=os.listdir(d)
@@ -541,18 +551,18 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice):
     iy=0
     
     pdirk = os.path.join(path_img,source_name)
-    pdirkroi = os.path.join(path_img,sroi)
-    pdirkroifront = os.path.join(path_img,sroid)
-       
+    pdirkroicross = os.path.join(path_img,sroi)
+    pdirkroifront = os.path.join(path_img,sroi3d)
+
     if ti =="cross view" or ti =="merge view":
-        if os.path.exists(pdirkroi):
-            pdirk = pdirkroi
+        if os.path.exists(pdirkroicross):
+            pdirk = pdirkroicross
             sn=''
         else:
             sn=scan_bmp
         corectnumber=1
     else:        
-        if os.path.exists(pdirkroi):
+        if os.path.exists(pdirkroifront):
             pdirk = pdirkroifront
             sn=''
         else:
@@ -580,6 +590,7 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice):
 
         image0=os.path.join(pdirk,list_image[slnt/2])
         img = cv2.imread(image0,1)
+        img=cv2.resize(img,(dimtabx,dimtaby),interpolation=cv2.INTER_LINEAR)
     #    cv2.imshow('cont',img)
     #    cv2.waitKey(0)
     #    cv2.destroyAllWindows()
@@ -625,7 +636,8 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice):
 
             slicenumber=fl+corectnumber
             imagel=os.path.join(pdirk,list_image[slicenumber])
-            img = cv2.imread(imagel,1)          
+            img = cv2.imread(imagel,1)   
+            img=cv2.resize(img,(dimtabx,dimtaby),interpolation=cv2.INTER_LINEAR)
             imglumi=lumi(img,l)
             imcontrast=contrasti(imglumi,c)                
             imcontrast=cv2.cvtColor(imcontrast,cv2.COLOR_BGR2RGB)

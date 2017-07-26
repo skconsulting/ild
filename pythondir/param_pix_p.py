@@ -100,8 +100,6 @@ scan_bmp='scan_bmp'
 transbmp='trans_bmp'
 source='source'
 
-sroid='sroi3d'
-sroi='sroi'
 bgdir='bgdir3d'
 
 typei='jpg'
@@ -111,7 +109,7 @@ typej='jpg'
 typeiroi1='jpg'
 typeiroi2='bmp'
 
-excluvisu=['healthy']
+#excluvisu=['healthy']
 excluvisu=['']
 
 
