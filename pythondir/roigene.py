@@ -646,10 +646,13 @@ def genebmplung(fn,tabscanScan,slnt,listsln):
             imgresize=cv2.resize(dsr,(dimtabx,dimtaby),interpolation=cv2.INTER_LINEAR)
     
             slicenumber=int(RefDs.InstanceNumber)
-            endnumslice=l.find('.dcm')
+#            endnumslice=l.find('.dcm')
     
-            imgcoreScan=l[0:endnumslice]+'_'+str(slicenumber)+'.'+typei
-            bmpfile=os.path.join(fmbmp,imgcoreScan)
+#            imgcoreScan=l[0:endnumslice]+'_'+str(slicenumber)+'.'+typei
+#            bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
+#            cv2.imwrite(bmpfile,dsr)
+            imgcoreScan=tabscanScan[slicenumber][0]
+            bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
             cv2.imwrite(bmpfile,dsr)
     else:
             print 'no lung scan, generation proceeds'
@@ -669,7 +672,7 @@ def genebmplung(fn,tabscanScan,slnt,listsln):
                 imgcoreScan=tabscanScan[i][0]
                 bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
                 cv2.imwrite(bmpfile,tabscanlung[i])
-    return tabscan
+    return
 
 
 def genebmp(fn,nosource,dirroit):
