@@ -87,7 +87,7 @@ jpegpadirm='jpegpadirm'
 
 lung_name='lung'
 lung_namebmp='bmp'
-lung_name_gen='lung_mask'
+lung_name_gen='lung'
 #directory with lung mask dicom
 lungmask='lung'
 lungmask1='lung_mask'

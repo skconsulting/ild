@@ -539,24 +539,37 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice):
     patchi=False
     ix=0
     iy=0
-    if ti =="cross view" or ti =="merge view":
-        sn=scan_bmp
-        corectnumber=1
-#        psroi=os.path.join(path_img,sroi)
-    else:
-        sn=transbmp
-        corectnumber=0
-
+    
     pdirk = os.path.join(path_img,source_name)
+    pdirkroi = os.path.join(path_img,sroi)
+    pdirkroifront = os.path.join(path_img,sroid)
+       
+    if ti =="cross view" or ti =="merge view":
+        if os.path.exists(pdirkroi):
+            pdirk = pdirkroi
+            sn=''
+        else:
+            sn=scan_bmp
+        corectnumber=1
+    else:        
+        if os.path.exists(pdirkroi):
+            pdirk = pdirkroifront
+            sn=''
+        else:
+            sn=transbmp
+        corectnumber=0
     pdirk = os.path.join(pdirk,sn)
+    
     list_image={}
     cdelimter='_'
     extensionimage='.'+typei
-
     limage=[name for name in os.listdir(pdirk) if name.find('.'+typei,1)>0 ]
     if len(limage)==0:
          limage=[name for name in os.listdir(pdirk) if name.find('.'+typei1,1)>0 ]
          extensionimage='.'+typei1
+    if len(limage)==0:
+         limage=[name for name in os.listdir(pdirk) if name.find('.'+typeid,1)>0 ]
+         extensionimage='.'+typeid
         
     if ((ti =="cross view" or ti =="merge view") and len(limage)+1==slnt) or ti =="front view":
 

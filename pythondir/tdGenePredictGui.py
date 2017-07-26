@@ -239,7 +239,7 @@ def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan):
             segmented_lungs_fill = segment_lung_mask(tabscanScan, True)
 #            print segmented_lungs_fill.shape
             for i in range (1,slnt):
-                tabscan[i]=normi(tabscan[i])
+#                tabscan[i]=normi(tabscan[i])
                 tabscan[i]=morph(segmented_lungs_fill[i],13)
                 imgcoreScan='lung_'+str(i)+'.'+typei
                 bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
