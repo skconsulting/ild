@@ -31,12 +31,13 @@ path_patient='path_patient'
 scan_bmp='scan_bmp'
 source='source'
 typei='bmp'
-lung_mask='lung_mask'
-lung_mask_bmp='bmp'
+lung_mask='lung'
+lung_mask_bmp=''
 
 
 black=(0,0,0)
 grey=(100,100,100)
+highgrey=(240,240,240)
 red=(255,0,0)
 green=(0,255,0)
 blue=(0,0,255)
@@ -69,7 +70,8 @@ if setdata=='set2':
         'cysts':7,
         'bronchiectasis':8,
 #        'emphysema':10,
-        'GGpret':9
+        'GGpret':9,
+        'lung':100
         }
     usedclassif = [
         'consolidation',
@@ -81,8 +83,10 @@ if setdata=='set2':
         'air_trapping',
         'cysts',
         'bronchiectasis',
-        'GGpret'
+        'GGpret',
+        'lung'
         ]
+    classifcontour=['lung']
 else:
     print 'error: not defined set'
     
@@ -102,7 +106,7 @@ classifc ={
     'emphysema':chatain,
     'GGpret': parme,
 
-     'nolung': lowgreen,
+     'lung': highgrey,
      'bronchial_wall_thickening':white,
      'early_fibrosis':white,
 

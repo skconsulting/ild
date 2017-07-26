@@ -11,7 +11,6 @@ bug fixed:
 from param_pix_r import *
 from moduleroigui import *
 
-
 #print os.environ['TMP']
 #print os.environ['USERPROFILE']
 #print os.environ['LOCALAPPDATA']

@@ -17,7 +17,7 @@ tabroifinal={}
 tabroinumber={}
 
 def contours(im,pat):
-    print 'contour',pat
+#    print 'contour',pat
     imgray = cv2.cvtColor(im,cv2.COLOR_BGR2GRAY)
     ret,thresh = cv2.threshold(imgray,1,255,0)
     _,contours,heirarchy=cv2.findContours(thresh,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
@@ -25,8 +25,8 @@ def contours(im,pat):
     cv2.drawContours(im2,contours,-1,classifc[pat],1)
     im2=cv2.cvtColor(im2,cv2.COLOR_BGR2RGB)
     return im2
+       
     
-
 def contour3(im,l):
 #    print 'im',im
     col=classifc[l]
@@ -37,7 +37,7 @@ def contour3(im,l):
     return visi
 
 def contour4(vis,im):
-
+    """  creating an hole for im"""
     visi = np.zeros((dimtabx,dimtaby,3), np.uint8)
 #    vis2= np.zeros((dimtabx,dimtaby,3), np.uint8)
     imagemax= cv2.countNonZero(np.array(im))
@@ -52,8 +52,18 @@ def contour4(vis,im):
 #        cv2.imshow("nthresh", nthresh)
 #        cv2.imshow("vis2", vis2)
 #        cv2.waitKey(0)
-
     return vis2
+
+def contour5(vis,im,l):
+    """  creating an hole for im in vis and fill with im"""
+    col=classifc[l]
+    visi=np.copy(im)
+    mgray = cv2.cvtColor(visi,cv2.COLOR_BGR2GRAY)
+    np.putmask(mgray,mgray>0,255)
+    nthresh=cv2.bitwise_not(mgray)
+    vis2=cv2.bitwise_and(vis,vis,mask=nthresh)
+    vis3=cv2.bitwise_or(vis2,visi)
+    return vis3
 
 
 def click_and_crop(event, x, y, flags, param):
@@ -138,16 +148,11 @@ def click_and_crop(event, x, y, flags, param):
         if not labelfound:
             print 'add point',pattern
             if len(pattern)>0:
-#                print 'len pattern >0'
-#                print 'fxs,x0',fxs,x0new
-#                global fxs,x0new,y0new
                 xnew=int((x+x0new)/fxs)
                 ynew=int((y+y0new)/fxs)
 #                print x,y,xnew,ynew
                 numeropoly=tabroinumber[pattern][scannumber]
-#                print 'length last pattent',len(tabroi[pattern][scannumber][numeropoly])
                 tabroi[pattern][scannumber][numeropoly].append((xnew, ynew))
-#                print numeropoly, tabroi[pattern][scannumber][numeropoly]
                 cv2.rectangle(images[scannumber], (xnew,ynew),
                               (xnew,ynew), classifc[pattern], 1)
 
@@ -155,18 +160,17 @@ def click_and_crop(event, x, y, flags, param):
                     cv2.line(images[scannumber], (tabroi[pattern][scannumber][numeropoly][l][0],tabroi[pattern][scannumber][numeropoly][l][1]),
                               (tabroi[pattern][scannumber][numeropoly][l+1][0],tabroi[pattern][scannumber][numeropoly][l+1][1]), classifc[pattern], 1)
                     l+=1
-#                cv2.imshow('images',images[scannumber])
             else:
                 cv2.rectangle(menus, (212,0), (340,12), black, -1)
                 cv2.putText(menus,'No pattern selected',(215,10),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
 
 def closepolygon():
-    print 'closepolygon'
+#    print 'closepolygon'
     if  len(pattern)>0:
         numeropoly=tabroinumber[pattern][scannumber]
         if len(tabroi[pattern][scannumber][numeropoly])>0:
             numeropoly+=1
-            print 'numeropoly',numeropoly
+#            print 'numeropoly',numeropoly
             tabroinumber[pattern][scannumber]=numeropoly
             tabroi[pattern][scannumber][numeropoly]=[]
         else:
@@ -189,7 +193,7 @@ def suppress():
     cv2.putText(menus,'delete last entry',(215,20),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
 
 def completed(imagename,dirpath_patient,dirroit):
-    print 'completed start'
+#    print 'completed start'
     closepolygon()
 #    print dirpath_patient
     imgcoreRoi1=os.path.join(dirpath_patient,source_name) 
@@ -197,7 +201,7 @@ def completed(imagename,dirpath_patient,dirroit):
     imgcoreRoi3=os.path.join(imgcoreRoi2,imagename) 
     mroi=cv2.imread(imgcoreRoi3,1)
     imgcoreRoi=os.path.join(dirroit,imagename)
-    mroi=cv2.resize(mroi,None,fx=fxssicom,fy=fxssicom,interpolation=cv2.INTER_LINEAR)
+#    mroi=cv2.resize(mroi,None,fx=fxssicom,fy=fxssicom,interpolation=cv2.INTER_LINEAR)
     cv2.imwrite(imgcoreRoi,mroi)
 #    cv2.imshow("mroi", mroi)
     for key in classif:
@@ -205,16 +209,15 @@ def completed(imagename,dirpath_patient,dirroit):
 #        print key,numeropoly,scannumber
         for n in range (0,numeropoly+1):
             if len(tabroi[key][scannumber][n])>0:
-#                for l in range(0,len(tabroi[key][scannumber][n])-1):
-#                        cv2.line(images[scannumber], (tabroi[key][scannumber][n][l][0],tabroi[key][scannumber][n][l][1]),
-#                                      (tabroi[key][scannumber][n][l+1][0],tabroi[key][scannumber][n][l+1][1]), black, 1)
+                for l in range(0,len(tabroi[key][scannumber][n])-1):
+                        cv2.line(images[scannumber], (tabroi[key][scannumber][n][l][0],tabroi[key][scannumber][n][l][1]),
+                                      (tabroi[key][scannumber][n][l+1][0],tabroi[key][scannumber][n][l+1][1]), black, 1)
                 ctc=contour3(tabroi[key][scannumber][n],key)
+                tabroifinal[key][scannumber]=contour5(tabroifinal[key][scannumber],ctc,key)
+                images[scannumber]=cv2.addWeighted(images[scannumber],1,tabroifinal[key][scannumber],0.5,0)
+#                images[scannumber]=cv2.add(images[scannumber],tabroifinal[key][scannumber])
 
-                tabroifinal[key][scannumber]=cv2.add(tabroifinal[key][scannumber],ctc)
 
-                images[scannumber]=cv2.addWeighted(images[scannumber],1,tabroifinal[key][scannumber],0.01,0)
-#        cv2.imshow(key, tabroifinal[key][scannumber])
-#        tabroinumber[key][scannumber]=0
 
         imgray = cv2.cvtColor(tabroifinal[key][scannumber],cv2.COLOR_BGR2GRAY)
         imagemax= cv2.countNonZero(imgray)
@@ -228,47 +231,43 @@ def completed(imagename,dirpath_patient,dirroit):
 #        print key,imagemax
         if imagemax>0:            
             if not os.path.exists(dirroi):
-                os.mkdir(dirroi)                        
+                os.mkdir(dirroi)      
+            cv2.rectangle(menus, (150,12), (370,52), black, -1)                  
             if os.path.exists(imgcoreScan):
-                cv2.rectangle(menus, (150,12), (370,52), black, -1)
                 cv2.putText(menus,'ROI '+key+' slice:'+str(scannumber)+' overwritten',(150,30),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
             
             cv2.imwrite(imgcoreScan,tabtowrite)                       
             cv2.putText(menus,'Slice ROI stored',(215,20),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
             
             mroi=cv2.imread(imgcoreRoi,1)
-#            mroi=cv2.resize(mroi,None,fx=fxssicom,fy=fxssicom,interpolation=cv2.INTER_LINEAR)
             ctkey=contours(tabtowrite,key)
-            ctkey=cv2.resize(ctkey,None,fx=fxssicom,fy=fxssicom,interpolation=cv2.INTER_LINEAR)
-#            cv2.imshow("mroi", mroi)
-#            cv2.imshow("tabtowrite", tabtowrite)
-#            cv2.imshow(key+"ctkey", ctkey)
-#            cv2.waitKey(0)
-#            cv2.destroyAllWindows()
-            print key, mroi.shape,ctkey.shape
+#            ctkey=cv2.resize(ctkey,None,fx=fxssicom,fy=fxssicom,interpolation=cv2.INTER_LINEAR)
+
             mroiaroi=cv2.add(mroi,ctkey)
-#            cv2.imshow(key+"mroiaroi", mroiaroi)
-#            imgresize=cv2.resize(mroiaroi,None,fx=fxssicom,fy=fxssicom,interpolation=cv2.INTER_LINEAR)
+
             cv2.imwrite(imgcoreRoi,mroiaroi)
     images[scannumber]=np.zeros((dimtabx,dimtaby,3), np.uint8)
 
 def visua():
+    images[scannumber] = np.zeros((dimtabx,dimtaby,3), np.uint8)
     for key in classif:
         numeropoly=tabroinumber[key][scannumber]
         for n in range (0,numeropoly+1):
             if len(tabroi[key][scannumber][n])>0:
-#                    for l in range(0,len(tabroi[key][scannumber][n])-1):
-#                        cv2.line(images[scannumber], (tabroi[key][scannumber][n][l][0],tabroi[key][scannumber][n][l][1]),
-#                                      (tabroi[key][scannumber][n][l+1][0],tabroi[key][scannumber][n][l+1][1]), black, 1)
+                    for l in range(0,len(tabroi[key][scannumber][n])-1):
+                        cv2.line(images[scannumber], (tabroi[key][scannumber][n][l][0],tabroi[key][scannumber][n][l][1]),
+                                      (tabroi[key][scannumber][n][l+1][0],tabroi[key][scannumber][n][l+1][1]), black, 1)
                     ctc=contour3(tabroi[key][scannumber][n],key)
-#                    print key,n,scannumber
-#                    images[scannumber]=cv2.add(images[scannumber],ctc)
-                    images[scannumber]=cv2.addWeighted(images[scannumber],1,ctc,0.5,0)
+                    ctc=ctc.astype(np.uint16)
+                    ctc=ctc*0.5
+                    ctc=ctc.astype(np.uint8)
+                    images[scannumber]=contour5(images[scannumber],ctc,key)
+#                    images[scannumber]=cv2.addWeighted(images[scannumber],1,ctc,0.5,0)
     cv2.rectangle(menus, (150,12), (370,52), black, -1)
     cv2.putText(menus,' Visualization ROI',(150,30),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
 
 def eraseroi(imagename,dirpath_patient,dirroit):
-    print 'this is erase roi',pattern
+#    print 'this is erase roi',pattern
    
     if len(pattern)>0:
         closepolygon()
@@ -299,7 +298,6 @@ def reseted():
                     cv2.line(images[scannumber], (tabroi[key][scannumber][n][l][0],tabroi[key][scannumber][n][l][1]),
                                   (tabroi[key][scannumber][n][l+1][0],tabroi[key][scannumber][n][l+1][1]), black, 1)
                 tabroi[key][scannumber][n]=[]
-#        tabroifinal[key][scannumber]=np.zeros((dimtabx,dimtaby,3), np.uint8)
     images[scannumber]=np.zeros((dimtabx,dimtaby,3), np.uint8)
     cv2.rectangle(menus, (150,12), (370,52), black, -1)
     cv2.putText(menus,' Delete all drawings',(150,30),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
@@ -308,7 +306,7 @@ def dellast():
 #    global images
     numeropoly=tabroinumber[pattern][scannumber]
     if len(tabroi[pattern][scannumber][numeropoly])>0:
-        print 'len>0'
+#        print 'len>0'
         for l in range(0,len(tabroi[pattern][scannumber][numeropoly])-1):
             cv2.line(images[scannumber], (tabroi[pattern][scannumber][numeropoly][l][0],tabroi[pattern][scannumber][numeropoly][l][1]),
                      (tabroi[pattern][scannumber][numeropoly][l+1][0],tabroi[pattern][scannumber][numeropoly][l+1][1]), black, 1)
@@ -317,8 +315,6 @@ def dellast():
         images[scannumber]=contour4(images[scannumber],tabroi[pattern][scannumber][numeropoly])
         tabroi[pattern][scannumber][numeropoly]=[]
         
-
-#        tabroinumber[pattern][scannumber]=max(numeropoly-1,0)
     elif numeropoly >0 :
 #        print 'len=0 and num>0'
         numeropoly=numeropoly-1
@@ -335,23 +331,16 @@ def dellast():
 
 def delall():
 #    global images
-    print 'delall', pattern
+#    print 'delall', pattern
     numeropoly=tabroinumber[pattern][scannumber]
-    print numeropoly
-#    for key in classif:
-#        numeropoly=tabroinumber[key][scannumber]
-#        print key, numeropoly
     for n in range (0,numeropoly+1):
-        print n
+#        print n
         for l in range(0,len(tabroi[pattern][scannumber][n])-1):
             cv2.line(images[scannumber], (tabroi[pattern][scannumber][n][l][0],tabroi[pattern][scannumber][n][l][1]),
                 (tabroi[pattern][scannumber][n][l+1][0],tabroi[pattern][scannumber][n][l+1][1]), black, 1)
             images[scannumber]=contour4(images[scannumber],tabroi[pattern][scannumber][n])
         tabroi[pattern][scannumber][n]=[]
     tabroinumber[pattern][scannumber]=0
-#    visua()
-#    images[scannumber]=np.zeros((dimtabx,dimtaby,3), np.uint8)
-#    visua()
     cv2.rectangle(menus, (150,12), (370,52), black, -1)
     cv2.putText(menus,' Delete all polygons',(150,30),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
 
@@ -391,17 +380,15 @@ def zoomfunction(im,z,px,py):
     dimtabyn=imgresize.shape[1]
     px0=((dimtabxn-dimtabx)/2)*px/50
     py0=((dimtabyn-dimtaby)/2)*py/50
-#    print px0,py0
-#    x0=max(0,((dimtabxn-dimtabx)/2)-px0)
+
     x0=max(0,px0)
-#    y0=max(0,((dimtabyn-dimtaby)/2)-py0)
+
     y0=max(0,py0)
     x1=min(dimtabxn,x0+dimtabx)
     y1=min(dimtabyn,y0+dimtaby)
-#    print dimtabxn,x0,x1
+
     crop_img=imgresize[y0:y1,x0:x1]
-#    print crop_img.shape
-#    tabi = np.array(im)
+
     x0new=x0
     y0new=y0
     return crop_img
@@ -474,10 +461,10 @@ def loop(slnt,pdirk,dirpath_patient,dirroi):
                 print 'erase'
                 eraseroi(imagename,dirpath_patient,dirroi)
         elif key == ord("f"):
-                print 'close polygone'
+                print 'close polygon'
                 closepolygon()
         elif key == ord("q")  or quitl or cv2.waitKey(20) & 0xFF == 27 :
-               print 'on quitte', quitl
+               print 'quit', quitl
                cv2.destroyAllWindows()
                break
         c = cv2.getTrackbarPos('Contrast','Slider2')
@@ -496,16 +483,13 @@ def loop(slnt,pdirk,dirpath_patient,dirroi):
         image=zoomfunction(image,z,px,py)
         imagesview=zoomfunction(images[scannumber],z,px,py)
 
-#        initmenus(slnt,dirpath_patient,z)
         populate(dirpath_patient,slnt)
         imglumi=lumi(image,l)
         image=contrasti(imglumi,c)
-#        print image.shape,images[scannumber].shape
         imageview=cv2.add(image,imagesview)
         imageview=cv2.add(imageview,menus)
         for key1 in classif:
                 tabroifinalview=zoomfunction(tabroifinal[key1][scannumber],z,px,py)
-#                imageview=cv2.add(imageview,tabroifinalview)
                 imageview=cv2.addWeighted(imageview,1,tabroifinalview,0.5,0)
                 
         imageview=cv2.cvtColor(imageview,cv2.COLOR_BGR2RGB)
@@ -556,20 +540,13 @@ def segment_lung_mask(image, fill_lung_structures=True):
 #        print  'i:',i
 #        print (i/4)%2, (i/2)%2, i%2
         for j in range (1,3):
-#            print 'j:',j
-#            print labels[(i/4)%2*ls0,(i/2)%2*ls1,i%2*ls2/j]
-#            print (i/4)%2*ls0,(i/2)%2*ls1,i%2*ls2/j
-#            print (i/4)%2*ls0,(i/2)%2*ls1/j,i%2*ls2
-#            print (i/4)%2*ls0/j,(i/2)%2*ls1,i%2*ls2
+
             background_label=labels[(i/4)%2*ls0,(i/2)%2*ls1,i%2*ls2/j]
             binary_image[background_label == labels] = 2
             background_label=labels[(i/4)%2*ls0,(i/2)%2*ls1/j,i%2*ls2]
             binary_image[background_label == labels] = 2
             background_label=labels[(i/4)%2*ls0/j,(i/2)%2*ls1,i%2*ls2]
             binary_image[background_label == labels] = 2  
-#    for i in range (0,8):
-#        binary_image[background_label == labels] = 2
-#        background_label = labels[labels.shape[0]-1,labels.shape[1]-1,labels.shape[2]-1]
 
     #Fill the air around the person
 #    binary_image[background_label == labels] = 2
@@ -614,7 +591,7 @@ def morph(imgt,k):
     img = cv2.morphologyEx(img, cv2.MORPH_ERODE, kernel)
     return img
 
-def genebmplung(fn,tabscanScan,slnt,dimtabxdicom,dimtabydicom):
+def genebmplung(fn,tabscanScan,slnt):
     """generate lung mask from dicom files"""
    
     (top,tail) =os.path.split(fn)
@@ -623,13 +600,13 @@ def genebmplung(fn,tabscanScan,slnt,dimtabxdicom,dimtabydicom):
 
     if not os.path.exists(fmbmp):
         os.mkdir(fmbmp)       
-    fmbmpbmp=os.path.join(fmbmp,lung_mask_bmp)
-    remove_folder(fmbmpbmp)
-    os.mkdir(fmbmpbmp)
+#    fmbmpbmp=os.path.join(fmbmp,lung_mask_bmp)
+#    remove_folder(fmbmpbmp)
+#    os.mkdir(fmbmpbmp)
 
     listdcm=[name for name in  os.listdir(fmbmp) if name.lower().find('.dcm')>0]
 #    print len(listdcm),fmbmp
-    tabscan = np.zeros((slnt,dimtabxdicom,dimtabydicom), np.uint8)
+    tabscan = np.zeros((slnt,dimtabx,dimtaby), np.uint8)
     if len(listdcm)>0:  
         print 'lung scan exists'
            
@@ -640,31 +617,32 @@ def genebmplung(fn,tabscanScan,slnt,dimtabxdicom,dimtabydicom):
             dsr= RefDs.pixel_array
             dsr=normi(dsr)
     
-            fxs=float(RefDs.PixelSpacing[0])/avgPixelSpacing
-            imgresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
+#            fxsl=float(RefDs.PixelSpacing[0])/avgPixelSpacing
+            imgresize=cv2.resize(dsr,(dimtabx,dimtaby),interpolation=cv2.INTER_LINEAR)
     
             slicenumber=int(RefDs.InstanceNumber)
             endnumslice=l.find('.dcm')
     
             imgcoreScan=l[0:endnumslice]+'_'+str(slicenumber)+'.'+typei
-            bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
-            cv2.imwrite(bmpfile,imgresize)
+            bmpfile=os.path.join(fmbmp,imgcoreScan)
+            cv2.imwrite(bmpfile,dsr)
     else:
-            print 'no lung scan'
+            print 'no lung scan, generation proceeds'
             segmented_lungs_fill = segment_lung_mask(tabscanScan, True)
 #            print segmented_lungs_fill.shape
             for i in range (1,slnt):
                 tabscan[i]=normi(tabscan[i])
                 tabscan[i]=morph(segmented_lungs_fill[i],13)
                 imgcoreScan='lung_'+str(i)+'.'+typei
-                bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
+                imgcoreScan=l[0:endnumslice]+'_'+str(slicenumber)+'.'+typei
+                bmpfile=os.path.join(fmbmp,imgcoreScan)
                 cv2.imwrite(bmpfile,tabscan[i])
     return tabscan
 
 
 def genebmp(fn,nosource,dirroit):
     """generate patches from dicom files"""
-    global fxssicom
+#    global fxssicom
     print ('load dicom files in :',fn)
     (top,tail) =os.path.split(fn)
     (top1,tail1) =os.path.split(top)
@@ -682,15 +660,6 @@ def genebmp(fn,nosource,dirroit):
      
     listdcm=[name for name in  os.listdir(fn) if name.lower().find('.dcm')>0]
 
-    FilesDCM =(os.path.join(fn,listdcm[0]))
-    RefDs = dicom.read_file(FilesDCM)
-    fxssicom=float(RefDs.PixelSpacing[0])/avgPixelSpacing
-    
-    dsr= RefDs.pixel_array
-    imgresize=cv2.resize(dsr,None,fx=fxssicom,fy=fxssicom,interpolation=cv2.INTER_LINEAR)
-    dimtabxdicom=imgresize.shape[0]
-    dimtabydicom=imgresize.shape[1]
-
     slnt=0
     for l in listdcm:
 
@@ -702,7 +671,10 @@ def genebmp(fn,nosource,dirroit):
 
 #    print 'number of slices', slnt
     slnt=slnt+1
-    tabscan = np.zeros((slnt,dimtabxdicom,dimtabydicom), np.int16)
+    tabscan = {}
+#    for i in range(slnt):
+#        tabscan[i] = np.zeros((slnt,dimtabx,dimtaby), np.int16)
+
     for l in listdcm:
 #        print l
         FilesDCM =(os.path.join(fn,l))
@@ -720,17 +692,18 @@ def genebmp(fn,nosource,dirroit):
 
         dsr += np.int16(intercept)
         
-        imgresize=cv2.resize(dsr,None,fx=fxssicom,fy=fxssicom,interpolation=cv2.INTER_LINEAR)
-        tabscan[slicenumber]=imgresize      
+        dsr=cv2.resize(dsr,(dimtabx,dimtaby),interpolation=cv2.INTER_LINEAR)
+        imgcoreScan=l[0:endnumslice]+'_'+str(slicenumber)+'.'+typei
+        tt=[]
+        tt.append(imgcoreScan)
+        tt.append(dsr)
+        tabscan[slicenumber]=dsr    
                
-        dsr= dsr-dsr.min()
-        c=float(imageDepth)/dsr.max()
-        dsr=dsr*c
-        dsr = dsr.astype('uint8')
-        resized_image = cv2.resize(dsr, (dimtabx, dimtaby))
+        dsr=normi(dsr)
+#        resized_image = cv2.resize(dsr, (dimtabx, dimtaby))
 
         endnumslice=l.find('.dcm')
-        imgcoreScan=l[0:endnumslice]+'_'+str(slicenumber)+'.'+typei
+        
         bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
         roibmpfile=os.path.join(dirroit,imgcoreScan)
 
@@ -741,14 +714,13 @@ def genebmp(fn,nosource,dirroit):
 
         t4=time.asctime()
         t5=''
-        resized_image=tagviews(resized_image,t0,dimtabx-80,dimtaby-10,t1,0,dimtaby-20,t2,dimtabx-250,dimtaby-10,
+        anoted_image=tagviews(dsr,t0,dimtabx-80,dimtaby-10,t1,0,dimtaby-20,t2,dimtabx-250,dimtaby-10,
                      t3,0,dimtaby-30,t4,0,dimtaby-10,t5,0,dimtaby-20)
-        cv2.imwrite(bmpfile,resized_image)
-        imgresize=cv2.resize(resized_image,None,fx=fxssicom,fy=fxssicom,interpolation=cv2.INTER_LINEAR)
+        cv2.imwrite(bmpfile,anoted_image)
         if not os.path.exists(roibmpfile):
-            cv2.imwrite(roibmpfile,imgresize)
+            cv2.imwrite(roibmpfile,anoted_image)
 #        cv2.imshow('dd',dsr)
-    return slnt,tabscan,dimtabxdicom,dimtabydicom
+    return slnt,tabscan
 
 def nothing(x):
     pass
@@ -825,20 +797,25 @@ def menudraw(slnt):
 def populate(pp,sl):
 #    print 'populate'
     for key in classif:
-        dirroi=os.path.join(pp,key)
-#        print dirroi,sl
-        if os.path.exists(dirroi):
-                listroi =[name for name in  os.listdir(dirroi) if name.lower().find('.'+typei)>0]
-                for roiimage in listroi:
-#                    tabroi[key][sl]=genepoly(os.path.join(dirroi,roiimage))
-                    img=os.path.join(dirroi,roiimage)
-                    imageroi= cv2.imread(img,1)
-#                    imageroi=zoomfunction(imageroi,z)
-                    cdelimter='_'
-                    extensionimage='.'+typei
-                    slicenumber=rsliceNum(roiimage,cdelimter,extensionimage)
-                    imageview=cv2.cvtColor(imageroi,cv2.COLOR_RGB2BGR)
-                    tabroifinal[key][slicenumber]=imageview
+        
+            dirroi=os.path.join(pp,key)
+    #        print dirroi,sl
+            if os.path.exists(dirroi):
+                    listroi =[name for name in  os.listdir(dirroi) if name.lower().find('.'+typei)>0]
+                    for roiimage in listroi:
+    #                    tabroi[key][sl]=genepoly(os.path.join(dirroi,roiimage))
+                        img=os.path.join(dirroi,roiimage)
+                        imageroi= cv2.imread(img,1)
+    #                    imageroi=zoomfunction(imageroi,z)
+                        cdelimter='_'
+                        extensionimage='.'+typei
+                        slicenumber=rsliceNum(roiimage,cdelimter,extensionimage)
+                        imageview=cv2.cvtColor(imageroi,cv2.COLOR_RGB2BGR)
+                        if key not in classifcontour:
+                            tabroifinal[key][slicenumber]=imageview
+                        else:
+                            tabroifinal[key][slicenumber]=contours(imageview,key)
+                        
 #                    cv2.imshow('imageroi',imageroi)
 
 def initmenus(slnt,dirpath_patient):
@@ -867,7 +844,7 @@ def openfichierroi(patient,patient_path_complet):
     nosource=True
     if len(listdcm)>0:
         nosource=False
-    slnt,tabscanScan,dimtabxdicom,dimtabydicom=genebmp(dirsource,nosource,dirroit)
+    slnt,tabscanScan=genebmp(dirsource,nosource,dirroit)
     dirsourcescan=os.path.join(dirsource,scan_bmp)
     initmenus(slnt,dirpath_patient)
     loop(slnt,dirsourcescan,dirpath_patient,dirroit)
@@ -886,6 +863,6 @@ def openfichierroilung(patient,patient_path_complet):
     nosource=True
     if len(listdcm)>0:
         nosource=False
-    slnt,tabscanScan,dimtabxdicom,dimtabydicom=genebmp(dirsource,nosource,dirroit)
-    genebmplung(dirsource,tabscanScan,slnt,dimtabxdicom,dimtabydicom)
-    return 'completed'
+    slnt,tabscanScan=genebmp(dirsource,nosource,dirroit)
+    genebmplung(dirsource,tabscanScan,slnt)
+    return 'completed lung'
