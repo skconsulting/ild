@@ -25,7 +25,22 @@ def contours(im,pat):
     cv2.drawContours(im2,contours,-1,classifc[pat],1)
     im2=cv2.cvtColor(im2,cv2.COLOR_BGR2RGB)
     return im2
-       
+
+def fillcontours(im,pat):
+    col=classifc[pat]
+#    print 'contour',pat
+    imgray = cv2.cvtColor(im,cv2.COLOR_BGR2GRAY)
+    ret,thresh = cv2.threshold(imgray,1,255,0)
+    _,contours0,heirarchy=cv2.findContours(thresh,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+    contours = [cv2.approxPolyDP(cnt, 0, True) for cnt in contours0]
+    im2 = np.zeros((dimtabx,dimtaby,3), np.uint8)
+
+    for cnt in contours:
+        cv2.fillPoly(im2, [cnt],col)
+
+    im2=cv2.cvtColor(im2,cv2.COLOR_BGR2RGB)
+    return im2
+              
     
 def contour3(im,l):
 #    print 'im',im
@@ -236,7 +251,12 @@ def completed(imagename,dirpath_patient,dirroit):
             if os.path.exists(imgcoreScan):
                 cv2.putText(menus,'ROI '+key+' slice:'+str(scannumber)+' overwritten',(150,30),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
             
-            cv2.imwrite(imgcoreScan,tabtowrite)                       
+            if key not in classifcontour:
+                cv2.imwrite(imgcoreScan,tabtowrite)  
+            else:
+                tabtowrite=fillcontours(tabtowrite,key)
+                cv2.imwrite(imgcoreScan,tabtowrite)  
+                                    
             cv2.putText(menus,'Slice ROI stored',(215,20),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
             
             mroi=cv2.imread(imgcoreRoi,1)
@@ -578,7 +598,7 @@ def segment_lung_mask(image, fill_lung_structures=True):
 def morph(imgt,k):
 
     img=imgt.astype('uint8')
-    img[img>0]=200
+    img[img>0]=classifc['lung'][0]
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(k,k))
 #    kernel = cv2.getStructuringElement(cv2.MORPH_RECT,(k,k))
     img = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel)
@@ -591,7 +611,7 @@ def morph(imgt,k):
     img = cv2.morphologyEx(img, cv2.MORPH_ERODE, kernel)
     return img
 
-def genebmplung(fn,tabscanScan,slnt):
+def genebmplung(fn,tabscanScan,slnt,listsln):
     """generate lung mask from dicom files"""
    
     (top,tail) =os.path.split(fn)
@@ -606,7 +626,7 @@ def genebmplung(fn,tabscanScan,slnt):
 
     listdcm=[name for name in  os.listdir(fmbmp) if name.lower().find('.dcm')>0]
 #    print len(listdcm),fmbmp
-    tabscan = np.zeros((slnt,dimtabx,dimtaby), np.uint8)
+#    tabscan = np.zeros((slnt,dimtabx,dimtaby), np.uint8)
     if len(listdcm)>0:  
         print 'lung scan exists'
            
@@ -628,15 +648,22 @@ def genebmplung(fn,tabscanScan,slnt):
             cv2.imwrite(bmpfile,dsr)
     else:
             print 'no lung scan, generation proceeds'
-            segmented_lungs_fill = segment_lung_mask(tabscanScan, True)
-#            print segmented_lungs_fill.shape
-            for i in range (1,slnt):
-                tabscan[i]=normi(tabscan[i])
-                tabscan[i]=morph(segmented_lungs_fill[i],13)
-                imgcoreScan='lung_'+str(i)+'.'+typei
-                imgcoreScan=l[0:endnumslice]+'_'+str(slicenumber)+'.'+typei
+            tabscan = np.zeros((slnt,dimtabx,dimtaby), np.int16)
+            tabscanlung = np.zeros((slnt,dimtabx,dimtaby), np.uint8)
+            for i in listsln:
+                tabscan[i]=tabscanScan[i][1]
+#            print tabscan[i].min(),tabscan[i].max()
+            segmented_lungs_fill = segment_lung_mask(tabscan, True)
+#            print segmented_lungs_fill.min(),segmented_lungs_fill.max()
+
+            for i in listsln:
+#                tabscan[i]=normi(tabscan[i][1])
+                
+                tabscanlung[i]=morph(segmented_lungs_fill[i],13)
+#                tabscanlung[i]=normi(tabscanlung[i])
+                imgcoreScan=tabscanScan[i][0]
                 bmpfile=os.path.join(fmbmp,imgcoreScan)
-                cv2.imwrite(bmpfile,tabscan[i])
+                cv2.imwrite(bmpfile,tabscanlung[i])
     return tabscan
 
 
@@ -661,20 +688,21 @@ def genebmp(fn,nosource,dirroit):
     listdcm=[name for name in  os.listdir(fn) if name.lower().find('.dcm')>0]
 
     slnt=0
+    listsln=[]
     for l in listdcm:
 
         FilesDCM =(os.path.join(fn,l))
         RefDs = dicom.read_file(FilesDCM)
         slicenumber=int(RefDs.InstanceNumber)
+        listsln.append(slicenumber)
         if slicenumber> slnt:
             slnt=slicenumber
 
 #    print 'number of slices', slnt
     slnt=slnt+1
     tabscan = {}
-#    for i in range(slnt):
-#        tabscan[i] = np.zeros((slnt,dimtabx,dimtaby), np.int16)
-
+    for i in range(slnt):
+        tabscan[i] = []
     for l in listdcm:
 #        print l
         FilesDCM =(os.path.join(fn,l))
@@ -691,19 +719,16 @@ def genebmp(fn,nosource,dirroit):
              dsr = dsr.astype(np.int16)
 
         dsr += np.int16(intercept)
-        
+
         dsr=cv2.resize(dsr,(dimtabx,dimtaby),interpolation=cv2.INTER_LINEAR)
-        imgcoreScan=l[0:endnumslice]+'_'+str(slicenumber)+'.'+typei
-        tt=[]
-        tt.append(imgcoreScan)
-        tt.append(dsr)
-        tabscan[slicenumber]=dsr    
-               
-        dsr=normi(dsr)
-#        resized_image = cv2.resize(dsr, (dimtabx, dimtaby))
 
         endnumslice=l.find('.dcm')
-        
+        imgcoreScan=l[0:endnumslice]+'_'+str(slicenumber)+'.'+typei
+        tt=(imgcoreScan,dsr)
+        tabscan[slicenumber]=tt  
+
+        dsr=normi(dsr)
+
         bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
         roibmpfile=os.path.join(dirroit,imgcoreScan)
 
@@ -720,7 +745,7 @@ def genebmp(fn,nosource,dirroit):
         if not os.path.exists(roibmpfile):
             cv2.imwrite(roibmpfile,anoted_image)
 #        cv2.imshow('dd',dsr)
-    return slnt,tabscan
+    return slnt,tabscan,listsln
 
 def nothing(x):
     pass
@@ -844,7 +869,7 @@ def openfichierroi(patient,patient_path_complet):
     nosource=True
     if len(listdcm)>0:
         nosource=False
-    slnt,tabscanScan=genebmp(dirsource,nosource,dirroit)
+    slnt,tabscanScan,listsln=genebmp(dirsource,nosource,dirroit)
     dirsourcescan=os.path.join(dirsource,scan_bmp)
     initmenus(slnt,dirpath_patient)
     loop(slnt,dirsourcescan,dirpath_patient,dirroit)
@@ -863,6 +888,6 @@ def openfichierroilung(patient,patient_path_complet):
     nosource=True
     if len(listdcm)>0:
         nosource=False
-    slnt,tabscanScan=genebmp(dirsource,nosource,dirroit)
-    genebmplung(dirsource,tabscanScan,slnt)
+    slnt,tabscanScan,listsln=genebmp(dirsource,nosource,dirroit)
+    genebmplung(dirsource,tabscanScan,slnt,listsln)
     return 'completed lung'
