@@ -230,10 +230,12 @@ def completed(imagename,dirpath_patient,dirroit):
                 ctc=contour3(tabroi[key][scannumber][n],key)
                 tabroifinal[key][scannumber]=contour5(tabroifinal[key][scannumber],ctc,key)
                 images[scannumber]=cv2.addWeighted(images[scannumber],1,tabroifinal[key][scannumber],0.5,0)
+                tabroi[key][scannumber][n]=[]
 #                images[scannumber]=cv2.add(images[scannumber],tabroifinal[key][scannumber])
 
 
-
+        tabroinumber[key][scannumber]=0
+        
         imgray = cv2.cvtColor(tabroifinal[key][scannumber],cv2.COLOR_BGR2GRAY)
         imagemax= cv2.countNonZero(imgray)
         posext=imagename.find('.'+typei)
@@ -249,7 +251,7 @@ def completed(imagename,dirpath_patient,dirroit):
                 os.mkdir(dirroi)      
             cv2.rectangle(menus, (150,12), (370,52), black, -1)                  
             if os.path.exists(imgcoreScan):
-                cv2.putText(menus,'ROI '+key+' slice:'+str(scannumber)+' overwritten',(150,30),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
+                cv2.putText(menus,'ROI '+' slice:'+str(scannumber)+' overwritten',(150,30),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
             
             if key not in classifcontour:
                 cv2.imwrite(imgcoreScan,tabtowrite)  
@@ -278,7 +280,6 @@ def visua():
                         cv2.line(images[scannumber], (tabroi[key][scannumber][n][l][0],tabroi[key][scannumber][n][l][1]),
                                       (tabroi[key][scannumber][n][l+1][0],tabroi[key][scannumber][n][l+1][1]), black, 1)
                     ctc=contour3(tabroi[key][scannumber][n],key)
-                    ctc=ctc.astype(np.uint16)
                     ctc=ctc*0.5
                     ctc=ctc.astype(np.uint8)
                     images[scannumber]=contour5(images[scannumber],ctc,key)
@@ -288,7 +289,6 @@ def visua():
 
 def eraseroi(imagename,dirpath_patient,dirroit):
 #    print 'this is erase roi',pattern
-   
     if len(pattern)>0:
         closepolygon()
         delall()
