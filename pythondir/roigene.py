@@ -291,11 +291,8 @@ def completed(imagename,dirpath_patient,dirroit):
             if area>0:
 
                 volumeroi[scannumber][key]=area   
-                print '2',volumeroi[scannumber]
                 pickle.dump(volumeroi, open(path_data_writefile, "wb" ),protocol=-1)
 
-#                cv2.imshow(key, tabtowrite)
-                                    
             cv2.putText(menus,'Slice ROI stored',(215,20),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
             
             mroi=cv2.imread(imgcoreRoi,1)
@@ -858,6 +855,7 @@ def menudraw(slnt):
 def populate(pp,sl):
 #    print 'populate'
     for key in classif:
+        print key
         dirroi=os.path.join(pp,key)
         if key in classifcontour:        
             dirroi=os.path.join(dirroi,lung_mask_bmp)            
@@ -873,12 +871,18 @@ def populate(pp,sl):
                     extensionimage='.'+typei
                     slicenumber=rsliceNum(roiimage,cdelimter,extensionimage)
                     imageview=cv2.cvtColor(imageroi,cv2.COLOR_RGB2BGR)
+                    
+                    tabgrey=cv2.cvtColor(imageview,cv2.COLOR_BGR2GRAY)
+                    np.putmask(tabgrey,tabgrey>0,1)
+                    area= tabgrey.sum()*pixelSpacing*pixelSpacing
+                    volumeroi[slicenumber][key]=area   
+                    pickle.dump(volumeroi, open(path_data_writefile, "wb" ),protocol=-1)
+                                       
                     if key not in classifcontour:
-                        tabroifinal[key][slicenumber]=imageview
+                        tabroifinal[key][slicenumber]=imageview                        
                     else:
                         tabroifinal[key][slicenumber]=contours(imageview,key)
-                        
-#                    cv2.imshow('imageroi',imageroi)
+     #                    cv2.imshow('imageroi',imageroi)
 
 def initmenus(slnt,dirpath_patient):
     global menus,imageview,zoneverticalgauche,zoneverticaldroite,zonehorizontal
@@ -928,7 +932,7 @@ def openfichierroi(patient,patient_path_complet):
     return 'completed'
 
 def openfichierroilung(patient,patient_path_complet):
-    global dirpath_patient,dirroit
+    global dirpath_patient,dirroit,volumeroi,path_data_writefile
     dirpath_patient=os.path.join(patient_path_complet,patient)
     dirsource=os.path.join(dirpath_patient,source_name)
     dirroit=os.path.join(dirpath_patient,roi_name)
@@ -942,6 +946,21 @@ def openfichierroilung(patient,patient_path_complet):
         nosource=False
     slnt,tabscanScan,listsln=genebmp(dirsource,nosource,dirroit)
     genebmplung(dirsource,tabscanScan,slnt,listsln)
+    path_data_write=os.path.join(dirpath_patient,path_data)
+    path_data_writefile=os.path.join(path_data_write,volumeroifile)
+    if not os.path.exists(path_data_write):
+         os.mkdir(path_data_write)
+         volumeroi={}
+         for i in listsln:
+             volumeroi[i]={}
+             for pat in classif:
+                 volumeroi[i][pat]=0
+         pickle.dump(volumeroi, open(path_data_writefile, "wb" ),protocol=-1)       
+    else:
+        volumeroi=pickle.load(open(path_data_writefile, "rb" ))
+    initmenus(slnt,dirpath_patient)
+    menudraw(slnt)
+    populate(dirpath_patient,slnt)
     
     return 'completed lung'
 
@@ -956,10 +975,10 @@ def checkvolumegeneroi(patient,patient_path_complet):
         return 'no volume data generated'
 
     volumeroi=pickle.load(open(path_data_writefile, "rb" ))
+    txt=''
     for value in volumeroi:
         for val2 in volumeroi[value]:
             if volumeroi[value][val2]>0:
-              print value,val2,round(volumeroi[value][val2],2)
-
-
-    return
+              print value,val2,round(volumeroi[value][val2],0)
+              txt=txt+'Slice number: '+str(value)+' roi: '+str(val2)+' value mm2: '+str(int(volumeroi[value][val2]))+'\n'
+    return txt

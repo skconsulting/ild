@@ -73,7 +73,7 @@ if setdata=='set2':
         'bronchiectasis':8,
 #        'emphysema':10,
         'GGpret':9,
-        'lung':100
+        'lung':10
         }
     usedclassif = [
         'consolidation',

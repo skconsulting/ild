@@ -105,7 +105,7 @@ def checkvolume(btn):
     if len(ll)>0:
         mes=checkvolumegene(ll,lisdir)
         if mes !=None:
-            app.errorBox('error', mes)
+            app.infoBox('volume', mes)
         redraw(app)
     else:
         app.errorBox('error', 'no  patient selected')
@@ -207,12 +207,16 @@ def initDraw():
         app.setListBoxRows("list",10)
 #        app.setLabelBg("list", "blue")
         row = app.getRow()
-        app.addButton("Generate ROI",  press,row,0)
-        app.addButton("Generate Lung_Mask",  presslung,row,1)
-        app.addButton("check volume",  checkvolume,row,2)
+        app.addButton("Generate ROI",  press,row,1)
         row = app.getRow()
         app.addHorizontalSeparator( colour="red")
-    app.addButton("Quit",  boutonStop)
+        app.addButton("Generate Lung_Mask",  presslung,row,1)
+        row = app.getRow()
+
+        app.addButton("check volume",  checkvolume,row,1)
+
+        app.addHorizontalSeparator( colour="red")
+    app.addButton("Quit",  boutonStop,row,0)
     app.go()
 
 if __name__ == '__main__':
