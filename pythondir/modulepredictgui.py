@@ -6,10 +6,16 @@ Created on Mon Mar 20 17:21:22 2017
 version 1.0
 """
 #from param_pix_p import *
-from param_pix_p import path_data,datafrontn,datacrossn,dimpavx,dimpavy,classifc,classif,surfelem
-from param_pix_p import maxproba,excluvisu,white,red,yellow,grey,typei,fidclass,volelem
-from param_pix_p import lungimage,source_name,sroi,sroi3d,scan_bmp,typeid,typei1,transbmp
-from param_pix_p import threeFileMerge,htmldir,threeFile,rsliceNum,threeFile3d
+from param_pix_p import path_data,datafrontn,datacrossn,dimpavx,dimpavy,surfelem,volelem,volumeroifile
+
+from param_pix_p import white,red,yellow,grey
+from param_pix_p import lungimage,source_name,sroi,sroi3d,scan_bmp,transbmp,pxy
+from param_pix_p import typei,typei1,typei2
+from param_pix_p import threeFileMerge,htmldir,threeFile,threeFile3d
+
+from param_pix_p import classifc,classif
+
+from param_pix_p import maxproba,excluvisu,fidclass,rsliceNum
 
 from tdGenePredictGui import predictrun,calculSurface,uipTree
 
@@ -120,21 +126,29 @@ def addpatchn(col,lab, xt,yt,imgn):
     cv2.rectangle(imgn,(xt,yt),(xt+dimpavx,yt+dimpavy),col,1)
     return imgn
 
-def tagviewn(fig,label,pro,nbr,surface,surftot,x,y):
+def tagviewn(fig,label,surface,surftot,roi,tl):
     """write text in image according to label and color"""
 
     col=classifc[label]
     labnow=classif[label]
     
-    deltax=110+155*(((labnow)//5)-1)
-    deltay=11*((labnow)%5)
+#    deltax=110+155*(((labnow)//5)-1)
+    deltax=110
+
+#    deltay=11*((labnow)%5)
+    deltay=10+(11*labnow)
+
 #    gro=-x*0.0027+1.1
-    gro=0.65
+    gro=0.8
     pc=str(int(round(100.*surface/surftot,0)))
-    cv2.putText(fig,label+' '+str(surface)+'mm2 '+pc+'%',(x+deltax, y+deltay+10),cv2.FONT_HERSHEY_PLAIN,gro,col,1)
+    print tl
+    if tl:
+        cv2.rectangle(fig,(deltax-10, deltay),(deltax, deltay+10),col,1)
+    cv2.putText(fig,label+' predict: '+str(surface)+'mm2 '+pc+'%'+' roi: '+str(roi)+'mm2 ',(deltax, deltay),cv2.FONT_HERSHEY_PLAIN,gro,col,1)
 
 
-def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice):
+def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi):
+
     imgn = np.zeros((dx,dy,3), np.uint8)
     datav = np.zeros((200,500,3), np.uint8)
     th=t/100.0
@@ -142,10 +156,15 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice):
     listlabel={}
     listlabelaverage={}
     surflabel={}
+    for pat in classif:
+        surflabel[pat]=0
     surftot=len(patch_list_cross_slice[slicenumber])
-    surftotf=surftot*surfelem
-    surftot='surface totale :'+str(round(surftotf,1))+'mm2'
+    surftotf=surftot*surfelem*pxy
+    surftot='surface totale :'+str(int(round(surftotf,0)))+'mm2'
     surftotpat=0
+    if len (volumeroi)>0:
+        lv=volumeroi[slicenumber]
+#        print lv
     for ll in patch_list_cross_slice[slicenumber]:
             xpat=ll[0][0]
             ypat=ll[0][1]
@@ -162,21 +181,26 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice):
 #                        print 'found'
                     numl=listlabel[classlabel]
                     listlabel[classlabel]=numl+1
-                    surflabel[classlabel]= (numl+1)*surfelem
+                    surflabel[classlabel]= (numl+1)*surfelem*pxy
                     cur=listlabelaverage[classlabel]
                     averageproba= round((cur*numl+mprobai)/(numl+1),2)
                     listlabelaverage[classlabel]=averageproba
                 else:
                     listlabel[classlabel]=1
-                    surflabel[classlabel]=surfelem
+                    surflabel[classlabel]=surfelem*pxy
                     listlabelaverage[classlabel]=mprobai
 
                 imgn= addpatchn(classcolor,classlabel,xpat,ypat,imgn)
-    delx=int(dy*0.6-120)
-    for ll1 in listlabel:               
-                sul=round(surflabel[ll1],1)
-                surftotpat=surftotpat+surflabel[ll1]
-                tagviewn(datav,ll1,str(round(listlabelaverage[ll1],2)),listlabel[ll1],sul,surftotf,delx,0)
+    delx=120
+    for ll1 in classif:               
+        if ll1 in listlabel:
+            tl=True
+        else:
+            tl=False
+            sul=int(round(surflabel[ll1],0))
+            suroi=int(round(lv[ll1],0))
+            surftotpat=surftotpat+surflabel[ll1]
+            tagviewn(datav,ll1,sul,surftotf,suroi,tl)
     ts='Threshold:'+str(t)
     surfunkn=surftotf-surftotpat
     if surftotf>0:
@@ -184,10 +208,10 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice):
     else:
         surfp='NA'
         
-    sulunk='surface unknow :'+str(abs(round(surfunkn,1)))+'mm2 ='+surfp+'%'
-    cv2.putText(datav,ts,(0,50),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
-    cv2.putText(datav,surftot,(delx,70),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
-    cv2.putText(datav,sulunk,(delx,80),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
+    sulunk='surface unknow :'+str(int(abs(round(surfunkn,0))))+'mm2 ='+surfp+'%'
+    cv2.putText(datav,ts,(0,140),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
+    cv2.putText(datav,surftot,(delx,140),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
+    cv2.putText(datav,sulunk,(delx,150),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
     return imgn,datav
 
 
@@ -564,9 +588,13 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice):
     if ti =="cross view" or ti =="merge view":
         if os.path.exists(pdirkroicross):
             pdirk = pdirkroicross
+            path_data_write=os.path.join(path_img,path_data)
+            path_data_writefile=os.path.join(path_data_write,volumeroifile)
+            volumeroi=pickle.load(open(path_data_writefile, "rb" ))
             sn=''
         else:
             sn=scan_bmp
+            volumeroi={}
         corectnumber=1
     else:        
         if os.path.exists(pdirkroifront):
@@ -585,8 +613,8 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice):
          limage=[name for name in os.listdir(pdirk) if name.find('.'+typei1,1)>0 ]
          extensionimage='.'+typei1
     if len(limage)==0:
-         limage=[name for name in os.listdir(pdirk) if name.find('.'+typeid,1)>0 ]
-         extensionimage='.'+typeid
+         limage=[name for name in os.listdir(pdirk) if name.find('.'+typei2,1)>0 ]
+         extensionimage='.'+typei2
         
     if ((ti =="cross view" or ti =="merge view") and len(limage)+1==slnt) or ti =="front view":
 
@@ -601,8 +629,6 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice):
 #        cv2.imshow('cont',img)
 #        cv2.waitKey(0)
 #        cv2.destroyAllWindows()
-
-
         imgtext = np.zeros((dimtabx,dimtaby,3), np.uint8)
         datav = np.zeros((200,500,3), np.uint8)
 
@@ -654,11 +680,11 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice):
             imcontrast=contrasti(imglumi,c)                
             imcontrast=cv2.cvtColor(imcontrast,cv2.COLOR_BGR2RGB)
             
-            imgn,datav= drawpatch(tl,dimtabx,dimtaby,slicenumber,viewasked,patch_list_cross_slice)
+            imgn,datav= drawpatch(tl,dimtabx,dimtaby,slicenumber,viewasked,patch_list_cross_slice,volumeroi)
+            
             cv2.putText(datav,'slice number :'+str(slicenumber),(10,180),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
             cv2.putText(datav,'patient Name :'+tail,(10,190),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
 
-            
             imgngray = cv2.cvtColor(imgn,cv2.COLOR_BGR2GRAY)
             np.putmask(imgngray,imgngray>0,255)
             mask_inv = cv2.bitwise_not(imgngray)

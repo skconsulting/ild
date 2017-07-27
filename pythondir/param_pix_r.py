@@ -31,7 +31,13 @@ roi_name='sroi'
 path_patient='path_patient'
 scan_bmp='scan_bmp'
 source='source'
-typei='bmp'
+
+typei='jpg'
+typei1='bmp'
+typei2='png' 
+
+
+
 lung_mask='lung'
 lung_mask_bmp='bmp'
 path_data='data'

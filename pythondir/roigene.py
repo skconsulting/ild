@@ -8,8 +8,15 @@ version 1.0
 27 july 2017
 """
 #from param_pix_r import *
-from param_pix_r import path_data,dimtabx,dimtaby,classifc,classif,classifcontour
-from param_pix_r import white,black,source_name,scan_bmp,roi_name,imageDepth,normi,typei,lung_mask_bmp
+from param_pix_r import path_data,dimtabx,dimtaby
+from param_pix_r import typei1
+from param_pix_r import source_name,scan_bmp,roi_name,imageDepth,lung_mask_bmp
+from param_pix_r import white,black
+from param_pix_r import classifc,classif,classifcontour
+from param_pix_r import normi
+
+
+
 from param_pix_r import remove_folder,lung_mask,red,volumeroifile
 
 from skimage import measure
@@ -260,8 +267,8 @@ def completed(imagename,dirpath_patient,dirroit):
 #        print key,imagemax
         if imagemax>0:  
             
-            posext=imagename.find('.'+typei)
-            imgcoreScans=imagename[0:posext]+'.'+typei
+            posext=imagename.find('.'+typei1)
+            imgcoreScans=imagename[0:posext]+'.'+typei1
             dirroi=os.path.join(dirpath_patient,key)
             if not os.path.exists(dirroi):
                 os.mkdir(dirroi)
@@ -287,6 +294,7 @@ def completed(imagename,dirpath_patient,dirroit):
             tabgrey=cv2.cvtColor(tabtowrite,cv2.COLOR_BGR2GRAY)
             np.putmask(tabgrey,tabgrey>0,1)
             area= tabgrey.sum()*pixelSpacing*pixelSpacing
+            print 'pixelSpacing',pixelSpacing
 
             if area>0:
 
@@ -455,8 +463,8 @@ def loop(slnt,pdirk,dirpath_patient,dirroi):
     quitl=False
     list_image={}
     cdelimter='_'
-    extensionimage='.'+typei
-    limage=[name for name in os.listdir(pdirk) if name.find('.'+typei,1)>0 ]
+    extensionimage='.'+typei1
+    limage=[name for name in os.listdir(pdirk) if name.find('.'+typei1,1)>0 ]
 
     if len(limage)+1==slnt:
 #        print 'good'
@@ -756,7 +764,7 @@ def genebmp(fn,nosource,dirroit):
         dsr=cv2.resize(dsr,(dimtabx,dimtaby),interpolation=cv2.INTER_LINEAR)
 
         endnumslice=l.find('.dcm')
-        imgcoreScan=l[0:endnumslice]+'_'+str(slicenumber)+'.'+typei
+        imgcoreScan=l[0:endnumslice]+'_'+str(slicenumber)+'.'+typei1
         tt=(imgcoreScan,dsr)
         tabscan[slicenumber]=tt  
 
@@ -855,20 +863,20 @@ def menudraw(slnt):
 def populate(pp,sl):
 #    print 'populate'
     for key in classif:
-        print key
         dirroi=os.path.join(pp,key)
         if key in classifcontour:        
             dirroi=os.path.join(dirroi,lung_mask_bmp)            
     #        print dirroi,sl
         if os.path.exists(dirroi):
-                listroi =[name for name in  os.listdir(dirroi) if name.lower().find('.'+typei)>0]
+                listroi =[name for name in  os.listdir(dirroi) if name.lower().find('.'+typei1)>0]
                 for roiimage in listroi:
 #                    tabroi[key][sl]=genepoly(os.path.join(dirroi,roiimage))
                     img=os.path.join(dirroi,roiimage)
                     imageroi= cv2.imread(img,1)
+                    imageroi=cv2.resize(imageroi,(dimtabx,dimtaby),interpolation=cv2.INTER_LINEAR)  
 #                    imageroi=zoomfunction(imageroi,z)
                     cdelimter='_'
-                    extensionimage='.'+typei
+                    extensionimage='.'+typei1
                     slicenumber=rsliceNum(roiimage,cdelimter,extensionimage)
                     imageview=cv2.cvtColor(imageroi,cv2.COLOR_RGB2BGR)
                     

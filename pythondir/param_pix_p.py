@@ -4,39 +4,39 @@ Created on Tue May 02 15:04:39 2017
 
 @author: sylvain
 """
-import argparse
-from appJar import gui
-import cPickle as pickle
-import cv2
-import dicom
-import numpy as np
+#import argparse
+#from appJar import gui
+#import cPickle as pickle
+#import cv2
+#import dicom
+#import numpy as np
 from numpy import argmax,amax
 import os
-import random
-import scipy
+#import random
+#import scipy
 from scipy.misc import bytescale
 import shutil
-from skimage import measure
-import sklearn.metrics as metrics
-import sys
+#from skimage import measure
+#import sklearn.metrics as metrics
+#import sys
 import time
-from time import time as mytime
-import webbrowser
+#from time import time as mytime
+#import webbrowser
 
 
 import keras
 import theano
-from keras.models import Sequential
-from keras.layers.core import Dense, Dropout, Flatten, Activation
-from keras.layers.convolutional import Conv2D, MaxPooling2D,AveragePooling2D
-from keras.layers.advanced_activations import LeakyReLU,PReLU
-from keras.models import load_model
-from keras.utils import np_utils
+#from keras.models import Sequential
+#from keras.layers.core import Dense, Dropout, Flatten, Activation
+#from keras.layers.convolutional import Conv2D, MaxPooling2D,AveragePooling2D
+#from keras.layers.advanced_activations import LeakyReLU,PReLU
+#from keras.models import load_model
+#from keras.utils import np_utils
 from keras import backend as K
 K.set_image_dim_ordering('th')
 
-import cnn_model as CNN4
-import ild_helpers as H
+#import cnn_model as CNN4
+#import ild_helpers as H
 
 
 print keras.__version__
@@ -58,6 +58,7 @@ pxy=float(dimpavx*dimpavy)
 avgPixelSpacing=0.734   # average pixel spacing in mm
 
 surfelem=avgPixelSpacing*avgPixelSpacing
+
 volelem=surfelem*avgPixelSpacing
 
 #print volelem
@@ -104,10 +105,9 @@ bgdir='bgdir3d'
 
 typei='jpg'
 typei1='bmp'
-typeid='jpg' #can be png for 16b
-typej='jpg'
-typeiroi1='jpg'
-typeiroi2='bmp'
+typei2='png' 
+
+volumeroifile='volumeroi'
 
 #excluvisu=['healthy']
 excluvisu=['']

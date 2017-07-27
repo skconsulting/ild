@@ -23,7 +23,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 For more information please read the README file. The files can also 
 be found at: https://github.com/intact-project/ild-cnn
 '''
-
+import argparse
+import cPickle as pickle
+import numpy as np
+import os
+from keras.utils import np_utils
+import sklearn.metrics as metrics
 # debug
 # from ipdb import set_trace as bp
 

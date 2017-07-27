@@ -181,16 +181,21 @@ def initDraw():
     global app
     app = gui("ROI form"+version,"1000x400")
     app.setStopFunction(Stop)
-#    row = app.getRow()
-    app.addLabel("top", "Select patient directory:", 0, 0)
-    row = app.getRow()
-    app.addButton("HELP",  presshelp,row,1)
     if not goodir: selectPatientDir()
-    
-#    app.addButton("HELP",  presshelp,row,1)
-    app.setLabelBg("top", "green")
 
     if goodir:
+        app.addLabel("path_patientt", "path_patient",colspan=2)
+        app.addLabel("path_patient", lisdir,colspan=2)
+        app.setLabelBg("path_patient", "Blue")
+        app.setLabelFg("path_patient", "Yellow")
+        app.setLabelBg("path_patientt", "Blue")
+        app.setLabelFg("path_patientt", "Yellow")
+        
+        app.addLabel("top", "Select patient name:")
+        app.setLabelBg("top", "Blue")
+        app.setLabelFg("top", "Yellow")
+        row = app.getRow()
+        app.addButton("HELP",  presshelp,row,1)
         some_sg,stsdir=lisdirprocess(lisdir)
 
         listannotated=[]
@@ -205,17 +210,18 @@ def initDraw():
 
         app.addListBox("list",listannotated,row,0)
         app.setListBoxRows("list",10)
+        app.addHorizontalSeparator( colour="red",colspan=2)
 #        app.setLabelBg("list", "blue")
         row = app.getRow()
         app.addButton("Generate ROI",  press,row,1)
         row = app.getRow()
-        app.addHorizontalSeparator( colour="red")
+        
         app.addButton("Generate Lung_Mask",  presslung,row,1)
         row = app.getRow()
 
         app.addButton("check volume",  checkvolume,row,1)
 
-        app.addHorizontalSeparator( colour="red")
+#        app.addHorizontalSeparator( colour="red",colspan=2)
     app.addButton("Quit",  boutonStop,row,0)
     app.go()
 

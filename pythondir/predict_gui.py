@@ -372,7 +372,7 @@ def initDraw():
         app.setEntry("front view weight",picklein_file_front)
         app.addRadioButton("predict_style", "Cross + Front",row,1)
         row = app.getRow()
-        app.addLabel("Fast","Tick  for fast run (without store of results):",row,0)
+        app.addLabel("Fast","Tick  for fast run (without store on disk of predict results):",row,0)
         app.addCheckBox("Fast",row,1)
         app.setCheckBox("Fast",ticked=True,callFunction=False)
 

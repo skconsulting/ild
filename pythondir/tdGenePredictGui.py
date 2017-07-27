@@ -4,14 +4,22 @@
 version 1.0
  '''
 #from param_pix_p import *
-from param_pix_p import scan_bmp,remove_folder,avgPixelSpacing,typei,normi,dimpavx,dimpavy,typeid
-from param_pix_p import lung_namebmp,rsliceNum,norm,white,typeiroi1,typej,modelname,lung_name_gen,jpegpath
-from param_pix_p import datacrossn,classifc,classif,pathjs,fidclass,maxproba,yellow,pxy
+from param_pix_p import scan_bmp,avgPixelSpacing,dimpavx,dimpavy
+from param_pix_p import typei,typei1,typei2
+from param_pix_p import white,yellow
+
+from param_pix_p import lung_namebmp,modelname,lung_name_gen,jpegpath
+from param_pix_p import datacrossn,pathjs,fidclass,pxy
+from param_pix_p import classifc,classif,excluvisu,usedclassif
+
 from param_pix_p import threeFileTop0,threeFileTop1,threeFileTop2,htmldir,source,predictoutmerge,dicomcross_merge
 from param_pix_p import dicomfront,dicomcross,threeFile,threeFile3d,threeFileTxt,transbmp,threeFileMerge
-from param_pix_p import typeiroi2,excluvisu,threeFileTxtMerge,volcol,sroi,threeFileTxt3d,threeFileBot,predictout3d1
-from param_pix_p import  predictout3dn,predictout3d,jpegpath3d,predictout,usedclassif
-from param_pix_p import jpegpadirm,dicompadirm,volumeweb,source_name,writeFile,datafrontn,path_data,dirpickle,cwdtop,sroi3d
+from param_pix_p import threeFileTxtMerge,volcol,sroi,sroi3d,threeFileTxt3d,threeFileBot,predictout3d1
+from param_pix_p import predictout3dn,predictout3d,jpegpath3d,predictout
+from param_pix_p import jpegpadirm,dicompadirm,volumeweb,source_name,writeFile,datafrontn,path_data,dirpickle,cwdtop
+
+from param_pix_p import remove_folder,normi,rsliceNum,norm,maxproba
+
 
 import time
 from time import time as mytime
@@ -26,7 +34,7 @@ import shutil
 from skimage import measure
 import cPickle as pickle
 
-import keras
+#import keras
 from keras.models import load_model
 
 
@@ -121,20 +129,18 @@ def genebmp(fn,sou,nosource):
         dsr = dsr.astype('int16')
         imgresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
         endnumslice=l.find('.dcm')
-        imgcoreScan=l[0:endnumslice]+'_'+str(slicenumber)+'.'+typei
+        imgcoreScan=l[0:endnumslice]+'_'+str(slicenumber)+'.'+typei1
         tt=(imgcoreScan,imgresize)
         tabscan[slicenumber]=tt
-#        tabscan[slicenumber]=imgresize
+
         imtowrite=normi(imgresize)
 
-#        endnumslice=l.find('.dcm')
-#        imgcoreScan=l[0:endnumslice]+'_'+str(slicenumber)+'.'+typei
         bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
 
         t2='Not for medical use'
-        t1='Pt: '+tail
+        t1=''
         t0='CONFIDENTIAL'
-        t3='Scan: '+str(slicenumber)
+        t3=''
 
         t4=time.asctime()
         (topw,tailw)=os.path.split(picklein_file)
@@ -247,12 +253,24 @@ def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan,listsln):
     if not os.path.exists(fmbmp):
         os.mkdir(fmbmp)       
     fmbmpbmp=os.path.join(fmbmp,lung_namebmp)
-    remove_folder(fmbmpbmp)
-    os.mkdir(fmbmpbmp)
+    if not os.path.exists(fmbmpbmp):
+        os.mkdir(fmbmpbmp)
 
     listdcm=[name for name in  os.listdir(fmbmp) if name.lower().find('.dcm')>0]
-#    print len(listdcm),fmbmp
+    listbmp= os.listdir(fmbmpbmp) 
     tabscan = np.zeros((slnt,dimtabx,dimtaby), np.uint8)
+    if len(listbmp)>0:
+        for img in listbmp:
+            slicenumber= rsliceNum(img,'_','.'+typei)
+            if slicenumber<0:
+                slicenumber= rsliceNum(img,'_','.'+typei1)
+                if slicenumber<0:
+                     slicenumber= rsliceNum(img,'_','.'+typei2)
+        
+            imr=cv2.imread(os.path.join(fmbmpbmp,img),0) 
+            imr=cv2.resize(imr,(dimtabx,dimtaby),interpolation=cv2.INTER_LINEAR)  
+            tabscan[slicenumber]=imr
+    
     if len(listdcm)>0:  
         print 'lung scan exists'
            
@@ -267,29 +285,29 @@ def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan,listsln):
             imgresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
     
             slicenumber=int(RefDs.InstanceNumber)
-#            endnumslice=l.find('.dcm')
-    
-#            imgcoreScan=l[0:endnumslice]+'_'+str(slicenumber)+'.'+typei
+
             imgcoreScan=tabscanScan[slicenumber][0]
             bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
-            scipy.misc.imsave(bmpfile,imgresize)
-    
-            tabscan[slicenumber]=imgresize
+            if tabscan[slicenumber].max()==0:
+                scipy.misc.imsave(bmpfile,imgresize)    
+                tabscan[slicenumber]=imgresize
     else:
             print 'no lung scan'
-            tabscan = np.zeros((slnt,dimtabx,dimtaby), np.int16)
+            tabscan1 = np.zeros((slnt,dimtabx,dimtaby), np.int16)
 #            tabscanlung = np.zeros((slnt,dimtabx,dimtaby), np.uint8)
             for i in listsln:
-                tabscan[i]=tabscanScan[i][1]
+                tabscan1[i]=tabscanScan[i][1]
             segmented_lungs_fill = segment_lung_mask(tabscan, True)
 #            print segmented_lungs_fill.shape
             for i in listsln:
 #                tabscan[i]=normi(tabscan[i])
-                tabscan[i]=morph(segmented_lungs_fill[i],13)
+                tabscan1[i]=morph(segmented_lungs_fill[i],13)
 #                imgcoreScan='lung_'+str(i)+'.'+typei
                 imgcoreScan=tabscanScan[i][0]
                 bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
-                cv2.imwrite(bmpfile,tabscan[i])
+                if tabscan[i].max()==0:
+                    tabscan[i]=tabscan1[i]
+                    cv2.imwrite(bmpfile,tabscan[i])
     return tabscan
 
 
@@ -373,7 +391,7 @@ def pavgene(dirf,dimtabx,dimtaby,tabscanScan,tabscanLung,slnt,jpegpath,listsln):
                          j+=1
                      i+=1
 
-                 nameslijpeg='s_'+str(img)+'.'+typej
+                 nameslijpeg='s_'+str(img)+'.'+typei
                  namepatchImage=os.path.join(jpegpathdir,nameslijpeg)
                  tabjpeg=cv2.add(tabfw,tabfrgb)
                  scipy.misc.imsave(namepatchImage,tabjpeg)
@@ -430,7 +448,7 @@ def pavgenefront(dirf,dimtabx,dimtaby,tabscanScan,tabscanLung,slnt,jpegpath):
                          j+=1
                      i+=1
 
-                 nameslijpeg='s_'+str(img)+'.'+typej
+                 nameslijpeg='s_'+str(img)+'.'+typei
                  namepatchImage=os.path.join(jpegpathdir,nameslijpeg)
                  tabjpeg=cv2.add(tabfw,tabfrgb)
                  scipy.misc.imsave(namepatchImage,tabjpeg)
@@ -494,7 +512,7 @@ def wtebres(wridir,dirf,tab,dimtabx,slicepitch,lungm,ty):
 #            print dimtabx,fxs,imgresize.shape,tab[i].shape
 
         if ty=='scan':
-            typext=typeid
+            typext=typei1
         else:
             typext=typei
         trscan='tr_'+str(i)+'.'+typext
@@ -649,9 +667,11 @@ def  visua(listelabelfinal,dirf,patch_list,dimtabx,dimtaby,
 #        tablscan=np.zeros((dimtabx,dimtaby,3), np.uint8)
         if sroiE:
             for imgsroi in listbmpsroi:
-                slicenumbersroi=rsliceNum(imgsroi,'_','.'+typeiroi1)
+                slicenumbersroi=rsliceNum(imgsroi,'_','.'+typei)
                 if slicenumbersroi <0:
-                    slicenumbersroi=rsliceNum(imgsroi,'_','.'+typeiroi2)
+                    slicenumbersroi=rsliceNum(imgsroi,'_','.'+typei1)
+                    if slicenumbersroi <0:
+                         slicenumbersroi=rsliceNum(imgsroi,'_','.'+typei2)
                 if slicenumbersroi==slicenumber:
                     imgc=os.path.join(dirpatientfdbsroi,imgsroi)
                     tablscan=cv2.imread(imgc,1)
@@ -1029,9 +1049,11 @@ def reshapepatern(dirf,tabpx,dimtabxn,dimtaby,slnt,slicepitch,predictout,sou,dcm
 
         if sroiE:
             for imgsroi in listbmpsroi:
-                slicenumbersroi=rsliceNum(imgsroi,'_','.'+typeiroi1)
+                slicenumbersroi=rsliceNum(imgsroi,'_','.'+typei)
                 if slicenumbersroi <0:
-                    slicenumbersroi=rsliceNum(imgsroi,'_','.'+typeiroi2)
+                    slicenumbersroi=rsliceNum(imgsroi,'_','.'+typei1)
+                    if slicenumbersroi <0:
+                        slicenumbersroi=rsliceNum(imgsroi,'_','.'+typei2)
                 if slicenumbersroi==slicenumber:
                     imgc=os.path.join(dirpatientfsdb,imgsroi)
                     break
@@ -1171,7 +1193,7 @@ def pavf(proba_cross,dirf,pat,scan,tab,
              j+=dimpavy
          i+=dimpavx
 
-     nameslijpeg=pat+'s_'+str(scan)+'.'+typej
+     nameslijpeg=pat+'s_'+str(scan)+'.'+typei
      namepatchImage=os.path.join(jpegpathdir,nameslijpeg)
      if os.path.exists(namepatchImage):
          tabr=cv2.imread(namepatchImage,1)
