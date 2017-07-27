@@ -4,24 +4,25 @@ Created on Tue May 02 15:04:39 2017
 
 @author: sylvain
 """
-from appJar import gui
-import cPickle as pickle
-import cv2
-import dicom
+#from appJar import gui
+#import cPickle as pickle
+#import cv2
+#import dicom
 import numpy as np
 import os
-import random
-import scipy
+#import random
+#import scipy
 import shutil
-import sys
+#import sys
 import time
-from time import time as mytime
-import webbrowser
-from skimage import measure
+#from time import time as mytime
+#import webbrowser
+#from skimage import measure
 
 setdata='set2'
 
 avgPixelSpacing=0.734   # average pixel spacing in mm
+surfelem=avgPixelSpacing*avgPixelSpacing
 imageDepth=255
 dimtabx=512
 dimtaby=512
@@ -33,7 +34,8 @@ source='source'
 typei='bmp'
 lung_mask='lung'
 lung_mask_bmp='bmp'
-
+path_data='data'
+volumeroifile='volumeroi'
 
 black=(0,0,0)
 grey=(100,100,100)
@@ -156,6 +158,7 @@ def remove_folder(path):
 #         print 'path exist'
          # remove if exists
          shutil.rmtree(path)
+         time.sleep(1)
 # Now the directory is empty of files
 
 

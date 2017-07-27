@@ -4,9 +4,22 @@ Created on Tue Mar 28 16:48:43 2017
 
 @author: sylvain
 tool for roi generation
+version 1.0
+27 july 2017
 """
-from param_pix_r import *
+#from param_pix_r import *
+from param_pix_r import path_data,dimtabx,dimtaby,classifc,classif,classifcontour
+from param_pix_r import white,black,source_name,scan_bmp,roi_name,imageDepth,normi,typei,lung_mask_bmp
+from param_pix_r import remove_folder,lung_mask,red,volumeroifile
 
+from skimage import measure
+
+import cv2
+import dicom
+import os
+import cPickle as pickle
+import numpy as np
+import time
 
 pattern=''
 
@@ -71,7 +84,6 @@ def contour4(vis,im):
 
 def contour5(vis,im,l):
     """  creating an hole for im in vis and fill with im"""
-    col=classifc[l]
     visi=np.copy(im)
     mgray = cv2.cvtColor(visi,cv2.COLOR_BGR2GRAY)
     np.putmask(mgray,mgray>0,255)
@@ -82,7 +94,11 @@ def contour5(vis,im,l):
 
 
 def click_and_crop(event, x, y, flags, param):
-    global quitl,pattern,dirpath_patient,dirroit
+    global quitl,pattern,dirpath_patient,dirroit,zoneverticalgauche,zoneverticaldroite,zonehorizontal
+    global posxdel,menus,posydel,posyquit,posxquit,posxdellast,posydellast,posxdelall,posydelall
+    global posxcomp,posycomp,imagename,posxreset,posyreset,posxvisua,posyvisua,posxeraseroi,posyeraseroi,posxlastp
+    global posylastp,scannumber
+    global fxs,x0new,y0new
 
     if event == cv2.EVENT_LBUTTONDOWN:
         cv2.rectangle(menus, (150,12), (370,32), black, -1)
@@ -194,6 +210,7 @@ def closepolygon():
         cv2.putText(menus,'polygone closed',(215,20),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
 
 def suppress():
+    global menus,scannumber
     numeropoly=tabroinumber[pattern][scannumber]
     lastp=len(tabroi[pattern][scannumber][numeropoly])
     if lastp>0:
@@ -208,6 +225,8 @@ def suppress():
     cv2.putText(menus,'delete last entry',(215,20),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
 
 def completed(imagename,dirpath_patient,dirroit):
+    global scannumber,pixelSpacing,volumeroi
+
 #    print 'completed start'
     closepolygon()
 #    print dirpath_patient
@@ -233,41 +252,54 @@ def completed(imagename,dirpath_patient,dirroit):
                 tabroi[key][scannumber][n]=[]
 #                images[scannumber]=cv2.add(images[scannumber],tabroifinal[key][scannumber])
 
-
         tabroinumber[key][scannumber]=0
         
         imgray = cv2.cvtColor(tabroifinal[key][scannumber],cv2.COLOR_BGR2GRAY)
         imagemax= cv2.countNonZero(imgray)
-        posext=imagename.find('.'+typei)
-        imgcoreScans=imagename[0:posext]+'.'+typei
-        dirroi=os.path.join(dirpath_patient,key)
-        if key in classifcontour:        
-            dirroi=os.path.join(dirroi,lung_mask_bmp)
-        imgcoreScan=os.path.join(dirroi,imgcoreScans)
-        imgcoreRoi=os.path.join(dirroit,imgcoreScans)         
-        tabtowrite=cv2.cvtColor(tabroifinal[key][scannumber],cv2.COLOR_BGR2RGB)
-
+        
 #        print key,imagemax
-        if imagemax>0:     
+        if imagemax>0:  
             
+            posext=imagename.find('.'+typei)
+            imgcoreScans=imagename[0:posext]+'.'+typei
+            dirroi=os.path.join(dirpath_patient,key)
             if not os.path.exists(dirroi):
-                os.mkdir(dirroi)      
-            cv2.rectangle(menus, (150,12), (370,52), black, -1)                  
+                os.mkdir(dirroi)
+            if key in classifcontour:        
+                dirroi=os.path.join(dirroi,lung_mask_bmp)
+                if not os.path.exists(dirroi):
+                    os.mkdir(dirroi)  
+            imgcoreScan=os.path.join(dirroi,imgcoreScans)
+            imgcoreRoi=os.path.join(dirroit,imgcoreScans)         
+            tabtowrite=cv2.cvtColor(tabroifinal[key][scannumber],cv2.COLOR_BGR2RGB)
+
+            cv2.rectangle(menus, (150,12), (370,52), black, -1) 
+                             
             if os.path.exists(imgcoreScan):
                 cv2.putText(menus,'ROI '+' slice:'+str(scannumber)+' overwritten',(150,30),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
-            
+
             if key not in classifcontour:
                 cv2.imwrite(imgcoreScan,tabtowrite)  
             else:
                 tabtowrite=fillcontours(tabtowrite,key)
                 cv2.imwrite(imgcoreScan,tabtowrite)  
+
+            tabgrey=cv2.cvtColor(tabtowrite,cv2.COLOR_BGR2GRAY)
+            np.putmask(tabgrey,tabgrey>0,1)
+            area= tabgrey.sum()*pixelSpacing*pixelSpacing
+
+            if area>0:
+
+                volumeroi[scannumber][key]=area   
+                print '2',volumeroi[scannumber]
+                pickle.dump(volumeroi, open(path_data_writefile, "wb" ),protocol=-1)
+
+#                cv2.imshow(key, tabtowrite)
                                     
             cv2.putText(menus,'Slice ROI stored',(215,20),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
             
             mroi=cv2.imread(imgcoreRoi,1)
             ctkey=contours(tabtowrite,key)
-#            ctkey=cv2.resize(ctkey,None,fx=fxssicom,fy=fxssicom,interpolation=cv2.INTER_LINEAR)
-
             mroiaroi=cv2.add(mroi,ctkey)
 
             cv2.imwrite(imgcoreRoi,mroiaroi)
@@ -305,6 +337,8 @@ def eraseroi(imagename,dirpath_patient,dirroit):
             completed(imagename,dirpath_patient,dirroit)   
             cv2.rectangle(menus, (150,12), (370,52), black, -1)             
             cv2.putText(menus,'ROI '+pattern+' slice:'+str(scannumber)+' erased',(150,30),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
+            volumeroi[scannumber][pattern]=0
+            pickle.dump(volumeroi, open(path_data_writefile, "wb" ),protocol=-1)
         else:
             cv2.rectangle(menus, (150,12), (370,52), black, -1)
             cv2.putText(menus,'ROI '+pattern+' slice:'+str(scannumber)+' not exist',(150,30),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
@@ -641,19 +675,12 @@ def genebmplung(fn,tabscanScan,slnt,listsln):
     
             dsr= RefDs.pixel_array
             dsr=normi(dsr)
-    
-#            fxsl=float(RefDs.PixelSpacing[0])/avgPixelSpacing
-            imgresize=cv2.resize(dsr,(dimtabx,dimtaby),interpolation=cv2.INTER_LINEAR)
-    
+            imgresize=cv2.resize(dsr,(dimtabx,dimtaby),interpolation=cv2.INTER_LINEAR)    
             slicenumber=int(RefDs.InstanceNumber)
-#            endnumslice=l.find('.dcm')
-    
-#            imgcoreScan=l[0:endnumslice]+'_'+str(slicenumber)+'.'+typei
-#            bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
-#            cv2.imwrite(bmpfile,dsr)
+
             imgcoreScan=tabscanScan[slicenumber][0]
             bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
-            cv2.imwrite(bmpfile,dsr)
+            cv2.imwrite(bmpfile,imgresize)
     else:
             print 'no lung scan, generation proceeds'
             tabscan = np.zeros((slnt,dimtabx,dimtaby), np.int16)
@@ -677,7 +704,7 @@ def genebmplung(fn,tabscanScan,slnt,listsln):
 
 def genebmp(fn,nosource,dirroit):
     """generate patches from dicom files"""
-#    global fxssicom
+    global pixelSpacing
     print ('load dicom files in :',fn)
     (top,tail) =os.path.split(fn)
     (top1,tail1) =os.path.split(top)
@@ -702,6 +729,7 @@ def genebmp(fn,nosource,dirroit):
         FilesDCM =(os.path.join(fn,l))
         RefDs = dicom.read_file(FilesDCM)
         slicenumber=int(RefDs.InstanceNumber)
+        pixelSpacing=RefDs.PixelSpacing[0]
         listsln.append(slicenumber)
         if slicenumber> slnt:
             slnt=slicenumber
@@ -866,8 +894,10 @@ def initmenus(slnt,dirpath_patient):
     zoneverticaldroite=((dimtabx-25,0),(dimtabx,dimtaby))
 
 def openfichierroi(patient,patient_path_complet):
-    global dirpath_patient,dimtabx,dimtaby,dirroit
+    global dirpath_patient,dirroit,path_data_write,volumeroi,path_data_writefile
+    
     dirpath_patient=os.path.join(patient_path_complet,patient)
+    
     dirsource=os.path.join(dirpath_patient,source_name)
     dirroit=os.path.join(dirpath_patient,roi_name)
     if not os.path.exists(dirsource):
@@ -881,11 +911,24 @@ def openfichierroi(patient,patient_path_complet):
     slnt,tabscanScan,listsln=genebmp(dirsource,nosource,dirroit)
     dirsourcescan=os.path.join(dirsource,scan_bmp)
     initmenus(slnt,dirpath_patient)
+    path_data_write=os.path.join(dirpath_patient,path_data)
+    path_data_writefile=os.path.join(path_data_write,volumeroifile)
+    if not os.path.exists(path_data_write):
+         os.mkdir(path_data_write)
+         volumeroi={}
+         for i in listsln:
+             volumeroi[i]={}
+             for pat in classif:
+                 volumeroi[i][pat]=0
+
+         pickle.dump(volumeroi, open(path_data_writefile, "wb" ),protocol=-1)       
+    else:
+        volumeroi=pickle.load(open(path_data_writefile, "rb" ))
     loop(slnt,dirsourcescan,dirpath_patient,dirroit)
     return 'completed'
 
 def openfichierroilung(patient,patient_path_complet):
-    global dirpath_patient,dimtabx,dimtaby,dirroit
+    global dirpath_patient,dirroit
     dirpath_patient=os.path.join(patient_path_complet,patient)
     dirsource=os.path.join(dirpath_patient,source_name)
     dirroit=os.path.join(dirpath_patient,roi_name)
@@ -899,4 +942,24 @@ def openfichierroilung(patient,patient_path_complet):
         nosource=False
     slnt,tabscanScan,listsln=genebmp(dirsource,nosource,dirroit)
     genebmplung(dirsource,tabscanScan,slnt,listsln)
+    
     return 'completed lung'
+
+def checkvolumegeneroi(patient,patient_path_complet):
+#    global dirpath_patient
+    dirpath_patient=os.path.join(patient_path_complet,patient)
+#    dirsource=os.path.join(dirpath_patient,source_name)
+#    dirroit=os.path.join(dirpath_patient,roi_name)
+    path_data_write=os.path.join(dirpath_patient,path_data)
+    path_data_writefile=os.path.join(path_data_write,volumeroifile)
+    if not os.path.exists(path_data_writefile):
+        return 'no volume data generated'
+
+    volumeroi=pickle.load(open(path_data_writefile, "rb" ))
+    for value in volumeroi:
+        for val2 in volumeroi[value]:
+            if volumeroi[value][val2]>0:
+              print value,val2,round(volumeroi[value][val2],2)
+
+
+    return

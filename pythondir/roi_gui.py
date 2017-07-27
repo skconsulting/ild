@@ -8,9 +8,15 @@ Version 1.1 15-June-2017
 bug fixed:
     1
 """
-from param_pix_r import *
-from moduleroigui import *
+#from param_pix_r import *
+#from moduleroigui import *
+from moduleroigui import roirun,roirunlung,lisdirprocess,checkvolumegene
 
+from appJar import gui
+import os
+import cPickle as pickle
+import sys
+import webbrowser
 #print os.environ['TMP']
 #print os.environ['USERPROFILE']
 #print os.environ['LOCALAPPDATA']
@@ -91,30 +97,40 @@ def presslung(btn):
         app.errorBox('error', 'no  patient selected')
         redraw(app)
 
+def checkvolume(btn):
+    global app
+#    print(app.getListItems("list"))
+    ll =app.getListItems("list")
+#    print ll
+    if len(ll)>0:
+        mes=checkvolumegene(ll,lisdir)
+        if mes !=None:
+            app.errorBox('error', mes)
+        redraw(app)
+    else:
+        app.errorBox('error', 'no  patient selected')
+        redraw(app)
+
+
 def presshelp(btn):
 #    print 'help'
-
     filehelp=os.path.join(pathRoiGeneDoc,'doc_roi.pdf')
     webbrowser.open_new(r'file://'+filehelp)
 
 def redraw(app):
-
     app.stop(Stop)
     initDraw()
 
 def Stop():
-
     return True
 
 def boutonStop(btn):
     ans= app.yesNoBox("Confirm Exit", "Are you sure you want to exit the application?")
     if ans:
 #        app.stop(Stop)
-
         sys.exit(1)
     else:
         redraw(app)
-
 #    app.stop(Stop)
 
 def selectPatientDir():
@@ -193,6 +209,7 @@ def initDraw():
         row = app.getRow()
         app.addButton("Generate ROI",  press,row,0)
         app.addButton("Generate Lung_Mask",  presslung,row,1)
+        app.addButton("check volume",  checkvolume,row,2)
         row = app.getRow()
         app.addHorizontalSeparator( colour="red")
     app.addButton("Quit",  boutonStop)
