@@ -11,7 +11,7 @@ from param_pix_p import threeFileTop0,threeFileTop1,threeFileTop2,htmldir,source
 from param_pix_p import dicomfront,dicomcross,threeFile,threeFile3d,threeFileTxt,transbmp,threeFileMerge
 from param_pix_p import typeiroi2,excluvisu,threeFileTxtMerge,volcol,sroi,threeFileTxt3d,threeFileBot,predictout3d1
 from param_pix_p import  predictout3dn,predictout3d,jpegpath3d,predictout,usedclassif
-from param_pix_p import jpegpadirm,dicompadirm,volumeweb,source_name,writeFile,datafrontn,path_data,dirpickle,cwdtop
+from param_pix_p import jpegpadirm,dicompadirm,volumeweb,source_name,writeFile,datafrontn,path_data,dirpickle,cwdtop,sroi3d
 
 import time
 from time import time as mytime
@@ -1882,8 +1882,8 @@ def predictrun(indata,path_patient):
             """
             patch_list_cross=pavgene(dirf,dimtabx,dimtabx,tabscanScan,tabscanLung,slnt,jpegpath,lissln)
             
-            model=modelCompilation('cross',picklein_file,picklein_file_front)
-            proba_cross=ILDCNNpredict(patch_list_cross,model)
+            modelcross=modelCompilation('cross',picklein_file,picklein_file_front)
+            proba_cross=ILDCNNpredict(patch_list_cross,modelcross)
             patch_list_cross_slice,patch_list_cross_slice_sub=genepatchlistslice(patch_list_cross,
                                                             proba_cross,lissln,subpleurmask,thrpatch)
             tabMed = calcMed(tabscanLung,lungSegment)
@@ -1915,8 +1915,9 @@ def predictrun(indata,path_patient):
                 print '------------------'
                 tabresScan=reshapeScan(tabscanScan,slnt,lissln,dimtabx,dimtabx)
                 dimtabxn,dimtabyn,tabScan3d,lisslnfront=wtebres(wridir,dirf,tabresScan,dimtabx,slicepitch,lung_name_gen,'scan')
-                tabresLung=reshapeScanl(tabscanLung)               
+                tabresLung=reshapeScanl(tabscanLung)   
                 dimtabxn,dimtabyn,tabLung3d,a=wtebres(wridir,dirf,tabresLung,dimtabx,slicepitch,lung_name_gen,'lung')
+
                 datafront=(dimtabx,dimtabxn,dimtabyn,slicepitch,lisslnfront)
                 
                 pickle.dump(datafront, open( os.path.join(path_data_write,datafrontn), "wb" ),protocol=-1)
@@ -1929,8 +1930,10 @@ def predictrun(indata,path_patient):
                 lisslnfront=datafront[4]
                 """
                 patch_list_front=pavgenefront(dirf,dimtabxn,dimtabx,tabScan3d,tabLung3d,dimtabyn,jpegpath3d)
-                model=modelCompilation('front',picklein_file,picklein_file_front)
-                proba_front=ILDCNNpredict(patch_list_front,model)
+                
+                modelfront=modelCompilation('front',picklein_file,picklein_file_front)
+
+                proba_front=ILDCNNpredict(patch_list_front,modelfront)
                 
 #                pickle.dump(proba_front, open( os.path.join(path_data_write,"proba_front"), "wb" ),protocol=-1)
 #                pickle.dump(patch_list_front, open( os.path.join(path_data_write,"patch_list_front"), "wb" ),protocol=-1)
@@ -1948,7 +1951,7 @@ def predictrun(indata,path_patient):
                                                             proba_front,lisslnfront,subpleurmaskfront,thrpatch)
                 if not wvisu:
                     visua(listelabelfinal,dirf,patch_list_front_slice,dimtabxn,dimtabx,
-                      dimtabyn,predictout3d,sroid,transbmp,source,dicompathdirfront,False,errorfile,nosource,'front')
+                      dimtabyn,predictout3d,sroi3d,transbmp,source,dicompathdirfront,False,errorfile,nosource,'front')
                 tabMedfront = calcMed(tabLung3d,lungSegmentfront)
                 
                 pickle.dump(tabMedfront, open( os.path.join(path_data_write,"tabMedfront"), "wb" ),protocol=-1)

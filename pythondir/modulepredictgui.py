@@ -128,13 +128,15 @@ def tagviewn(fig,label,pro,nbr,surface,surftot,x,y):
     
     deltax=110+155*(((labnow)//5)-1)
     deltay=11*((labnow)%5)
-    gro=-x*0.0027+1.1
+#    gro=-x*0.0027+1.1
+    gro=0.65
     pc=str(int(round(100.*surface/surftot,0)))
     cv2.putText(fig,label+' '+str(surface)+'mm2 '+pc+'%',(x+deltax, y+deltay+10),cv2.FONT_HERSHEY_PLAIN,gro,col,1)
 
 
 def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice):
     imgn = np.zeros((dx,dy,3), np.uint8)
+    datav = np.zeros((200,500,3), np.uint8)
     th=t/100.0
     numl=0
     listlabel={}
@@ -174,15 +176,19 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice):
     for ll1 in listlabel:               
                 sul=round(surflabel[ll1],1)
                 surftotpat=surftotpat+surflabel[ll1]
-                tagviewn(imgn,ll1,str(round(listlabelaverage[ll1],2)),listlabel[ll1],sul,surftotf,delx,0)
+                tagviewn(datav,ll1,str(round(listlabelaverage[ll1],2)),listlabel[ll1],sul,surftotf,delx,0)
     ts='Threshold:'+str(t)
     surfunkn=surftotf-surftotpat
-    surfp=str(abs(round(100-(100.0*surftotpat/surftotf),1)))
+    if surftotf>0:
+        surfp=str(abs(round(100-(100.0*surftotpat/surftotf),1)))
+    else:
+        surfp='NA'
+        
     sulunk='surface unknow :'+str(abs(round(surfunkn,1)))+'mm2 ='+surfp+'%'
-    cv2.putText(imgn,ts,(0,50),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
-    cv2.putText(imgn,surftot,(delx,70),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
-    cv2.putText(imgn,sulunk,(delx,80),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
-    return imgn
+    cv2.putText(datav,ts,(0,50),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
+    cv2.putText(datav,surftot,(delx,70),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
+    cv2.putText(datav,sulunk,(delx,80),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
+    return imgn,datav
 
 
 def retrievepatch(x,y,sln,dx,dy,patch_list_cross_slice):
@@ -549,7 +555,8 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice):
     patchi=False
     ix=0
     iy=0
-    
+    (top,tail)=os.path.split(path_img)
+
     pdirk = os.path.join(path_img,source_name)
     pdirkroicross = os.path.join(path_img,sroi)
     pdirkroifront = os.path.join(path_img,sroi3d)
@@ -569,7 +576,7 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice):
             sn=transbmp
         corectnumber=0
     pdirk = os.path.join(pdirk,sn)
-    
+
     list_image={}
     cdelimter='_'
     extensionimage='.'+typei
@@ -590,15 +597,18 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice):
 
         image0=os.path.join(pdirk,list_image[slnt/2])
         img = cv2.imread(image0,1)
-        img=cv2.resize(img,(dimtabx,dimtaby),interpolation=cv2.INTER_LINEAR)
-    #    cv2.imshow('cont',img)
-    #    cv2.waitKey(0)
-    #    cv2.destroyAllWindows()
+        img=cv2.resize(img,(dimtaby,dimtabx),interpolation=cv2.INTER_LINEAR)
+#        cv2.imshow('cont',img)
+#        cv2.waitKey(0)
+#        cv2.destroyAllWindows()
+
 
         imgtext = np.zeros((dimtabx,dimtaby,3), np.uint8)
+        datav = np.zeros((200,500,3), np.uint8)
 
         cv2.namedWindow('imagecr',cv2.WINDOW_NORMAL)
-        cv2.namedWindow("Slidercr",cv2.WINDOW_NORMAL)
+        cv2.namedWindow("Slidercr",cv2.WINDOW_AUTOSIZE)
+        cv2.namedWindow("datavisu",cv2.WINDOW_AUTOSIZE)
 
         cv2.createTrackbar( 'Brightness','Slidercr',0,100,nothing)
         cv2.createTrackbar( 'Contrast','Slidercr',50,100,nothing)
@@ -611,7 +621,7 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice):
 #            print key1
             viewasked[key1]=True
             cv2.createTrackbar( key1,'Slidercr',0,1,nothings)
-
+        
         while(1):
 
             cv2.setMouseCallback('imagecr',draw_circle,img)
@@ -635,14 +645,19 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice):
                      viewasked[key2]=True
 
             slicenumber=fl+corectnumber
+            
             imagel=os.path.join(pdirk,list_image[slicenumber])
             img = cv2.imread(imagel,1)   
-            img=cv2.resize(img,(dimtabx,dimtaby),interpolation=cv2.INTER_LINEAR)
+            img=cv2.resize(img,(dimtaby,dimtabx),interpolation=cv2.INTER_LINEAR)
+
             imglumi=lumi(img,l)
             imcontrast=contrasti(imglumi,c)                
             imcontrast=cv2.cvtColor(imcontrast,cv2.COLOR_BGR2RGB)
             
-            imgn= drawpatch(tl,dimtabx,dimtaby,slicenumber,viewasked,patch_list_cross_slice)
+            imgn,datav= drawpatch(tl,dimtabx,dimtaby,slicenumber,viewasked,patch_list_cross_slice)
+            cv2.putText(datav,'slice number :'+str(slicenumber),(10,180),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
+            cv2.putText(datav,'patient Name :'+tail,(10,190),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
+
             
             imgngray = cv2.cvtColor(imgn,cv2.COLOR_BGR2GRAY)
             np.putmask(imgngray,imgngray>0,255)
@@ -654,7 +669,9 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice):
             cv2.putText(imgt,'quit',(dxrect+10,dimtabx-10),cv2.FONT_HERSHEY_PLAIN,1,yellow,1,cv2.LINE_AA)
             imgtoshow=cv2.add(imgt,imgtext)
             imgtoshow=cv2.cvtColor(imgtoshow,cv2.COLOR_BGR2RGB)
+            datav=cv2.cvtColor(datav,cv2.COLOR_BGR2RGB)
             cv2.imshow('imagecr',imgtoshow)
+            cv2.imshow('datavisu',datav)
 
             if patchi :
                 print 'retrieve patch asked'
@@ -666,6 +683,7 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice):
         quitl=False
         cv2.destroyWindow("imagecr")
         cv2.destroyWindow("Slidercr")
+        cv2.destroyWindow("datavisu")
 
         return ''
     else:

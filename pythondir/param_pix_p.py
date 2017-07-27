@@ -256,6 +256,7 @@ def remove_folder(path):
 #         print 'path exist'
          # remove if exists
          shutil.rmtree(path)
+         time.sleep(1)
 # Now the directory is empty of files
 
 
