@@ -3,26 +3,25 @@
 Created on Tue May 02 15:04:39 2017
 
 @author: sylvain
+version 1.1
+27 july 2017
 """
-#from appJar import gui
-#import cPickle as pickle
-#import cv2
-#import dicom
+
 import numpy as np
 import os
-#import random
-#import scipy
+
 import shutil
-#import sys
+
 import time
-#from time import time as mytime
-#import webbrowser
-#from skimage import measure
+
 
 setdata='set2'
 
-avgPixelSpacing=0.734   # average pixel spacing in mm
-surfelem=avgPixelSpacing*avgPixelSpacing
+#avgPixelSpacing=0.734   # average pixel spacing in mm
+#
+#surfelemp=avgPixelSpacing*avgPixelSpacing # for 1 pixel in mm2
+#surfelem= surfelemp/100 #surface of 1 pixel in cm2
+
 imageDepth=255
 dimtabx=512
 dimtaby=512
@@ -35,8 +34,6 @@ source='source'
 typei='jpg'
 typei1='bmp'
 typei2='png' 
-
-
 
 lung_mask='lung'
 lung_mask_bmp='bmp'
@@ -81,19 +78,7 @@ if setdata=='set2':
         'GGpret':9,
         'lung':10
         }
-    usedclassif = [
-        'consolidation',
-        'HC',
-        'ground_glass',
-        'healthy',
-        'micronodules',
-        'reticulation',
-        'air_trapping',
-        'cysts',
-        'bronchiectasis',
-        'GGpret',
-        'lung'
-        ]
+
     classifcontour=['lung']
 else:
     print 'error: not defined set'

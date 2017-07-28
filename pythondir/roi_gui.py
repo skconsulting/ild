@@ -7,6 +7,7 @@ V1.0 Created on Sun Apr 05 09:52:27 2017
 Version 1.1 15-June-2017
 bug fixed:
     1
+28 july 2017
 """
 #from param_pix_r import *
 #from moduleroigui import *
@@ -106,7 +107,12 @@ def checkvolume(btn):
         mes=checkvolumegene(ll,lisdir)
         if mes !=None:
             app.infoBox('volume', mes)
-        redraw(app)
+#            app.addMessage('volume', mes)
+#            app.addScrolledMessage('volume', mes)
+
+#            app.errorBox('volume', mes)
+
+#        redraw(app)
     else:
         app.errorBox('error', 'no  patient selected')
         redraw(app)
@@ -191,7 +197,7 @@ def initDraw():
         app.setLabelBg("path_patientt", "Blue")
         app.setLabelFg("path_patientt", "Yellow")
         
-        app.addLabel("top", "Select patient name:")
+        app.addLabel("top", "Select patient ID:")
         app.setLabelBg("top", "Blue")
         app.setLabelFg("top", "Yellow")
         row = app.getRow()

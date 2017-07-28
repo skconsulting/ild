@@ -4,7 +4,7 @@ Created on Tue Mar 28 16:48:43 2017
 
 @author: sylvain
 tool for roi generation
-version 1.0
+version 1.1
 27 july 2017
 """
 #from param_pix_r import *
@@ -293,13 +293,15 @@ def completed(imagename,dirpath_patient,dirroit):
 
             tabgrey=cv2.cvtColor(tabtowrite,cv2.COLOR_BGR2GRAY)
             np.putmask(tabgrey,tabgrey>0,1)
-            area= tabgrey.sum()*pixelSpacing*pixelSpacing
-            print 'pixelSpacing',pixelSpacing
+            area= tabgrey.sum()*pixelSpacing*pixelSpacing/100 #in cm2
+#            print area, 'pixelSpacing',pixelSpacing
 
             if area>0:
 
                 volumeroi[scannumber][key]=area   
                 pickle.dump(volumeroi, open(path_data_writefile, "wb" ),protocol=-1)
+#                volumeroi=pickle.load(open(path_data_writefile, "rb" ))
+#                print volumeroi
 
             cv2.putText(menus,'Slice ROI stored',(215,20),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
             
@@ -882,7 +884,7 @@ def populate(pp,sl):
                     
                     tabgrey=cv2.cvtColor(imageview,cv2.COLOR_BGR2GRAY)
                     np.putmask(tabgrey,tabgrey>0,1)
-                    area= tabgrey.sum()*pixelSpacing*pixelSpacing
+                    area= tabgrey.sum()*pixelSpacing*pixelSpacing/100
                     volumeroi[slicenumber][key]=area   
                     pickle.dump(volumeroi, open(path_data_writefile, "wb" ),protocol=-1)
                                        
@@ -935,7 +937,14 @@ def openfichierroi(patient,patient_path_complet):
 
          pickle.dump(volumeroi, open(path_data_writefile, "wb" ),protocol=-1)       
     else:
-        volumeroi=pickle.load(open(path_data_writefile, "rb" ))
+        if not os.path.exists(path_data_writefile):
+            volumeroi={}
+            for i in listsln:
+                 volumeroi[i]={}
+                 for pat in classif:
+                     volumeroi[i][pat]=0
+        else:
+            volumeroi=pickle.load(open(path_data_writefile, "rb" ))
     loop(slnt,dirsourcescan,dirpath_patient,dirroit)
     return 'completed'
 
@@ -963,9 +972,17 @@ def openfichierroilung(patient,patient_path_complet):
              volumeroi[i]={}
              for pat in classif:
                  volumeroi[i][pat]=0
+
          pickle.dump(volumeroi, open(path_data_writefile, "wb" ),protocol=-1)       
     else:
-        volumeroi=pickle.load(open(path_data_writefile, "rb" ))
+        if not os.path.exists(path_data_writefile):
+            volumeroi={}
+            for i in listsln:
+                 volumeroi[i]={}
+                 for pat in classif:
+                     volumeroi[i][pat]=0
+        else:
+            volumeroi=pickle.load(open(path_data_writefile, "rb" ))
     initmenus(slnt,dirpath_patient)
     menudraw(slnt)
     populate(dirpath_patient,slnt)
@@ -983,10 +1000,35 @@ def checkvolumegeneroi(patient,patient_path_complet):
         return 'no volume data generated'
 
     volumeroi=pickle.load(open(path_data_writefile, "rb" ))
+    """
+    print 'len(volumeroi)',len(volumeroi)
+    nbpack=20
+    nbdict=len(volumeroi)/nbpack
+    print 'nbdict',nbdict
+    ddict={}
+    for i in range (nbdict+1):
+        deb=i*nbpack
+        fin=min(deb+nbpack,len(volumeroi))
+#        print 'deb',deb,'fin',fin
+        ddict[i] = dict(volumeroi.items()[deb:fin])
+#        print i, 'ln',len(ddict[i])
+#    return
+    for i in range (nbdict+1):
+        print 'pack:',i
+        for value in  ddict[i]:
+            txt=''
+            for val2 in ddict[i][value]:
+                    if ddict[i][value][val2]>0:       
+                        print value,val2,round(volumeroi[value][val2],1)
+                        txt=txt+'Slice number: '+str(value)+' roi: '+str(val2)+' value cm2: '+str(round(volumeroi[value][val2],1))+'\n'
+    """
+#
     txt=''
     for value in volumeroi:
         for val2 in volumeroi[value]:
             if volumeroi[value][val2]>0:
-              print value,val2,round(volumeroi[value][val2],0)
-              txt=txt+'Slice number: '+str(value)+' roi: '+str(val2)+' value mm2: '+str(int(volumeroi[value][val2]))+'\n'
+
+                print value,val2,round(volumeroi[value][val2],1)
+                txt=txt+'Slice: '+str(value)+'  '+str(val2)+'  '+str(round(volumeroi[value][val2],1))+'cm2\n'
+#    print len(txt)
     return txt

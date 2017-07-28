@@ -3,6 +3,8 @@
 Created on Mon Mar 20 17:21:22 2017
 
 @author: sylvain
+version 1.1
+28 july 2017
 """
 #from param_pix_r import *
 from param_pix_r import classif,classifcontour,lung_mask_bmp

@@ -261,6 +261,7 @@ def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan,listsln):
     listbmp= os.listdir(fmbmpbmp) 
     tabscan = np.zeros((slnt,dimtabx,dimtaby), np.uint8)
     if len(listbmp)>0:
+        print 'lung scan exists in bmp'
         for img in listbmp:
             slicenumber= rsliceNum(img,'_','.'+typei)
             if slicenumber<0:
@@ -273,7 +274,7 @@ def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan,listsln):
             tabscan[slicenumber]=imr
     
     if len(listdcm)>0:  
-        print 'lung scan exists'
+        print 'lung scan exists in dcm'
            
         for l in listdcm:
             FilesDCM =(os.path.join(fmbmp,l))
@@ -293,12 +294,12 @@ def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan,listsln):
                 scipy.misc.imsave(bmpfile,imgresize)    
                 tabscan[slicenumber]=imgresize
     else:
-            print 'no lung scan'
+            print 'no lung scan in dcm'
             tabscan1 = np.zeros((slnt,dimtabx,dimtaby), np.int16)
 #            tabscanlung = np.zeros((slnt,dimtabx,dimtaby), np.uint8)
             for i in listsln:
                 tabscan1[i]=tabscanScan[i][1]
-            segmented_lungs_fill = segment_lung_mask(tabscan, True)
+            segmented_lungs_fill = segment_lung_mask(tabscan1, True)
 #            print segmented_lungs_fill.shape
             for i in listsln:
 #                tabscan[i]=normi(tabscan[i])
@@ -612,8 +613,7 @@ def  visua(listelabelfinal,dirf,patch_list,dimtabx,dimtaby,
 #        print 'visua dptail', topdir
         listelabelfinal[fidclass(i,classif)]=0
     #directory name with predict out dabasase, will be created in current directory
-
-    
+  
     dirpatientfdbsource1=os.path.join(dirf,sou)
          
     dirpatientfdbsource=os.path.join(dirpatientfdbsource1,scan_bmp)
@@ -623,7 +623,6 @@ def  visua(listelabelfinal,dirf,patch_list,dimtabx,dimtaby,
         if nosource:
             dirpatientfdbsource1=dirf
         listdcm=[name for name in  os.listdir(dirpatientfdbsource1) if name.lower().find('.dcm')>0]
-
 
     listlabelf={}
     sroiE=False
@@ -662,7 +661,6 @@ def  visua(listelabelfinal,dirf,patch_list,dimtabx,dimtaby,
                      RefDs.StudyInstanceUID                 =str(rsuid)
                      break
 
-
         imgt = np.zeros((dimtabx,dimtaby,3), np.uint8)
        
         listlabelaverage={}
@@ -689,7 +687,7 @@ def  visua(listelabelfinal,dirf,patch_list,dimtabx,dimtaby,
         else:
             imgc=os.path.join(dirpatientfdbsource,img)
             tablscan=cv2.imread(imgc,1)
-
+        tablscan=cv2.resize(tablscan,(dimtaby,dimtabx),interpolation=cv2.INTER_LINEAR)
         foundp=False
 #        print slicenumber
         pn=patch_list[slicenumber]
@@ -732,7 +730,6 @@ def  visua(listelabelfinal,dirf,patch_list,dimtabx,dimtaby,
                     imgi=addpatch(classcolor,classlabel,xpat,ypat,dimpavx,dimpavy,dimtabx,dimtaby)
                     imgt=cv2.add(imgt,imgi)
 
-#            ill+=1
         tablscan = cv2.cvtColor(tablscan, cv2.COLOR_BGR2RGB)
 
         vis=drawContour(imgt,listlabel,dimtabx,dimtaby)
@@ -1070,7 +1067,12 @@ def reshapepatern(dirf,tabpx,dimtabxn,dimtaby,slnt,slicepitch,predictout,sou,dcm
                     break
         else:
             imgc=os.path.join(dirpatientfdb,img)
-        tablscan[slicenumber]=cv2.imread(imgc,1)
+            
+        tabint=cv2.imread(imgc,1)  
+        tabint=cv2.resize(tabint,(dimtaby,dimtaby),interpolation=cv2.INTER_LINEAR)
+            
+        tablscan[slicenumber]=tabint
+        
     tabresshape = np.zeros((slnt,dimtaby,dimtaby,3), np.uint8)
     impre = np.zeros((slnt,dimtaby,dimtaby,3), np.uint8)
     tabx={}
