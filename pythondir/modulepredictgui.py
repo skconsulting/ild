@@ -7,7 +7,7 @@ version 1.1
 28 july 2017
 """
 #from param_pix_p import *
-from param_pix_p import path_data,datafrontn,datacrossn,dimpavx,dimpavy,surfelem,volelem,volumeroifile
+from param_pix_p import path_data,datafrontn,datacrossn,dimpavx,dimpavy,surfelem,volelem,volumeroifile,avgPixelSpacing
 
 from param_pix_p import white,red,yellow,grey
 from param_pix_p import lungimage,source_name,sroi,sroi3d,scan_bmp,transbmp
@@ -148,7 +148,7 @@ def tagviewn(fig,label,surface,surftot,roi,tl):
     cv2.putText(fig,label+' pre: '+str(surface)+'cm2 '+pc+'%'+' roi: '+str(roi)+'cm2 '+pcroi+'%',(deltax, deltay),cv2.FONT_HERSHEY_PLAIN,gro,col,1)
 
 
-def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi):
+def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,patch_list_ref_slice,volumeroi):
 
     imgn = np.zeros((dx,dy,3), np.uint8)
     datav = np.zeros((200,500,3), np.uint8)
@@ -159,7 +159,7 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi):
     surflabel={}
     for pat in classif:
         surflabel[pat]=0
-    surftot=len(patch_list_cross_slice[slicenumber])
+    surftot=len(patch_list_ref_slice[slicenumber])
     surftotf=surftot*surfelem
     surftot='surface totale :'+str(int(round(surftotf,0)))+'cm2'
     surftotpat=0
@@ -298,10 +298,9 @@ def initdictP(d, p):
 
 
 def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
-                      lungSegment,tabMed,thrprobaUIP,patch_list_cross_slice_sub,datarep):
+                      lungSegment,tabMed,thrprobaUIP,patch_list_cross_slice_sub,slicepitch):
     global  quitl,dimtabx,dimtaby,patchi,ix,iy
     print 'openfichiervolume start',path_patient
-    slicepitch=datarep[3]
     volelems=volelem*slicepitch # in mml
     print slicepitch
     quitl=False
@@ -577,7 +576,7 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
     return ''
 
 
-def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice):
+def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,patch_list_ref_slice):
     global  quitl,dimtabx,dimtaby,patchi,ix,iy
     print 'openfichier start'
     quitl=False
@@ -690,7 +689,7 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice):
             imcontrast=contrasti(imglumi,c)                
             imcontrast=cv2.cvtColor(imcontrast,cv2.COLOR_BGR2RGB)
             
-            imgn,datav= drawpatch(tl,dimtabx,dimtaby,slicenumber,viewasked,patch_list_cross_slice,volumeroilocal)
+            imgn,datav= drawpatch(tl,dimtabx,dimtaby,slicenumber,viewasked,patch_list_cross_slice,patch_list_ref_slice,volumeroilocal)
             
             cv2.putText(datav,'slice number :'+str(slicenumber),(10,180),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
             cv2.putText(datav,'patient Name :'+tail,(10,190),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
@@ -829,16 +828,17 @@ def visuarun(indata,path_patient):
             datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "rb" ))
             patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice"), "rb" ))
             thrprobaUIP=float(indata['thrprobaUIP'])
-            messageout=openfichier(viewstyle,datarep,patient_path_complet,thrprobaUIP,patch_list_cross_slice)
+            messageout=openfichier(viewstyle,datarep,patient_path_complet,thrprobaUIP,patch_list_cross_slice,patch_list_cross_slice)
             
     elif viewstyle=='front view':
             datarep= pickle.load( open( os.path.join(path_data_dir,"datafront"), "rb" ))
             patch_list_front_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_front_slice"), "rb" ))
             thrprobaUIP=float(indata['thrprobaUIP'])
-            messageout=openfichier(viewstyle,datarep,patient_path_complet,thrprobaUIP,patch_list_front_slice)
+            messageout=openfichier(viewstyle,datarep,patient_path_complet,thrprobaUIP,patch_list_front_slice,patch_list_front_slice)
             
     elif viewstyle=='volume view from cross':
             datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "rb" ))
+            slicepitch=datarep[3]
             patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice"), "rb" ))
             patch_list_cross_slice_sub= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice_sub"), "rb" ))
             lungSegment= pickle.load( open( os.path.join(path_data_dir,"lungSegment"), "rb" ))
@@ -846,10 +846,11 @@ def visuarun(indata,path_patient):
             thrprobaUIP=float(indata['thrprobaUIP'])
             
             messageout = openfichiervolume(listHug,path_patient,patch_list_cross_slice,
-                      lungSegment,tabMed,thrprobaUIP,patch_list_cross_slice_sub,datarep)
+                      lungSegment,tabMed,thrprobaUIP,patch_list_cross_slice_sub,slicepitch)
     
     elif viewstyle=='volume view from front':
             datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "rb" ))
+            slicepitch=avgPixelSpacing
             patch_list_front_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_front_slice"), "rb" ))
             patch_list_front_slice_sub= pickle.load( open( os.path.join(path_data_dir,"patch_list_front_slice_sub"), "rb" ))
             lungSegmentfront= pickle.load( open( os.path.join(path_data_dir,"lungSegmentfront"), "rb" ))
@@ -857,7 +858,7 @@ def visuarun(indata,path_patient):
             thrprobaUIP=float(indata['thrprobaUIP'])
             
             messageout = openfichiervolume(listHug,path_patient,patch_list_front_slice,
-                      lungSegmentfront,tabMedfront,thrprobaUIP,patch_list_front_slice_sub,datarep)
+                      lungSegmentfront,tabMedfront,thrprobaUIP,patch_list_front_slice_sub,slicepitch)
 
     elif viewstyle=='merge view':
 
@@ -866,7 +867,8 @@ def visuarun(indata,path_patient):
 #            patch_list_merge= pickle.load( open( os.path.join(path_data_dir,"patch_list_merge"), "rb" ))
 #            proba_merge= pickle.load( open( os.path.join(path_data_dir,"proba_merge"), "rb" ))
             patch_list_merge_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_merge_slice"), "rb" ))
-            messageout=openfichier(viewstyle,datarep,patient_path_complet,thrprobaUIP,patch_list_merge_slice)
+            patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice"), "rb" ))
+            messageout=openfichier(viewstyle,datarep,patient_path_complet,thrprobaUIP,patch_list_merge_slice,patch_list_cross_slice)
     
     elif viewstyle=='front projected view':
 
