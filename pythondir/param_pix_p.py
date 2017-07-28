@@ -3,40 +3,28 @@
 Created on Tue May 02 15:04:39 2017
 
 @author: sylvain
+28 july 2017
+version 1.1
+
 """
 #import argparse
 #from appJar import gui
 #import cPickle as pickle
-#import cv2
-#import dicom
-#import numpy as np
+
 from numpy import argmax,amax
 import os
-#import random
-#import scipy
+
 from scipy.misc import bytescale
 import shutil
-#from skimage import measure
-#import sklearn.metrics as metrics
-#import sys
+
 import time
-#from time import time as mytime
-#import webbrowser
 
 
 import keras
 import theano
-#from keras.models import Sequential
-#from keras.layers.core import Dense, Dropout, Flatten, Activation
-#from keras.layers.convolutional import Conv2D, MaxPooling2D,AveragePooling2D
-#from keras.layers.advanced_activations import LeakyReLU,PReLU
-#from keras.models import load_model
-#from keras.utils import np_utils
+
 from keras import backend as K
 K.set_image_dim_ordering('th')
-
-#import cnn_model as CNN4
-#import ild_helpers as H
 
 
 print keras.__version__
@@ -53,15 +41,16 @@ PIXEL_MEAN = 0.25
 
 dimpavx=16
 dimpavy=16
-pxy=float(dimpavx*dimpavy)
+pxy=float(dimpavx*dimpavy) #surface in pixel
 
 avgPixelSpacing=0.734   # average pixel spacing in mm
 
-surfelem=avgPixelSpacing*avgPixelSpacing
+surfelemp=avgPixelSpacing*avgPixelSpacing # for 1 pixel in mm2
+surfelem= surfelemp*pxy/100 #surface of 1 patch in cm2
 
-volelem=surfelem*avgPixelSpacing
+volelemp=avgPixelSpacing*avgPixelSpacing*avgPixelSpacing # for 1 pixel
+volelem= volelemp*pxy/1000 #in ml, to multiply by slicepitch in mm
 
-#print volelem
 
 modelname='ILD_CNN_model.h5'
 pathjs='../static'
@@ -112,7 +101,6 @@ volumeroifile='volumeroi'
 #excluvisu=['healthy']
 excluvisu=['']
 
-
 bmpname='scan_bmp'
 
 sourcedcm = 'source'
@@ -155,6 +143,7 @@ orange=(255,153,102)
 lowgreen=(0,51,51)
 parme=(234,136,222)
 chatain=(139,108,66)
+highgrey=(240,240,240)
 
 cwd=os.getcwd()
 (cwdtop,tail)=os.path.split(cwd)
@@ -175,7 +164,8 @@ if setdata=='set2':
         'cysts':7,
         'bronchiectasis':8,
 #        'emphysema':10,
-        'GGpret':9
+        'GGpret':9,
+        'lung':10
         }
     usedclassif = [
         'consolidation',
@@ -205,7 +195,7 @@ classifc ={
     'bronchiectasis':orange,
     'emphysema':chatain,
     'GGpret': parme,
-
+     'lung': highgrey,
      'nolung': lowgreen,
      'bronchial_wall_thickening':white,
      'early_fibrosis':white,
@@ -228,6 +218,7 @@ volcol={
      'bronchiectasis':'boxMaterialOrange',
      'emphysema':'boxMaterialChatain',
      'GGpret': 'boxMaterialParme',
+     'lung': 'boxMaterialGrey',
 
      'bronchial_wall_thickening':'boxMaterialWhite',
      'early_fibrosis':'boxMaterialWhite',

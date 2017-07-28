@@ -22,6 +22,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 For more information please read the README file. The files can also 
 be found at: https://github.com/intact-project/ild-cnn
+
+modified by S. Kritter
+version 1.1
+28 july 2017
+
 '''
 import argparse
 import cPickle as pickle

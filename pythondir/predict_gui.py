@@ -7,6 +7,7 @@ V1.0 Created on Sun Apr 05 09:52:27 2017
 Version 1.1 15-June-2017
 bug fixed:
     1
+28 july 2017
 """
 #from param_pix_p import *
 from tdGenePredictGui import predictrun

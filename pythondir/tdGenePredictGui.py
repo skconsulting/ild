@@ -1,10 +1,11 @@
 # coding: utf-8
 #sylvain Kritter 04-Apr-2017
 '''predict on lung scan front view and cross view
-version 1.0
- '''
+version 1.1
+28 july 2017
+'''
 #from param_pix_p import *
-from param_pix_p import scan_bmp,avgPixelSpacing,dimpavx,dimpavy
+from param_pix_p import scan_bmp,avgPixelSpacing,dimpavx,dimpavy,volumeroifile
 from param_pix_p import typei,typei1,typei2
 from param_pix_p import white,yellow
 
@@ -607,7 +608,7 @@ def  visua(listelabelfinal,dirf,patch_list,dimtabx,dimtaby,
     remove_folder(predictout_dir)
     os.mkdir(predictout_dir)
 
-    for i in range (0,len(classif)):
+    for i in range (0,len(usedclassif)):
 #        print 'visua dptail', topdir
         listelabelfinal[fidclass(i,classif)]=0
     #directory name with predict out dabasase, will be created in current directory
@@ -633,6 +634,10 @@ def  visua(listelabelfinal,dirf,patch_list,dimtabx,dimtaby,
     for img in listbmpscan:
 
         slicenumber= rsliceNum(img,'_','.'+typei)
+        if slicenumber <0:
+                    slicenumber=rsliceNum(img,'_','.'+typei1)
+                    if slicenumber <0:
+                          slicenumber=rsliceNum(img,'_','.'+typei2)
         if dct:
             for imgdcm in listdcm:
                  FilesDCM =(os.path.join(dirpatientfdbsource1,imgdcm))
@@ -686,6 +691,7 @@ def  visua(listelabelfinal,dirf,patch_list,dimtabx,dimtaby,
             tablscan=cv2.imread(imgc,1)
 
         foundp=False
+#        print slicenumber
         pn=patch_list[slicenumber]
         for ll in range(0,len(pn)):
 #            slicename=patch_list[ll][0]
@@ -730,6 +736,7 @@ def  visua(listelabelfinal,dirf,patch_list,dimtabx,dimtaby,
         tablscan = cv2.cvtColor(tablscan, cv2.COLOR_BGR2RGB)
 
         vis=drawContour(imgt,listlabel,dimtabx,dimtaby)
+#        print tablscan.shape,vis.shape
         imn=cv2.add(tablscan,vis)
 
         if foundp:
@@ -1046,6 +1053,10 @@ def reshapepatern(dirf,tabpx,dimtabxn,dimtaby,slnt,slicepitch,predictout,sou,dcm
 
     for img in listbmpscan:
         slicenumber= rsliceNum(img,'_','.'+typei)
+        if slicenumber <0:
+                    slicenumber= rsliceNum(img,'_','.'+typei1)
+                    if slicenumber <0:
+                        slicenumber= rsliceNum(img,'_','.'+typei2)
 
         if sroiE:
             for imgsroi in listbmpsroi:
@@ -1686,7 +1697,7 @@ def uipTree(dirf,patch_list_cross_slice,lungSegment,tabMed,dictPS,
          volumefile = writedict(dirf, dimpavx)
     else:
         volumefile = ''
-    for pat in classif:
+    for pat in usedclassif:
        
         dictSubP,dictP= calcSupNp(dirf, patch_list_cross_slice, pat, tabMed,
               dictSubP,dictP,thrprobaUIP,lungSegment,patch_list_cross_slice_sub)
@@ -1871,6 +1882,7 @@ def predictrun(indata,path_patient):
 #            """
             remove_folder(dicompathdirmerge)
             os.mkdir(dicompathdirmerge)
+            path_data_writefile=os.path.join(path_data_write,volumeroifile)
 
             print '------------------'
             print 'START PREDICT CROSS'
@@ -1879,7 +1891,14 @@ def predictrun(indata,path_patient):
             lungSegment=selectposition(lissln)
 
 #                print 'slnt',slnt
-            datacross=(slnt,dimtabx,dimtabx,slicepitch,lissln)
+            datacross=(slnt,dimtabx,dimtabx,slicepitch,lissln)   
+            if not os.path.exists(path_data_writefile):
+                volumeroi={}
+                for i in lissln:
+                     volumeroi[i]={}
+                     for pat in classif:
+                         volumeroi[i][pat]=0
+                pickle.dump(volumeroi, open(path_data_writefile, "wb" ),protocol=-1)
             pickle.dump(datacross, open( os.path.join(path_data_write,datacrossn), "wb" ),protocol=-1)
 #            pickle.dump(tabscanScan, open( os.path.join(path_data_write,"tabscanScan"), "wb" ),protocol=-1)
             pickle.dump(lungSegment, open( os.path.join(path_data_write,"lungSegment"), "wb" ),protocol=-1)

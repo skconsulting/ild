@@ -3,17 +3,18 @@
 Created on Mon Mar 20 17:21:22 2017
 
 @author: sylvain
-version 1.0
+version 1.1
+28 july 2017
 """
 #from param_pix_p import *
 from param_pix_p import path_data,datafrontn,datacrossn,dimpavx,dimpavy,surfelem,volelem,volumeroifile
 
 from param_pix_p import white,red,yellow,grey
-from param_pix_p import lungimage,source_name,sroi,sroi3d,scan_bmp,transbmp,pxy
+from param_pix_p import lungimage,source_name,sroi,sroi3d,scan_bmp,transbmp
 from param_pix_p import typei,typei1,typei2
 from param_pix_p import threeFileMerge,htmldir,threeFile,threeFile3d
 
-from param_pix_p import classifc,classif
+from param_pix_p import classifc,classif,usedclassif
 
 from param_pix_p import maxproba,excluvisu,fidclass,rsliceNum
 
@@ -132,19 +133,19 @@ def tagviewn(fig,label,surface,surftot,roi,tl):
     col=classifc[label]
     labnow=classif[label]
     
-#    deltax=110+155*(((labnow)//5)-1)
     deltax=110
-
-#    deltay=11*((labnow)%5)
     deltay=10+(11*labnow)
 
-#    gro=-x*0.0027+1.1
     gro=0.8
-    pc=str(int(round(100.*surface/surftot,0)))
-    print tl
+    if surftot>0:
+        pc=str(int(round(100.*surface/surftot,0)))
+        pcroi=str(int(round(100.*roi/surftot,0)))
+    else:
+        pc='0'
+        pcroi='0'
     if tl:
-        cv2.rectangle(fig,(deltax-10, deltay),(deltax, deltay+10),col,1)
-    cv2.putText(fig,label+' predict: '+str(surface)+'mm2 '+pc+'%'+' roi: '+str(roi)+'mm2 ',(deltax, deltay),cv2.FONT_HERSHEY_PLAIN,gro,col,1)
+        cv2.rectangle(fig,(deltax-10, deltay-6),(deltax-5, deltay-1),col,1)
+    cv2.putText(fig,label+' pre: '+str(surface)+'cm2 '+pc+'%'+' roi: '+str(roi)+'cm2 '+pcroi+'%',(deltax, deltay),cv2.FONT_HERSHEY_PLAIN,gro,col,1)
 
 
 def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi):
@@ -159,11 +160,14 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi):
     for pat in classif:
         surflabel[pat]=0
     surftot=len(patch_list_cross_slice[slicenumber])
-    surftotf=surftot*surfelem*pxy
-    surftot='surface totale :'+str(int(round(surftotf,0)))+'mm2'
+    surftotf=surftot*surfelem
+    surftot='surface totale :'+str(int(round(surftotf,0)))+'cm2'
     surftotpat=0
+    lvexist=False
     if len (volumeroi)>0:
         lv=volumeroi[slicenumber]
+        lvexist=True
+    
 #        print lv
     for ll in patch_list_cross_slice[slicenumber]:
             xpat=ll[0][0]
@@ -181,26 +185,29 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi):
 #                        print 'found'
                     numl=listlabel[classlabel]
                     listlabel[classlabel]=numl+1
-                    surflabel[classlabel]= (numl+1)*surfelem*pxy
+                    surflabel[classlabel]= (numl+1)*surfelem
                     cur=listlabelaverage[classlabel]
                     averageproba= round((cur*numl+mprobai)/(numl+1),2)
                     listlabelaverage[classlabel]=averageproba
                 else:
                     listlabel[classlabel]=1
-                    surflabel[classlabel]=surfelem*pxy
+                    surflabel[classlabel]=surfelem
                     listlabelaverage[classlabel]=mprobai
 
                 imgn= addpatchn(classcolor,classlabel,xpat,ypat,imgn)
     delx=120
-    for ll1 in classif:               
+    for ll1 in usedclassif:               
         if ll1 in listlabel:
             tl=True
         else:
             tl=False
-            sul=int(round(surflabel[ll1],0))
-            suroi=int(round(lv[ll1],0))
-            surftotpat=surftotpat+surflabel[ll1]
-            tagviewn(datav,ll1,sul,surftotf,suroi,tl)
+        sul=round(surflabel[ll1],1)
+        if lvexist:
+            suroi=round(lv[ll1],1)
+        else:
+            suroi=0
+        surftotpat=surftotpat+surflabel[ll1]
+        tagviewn(datav,ll1,sul,surftotf,suroi,tl)
     ts='Threshold:'+str(t)
     surfunkn=surftotf-surftotpat
     if surftotf>0:
@@ -208,7 +215,7 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi):
     else:
         surfp='NA'
         
-    sulunk='surface unknow :'+str(int(abs(round(surfunkn,0))))+'mm2 ='+surfp+'%'
+    sulunk='surface unknow :'+str(abs(round(surfunkn,1)))+'cm2 ='+surfp+'%'
     cv2.putText(datav,ts,(0,140),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
     cv2.putText(datav,surftot,(delx,140),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
     cv2.putText(datav,sulunk,(delx,150),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
@@ -272,7 +279,7 @@ def findmaxvolume(dictSurf,poslung):
 #    patmax=''
     patmax=''
     surfmax=0
-    for pat in classif :
+    for pat in usedclassif :
         if pat not in excluvisu:
 #            print pat
             if dictSurf[pat][poslung]>surfmax:
@@ -291,9 +298,12 @@ def initdictP(d, p):
 
 
 def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
-                      lungSegment,tabMed,thrprobaUIP,patch_list_cross_slice_sub):
+                      lungSegment,tabMed,thrprobaUIP,patch_list_cross_slice_sub,datarep):
     global  quitl,dimtabx,dimtaby,patchi,ix,iy
     print 'openfichiervolume start',path_patient
+    slicepitch=datarep[3]
+    volelems=volelem*slicepitch # in mml
+    print slicepitch
     quitl=False
     dirf=os.path.join(path_patient,listHug)
     dictP = {}  # dictionary with patch in lung segment
@@ -307,9 +317,9 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
     dictPS['lowerset'] = (0, 0)
     dictPS['all'] = (0, 0)
     dictPS = calculSurface(dirf,patch_list_cross_slice, tabMed,lungSegment,dictPS)
-    voltotal=int(round(((dictPS['all'][0]+dictPS['all'][1])*volelem),0))
+    voltotal=int(round(((dictPS['all'][0]+dictPS['all'][1])*volelems),0))
 
-    for patt in classif:
+    for patt in usedclassif:
         dictP = initdictP(dictP, patt)
         dictSubP = initdictP(dictSubP, patt)
           
@@ -395,14 +405,14 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
     cv2.createTrackbar( 'All','SliderVol',1,1,nothings)
     cv2.createTrackbar( 'None','SliderVol',0,1,nothings)
     viewasked={}
-    for key in classif:
+    for key in usedclassif:
         viewasked[key]=True
         cv2.createTrackbar( key,'SliderVol',0,1,nothings)
     imgbackg = np.zeros((dimtabx,dimtaby,3), np.uint8)
     posrc=0
     xr=800
     xrn=xr+10
-    for key1 in classif:
+    for key1 in usedclassif:
         yr=15*posrc
 
         yrn=yr+10
@@ -437,7 +447,7 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
             allview = cv2.getTrackbarPos('All','SliderVol')
             noneview = cv2.getTrackbarPos('None','SliderVol')
 
-            for key1 in classif:
+            for key1 in usedclassif:
                 s = cv2.getTrackbarPos(key1,'SliderVol')
                 if allview==1:
                      viewasked[key1]=True
@@ -451,7 +461,7 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
             dictP = {}  # dictionary with patch in lung segment    
             dictSubP = {}  # dictionary with patch in subpleural
             dictSurf = {}  # dictionary with patch volume in percentage
-            for patt in classif:
+            for patt in usedclassif:
                 dictP = initdictP(dictP, patt)
                 dictSubP = initdictP(dictSubP, patt)
             tl=tl/100.0
@@ -466,8 +476,8 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
             cv2.putText(imgtext,'Threshold : '+str(tl),(50,50),cv2.FONT_HERSHEY_PLAIN,1,yellow,1,cv2.LINE_AA)
             if allview==1:
                 pervoltot=0
-                for patt in classif:
-                    vol=int(round(((dictP[patt]['all'][0]+dictP[patt]['all'][1] )*volelem),0))    
+                for patt in usedclassif:
+                    vol=int(round(((dictP[patt]['all'][0]+dictP[patt]['all'][1] )*volelems),0))    
                     pervol=int(round(vol*100./voltotal,0))
                     pervoltot=pervoltot+pervol
                     
@@ -512,11 +522,11 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
 
                 for i in listPosLung:
                     olo=0
-                    for pat in classif:
+                    for pat in usedclassif:
 #                        img = np.zeros((dimtabx,dimtaby,3), np.uint8)
                         if viewasked[pat]==True:
                              olo+=1
-                             vol=int(round(((dictP[pat]['all'][0]+dictP[pat]['all'][1] )*volelem),0)) 
+                             vol=int(round(((dictP[pat]['all'][0]+dictP[pat]['all'][1] )*volelems),0)) 
                              pervol=int(round(vol*100./voltotal,0))
                              fillblank=''
                              if vol<10:
@@ -580,7 +590,7 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice):
     ix=0
     iy=0
     (top,tail)=os.path.split(path_img)
-
+    volumeroilocal={}
     pdirk = os.path.join(path_img,source_name)
     pdirkroicross = os.path.join(path_img,sroi)
     pdirkroifront = os.path.join(path_img,sroi3d)
@@ -590,11 +600,11 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice):
             pdirk = pdirkroicross
             path_data_write=os.path.join(path_img,path_data)
             path_data_writefile=os.path.join(path_data_write,volumeroifile)
-            volumeroi=pickle.load(open(path_data_writefile, "rb" ))
+            if os.path.exists(path_data_writefile):
+                volumeroilocal=pickle.load(open(path_data_writefile, "rb" ))                
             sn=''
         else:
             sn=scan_bmp
-            volumeroi={}
         corectnumber=1
     else:        
         if os.path.exists(pdirkroifront):
@@ -643,7 +653,7 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice):
         cv2.createTrackbar( 'All','Slidercr',1,1,nothings)
         cv2.createTrackbar( 'None','Slidercr',0,1,nothings)
         viewasked={}
-        for key1 in classif:
+        for key1 in usedclassif:
 #            print key1
             viewasked[key1]=True
             cv2.createTrackbar( key1,'Slidercr',0,1,nothings)
@@ -658,7 +668,7 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice):
             allview = cv2.getTrackbarPos('All','Slidercr')
             noneview = cv2.getTrackbarPos('None','Slidercr')
 
-            for key2 in classif:
+            for key2 in usedclassif:
                 s = cv2.getTrackbarPos(key2,'Slidercr')
                 if allview==1:
                      viewasked[key2]=True
@@ -680,7 +690,7 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice):
             imcontrast=contrasti(imglumi,c)                
             imcontrast=cv2.cvtColor(imcontrast,cv2.COLOR_BGR2RGB)
             
-            imgn,datav= drawpatch(tl,dimtabx,dimtaby,slicenumber,viewasked,patch_list_cross_slice,volumeroi)
+            imgn,datav= drawpatch(tl,dimtabx,dimtaby,slicenumber,viewasked,patch_list_cross_slice,volumeroilocal)
             
             cv2.putText(datav,'slice number :'+str(slicenumber),(10,180),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
             cv2.putText(datav,'patient Name :'+tail,(10,190),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
@@ -739,7 +749,7 @@ def openfichierfrpr(path_patient,tabfromfront,thrprobaUIP):
 
     imgbackg = np.zeros((dimtabx,dimtaby,3), np.uint8)
     posrc=0
-    for key1 in classif:
+    for key1 in usedclassif:
         xr=dimtabx-100
         yr=15*posrc
         xrn=xr+10
@@ -828,7 +838,7 @@ def visuarun(indata,path_patient):
             messageout=openfichier(viewstyle,datarep,patient_path_complet,thrprobaUIP,patch_list_front_slice)
             
     elif viewstyle=='volume view from cross':
-
+            datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "rb" ))
             patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice"), "rb" ))
             patch_list_cross_slice_sub= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice_sub"), "rb" ))
             lungSegment= pickle.load( open( os.path.join(path_data_dir,"lungSegment"), "rb" ))
@@ -836,9 +846,10 @@ def visuarun(indata,path_patient):
             thrprobaUIP=float(indata['thrprobaUIP'])
             
             messageout = openfichiervolume(listHug,path_patient,patch_list_cross_slice,
-                      lungSegment,tabMed,thrprobaUIP,patch_list_cross_slice_sub)
+                      lungSegment,tabMed,thrprobaUIP,patch_list_cross_slice_sub,datarep)
     
     elif viewstyle=='volume view from front':
+            datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "rb" ))
             patch_list_front_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_front_slice"), "rb" ))
             patch_list_front_slice_sub= pickle.load( open( os.path.join(path_data_dir,"patch_list_front_slice_sub"), "rb" ))
             lungSegmentfront= pickle.load( open( os.path.join(path_data_dir,"lungSegmentfront"), "rb" ))
@@ -846,7 +857,7 @@ def visuarun(indata,path_patient):
             thrprobaUIP=float(indata['thrprobaUIP'])
             
             messageout = openfichiervolume(listHug,path_patient,patch_list_front_slice,
-                      lungSegmentfront,tabMedfront,thrprobaUIP,patch_list_front_slice_sub)
+                      lungSegmentfront,tabMedfront,thrprobaUIP,patch_list_front_slice_sub,datarep)
 
     elif viewstyle=='merge view':
 
