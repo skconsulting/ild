@@ -410,6 +410,11 @@ def delall():
     cv2.rectangle(menus, (150,12), (370,52), black, -1)
     cv2.putText(menus,' Delete all polygons',(150,30),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
 
+def writeslice(num):
+    print 'write',num
+    cv2.rectangle(menus, (5,470), (80,460), red, -1)
+    cv2.putText(menus,'Slice: '+str(num),(5,470),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
+
 def contrasti(im,r):
 
      r1=0.5+r/100.0
@@ -493,13 +498,41 @@ def loop(slnt,pdirk,dirpath_patient,dirroi):
         cv2.createTrackbar( 'Panx','Slider2',50,100,nothing)
         cv2.createTrackbar( 'Pany','Slider2',50,100,nothing)
         cv2.setMouseCallback("image", click_and_crop)
-
-    while True:
-
+    nbdig=0
+    numberentered={}
+    while True:       
+        
         key = cv2.waitKey(100) & 0xFF
         if key != 255:
             print key
+        if key >47 and key<58:
+            numberfinal=0
+            knum=key-48
+            print 'this is number',knum
+            
+#            numberentered=numberentered+knum*10**nbdig
+            numberentered[nbdig]=knum
+            nbdig+=1
 
+            for i in range (nbdig):
+                numberfinal=numberfinal+numberentered[i]*10**(nbdig-1-i)            
+            print numberfinal
+            if numberfinal>0:
+                writeslice(numberfinal)
+            
+        if key ==8:
+            
+            numberfinal=0
+            nbdig=nbdig-1
+
+            for i in range (nbdig):
+
+                numberfinal=numberfinal+numberentered[i]*10**(nbdig-1-i)            
+#            print numberfinal
+            if numberfinal>0:
+                writeslice(numberfinal)
+        
+                
         if key == ord("c"):
                 print 'completed'
                 completed(imagename,dirpath_patient,dirroi)
@@ -539,7 +572,17 @@ def loop(slnt,pdirk,dirpath_patient,dirroi):
         z = cv2.getTrackbarPos('Zoom','Slider2')
         px = cv2.getTrackbarPos('Panx','Slider2')
         py = cv2.getTrackbarPos('Pany','Slider2')
+        if key ==13:
+                print 'this is return'
+                if numberfinal>0:
+                    print numberfinal
+                    writeslice(numberfinal)
+                    cv2.setTrackbarPos('Flip','Slider2' ,numberfinal-1)
+                    numberfinal=0
+                    nbdig=0
+                numberentered={}
 #        print fl
+#        cv2.setTrackbarPos('Flip','Slider2' ,5)
         scannumber=fl+1
         imagename=list_image[scannumber]
         imagenamecomplet=os.path.join(pdirk,imagename)

@@ -9,7 +9,7 @@ version 1.1
 #from param_pix_p import *
 from param_pix_p import path_data,datafrontn,datacrossn,dimpavx,dimpavy,surfelem,volelem,volumeroifile,avgPixelSpacing
 
-from param_pix_p import white,red,yellow,grey
+from param_pix_p import white,red,yellow,grey,black
 from param_pix_p import lungimage,source_name,sroi,sroi3d,scan_bmp,transbmp
 from param_pix_p import typei,typei1,typei2
 from param_pix_p import threeFileMerge,htmldir,threeFile,threeFile3d
@@ -148,10 +148,10 @@ def tagviewn(fig,label,surface,surftot,roi,tl):
     cv2.putText(fig,label+' pre: '+str(surface)+'cm2 '+pc+'%'+' roi: '+str(roi)+'cm2 '+pcroi+'%',(deltax, deltay),cv2.FONT_HERSHEY_PLAIN,gro,col,1)
 
 
-def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,patch_list_ref_slice,volumeroi):
+def drawpatch(datav,t,dx,dy,slicenumber,va,patch_list_cross_slice,patch_list_ref_slice,volumeroi):
 
     imgn = np.zeros((dx,dy,3), np.uint8)
-    datav = np.zeros((200,500,3), np.uint8)
+   
     th=t/100.0
     numl=0
     listlabel={}
@@ -577,8 +577,14 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
 
 
 def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,patch_list_ref_slice):
+    def writeslice(num,menus):
+        print 'write',num
+        cv2.rectangle(menus, (5,40), (150,30), red, -1)
+        cv2.putText(menus,'Slice to visualize: '+str(num),(5,40),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
+    
     global  quitl,dimtabx,dimtaby,patchi,ix,iy
-    print 'openfichier start'
+    print 'openfichier start' 
+    
     quitl=False
     
     slnt=datacross[0]
@@ -639,7 +645,7 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,patch_l
 #        cv2.waitKey(0)
 #        cv2.destroyAllWindows()
         imgtext = np.zeros((dimtabx,dimtaby,3), np.uint8)
-        datav = np.zeros((200,500,3), np.uint8)
+        
 
         cv2.namedWindow('imagecr',cv2.WINDOW_NORMAL)
         cv2.namedWindow("Slidercr",cv2.WINDOW_AUTOSIZE)
@@ -651,13 +657,19 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,patch_l
         cv2.createTrackbar( 'Flip','Slidercr',slnt/2,slnt-2,nothings)
         cv2.createTrackbar( 'All','Slidercr',1,1,nothings)
         cv2.createTrackbar( 'None','Slidercr',0,1,nothings)
+    
+        
         viewasked={}
         for key1 in usedclassif:
 #            print key1
             viewasked[key1]=True
             cv2.createTrackbar( key1,'Slidercr',0,1,nothings)
-        
+        nbdig=0
+        numberentered={}
+        initimg = np.zeros((dimtaby,dimtabx,3), np.uint8)
         while(1):
+            datav = np.zeros((200,500,3), np.uint8)
+            
 
             cv2.setMouseCallback('imagecr',draw_circle,img)
             c = cv2.getTrackbarPos('Contrast','Slidercr')
@@ -666,7 +678,46 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,patch_l
             fl = cv2.getTrackbarPos('Flip','Slidercr')
             allview = cv2.getTrackbarPos('All','Slidercr')
             noneview = cv2.getTrackbarPos('None','Slidercr')
-
+            
+            key = cv2.waitKey(100) & 0xFF
+            if key != 255:
+                print key
+            if key >47 and key<58:
+                numberfinal=0
+                knum=key-48
+                print 'this is number',knum
+                numberentered[nbdig]=knum
+                nbdig+=1
+    
+                for i in range (nbdig):
+                    numberfinal=numberfinal+numberentered[i]*10**(nbdig-1-i)            
+#                print numberfinal
+                numberfinal = min(slnt-2,numberfinal)
+                if numberfinal>0:
+                    writeslice(numberfinal,initimg)
+                    
+            
+            if nbdig>0 and key ==8:          
+                numberfinal=0
+                nbdig=nbdig-1   
+                for i in range (nbdig):    
+                    numberfinal=numberfinal+numberentered[i]*10**(nbdig-1-i)            
+    #            print numberfinal
+                if numberfinal>0:
+                    writeslice(numberfinal,initimg)
+            if nbdig>0 and key ==13:
+#                print 'this is return'
+                if numberfinal>0:
+                    print numberfinal
+                    numberfinal = min(slnt-2,numberfinal)
+#                    writeslice(numberfinal,initimg)
+                    cv2.rectangle(initimg, (5,40), (150,30), black, -1)
+                    cv2.setTrackbarPos('Flip','Slidercr' ,numberfinal-1)
+                    fl=numberfinal
+                    numberfinal=0
+                    nbdig=0
+                numberentered={}
+            
             for key2 in usedclassif:
                 s = cv2.getTrackbarPos(key2,'Slidercr')
                 if allview==1:
@@ -678,18 +729,19 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,patch_l
                     viewasked[key2]=False
                 else:
                      viewasked[key2]=True
-
+            
             slicenumber=fl+corectnumber
             
             imagel=os.path.join(pdirk,list_image[slicenumber])
-            img = cv2.imread(imagel,1)   
+            img = cv2.imread(imagel,1)               
             img=cv2.resize(img,(dimtaby,dimtabx),interpolation=cv2.INTER_LINEAR)
+            img=cv2.add(img,initimg)
 
             imglumi=lumi(img,l)
             imcontrast=contrasti(imglumi,c)                
             imcontrast=cv2.cvtColor(imcontrast,cv2.COLOR_BGR2RGB)
             
-            imgn,datav= drawpatch(tl,dimtabx,dimtaby,slicenumber,viewasked,patch_list_cross_slice,patch_list_ref_slice,volumeroilocal)
+            imgn,datav= drawpatch(datav,tl,dimtabx,dimtaby,slicenumber,viewasked,patch_list_cross_slice,patch_list_ref_slice,volumeroilocal)
             
             cv2.putText(datav,'slice number :'+str(slicenumber),(10,180),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
             cv2.putText(datav,'patient Name :'+tail,(10,190),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
