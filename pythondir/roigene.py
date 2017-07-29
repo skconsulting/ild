@@ -498,12 +498,15 @@ def loop(slnt,pdirk,dirpath_patient,dirroi):
         cv2.createTrackbar( 'Panx','Slider2',50,100,nothing)
         cv2.createTrackbar( 'Pany','Slider2',50,100,nothing)
         cv2.setMouseCallback("image", click_and_crop)
+    populate(dirpath_patient,slnt)
     nbdig=0
     numberentered={}
     while True:       
         
-        key = cv2.waitKey(100) & 0xFF
-        if key != 255:
+        key = cv2.waitKey(1000)
+#        key = cv2.waitKey(1000) & 0xFF
+
+        if key != -1:
             print key
         if key >47 and key<58:
             numberfinal=0
@@ -515,7 +518,8 @@ def loop(slnt,pdirk,dirpath_patient,dirroi):
             nbdig+=1
 
             for i in range (nbdig):
-                numberfinal=numberfinal+numberentered[i]*10**(nbdig-1-i)            
+                numberfinal=numberfinal+numberentered[i]*10**(nbdig-1-i)   
+            numberfinal = min(slnt-1,numberfinal)
             print numberfinal
             if numberfinal>0:
                 writeslice(numberfinal)
@@ -531,6 +535,9 @@ def loop(slnt,pdirk,dirpath_patient,dirroi):
 #            print numberfinal
             if numberfinal>0:
                 writeslice(numberfinal)
+            else:
+                cv2.rectangle(menus, (5,470), (80,460), black, -1)
+                
         
                 
         if key == ord("c"):
@@ -575,14 +582,23 @@ def loop(slnt,pdirk,dirpath_patient,dirroi):
         if key ==13:
                 print 'this is return'
                 if numberfinal>0:
+                    
+                    numberfinal=min(numberfinal,slnt-1)
                     print numberfinal
                     writeslice(numberfinal)
                     cv2.setTrackbarPos('Flip','Slider2' ,numberfinal-1)
+                    cv2.rectangle(menus, (5,470), (80,460), black, -1)
                     numberfinal=0
                     nbdig=0
                 numberentered={}
 #        print fl
 #        cv2.setTrackbarPos('Flip','Slider2' ,5)
+        if key==2424832:
+                fl=max(0,fl-1)
+                cv2.setTrackbarPos('Flip','Slider2' ,fl)
+        if key==2555904:
+                fl=min(slnt-2,fl+1)
+                cv2.setTrackbarPos('Flip','Slider2' ,fl)
         scannumber=fl+1
         imagename=list_image[scannumber]
         imagenamecomplet=os.path.join(pdirk,imagename)
@@ -592,7 +608,7 @@ def loop(slnt,pdirk,dirpath_patient,dirroi):
         image=zoomfunction(image,z,px,py)
         imagesview=zoomfunction(images[scannumber],z,px,py)
 
-        populate(dirpath_patient,slnt)
+        
         imglumi=lumi(image,l)
         image=contrasti(imglumi,c)
         imageview=cv2.add(image,imagesview)

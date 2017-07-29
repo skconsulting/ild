@@ -148,9 +148,10 @@ def tagviewn(fig,label,surface,surftot,roi,tl):
     cv2.putText(fig,label+' pre: '+str(surface)+'cm2 '+pc+'%'+' roi: '+str(roi)+'cm2 '+pcroi+'%',(deltax, deltay),cv2.FONT_HERSHEY_PLAIN,gro,col,1)
 
 
-def drawpatch(datav,t,dx,dy,slicenumber,va,patch_list_cross_slice,patch_list_ref_slice,volumeroi):
+def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,patch_list_ref_slice,volumeroi):
 
     imgn = np.zeros((dx,dy,3), np.uint8)
+    datav = np.zeros((200,500,3), np.uint8) 
    
     th=t/100.0
     numl=0
@@ -219,6 +220,7 @@ def drawpatch(datav,t,dx,dy,slicenumber,va,patch_list_cross_slice,patch_list_ref
     cv2.putText(datav,ts,(0,140),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
     cv2.putText(datav,surftot,(delx,140),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
     cv2.putText(datav,sulunk,(delx,150),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
+    datav=cv2.cvtColor(datav,cv2.COLOR_BGR2RGB)
     return imgn,datav
 
 
@@ -442,9 +444,9 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
     for keyinit in usedclassif:
         viewaskedold[keyinit]=True
     while(1):
+            imgwip = np.zeros((200,200,3), np.uint8)           
             drawok=False
 #            print "corectnumber",corectnumber
-
             cv2.setMouseCallback('imageVol',draw_circle,imgtext)
             tl = cv2.getTrackbarPos('Threshold','SliderVol')
             allview = cv2.getTrackbarPos('All','SliderVol')
@@ -474,8 +476,7 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
                              if key8!= key1:
                                 cv2.setTrackbarPos(key8,'SliderVol',0)
                                 viewasked[key8]=False                      
-                  
-            
+                            
             if tl != tlold:
                 tlold=tl
                 drawok=True   
@@ -483,7 +484,11 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
                 if viewasked[keyne]!=viewaskedold[keyne]:
                     viewaskedold[keyne]=viewasked[keyne]
                     drawok=True
-            if drawok:    
+            
+#                cv2.add(imgwip,imgtowrite)
+            if drawok: 
+                cv2.putText(imgwip,'WIP',(10,10),cv2.FONT_HERSHEY_PLAIN,5,red,2,cv2.LINE_AA)
+                cv2.imshow('wip',imgwip)
                 print 'view'
 #                     print key1
                 dictP = {}  # dictionary with patch in lung segment    
@@ -591,8 +596,8 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
                 imgtowrite=cv2.add(vis1,imgtowrite)
     #            imgtowrite=cv2.add(imgtext,imgtowrite)
                 imgtowrite=cv2.cvtColor(imgtowrite,cv2.COLOR_BGR2RGB)
-#            else:
-#             print 'no view'
+                cv2.destroyWindow("wip")
+
             cv2.imshow('imageVol',imgtowrite)
 
             if quitl or cv2.waitKey(20) & 0xFF == 27 :
@@ -605,13 +610,12 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
 
     return ''
 
-
-def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,patch_list_ref_slice):
-    def writeslice(num,menus):
+def writeslice(num,menus):
         print 'write',num
-        cv2.rectangle(menus, (5,40), (150,30), red, -1)
-        cv2.putText(menus,'Slice to visualize: '+str(num),(5,40),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
-    
+        cv2.rectangle(menus, (5,60), (150,50), red, -1)
+        cv2.putText(menus,'Slice to visualize: '+str(num),(5,60),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
+        
+def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,patch_list_ref_slice):   
     global  quitl,dimtabx,dimtaby,patchi,ix,iy
     print 'openfichier start' 
     
@@ -676,7 +680,6 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,patch_l
 #        cv2.destroyAllWindows()
         imgtext = np.zeros((dimtabx,dimtaby,3), np.uint8)
         
-
         cv2.namedWindow('imagecr',cv2.WINDOW_NORMAL)
         cv2.namedWindow("Slidercr",cv2.WINDOW_AUTOSIZE)
         cv2.namedWindow("datavisu",cv2.WINDOW_AUTOSIZE)
@@ -687,8 +690,7 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,patch_l
         cv2.createTrackbar( 'Flip','Slidercr',slnt/2,slnt-2,nothings)
         cv2.createTrackbar( 'All','Slidercr',1,1,nothings)
         cv2.createTrackbar( 'None','Slidercr',0,1,nothings)
-    
-        
+            
         viewasked={}
         for key1 in usedclassif:
 #            print key1
@@ -696,14 +698,16 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,patch_l
             cv2.createTrackbar( key1,'Slidercr',0,1,nothings)
         nbdig=0
         numberentered={}
-        initimg = np.zeros((dimtaby,dimtabx,3), np.uint8)
+        initimg = np.zeros((dimtabx,dimtaby,3), np.uint8)
         slicenumberold=0
         tlold=0
         viewaskedold={}
         for keyne in usedclassif:
                 viewaskedold[keyne]=False
+        datav = np.zeros((200,500,3), np.uint8) 
         while(1):
-            datav = np.zeros((200,500,3), np.uint8)           
+            imgwip = np.zeros((200,200,3), np.uint8)  
+                      
 
             cv2.setMouseCallback('imagecr',draw_circle,img)
             c = cv2.getTrackbarPos('Contrast','Slidercr')
@@ -713,20 +717,20 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,patch_l
             allview = cv2.getTrackbarPos('All','Slidercr')
             noneview = cv2.getTrackbarPos('None','Slidercr')
             
-            key = cv2.waitKey(100) & 0xFF
-            if key != 255:
+            key = cv2.waitKey(1000)
+            if key != -1:
                 print key
+                
             if key >47 and key<58:
                 numberfinal=0
                 knum=key-48
                 print 'this is number',knum
                 numberentered[nbdig]=knum
                 nbdig+=1
-    
                 for i in range (nbdig):
                     numberfinal=numberfinal+numberentered[i]*10**(nbdig-1-i)            
 #                print numberfinal
-                numberfinal = min(slnt-2,numberfinal)
+                numberfinal = min(slnt-1,numberfinal)
                 if numberfinal>0:
                     writeslice(numberfinal,initimg)
                         
@@ -739,17 +743,29 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,patch_l
                 if numberfinal>0:
                     writeslice(numberfinal,initimg)
                 else:
-                    cv2.rectangle(initimg, (5,40), (150,30), black, -1)
+                    cv2.rectangle(initimg, (5,60), (150,50), black, -1)
+                    
             if nbdig>0 and key ==13 and numberfinal>0:
                     print numberfinal
-                    numberfinal = min(slnt-2,numberfinal)
+                    numberfinal = min(slnt-1,numberfinal)
 #                    writeslice(numberfinal,initimg)
-                    cv2.rectangle(initimg, (5,40), (150,30), black, -1)
-                    cv2.setTrackbarPos('Flip','Slidercr' ,numberfinal-1)
-                    fl=numberfinal
+                    cv2.rectangle(initimg, (5,60), (150,50), black, -1)
+                    if corectnumber==0:
+                        cv2.setTrackbarPos('Flip','Slidercr' ,numberfinal)
+                        fl=numberfinal
+                    else:
+                        cv2.setTrackbarPos('Flip','Slidercr' ,numberfinal-1)
+                        fl=numberfinal-1
+                    
                     numberfinal=0
                     nbdig=0
                     numberentered={}
+            if key==2424832:
+                fl=max(0,fl-1)
+                cv2.setTrackbarPos('Flip','Slidercr' ,fl)
+            if key==2555904:
+                fl=min(slnt-2,fl+1)
+                cv2.setTrackbarPos('Flip','Slidercr' ,fl)
             
             for key2 in usedclassif:
                 s = cv2.getTrackbarPos(key2,'Slidercr')
@@ -768,6 +784,8 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,patch_l
             imagel=os.path.join(pdirk,list_image[slicenumber])
             img = cv2.imread(imagel,1)               
             img=cv2.resize(img,(dimtaby,dimtabx),interpolation=cv2.INTER_LINEAR)
+#            print img.shape
+#            print  initimg.shape
             img=cv2.add(img,initimg)
 
             imglumi=lumi(img,l)
@@ -784,14 +802,16 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,patch_l
                 if viewasked[keyne]!=viewaskedold[keyne]:
                     viewaskedold[keyne]=viewasked[keyne]
 #                    print 'change'
-                    drawok=True
-                    break            
+                    drawok=True         
             if drawok:
-                imgn,datav= drawpatch(datav,tl,dimtabx,dimtaby,slicenumber,viewasked,patch_list_cross_slice,patch_list_ref_slice,volumeroilocal)
-            
-            cv2.putText(datav,'slice number :'+str(slicenumber),(10,180),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
-            cv2.putText(datav,'patient Name :'+tail,(10,190),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
-
+                print 'view'
+                cv2.putText(imgwip,'WIP',(10,10),cv2.FONT_HERSHEY_PLAIN,5,red,2,cv2.LINE_AA)
+                cv2.imshow('wip',imgwip)
+                imgn,datav= drawpatch(tl,dimtabx,dimtaby,slicenumber,viewasked,patch_list_cross_slice,patch_list_ref_slice,volumeroilocal)
+                               
+                cv2.putText(datav,'slice number :'+str(slicenumber),(10,180),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
+                cv2.putText(datav,'patient Name :'+tail,(10,190),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
+                cv2.destroyWindow("wip")
             imgngray = cv2.cvtColor(imgn,cv2.COLOR_BGR2GRAY)
             np.putmask(imgngray,imgngray>0,255)
             mask_inv = cv2.bitwise_not(imgngray)
@@ -802,14 +822,16 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,patch_l
             cv2.putText(imgt,'quit',(dxrect+10,dimtabx-10),cv2.FONT_HERSHEY_PLAIN,1,yellow,1,cv2.LINE_AA)
             imgtoshow=cv2.add(imgt,imgtext)
             imgtoshow=cv2.cvtColor(imgtoshow,cv2.COLOR_BGR2RGB)
-            datav=cv2.cvtColor(datav,cv2.COLOR_BGR2RGB)
             cv2.imshow('imagecr',imgtoshow)
             cv2.imshow('datavisu',datav)
 
             if patchi :
+                cv2.putText(imgwip,'WIP',(10,10),cv2.FONT_HERSHEY_PLAIN,5,red,2,cv2.LINE_AA)
+                cv2.imshow('wip',imgwip)
                 print 'retrieve patch asked'
                 imgtext= retrievepatch(ix,iy,slicenumber,dimtabx,dimtaby,patch_list_cross_slice)
                 patchi=False
+                cv2.destroyWindow("wip")
 
             if quitl or cv2.waitKey(20) & 0xFF == 27 :
                 break
@@ -860,13 +882,68 @@ def openfichierfrpr(path_patient,tabfromfront,thrprobaUIP):
     #        cv2.rectangle(imgt,(172,358),(192,368),white,-1)
     cv2.putText(imgbackg,'quit',(dxrect+10,dimtabx-10),cv2.FONT_HERSHEY_PLAIN,1,yellow,1,cv2.LINE_AA)
 
+    nbdig=0
+    numberentered={}
+
+    initimg = np.zeros((dimtabx,dimtaby,3), np.uint8)
 
     while(1):
 #            print "corectnumber",corectnumber
             imgtext= np.zeros((dimtabx,dimtaby,3), np.uint8)
             cv2.setMouseCallback('imagefrpr',draw_circle,imgtext)
             fl = cv2.getTrackbarPos('Flip','SliderVolumefrpr')
+            
+#            key = cv2.waitKey(1000) & 0xFF
+            key = cv2.waitKey(1000)
+
+            if key != -1:
+                print key
+                
+            if key >47 and key<58:
+                numberfinal=0
+                knum=key-48
+                print 'this is number',knum
+                numberentered[nbdig]=knum
+                nbdig+=1
+                for i in range (nbdig):
+                    numberfinal=numberfinal+numberentered[i]*10**(nbdig-1-i)            
+#                print numberfinal
+                numberfinal = min(slnt-1,numberfinal)
+                if numberfinal>0:
+                    writeslice(numberfinal,initimg)
+                        
+            if nbdig>0 and key ==8:          
+                numberfinal=0
+                nbdig=nbdig-1   
+                for i in range (nbdig):    
+                    numberfinal=numberfinal+numberentered[i]*10**(nbdig-1-i)            
+    #            print numberfinal
+                if numberfinal>0:
+                    writeslice(numberfinal,initimg)
+                else:
+                    cv2.rectangle(initimg, (5,60), (150,50), black, -1)
+                    
+            if nbdig>0 and key ==13 and numberfinal>0:
+                    print numberfinal
+                    numberfinal = min(slnt-1,numberfinal)
+#                    writeslice(numberfinal,initimg)
+                    cv2.rectangle(initimg, (5,60), (150,50), black, -1)
+                    cv2.setTrackbarPos('Flip','SliderVolumefrpr' ,numberfinal-1)
+                    fl=numberfinal-1
+                    
+                    numberfinal=0
+                    nbdig=0
+                    numberentered={}
+            
+            if key==2424832:
+                fl=max(0,fl-1)
+                cv2.setTrackbarPos('Flip','SliderVolumefrpr' ,fl)
+            if key==2555904:
+                fl=min(slnt-2,fl+1)
+                cv2.setTrackbarPos('Flip','SliderVolumefrpr' ,fl)
+                
             img=tabfromfront[fl+1]
+            img=cv2.add(initimg,img)
             img=cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
             imgtext=cv2.add(imgtext,imgbackg)
             imgtext=cv2.add(imgtext,img)
