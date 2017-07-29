@@ -402,7 +402,7 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
 
     cv2.createTrackbar( 'Threshold','SliderVol',int(thrprobaUIP*100),100,nothing)
     cv2.createTrackbar( 'All','SliderVol',1,1,nothings)
-    cv2.createTrackbar( 'None','SliderVol',0,1,nothings)
+    cv2.createTrackbar( 'Reset','SliderVol',0,1,nothings)
     viewasked={}
     for key in usedclassif:
         viewasked[key]=True
@@ -448,42 +448,32 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
             cv2.setMouseCallback('imageVol',draw_circle,imgtext)
             tl = cv2.getTrackbarPos('Threshold','SliderVol')
             allview = cv2.getTrackbarPos('All','SliderVol')
-            noneview = cv2.getTrackbarPos('None','SliderVol')
+            noneview = cv2.getTrackbarPos('Reset','SliderVol')
             
             if allview==1:
                 for key1 in usedclassif:
                     cv2.setTrackbarPos(key1,'SliderVol',0)
                     viewasked[key1]=True
-            else:
-                   for key1 in usedclassif:
-#                    cv2.setTrackbarPos(key1,'SliderVol',0)
-                        viewasked[key1]=False 
-#                cv2.setTrackbarPos('All','SliderVol',0)
-            
-#                cv2.setTrackbarPos('All','SliderVol',0)
 
             if noneview==1:
                 for key1 in usedclassif:
                     cv2.setTrackbarPos(key1,'SliderVol',0)
                     viewasked[key1]=False
-                cv2.setTrackbarPos('None','SliderVol',0) 
+                cv2.setTrackbarPos('Reset','SliderVol',0) 
                 cv2.setTrackbarPos('All','SliderVol',0)
                 allview=0          
             
             if allview ==0:
                 for key1 in usedclassif:
                     s = cv2.getTrackbarPos(key1,'SliderVol')  
-    #                if s==1:
-    #                    cv2.setTrackbarPos('All','SliderVol',0)                           
+                        
                     if s==1 and viewasked[key1]==False:
                         
                         viewasked[key1]=True
                         for key8 in usedclassif:
                              if key8!= key1:
                                 cv2.setTrackbarPos(key8,'SliderVol',0)
-                                viewasked[key8]=False
-#                    elif s==0:
-#                        
+                                viewasked[key8]=False                      
                   
             
             if tl != tlold:
