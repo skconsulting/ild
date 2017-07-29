@@ -437,132 +437,172 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
 #    cv2.imshow('a',imgbackg)
 #    cv2.waitKey(0)
 #    cv2.destroyAllWindows()
-
+    tlold=0
+    viewaskedold={}
+    for keyinit in usedclassif:
+        viewaskedold[keyinit]=True
     while(1):
+            drawok=False
 #            print "corectnumber",corectnumber
 
             cv2.setMouseCallback('imageVol',draw_circle,imgtext)
             tl = cv2.getTrackbarPos('Threshold','SliderVol')
             allview = cv2.getTrackbarPos('All','SliderVol')
             noneview = cv2.getTrackbarPos('None','SliderVol')
-
-            for key1 in usedclassif:
-                s = cv2.getTrackbarPos(key1,'SliderVol')
-                if allview==1:
-                     viewasked[key1]=True
-                elif noneview ==1:
-                    viewasked[key1]=False
-                elif s==0:
-                    viewasked[key1]=False
-                else:
-                     viewasked[key1]=True
-#                     print key1
-            dictP = {}  # dictionary with patch in lung segment    
-            dictSubP = {}  # dictionary with patch in subpleural
-            dictSurf = {}  # dictionary with patch volume in percentage
-            for patt in usedclassif:
-                dictP = initdictP(dictP, patt)
-                dictSubP = initdictP(dictSubP, patt)
-            tl=tl/100.0
-            thrprobaUIP=tl
-            dictP, dictSubP, dictSurf= uipTree(dirf,patch_list_cross_slice,lungSegment,tabMed,dictPS,
-                                               dictP,dictSubP,dictSurf,thrprobaUIP,patch_list_cross_slice_sub)
-            surfmax={}
-            patmax={}
             
-            imgtext = np.zeros((dimtabx,dimtaby,3), np.uint8)
-            img = np.zeros((dimtabx,dimtaby,3), np.uint8)
-            cv2.putText(imgtext,'Threshold : '+str(tl),(50,50),cv2.FONT_HERSHEY_PLAIN,1,yellow,1,cv2.LINE_AA)
             if allview==1:
-                pervoltot=0
-                for patt in usedclassif:
-                    vol=int(round(((dictP[patt]['all'][0]+dictP[patt]['all'][1] )*volelems),0))    
-                    pervol=int(round(vol*100./voltotal,0))
-                    pervoltot=pervoltot+pervol
-                    
-                    fillblank=''
-                    if vol<10:
-                        fillblank='   '
-                    elif vol <100:
-                        fillblank='  '
-                    elif vol <1000:
-                        fillblank=' '                        
-
-#                    print patt,vol
-                    cv2.putText(imgtext,'V: '+str(vol)+'ml '+fillblank+str(pervol)+'%',(dictpostotal[patt][0],dictpostotal[patt][1]),
-                                cv2.FONT_HERSHEY_PLAIN,1.0,classifc[patt],1 )
-                #total volume
-                cv2.putText(imgtext,'Volume Total: '+str(voltotal)+'ml',(dictpostotal['total'][0],dictpostotal['total'][1]),
-                                cv2.FONT_HERSHEY_PLAIN,1.0,white,1 )
-                cv2.putText(imgtext,'Total unknown: '+str(100-pervoltot)+'%',(dictpostotal['totalh'][0],dictpostotal['totalh'][1]),
-                                cv2.FONT_HERSHEY_PLAIN,1.0,white,1 )
-                for i in listPosLung:
-
-    #                dictPosImage[i]=colorimage(dictPosImage[i],black)
-                    surfmax[i],patmax[i] =findmaxvolume(dictSurf,i)
-#                    print i,surfmax[i],patmax[i]
-
-                    if surfmax[i]>0:
-                         colori=classifc[patmax[i]]
-                    else:
-                         colori=grey
-
-    #                print i,surfmax[i],patmax[i],colori
-                    lungtw=colorimage(dictPosImage[i],colori)
-
-                    img=cv2.add(img,lungtw)
-#                    cv2.imshow('a',imgbackg)
-#                    cv2.waitKey(0)
-#                    cv2.destroyAllWindows()
-                    cv2.rectangle(imgtext,(dictPosTextImage[i][0],dictPosTextImage[i][1]-15),(dictPosTextImage[i][0]+55,dictPosTextImage[i][1]),white,-1)
-                    cv2.putText(imgtext,str(surfmax[i])+'%',(dictPosTextImage[i][0],dictPosTextImage[i][1]),cv2.FONT_HERSHEY_PLAIN,1.2,grey,1,)
+                for key1 in usedclassif:
+                    cv2.setTrackbarPos(key1,'SliderVol',0)
+                    viewasked[key1]=True
             else:
+                   for key1 in usedclassif:
+#                    cv2.setTrackbarPos(key1,'SliderVol',0)
+                        viewasked[key1]=False 
+#                cv2.setTrackbarPos('All','SliderVol',0)
+            
+#                cv2.setTrackbarPos('All','SliderVol',0)
 
-
-                for i in listPosLung:
-                    olo=0
-                    for pat in usedclassif:
-#                        img = np.zeros((dimtabx,dimtaby,3), np.uint8)
-                        if viewasked[pat]==True:
-                             olo+=1
-                             vol=int(round(((dictP[pat]['all'][0]+dictP[pat]['all'][1] )*volelems),0)) 
-                             pervol=int(round(vol*100./voltotal,0))
-                             fillblank=''
-                             if vol<10:
-                                fillblank='   '
-                             elif vol <100:
-                                fillblank='  '
-                             elif vol <1000:
-                                fillblank=' '
-                             cv2.putText(imgtext,'V: '+str(vol)+'ml '+fillblank+str(pervol)+'%',(dictpostotal[pat][0],
-                                         dictpostotal[pat][1]),
-                                         cv2.FONT_HERSHEY_PLAIN,1.0,classifc[pat],1 )
-                             if olo==1:
-                                 if dictSurf[pat][i]>0:
-                                     colori=classifc[pat]
+            if noneview==1:
+                for key1 in usedclassif:
+                    cv2.setTrackbarPos(key1,'SliderVol',0)
+                    viewasked[key1]=False
+                cv2.setTrackbarPos('None','SliderVol',0) 
+                cv2.setTrackbarPos('All','SliderVol',0)
+                allview=0          
+            
+            if allview ==0:
+                for key1 in usedclassif:
+                    s = cv2.getTrackbarPos(key1,'SliderVol')  
+    #                if s==1:
+    #                    cv2.setTrackbarPos('All','SliderVol',0)                           
+                    if s==1 and viewasked[key1]==False:
+                        
+                        viewasked[key1]=True
+                        for key8 in usedclassif:
+                             if key8!= key1:
+                                cv2.setTrackbarPos(key8,'SliderVol',0)
+                                viewasked[key8]=False
+#                    elif s==0:
+#                        
+                  
+            
+            if tl != tlold:
+                tlold=tl
+                drawok=True   
+            for keyne in usedclassif:
+                if viewasked[keyne]!=viewaskedold[keyne]:
+                    viewaskedold[keyne]=viewasked[keyne]
+                    drawok=True
+            if drawok:    
+                print 'view'
+#                     print key1
+                dictP = {}  # dictionary with patch in lung segment    
+                dictSubP = {}  # dictionary with patch in subpleural
+                dictSurf = {}  # dictionary with patch volume in percentage
+                for patt in usedclassif:
+                    dictP = initdictP(dictP, patt)
+                    dictSubP = initdictP(dictSubP, patt)
+                thrprobaUIP=tl/100.0
+    
+                dictP, dictSubP, dictSurf= uipTree(dirf,patch_list_cross_slice,lungSegment,tabMed,dictPS,
+                                                   dictP,dictSubP,dictSurf,thrprobaUIP,patch_list_cross_slice_sub)
+                surfmax={}
+                patmax={}
+                
+                imgtext = np.zeros((dimtabx,dimtaby,3), np.uint8)
+                img = np.zeros((dimtabx,dimtaby,3), np.uint8)
+                cv2.putText(imgtext,'Threshold : '+str(tl),(50,50),cv2.FONT_HERSHEY_PLAIN,1,yellow,1,cv2.LINE_AA)
+                if allview==1:
+                    pervoltot=0
+                    for patt in usedclassif:
+                        vol=int(round(((dictP[patt]['all'][0]+dictP[patt]['all'][1] )*volelems),0))    
+                        pervol=int(round(vol*100./voltotal,0))
+                        pervoltot=pervoltot+pervol
+                        
+                        fillblank=''
+                        if vol<10:
+                            fillblank='   '
+                        elif vol <100:
+                            fillblank='  '
+                        elif vol <1000:
+                            fillblank=' '                        
+    
+    #                    print patt,vol
+                        cv2.putText(imgtext,'V: '+str(vol)+'ml '+fillblank+str(pervol)+'%',(dictpostotal[patt][0],dictpostotal[patt][1]),
+                                    cv2.FONT_HERSHEY_PLAIN,1.0,classifc[patt],1 )
+                    #total volume
+                    cv2.putText(imgtext,'Volume Total: '+str(voltotal)+'ml',(dictpostotal['total'][0],dictpostotal['total'][1]),
+                                    cv2.FONT_HERSHEY_PLAIN,1.0,white,1 )
+                    cv2.putText(imgtext,'Total unknown: '+str(100-pervoltot)+'%',(dictpostotal['totalh'][0],dictpostotal['totalh'][1]),
+                                    cv2.FONT_HERSHEY_PLAIN,1.0,white,1 )
+                    for i in listPosLung:
+    
+        #                dictPosImage[i]=colorimage(dictPosImage[i],black)
+                        surfmax[i],patmax[i] =findmaxvolume(dictSurf,i)
+    #                    print i,surfmax[i],patmax[i]
+    
+                        if surfmax[i]>0:
+                             colori=classifc[patmax[i]]
+                        else:
+                             colori=grey
+    
+        #                print i,surfmax[i],patmax[i],colori
+                        lungtw=colorimage(dictPosImage[i],colori)
+    
+                        img=cv2.add(img,lungtw)
+    #                    cv2.imshow('a',imgbackg)
+    #                    cv2.waitKey(0)
+    #                    cv2.destroyAllWindows()
+                        cv2.rectangle(imgtext,(dictPosTextImage[i][0],dictPosTextImage[i][1]-15),(dictPosTextImage[i][0]+55,dictPosTextImage[i][1]),white,-1)
+                        cv2.putText(imgtext,str(surfmax[i])+'%',(dictPosTextImage[i][0],dictPosTextImage[i][1]),cv2.FONT_HERSHEY_PLAIN,1.2,grey,1,)
+                else:
+    
+                    for i in listPosLung:
+                        olo=0
+                        for pat in usedclassif:
+    #                        img = np.zeros((dimtabx,dimtaby,3), np.uint8)
+                            if viewasked[pat]==True:
+                                 olo+=1
+                                 vol=int(round(((dictP[pat]['all'][0]+dictP[pat]['all'][1] )*volelems),0)) 
+                                 pervol=int(round(vol*100./voltotal,0))
+                                 fillblank=''
+                                 if vol<10:
+                                    fillblank='   '
+                                 elif vol <100:
+                                    fillblank='  '
+                                 elif vol <1000:
+                                    fillblank=' '
+                                 cv2.putText(imgtext,'V: '+str(vol)+'ml '+fillblank+str(pervol)+'%',(dictpostotal[pat][0],
+                                             dictpostotal[pat][1]),
+                                             cv2.FONT_HERSHEY_PLAIN,1.0,classifc[pat],1 )
+                                 if olo==1:
+                                     if dictSurf[pat][i]>0:
+                                         colori=classifc[pat]
+                                     else:
+                                         colori=grey
+                                     lungtw=colorimage(dictPosImage[i],colori)
+                                     img=cv2.add(img,lungtw)
+                                     cv2.rectangle(imgtext,(dictPosTextImage[i][0],dictPosTextImage[i][1]-15),(dictPosTextImage[i][0]+55,dictPosTextImage[i][1]),white,-1)
+                                     cv2.putText(imgtext,str(dictSurf[pat][i])+'%',(dictPosTextImage[i][0],dictPosTextImage[i][1]),cv2.FONT_HERSHEY_PLAIN,1.2,grey,1,)
                                  else:
-                                     colori=grey
-                                 lungtw=colorimage(dictPosImage[i],colori)
-                                 img=cv2.add(img,lungtw)
-                                 cv2.rectangle(imgtext,(dictPosTextImage[i][0],dictPosTextImage[i][1]-15),(dictPosTextImage[i][0]+55,dictPosTextImage[i][1]),white,-1)
-                                 cv2.putText(imgtext,str(dictSurf[pat][i])+'%',(dictPosTextImage[i][0],dictPosTextImage[i][1]),cv2.FONT_HERSHEY_PLAIN,1.2,grey,1,)
-                             else:
-                                 img = np.zeros((dimtabx,dimtaby,3), np.uint8)
-                                 imgtext = np.zeros((dimtabx,dimtaby,3), np.uint8)
-                             
-#                                 lungtw=colorimage(dictPosImage[i],grey)
-#                                 img=cv2.add(img,lungtw)
-                cv2.putText(imgtext,'Volume Total: '+str(voltotal)+'ml',(dictpostotal['total'][0],dictpostotal['total'][1]),
-                                cv2.FONT_HERSHEY_PLAIN,1.0,white,1 )
-
-            imgtowrite=cv2.add(imgtext,imgbackg)
-            imgray = cv2.cvtColor(imgtowrite,cv2.COLOR_BGR2GRAY)
-            np.putmask(imgray,imgray>0,255)
-            nthresh=cv2.bitwise_not(imgray)
-            vis1=cv2.bitwise_and(img,img,mask=nthresh)
-            imgtowrite=cv2.add(vis1,imgtowrite)
-#            imgtowrite=cv2.add(imgtext,imgtowrite)
-            imgtowrite=cv2.cvtColor(imgtowrite,cv2.COLOR_BGR2RGB)
+                                     img = np.zeros((dimtabx,dimtaby,3), np.uint8)
+                                     imgtext = np.zeros((dimtabx,dimtaby,3), np.uint8)
+                                 
+    #                                 lungtw=colorimage(dictPosImage[i],grey)
+    #                                 img=cv2.add(img,lungtw)
+                    cv2.putText(imgtext,'Volume Total: '+str(voltotal)+'ml',(dictpostotal['total'][0],dictpostotal['total'][1]),
+                                    cv2.FONT_HERSHEY_PLAIN,1.0,white,1 )
+    
+                imgtowrite=cv2.add(imgtext,imgbackg)
+                imgray = cv2.cvtColor(imgtowrite,cv2.COLOR_BGR2GRAY)
+                np.putmask(imgray,imgray>0,255)
+                nthresh=cv2.bitwise_not(imgray)
+                vis1=cv2.bitwise_and(img,img,mask=nthresh)
+                imgtowrite=cv2.add(vis1,imgtowrite)
+    #            imgtowrite=cv2.add(imgtext,imgtowrite)
+                imgtowrite=cv2.cvtColor(imgtowrite,cv2.COLOR_BGR2RGB)
+#            else:
+#             print 'no view'
             cv2.imshow('imageVol',imgtowrite)
 
             if quitl or cv2.waitKey(20) & 0xFF == 27 :
@@ -667,9 +707,13 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,patch_l
         nbdig=0
         numberentered={}
         initimg = np.zeros((dimtaby,dimtabx,3), np.uint8)
+        slicenumberold=0
+        tlold=0
+        viewaskedold={}
+        for keyne in usedclassif:
+                viewaskedold[keyne]=False
         while(1):
-            datav = np.zeros((200,500,3), np.uint8)
-            
+            datav = np.zeros((200,500,3), np.uint8)           
 
             cv2.setMouseCallback('imagecr',draw_circle,img)
             c = cv2.getTrackbarPos('Contrast','Slidercr')
@@ -695,8 +739,7 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,patch_l
                 numberfinal = min(slnt-2,numberfinal)
                 if numberfinal>0:
                     writeslice(numberfinal,initimg)
-                    
-            
+                        
             if nbdig>0 and key ==8:          
                 numberfinal=0
                 nbdig=nbdig-1   
@@ -705,9 +748,9 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,patch_l
     #            print numberfinal
                 if numberfinal>0:
                     writeslice(numberfinal,initimg)
-            if nbdig>0 and key ==13:
-#                print 'this is return'
-                if numberfinal>0:
+                else:
+                    cv2.rectangle(initimg, (5,40), (150,30), black, -1)
+            if nbdig>0 and key ==13 and numberfinal>0:
                     print numberfinal
                     numberfinal = min(slnt-2,numberfinal)
 #                    writeslice(numberfinal,initimg)
@@ -716,7 +759,7 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,patch_l
                     fl=numberfinal
                     numberfinal=0
                     nbdig=0
-                numberentered={}
+                    numberentered={}
             
             for key2 in usedclassif:
                 s = cv2.getTrackbarPos(key2,'Slidercr')
@@ -740,8 +783,21 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,patch_l
             imglumi=lumi(img,l)
             imcontrast=contrasti(imglumi,c)                
             imcontrast=cv2.cvtColor(imcontrast,cv2.COLOR_BGR2RGB)
-            
-            imgn,datav= drawpatch(datav,tl,dimtabx,dimtaby,slicenumber,viewasked,patch_list_cross_slice,patch_list_ref_slice,volumeroilocal)
+            drawok=False
+            if slicenumber != slicenumberold:
+                slicenumberold=slicenumber
+                drawok=True
+            if tl != tlold:
+                tlold=tl
+                drawok=True   
+            for keyne in usedclassif:
+                if viewasked[keyne]!=viewaskedold[keyne]:
+                    viewaskedold[keyne]=viewasked[keyne]
+#                    print 'change'
+                    drawok=True
+                    break            
+            if drawok:
+                imgn,datav= drawpatch(datav,tl,dimtabx,dimtaby,slicenumber,viewasked,patch_list_cross_slice,patch_list_ref_slice,volumeroilocal)
             
             cv2.putText(datav,'slice number :'+str(slicenumber),(10,180),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
             cv2.putText(datav,'patient Name :'+tail,(10,190),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
