@@ -51,7 +51,6 @@ surfelem= surfelemp*pxy/100 #surface of 1 patch in cm2
 volelemp=avgPixelSpacing*avgPixelSpacing*avgPixelSpacing # for 1 pixel
 volelem= volelemp*pxy/1000 #in ml, to multiply by slicepitch in mm
 
-
 modelname='ILD_CNN_model.h5'
 pathjs='../static'
 
@@ -69,6 +68,8 @@ dicompadirm='predict_dicom'
 dicomcross='cross'
 dicomfront='front'
 dicomcross_merge='merge'
+reportfile='report'
+reportdir='report'
 
 source_name='source'
 jpegpath='jpegpath'

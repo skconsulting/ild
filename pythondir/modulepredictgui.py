@@ -12,7 +12,7 @@ from param_pix_p import path_data,datafrontn,datacrossn,dimpavx,dimpavy,surfelem
 from param_pix_p import white,red,yellow,grey,black
 from param_pix_p import lungimage,source_name,sroi,sroi3d,scan_bmp,transbmp
 from param_pix_p import typei,typei1,typei2
-from param_pix_p import threeFileMerge,htmldir,threeFile,threeFile3d
+from param_pix_p import threeFileMerge,htmldir,threeFile,threeFile3d,reportdir,reportfile
 
 from param_pix_p import classifc,classif,usedclassif
 
@@ -24,6 +24,7 @@ import cPickle as pickle
 import os
 import cv2
 import numpy as np
+import datetime
 import webbrowser
 
 def lisdirprocess(d):
@@ -610,6 +611,151 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
 
     return ''
 
+def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
+                      lungSegment,tabMed,thrprobaUIP,patch_list_cross_slice_sub,slicepitch):
+    global  quitl,dimtabx,dimtaby,patchi,ix,iy
+    print 'openfichiervolume start',path_patient
+    volelems=volelem*slicepitch # in mml
+
+    print 'slicepitch',slicepitch
+    quitl=False
+    dirf=os.path.join(path_patient,listHug)
+   
+    dirfreport=os.path.join(dirf,reportdir)
+    if not os.path.exists(dirfreport):
+        os.mkdir(dirfreport)
+    t = datetime.datetime.now()
+    today = 'd_'+str(t.month)+'-'+str(t.day)+'-'+str(t.year)+'_'+str(t.hour)+'_'+str(t.minute)
+    repf=os.path.join(dirfreport,reportfile+str(today)+'.txt')
+
+    f=open(repf,'w')
+    f.write('report for patient :'+listHug+'\n')
+    f.write('date : '+str(t.month)+'-'+str(t.day)+'-'+str(t.year)+' at '+str(t.hour)+'h '+str(t.minute)+'mn\n')
+ 
+    dictP = {}  # dictionary with patch in lung segment
+    dictPS = {}  # dictionary with total patch area in lung segment
+    dictSubP = {}  # dictionary with patch in subpleural
+    dictSurf = {}  # dictionary with patch volume in percentage
+    poslr=['left','right']
+    posud=['upperset','middleset','lowerset','all']
+
+    dictPS['upperset'] = (0, 0)
+    dictPS['middleset'] = (0, 0)
+    dictPS['lowerset'] = (0, 0)
+    dictPS['all'] = (0, 0)
+    dictPS = calculSurface(dirf,patch_list_cross_slice, tabMed,lungSegment,dictPS)
+    voltotal=int(round(((dictPS['all'][0]+dictPS['all'][1])*volelems),0))
+
+    for patt in usedclassif:
+        dictP = initdictP(dictP, patt)
+        dictSubP = initdictP(dictSubP, patt)
+          
+    
+#                     print key1
+    dictP = {}  # dictionary with patch in lung segment    
+    dictSubP = {}  # dictionary with patch in subpleural
+    dictSurf = {}  # dictionary with patch volume in percentage
+    for patt in usedclassif:
+        dictP = initdictP(dictP, patt)
+        dictSubP = initdictP(dictSubP, patt)
+
+    dictP, dictSubP, dictSurf= uipTree(dirf,patch_list_cross_slice,lungSegment,tabMed,dictPS,
+                                       dictP,dictSubP,dictSurf,thrprobaUIP,patch_list_cross_slice_sub)
+
+    f.write('\n')
+    f.write('Threshold : '+str(int(100*thrprobaUIP))+'%\n')
+    f.write('-----------------------\n')
+    f.write('Total volume per pattern (all, left, right)\n')
+    
+    pervoltot=0
+    for patt in usedclassif:
+#        print dictSubP[patt]
+        vol=int(round(((dictP[patt]['all'][0]+dictP[patt]['all'][1] )*volelems),0))  
+        voll=int(round((dictP[patt]['all'][0]*volelems),0))  
+        volr=int(round((dictP[patt]['all'][1]*volelems),0))   
+        pervol=int(round(vol*100./voltotal,0))
+        pervoltot=pervoltot+pervol
+        
+        fil={}
+        fil['a']=(4-len(str(vol)))*' '
+        fil['l']=(4-len(str(voll)))*' '
+        fil['r']=(4-len(str(volr)))*' '
+
+#                    print patt,vol
+        lp=len(patt)
+        lc=18-lp
+        if pervol <10:
+            lpv='  '
+        elif pervol<100:
+            lpv=' '
+        elif pervol ==100:
+            lpv= ''
+        
+#        f.write(patt+': Volume: '+"%20s"%(str(vol))+'ml '+fillblank+str(pervol)+'%\n')
+#        f.write("%20s"%(patt)+': Volume: '+str(vol)+'ml '+fillblank+str(pervol)+'%\n')
+        f.write(patt+lc*' '+': Volume: '+str(vol)+'ml '+fil['a']+str(pervol)+lpv+'%'+'  Vol. left:'+str(voll)+
+                fil['l']+'ml'+'  Vol. right:'+str(volr)+fil['r']+'ml\n')
+
+    f.write('\n')
+    f.write('Volume Total:     '+str(voltotal)+'ml\n')
+    f.write('Total unknown:    '+str(100-pervoltot)+'%\n')
+    f.write('-----------------------\n')
+
+    f.write('Volume subpleural (% is in comparison with total pattern area in left or right)\n')
+
+    for patt in usedclassif:
+        
+        f.write(patt+'\n')
+        lp=len(patt)
+        lc=18-lp
+        volpatl=dictP[patt]['all'][0]*volelems
+        volpatr=dictP[patt]['all'][1]*volelems
+        for lr in poslr:
+            f.write('  '+lr+'\n')
+            if lr=='left':
+                
+                ind=0
+                voltotal=volpatl
+            else:
+                voltotal=volpatr
+                ind=1
+            for ud in posud:
+                
+                vol=round(dictSubP[patt][ud][ind]*volelems,1)    
+                if voltotal>0:
+                    pervol=int(round(vol*100./voltotal,0))
+                else:
+                        pervol=0
+                
+                fillblank=''
+                if vol<10:
+                    fillblank='    '
+                elif vol <100:
+                    fillblank='   '
+                elif vol <1000:
+                    fillblank='  '
+                elif vol <10000:
+                    fillblank=' '                        
+        
+        #                    print patt,vol
+                lp=len(patt)
+                lc=18-lp
+                if pervol <10:
+                    lpv='   '
+                elif pervol<100:
+                    lpv='  '
+                elif pervol ==100:
+                    lpv= ''
+                lud=len(ud)
+                clud=10-lud
+        #        f.write(patt+': Volume: '+"%20s"%(str(vol))+'ml '+fillblank+str(pervol)+'%\n')
+        #        f.write("%20s"%(patt)+': Volume: '+str(vol)+'ml '+fillblank+str(pervol)+'%\n')
+                f.write('    '+ud+clud*' '+': Volume: '+str(vol)+'ml '+fillblank+str(pervol)+lpv+'%\n')
+        f.write('---------\n')
+
+    f.close()
+    return ''
+
 def writeslice(num,menus):
         print 'write',num
         cv2.rectangle(menus, (5,60), (150,50), red, -1)
@@ -1050,6 +1196,18 @@ def visuarun(indata,path_patient):
             thrprobaUIP=float(indata['thrprobaUIP'])
             tabfromfront= pickle.load( open( os.path.join(path_data_dir,"tabfromfront"), "rb" ))
             messageout=openfichierfrpr(path_patient,tabfromfront,thrprobaUIP)
+    
+    elif viewstyle=='report':
+        datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "rb" ))
+        slicepitch=datarep[3]
+        patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice"), "rb" ))
+        patch_list_cross_slice_sub= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice_sub"), "rb" ))
+        lungSegment= pickle.load( open( os.path.join(path_data_dir,"lungSegment"), "rb" ))
+        tabMed= pickle.load( open( os.path.join(path_data_dir,"tabMed"), "rb" ))
+        thrprobaUIP=float(indata['thrprobaUIP'])
+                  
+        messageout = openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
+                      lungSegment,tabMed,thrprobaUIP,patch_list_cross_slice_sub,slicepitch)
     
     else:
             messageout='error: unrecognize view style'

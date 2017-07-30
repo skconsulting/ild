@@ -469,6 +469,7 @@ def visuDraw():
                 app.addRadioButton("planar","from cross predict",row,1)
                 row = app.getRow() # get current row
                 app.addRadioButton("planar","volume view from cross",row,0)
+                app.addRadioButton("planar","report")
             else:
                 row = app.getRow() # get current row
                 app.addLabel("l1", "Type of planar view,select one",row,0)
@@ -493,6 +494,8 @@ def visuDraw():
                 app.addRadioButton("planar","front view")
                 app.addRadioButton("planar","merge view")
                 app.addRadioButton("planar","front projected view")
+                app.addRadioButton("planar","report")
+                
                
             app.addHorizontalSeparator( colour="red")
             app.setSticky("n")
