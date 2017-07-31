@@ -305,7 +305,7 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
     global  quitl,dimtabx,dimtaby,patchi,ix,iy
     print 'openfichiervolume start',path_patient
     volelems=volelem*slicepitch # in mml
-    print slicepitch
+#    print slicepitch
     quitl=False
     dirf=os.path.join(path_patient,listHug)
     dictP = {}  # dictionary with patch in lung segment
@@ -354,7 +354,6 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
     lung_sub_middle_left=cv2.imread(os.path.join(path_img,'lung_sub_middle_left.bmp'),0)
     lung_sub_upper_left=cv2.imread(os.path.join(path_img,'lung_sub_upper_left.bmp'),0)
 
-
     dictPosImage={}
     dictPosTextImage={}
 
@@ -398,7 +397,6 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
     dimtabx=lung_left.shape[0]
     dimtaby=lung_left.shape[1]
     imgtext = np.zeros((dimtabx,dimtaby,3), np.uint8)
-
 
     cv2.namedWindow('imageVol',cv2.WINDOW_AUTOSIZE)
     cv2.namedWindow("SliderVol",cv2.WINDOW_NORMAL)
@@ -486,11 +484,9 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
                     viewaskedold[keyne]=viewasked[keyne]
                     drawok=True
             
-#                cv2.add(imgwip,imgtowrite)
             if drawok: 
                 cv2.putText(imgwip,'WIP',(10,10),cv2.FONT_HERSHEY_PLAIN,5,red,2,cv2.LINE_AA)
                 cv2.imshow('wip',imgwip)
-                print 'view'
 #                     print key1
                 dictP = {}  # dictionary with patch in lung segment    
                 dictSubP = {}  # dictionary with patch in subpleural
@@ -532,11 +528,8 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
                     cv2.putText(imgtext,'Total unknown: '+str(100-pervoltot)+'%',(dictpostotal['totalh'][0],dictpostotal['totalh'][1]),
                                     cv2.FONT_HERSHEY_PLAIN,1.0,white,1 )
                     for i in listPosLung:
-    
-        #                dictPosImage[i]=colorimage(dictPosImage[i],black)
-                        surfmax[i],patmax[i] =findmaxvolume(dictSurf,i)
-    #                    print i,surfmax[i],patmax[i]
-    
+
+                        surfmax[i],patmax[i] =findmaxvolume(dictSurf,i)    
                         if surfmax[i]>0:
                              colori=classifc[patmax[i]]
                         else:
@@ -617,7 +610,7 @@ def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
     print 'openfichiervolume start',path_patient
     volelems=volelem*slicepitch # in mml
 
-    print 'slicepitch',slicepitch
+#    print 'slicepitch',slicepitch
     quitl=False
     dirf=os.path.join(path_patient,listHug)
    
@@ -625,7 +618,7 @@ def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
     if not os.path.exists(dirfreport):
         os.mkdir(dirfreport)
     t = datetime.datetime.now()
-    today = 'd_'+str(t.month)+'-'+str(t.day)+'-'+str(t.year)+'_'+str(t.hour)+'_'+str(t.minute)
+    today = '_th'+str(thrprobaUIP)+'_'+str(t.month)+'-'+str(t.day)+'-'+str(t.year)+'_'+str(t.hour)+'_'+str(t.minute)
     repf=os.path.join(dirfreport,reportfile+str(today)+'.txt')
 
     f=open(repf,'w')
@@ -748,8 +741,7 @@ def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
                     lpv= ''
                 lud=len(ud)
                 clud=10-lud
-        #        f.write(patt+': Volume: '+"%20s"%(str(vol))+'ml '+fillblank+str(pervol)+'%\n')
-        #        f.write("%20s"%(patt)+': Volume: '+str(vol)+'ml '+fillblank+str(pervol)+'%\n')
+
                 f.write('    '+ud+clud*' '+': Volume: '+str(vol)+'ml '+fillblank+str(pervol)+lpv+'%\n')
         f.write('---------\n')
 
@@ -757,7 +749,7 @@ def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
     return ''
 
 def writeslice(num,menus):
-        print 'write',num
+#        print 'write',num
         cv2.rectangle(menus, (5,60), (150,50), red, -1)
         cv2.putText(menus,'Slice to visualize: '+str(num),(5,60),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
         
@@ -854,7 +846,6 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,patch_l
         while(1):
             imgwip = np.zeros((200,200,3), np.uint8)  
                       
-
             cv2.setMouseCallback('imagecr',draw_circle,img)
             c = cv2.getTrackbarPos('Contrast','Slidercr')
             l = cv2.getTrackbarPos('Brightness','Slidercr')
@@ -864,13 +855,13 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,patch_l
             noneview = cv2.getTrackbarPos('None','Slidercr')
             
             key = cv2.waitKey(1000)
-            if key != -1:
-                print key
+#            if key != -1:
+#                print key
                 
             if key >47 and key<58:
                 numberfinal=0
                 knum=key-48
-                print 'this is number',knum
+#                print 'this is number',knum
                 numberentered[nbdig]=knum
                 nbdig+=1
                 for i in range (nbdig):
@@ -892,7 +883,7 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,patch_l
                     cv2.rectangle(initimg, (5,60), (150,50), black, -1)
                     
             if nbdig>0 and key ==13 and numberfinal>0:
-                    print numberfinal
+#                    print numberfinal
                     numberfinal = min(slnt-1,numberfinal)
 #                    writeslice(numberfinal,initimg)
                     cv2.rectangle(initimg, (5,60), (150,50), black, -1)
@@ -950,7 +941,7 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,patch_l
 #                    print 'change'
                     drawok=True         
             if drawok:
-                print 'view'
+#                print 'view'
                 cv2.putText(imgwip,'WIP',(10,10),cv2.FONT_HERSHEY_PLAIN,5,red,2,cv2.LINE_AA)
                 cv2.imshow('wip',imgwip)
                 imgn,datav= drawpatch(tl,dimtabx,dimtaby,slicenumber,viewasked,patch_list_cross_slice,patch_list_ref_slice,volumeroilocal)
@@ -974,7 +965,7 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,patch_l
             if patchi :
                 cv2.putText(imgwip,'WIP',(10,10),cv2.FONT_HERSHEY_PLAIN,5,red,2,cv2.LINE_AA)
                 cv2.imshow('wip',imgwip)
-                print 'retrieve patch asked'
+#                print 'retrieve patch asked'
                 imgtext= retrievepatch(ix,iy,slicenumber,dimtabx,dimtaby,patch_list_cross_slice)
                 patchi=False
                 cv2.destroyWindow("wip")
@@ -999,7 +990,7 @@ def openfichierfrpr(path_patient,tabfromfront,thrprobaUIP):
 #    dirf=os.path.join(path_patient,listHug)
    
     slnt=len(tabfromfront)   
-    print slnt
+#    print slnt
     quitl=False
 
     dimtabx=tabfromfront[0].shape[0]
@@ -1042,13 +1033,13 @@ def openfichierfrpr(path_patient,tabfromfront,thrprobaUIP):
 #            key = cv2.waitKey(1000) & 0xFF
             key = cv2.waitKey(1000)
 
-            if key != -1:
-                print key
-                
+#            if key != -1:
+#                print key
+#                
             if key >47 and key<58:
                 numberfinal=0
                 knum=key-48
-                print 'this is number',knum
+#                print 'this is number',knum
                 numberentered[nbdig]=knum
                 nbdig+=1
                 for i in range (nbdig):
@@ -1070,7 +1061,7 @@ def openfichierfrpr(path_patient,tabfromfront,thrprobaUIP):
                     cv2.rectangle(initimg, (5,60), (150,50), black, -1)
                     
             if nbdig>0 and key ==13 and numberfinal>0:
-                    print numberfinal
+#                    print numberfinal
                     numberfinal = min(slnt-1,numberfinal)
 #                    writeslice(numberfinal,initimg)
                     cv2.rectangle(initimg, (5,60), (150,50), black, -1)

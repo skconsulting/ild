@@ -411,7 +411,7 @@ def delall():
     cv2.putText(menus,' Delete all polygons',(150,30),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
 
 def writeslice(num):
-    print 'write',num
+#    print 'write',num
     cv2.rectangle(menus, (5,470), (80,460), red, -1)
     cv2.putText(menus,'Slice: '+str(num),(5,470),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
 
@@ -506,12 +506,12 @@ def loop(slnt,pdirk,dirpath_patient,dirroi):
         key = cv2.waitKey(1000)
 #        key = cv2.waitKey(1000) & 0xFF
 
-        if key != -1:
-            print key
+#        if key != -1:
+#            print key
         if key >47 and key<58:
             numberfinal=0
             knum=key-48
-            print 'this is number',knum
+#            print 'this is number',knum
             
 #            numberentered=numberentered+knum*10**nbdig
             numberentered[nbdig]=knum
@@ -520,7 +520,7 @@ def loop(slnt,pdirk,dirpath_patient,dirroi):
             for i in range (nbdig):
                 numberfinal=numberfinal+numberentered[i]*10**(nbdig-1-i)   
             numberfinal = min(slnt-1,numberfinal)
-            print numberfinal
+#            print numberfinal
             if numberfinal>0:
                 writeslice(numberfinal)
             
@@ -580,11 +580,11 @@ def loop(slnt,pdirk,dirpath_patient,dirroi):
         px = cv2.getTrackbarPos('Panx','Slider2')
         py = cv2.getTrackbarPos('Pany','Slider2')
         if key ==13:
-                print 'this is return'
+#                print 'this is return'
                 if numberfinal>0:
                     
                     numberfinal=min(numberfinal,slnt-1)
-                    print numberfinal
+#                    print numberfinal
                     writeslice(numberfinal)
                     cv2.setTrackbarPos('Flip','Slider2' ,numberfinal-1)
                     cv2.rectangle(menus, (5,470), (80,460), black, -1)

@@ -135,11 +135,14 @@ def predict(btn):
 
 
 def visualisation(btn):
-    global app,continuevisu
+    global app,continuevisu,thrprobaUIP
 #    print(app.getListItems("list"))
     indata={}
 #    indata['subErosion']= app.getEntry("subErosion in mm")
     indata['thrprobaUIP']=app.getEntry("Threshold proba")
+    paramdict['thrprobaUIP']=indata['thrprobaUIP']
+    thrprobaUIP=indata['thrprobaUIP']
+    pickle.dump(paramdict,open( paramsaveDirf, "wb" ))
     indata['lispatientselect']=selectpatient
 
 #    indata['thrpatch']=app.getEntry("Percentage of pad Overlapp")
