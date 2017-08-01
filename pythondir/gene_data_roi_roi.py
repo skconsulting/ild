@@ -8,9 +8,9 @@ use ROI data to generate dat: 1 pattern after another + patchassembly
 """
 
 #from __future__ import print_function
-from param_pix import cwdtop,image_rows,image_cols,num_bit
+from param_pix import cwdtop,image_rows,image_cols
 
-from param_pix import remove_folder,normi,norm,preprocess_batch,fidclass
+from param_pix import remove_folder,normi,norm,fidclass
 from param_pix import classif
 
 import cPickle as pickle
@@ -25,8 +25,9 @@ from sklearn.model_selection import train_test_split
 
 
 nametopdummy='DUMMY' # name of top directory for dummy images with patches
-namesubdummy='TOPPATCH_lu_training'
-nsubsubdummy='lu_f'
+toppatchdummy= 'TOPPATCH' #for dummy scan with patches
+namesubdummy='lu_training' #for dummy scan with patches
+nsubsubdummy='lu_f'  #for dummy scan with patches
 
 nameHug='HUG'
 #nameHug='CHU'
@@ -35,16 +36,17 @@ nameHug='HUG'
 #extension for output dir
 #extendir='ILD_TXT'
 #extendir='UIP'
-extendir='ILD1'
+extendirdummy=namesubdummy
 #extendir='ILD9'
 #extendir='S3'
 #extendir='lu_predic'
 #extendir='small1'
 
-toppatch= 'TOPROI'
+toppatch= 'TOPROI' #for scan classified ROI
+extendir='ILD1'  #for scan classified ROI
 #toppatch= 'TOPPATCH'
 
-numberperset=4
+numberperset=20
 
 extendir2=''
 pklnum=1
@@ -63,6 +65,8 @@ pickel_dirsource=pickel_dirsource_root+'_'+extendir+sepextend2+extendir2
 #
 #(cwdtop,tail)=os.path.split(cwd)
 pickle_dir=os.path.join(cwdtop,pickel_dirsource)
+print 'path to write data for training',pickle_dir
+
 remove_folder(pickle_dir)
 os.mkdir(pickle_dir)
 
@@ -70,17 +74,17 @@ os.mkdir(pickle_dir)
 path_HUG=os.path.join(cwdtop,nameHug)
 patchesdirnametop = toppatch+'_'+extendir
 patchtoppath=os.path.join(path_HUG,patchesdirnametop)
-print 'work on :',patchtoppath
+print 'work on :',patchtoppath , 'for scan data input '
 patchpicklename='picklepatches.pkl'
 roipicklepath = 'roipicklepatches'
 picklepatches='picklepatches'
-picklepathdir =os.path.join(patchtoppath,roipicklepath)
+picklepathdir =os.path.join(patchtoppath,roipicklepath) # path scan classified by ROI
 pathdummy =os.path.join(cwdtop,nametopdummy)
-pathdummy =os.path.join(pathdummy,namesubdummy)
+pathdummy =os.path.join(pathdummy,toppatchdummy+'_'+namesubdummy)
 pathdummy =os.path.join(pathdummy,picklepatches)
-pathdummy =os.path.join(pathdummy,nsubsubdummy)
+pathdummy =os.path.join(pathdummy,nsubsubdummy) #path for dummy scan with patches
 
-print pathdummy
+print 'path for dummy images with patches' ,pathdummy
 lisdummy=os.listdir(pathdummy)
 lenlisdummy=len(lisdummy)
 print lenlisdummy
@@ -103,7 +107,9 @@ def readclassesdummy(lisdummy,indexdummy,indexaug):
     scan=geneaug(scanr,indexaug)
     maskr=readpkl[1][0]
     mask=geneaug(maskr,indexaug)
-    cv2.imview(str(indexdummy)+'maskdummy',mask)
+#    cv2.imshow(str(indexdummy)+'maskdummy',normi(mask))
+#    cv2.waitKey(0)
+#    cv2.destroyAllWindows()
     scanm=norm(scan)
 
     return scanm, mask   
@@ -120,7 +126,9 @@ def readclasses(pat,namepat,indexpat,indexaug):
     scan=geneaug(scanr,indexaug)
     maskr=readpkl[1][0]
     mask=geneaug(maskr,indexaug)
-    cv2.imview(pat+str(indexpat)+'mask',mask)
+#    cv2.imshow(pat+str(indexpat)+'mask',normi(mask))
+#    cv2.waitKey(0)
+#    cv2.destroyAllWindows()
     scanm=norm(scan)
 
     return scanm, mask  
@@ -142,29 +150,18 @@ def numbclasses(y):
     
     return int(nb_classes),class_weights
 
-def readclasses2(num_classes,X_trainl,y_trainl,ldummy):
+def readclasses2(num_classes,X_trainl,y_trainl):
 
     X_traini, X_testi, y_traini, y_testi = train_test_split(X_trainl,
                                         y_trainl,test_size=0.2, random_state=42)
     
     
-    if not ldummy:
-        X_train = np.asarray(np.expand_dims(X_traini,3)) 
+    
+    X_train = np.asarray(np.expand_dims(X_traini,3)) 
 
-        X_test = np.asarray(np.expand_dims(X_testi,3))  
-        if num_bit==3:
-            X_train=np.repeat(X_train,3,axis=3)
-            X_test=np.repeat(X_test,3,axis=3)
-            
-    else:
-        if num_bit==3:
-            X_train = np.asarray(X_traini) 
-            X_test = np.asarray(X_testi)  
-        else:
-            X_train = np.asarray(X_traini) 
-            X_train = np.expand_dims(X_train,3) 
-            X_test = np.asarray(X_testi)  
-            X_test = np.expand_dims(X_test,3)
+    X_test = np.asarray(np.expand_dims(X_testi,3))  
+
+
     y_train = np.array(y_traini)
     y_test = np.array(y_testi)
 #    print X_train.shape
@@ -336,13 +333,13 @@ for numw in range(num_classes):
 for key,value in class_weights.items():
    print key, fidclass (key,classif), value
 print('-' * 30)
-ooo
+
 for i in range(pklnum):
     print 'work on subset :',i
     diri=os.path.join(pickle_dir,str(i))
     remove_folder(diri)
     os.mkdir(diri)
-    X_train, X_test, y_train, y_test =readclasses2(num_classes,X_trainl[i],y_trainl[i],ldummy)
+    X_train, X_test, y_train, y_test =readclasses2(num_classes,X_trainl[i],y_trainl[i])
     print 'shape X_train :',X_train.shape
     print 'shape X_test :',X_test.shape
     print 'shape y_train :',y_train.shape
