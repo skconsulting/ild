@@ -4,13 +4,27 @@ Created on Tue May 02 15:03:33 2017
 
 @author: sylvain
 generate data from dicom images for segmentation roi -1st step
+include generation per pattern
 """
 #from __future__ import print_function
-from param_pix import *
+
+from param_pix import cwdtop,bmpname,lungmask,lungmask1,lungmaskbmp,image_rows,image_cols,typei,front_enabled
+from param_pix import transbmp,sroi,sourcedcm
+from param_pix import white
+from param_pix import remove_folder,normi,rsliceNum
+from param_pix import classifc,classif
+
+import cPickle as pickle
+import cv2
+import dicom
+import numpy as np
+import os
+
+
 
 nameHug='HUG'
 #nameHug='CHU'
-subHUG='ILD6'
+subHUG='ILD1'
 #subHUG='ILD_TXT'
 
 #subHUG='UIP'
@@ -19,7 +33,7 @@ path_HUG=os.path.join(cwdtop,nameHug)
 #path_HUG=os.path.join(nameHug,namsubHug)
 namedirtopc =os.path.join(path_HUG,subHUG)
 
-toppatch= 'TOPPATCH'
+toppatch= 'TOPROI'
 #extension for output dir
 
 extendir=subHUG
@@ -28,13 +42,17 @@ patchesdirnametop = toppatch+'_'+extendir
 patchtoppath=os.path.join(path_HUG,patchesdirnametop)
 patchpicklename='picklepatches.pkl'
 picklepath = 'picklepatches'
+roipicklepath = 'roipicklepatches'
 picklepathdir =os.path.join(patchtoppath,picklepath)
+roipicklepathdir =os.path.join(patchtoppath,roipicklepath)
 
 if not os.path.isdir(patchtoppath):
     os.mkdir(patchtoppath)
 
 if not os.path.isdir(picklepathdir):
     os.mkdir(picklepathdir)
+if not os.path.isdir(roipicklepathdir):
+    os.mkdir(roipicklepathdir)
 
 patchtoppath=os.path.join(path_HUG,patchesdirnametop)
 
@@ -188,6 +206,7 @@ def peparescan(numslice,tabs,tabl):
 
 def preparroi(namedirtopcf):
     (top,tail)=os.path.split(namedirtopcf)
+
     pathpicklepat=os.path.join(picklepathdir,tail)
     if not os.path.exists (pathpicklepat):
                 os.mkdir(pathpicklepat)
@@ -233,6 +252,14 @@ def preparroi(namedirtopcf):
         patpickle=(scan_list,mask_list)
 #        print len(scan_list)
         pickle.dump(patpickle, open(pathpicklepatfile, "wb"),protocol=-1)
+        for pat in tabroipat[num]:
+             roipathpicklepat=os.path.join(roipicklepathdir,pat)   
+             if not os.path.exists (roipathpicklepat):
+                os.mkdir(roipathpicklepat)
+
+             roipathpicklepatfile=os.path.join(roipathpicklepat,tail+'_'+patchpicklenamepatient)
+             pickle.dump(patpickle, open(roipathpicklepatfile, "wb"),protocol=-1)
+
 
 def create_test_data(namedirtopcf,pat,tabscan,tabsroi,tabslung):
     
@@ -261,6 +288,8 @@ def create_test_data(namedirtopcf,pat,tabscan,tabsroi,tabslung):
                 dsr=dsr.astype('int16')
                 if dsr.max()>0:
                     numslice=int(RefDs.InstanceNumber)
+                    if pat not in tabroipat[numslice]:
+                        tabroipat[numslice].append(pat) 
                     if numslice not in numsliceok:
                         numsliceok.append(numslice)
                         peparescan(numslice,tabscan[numslice],tabslung[numslice])
@@ -352,11 +381,15 @@ def create_test_data(namedirtopcf,pat,tabscan,tabsroi,tabslung):
                 pos=l.find('.')      
                 ext=l[pos:len(l)]
                 numslice=rsliceNum(l,'_',ext)
+#                print numslice,tabroipat[numslice]
+                if pat not in tabroipat[numslice]:
+                    tabroipat[numslice].append(pat)                    
                 if numslice not in numsliceok:
                     numsliceok.append(numslice)
+                    
                     peparescan(numslice,tabscan[numslice],tabslung[numslice])
                     tabroi[numslice]=np.zeros((tabscan.shape[1],tabscan.shape[2]), np.uint8)
-    
+#                print numslice,tabroipat[numslice]
     #            tabl=tabslung[numslice].copy()
     #            np.putmask(tabl,tabl>0,1)
     
@@ -420,8 +453,8 @@ for f in listdirc:
     namedirtopcf=os.path.join(namedirtopc,f)
     sroidir=os.path.join(namedirtopcf,sroi)
     if os.path.exists(sroidir):
-        shutil.rmtree(sroidir)
-        time.sleep(1)
+        remove_folder(sroidir)
+
     os.mkdir(sroidir)
     contenudir = [name for name in os.listdir(namedirtopcf) if name.find('.dcm')>0]
     if len(contenudir)>0:
@@ -438,16 +471,21 @@ for f in listdirc:
     datascan={}
     datamask={}
     tabroi={}
+    tabroipat={}
     listpatf[f]=contenupat
+    for i in range(slnt):
+        tabroipat[i]=[]
     for pat in contenupat:
         print 'work on :',pat
         if pat not in listpat:
             listpat.append(pat)
         tabsroi=create_test_data(namedirtopcf,pat,tabscan,tabsroi,tabslung)
     preparroi(namedirtopcf)
+    
     listslicetot[f]=len(numsliceok)
     print 'number of images :',len(numsliceok)
-
+    for i in range(slnt):
+        print i, tabroipat[i]
 print '-----------------------------'
 print 'list of patterns :',listpat
 print '-----------------------------'
@@ -475,4 +513,4 @@ for f in listdirc:
     file.write('--------------------\n')
 file.write ('number total of images: '+str(totsln))
 file.close()
-    
+
