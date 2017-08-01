@@ -1,11 +1,11 @@
 # coding: utf-8
-
+"""
 # # Plot Results of training
 # allows interpretation of impact of various parameters setting 
 # 
 # ### needs correct <file>.csv file
 
-
+"""
 import csv
 import os
 
@@ -17,7 +17,7 @@ cwd=os.getcwd()
 #namedirtop='pickle_ex/pickle_ex71'
 namedirtop='pickle'
 pfile = os.path.join(cwdtop,namedirtop)
-print pfile
+print 'path to get csv with train data',pfile
 # which file is the source
 fileis = [name for name in os.listdir(pfile) if ".csv" in name.lower()]
 #print filei

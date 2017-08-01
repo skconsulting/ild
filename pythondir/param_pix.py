@@ -389,13 +389,13 @@ def get_unet(num_class,num_bit,img_rows,img_cols):
 #    weights=w
     coefcon={}
     coefcon[1]=16 #32 for 320
-#coefcon[1]=16 #32 for 320
+#coefcon[1]=16 #32 for 320 #16 for gpu
     for i in range (2,6):
         coefcon[i]=coefcon[i-1]*2
     print coefcon
     dor={}
     dor[1]=0.04 #0.04 f
-#    dor[1]=0 #0.04 f
+#    dor[1]=0 #0.04 f #best
 
     for i in range (2,6):
         dor[i]=min(dor[i-1]*2,0.5)
@@ -563,7 +563,7 @@ def get_model(num_class,num_bit,img_rows,img_cols,mat_t_k,weights):
         model.compile(optimizer=Adam(lr=learning_rate), loss=mloss, metrics=['categorical_accuracy'])
 #        model.compile(optimizer=Adam(lr=learning_rate), loss='categorical_crossentropy', metrics=['categorical_accuracy'])
 #        model.compile(optimizer=Adam(lr=learning_rate), loss=dice_coef_loss, metrics=[dice_coef])
-    
+#        model.compile(optimizer=SGD(lr=learning_rate,decay=1e-6, momentum=0.9, nesterov=True), loss=mloss, metrics=['categorical_accuracy'])
     elif  modelName == 'fcn8s':
     #fcn8s
         USETVG = True

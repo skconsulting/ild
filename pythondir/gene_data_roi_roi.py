@@ -46,19 +46,19 @@ toppatch= 'TOPROI' #for scan classified ROI
 extendir='ILD1'  #for scan classified ROI
 #toppatch= 'TOPPATCH'
 
-numberperset=20
+numberperset=80
 
 extendir2=''
-pklnum=1
+pklnum=2
 pickel_dirsource_root='pickle'
 
 ##############################################################
 
-sepextend2=''
+sepextend2='ROI'
 if len (extendir2)>0:
     sepextend2='_'
 
-pickel_dirsource=pickel_dirsource_root+'_'+extendir+sepextend2+extendir2
+pickel_dirsource=pickel_dirsource_root+'_'+sepextend2+'_'+extendir
 
 
 #cwd=os.getcwd()
@@ -356,24 +356,27 @@ if debug:
     yt=pickle.load(open( os.path.join(diri,"y_train.pkl"), "rb" ))
     xcol=30
     ycol=20
-    print 'xt', xt.shape
-    print 'xt', xt[0][:,:,0].shape
-    print 'xt[3][0][0]',xt[0][0][0]
-    print 'xt[3][350][160]',xt[0][ycol][xcol]
-    print 'yt', yt.shape
-    print 'yt[3][0][0]',yt[0][0][0]
-    print 'yt[3][350][160]',yt[0][ycol][xcol]
-    print 'xt min max', xt[0].min(), xt[3].max()
-    print 'yt min max',yt[0].min(), yt[3].max()
-    plt.figure(figsize = (5, 5))
-    #    plt.subplot(1,3,1)
-    #    plt.title('image')
-    
-    #    plt.imshow( np.asarray(crpim) )
-    plt.subplot(1,2,1)
-    plt.title('image')
-    plt.imshow( normi(xt[0][:,:,0]*10).astype(np.uint8) )
-    plt.subplot(1,2,2)
-    plt.title('label')
-    plt.imshow( np.argmax(yt[0],axis=2) )
-    plt.show()
+    for i in range(4):
+        numtosee=i
+        print 'numtosee',numtosee
+        print 'xt', xt.shape
+        print 'xt', xt[0][:,:,0].shape
+        print 'xt[0][0][0]',xt[numtosee][0][0]
+        print 'xt[0][350][160]',xt[numtosee][ycol][xcol]
+        print 'yt', yt.shape
+        print 'yt[0][0][0]',yt[numtosee][0][0]
+        print 'yt[0][350][160]',yt[numtosee][ycol][xcol]
+        print 'xt min max', xt[numtosee].min(), xt[3].max()
+        print 'yt min max',yt[numtosee].min(), yt[3].max()
+        plt.figure(figsize = (5, 5))
+        #    plt.subplot(1,3,1)
+        #    plt.title('image')
+        
+        #    plt.imshow( np.asarray(crpim) )
+        plt.subplot(1,2,1)
+        plt.title(str(i)+'image')
+        plt.imshow( normi(xt[numtosee][:,:,0]*10).astype(np.uint8) )
+        plt.subplot(1,2,2)
+        plt.title(str(i)+'label')
+        plt.imshow( np.argmax(yt[numtosee],axis=2) )
+        plt.show()
