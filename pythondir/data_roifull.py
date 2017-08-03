@@ -3,7 +3,10 @@
 Created on Tue May 02 15:03:33 2017
 
 @author: sylvain
-generate data from dicom images for segmentation roi -1st step
+generate data from dicom images for segmentation roi 
+
+-1st step
+
 include generation per pattern
 """
 #from __future__ import print_function
@@ -24,16 +27,20 @@ import os
 
 nameHug='HUG'
 #nameHug='CHU'
-subHUG='ILD1'
+subHUG='ILD0'
 #subHUG='ILD_TXT'
+#subHUG='UIP2'
 
 #subHUG='UIP'
+toppatch= 'TOPROI'
+
+###############################################################
 
 path_HUG=os.path.join(cwdtop,nameHug)
 #path_HUG=os.path.join(nameHug,namsubHug)
 namedirtopc =os.path.join(path_HUG,subHUG)
 
-toppatch= 'TOPROI'
+
 #extension for output dir
 
 extendir=subHUG
@@ -253,6 +260,7 @@ def preparroi(namedirtopcf):
 #        print len(scan_list)
         pickle.dump(patpickle, open(pathpicklepatfile, "wb"),protocol=-1)
         for pat in tabroipat[num]:
+             listslicef[tail][num][pat]+=1
              roipathpicklepat=os.path.join(roipicklepathdir,pat)   
              if not os.path.exists (roipathpicklepat):
                 os.mkdir(roipathpicklepat)
@@ -443,11 +451,19 @@ listdirc= (os.listdir(namedirtopc))
 listpat=[]
 listslicetot={}
 listpatf={}
+listslicef={}
+totalnumperpat={}
+slntdict={}
+for pat in classif:
+    totalnumperpat[pat]=0
 print 'work on: ',namedirtopc
 for f in listdirc:
     print '-----------------'
     print('work on:',f)
     print '-----------------'
+    listslicef[f]={}
+    
+    
     numsliceok=[]
     listslicetot[f]=0
     namedirtopcf=os.path.join(namedirtopc,f)
@@ -465,7 +481,11 @@ for f in listdirc:
           contenudir = [name for name in os.listdir(namedirtopcfs) if name.find('.dcm')>0]
           slnt = genepara(contenudir,namedirtopcfs)
           tabscan,tabsroi,tabslung=genebmp(namedirtopcfs,contenudir,slnt,False)
-         
+    slntdict[f]=slnt
+    for slic in range(slnt):
+        listslicef[f][slic]={}
+        for pat in classif:
+            listslicef[f][slic][pat]=0
     contenupat = [name for name in os.listdir(namedirtopcf) if name in classif]
 
     datascan={}
@@ -483,34 +503,94 @@ for f in listdirc:
     preparroi(namedirtopcf)
     
     listslicetot[f]=len(numsliceok)
-    print 'number of images :',len(numsliceok)
+    print 'number of different images :',len(numsliceok)
     for i in range(slnt):
-        print i, tabroipat[i]
+#        print i, tabroipat[i]
+        for pat in classif:
+             if listslicef[f][i][pat] !=0:
+                 print  f,i, pat, listslicef[f][i][pat]
+                 totalnumperpat[pat]+=1
+                 
+
+pathpatfile=os.path.join(patchtoppath,'listpat.txt')
+filetw = open(pathpatfile,"w")                       
 print '-----------------------------'
 print 'list of patterns :',listpat
 print '-----------------------------'
+filetw.write('list of patterns :'+str(listpat)+'\n')    
+filetw.write( '-----------------------------\n')
+
+#for pat in classif:
+#    if totalnumperpat[pat] !=0:
+#        print 'number of images for ',pat, ' : ', totalnumperpat[pat]
+#        filetw.write('number of images for '+pat+ ' : '+ str(totalnumperpat[pat])+'\n')
+#print '-----------------------------'  
+#filetw.write( '-----------------------------\n')
 totsln=0
+npattot={}
+for pat in classif:
+        npattot[pat]=0
+      
 for f in listdirc:
+    npat={}
+    for pat in classif:
+        npat[pat]=0
     print 'patient :',f
-    print 'number of images :',listslicetot[f]
+    filetw.write('patient :'+f+'\n')
+    print 'number of diferent images :',listslicetot[f]
+    filetw.write('number of different  images :'+str(listslicetot[f]) +'\n')
     print 'list of patterns :',listpatf[f]
-    print '-----------------------------'
+    
+    filetw.write('list of patterns :'+str(listpatf[f]) +'\n')
+
+#    filetw.write( '-----------------------------\n')
+    for s in range(slntdict[f]):
+        for pat in classif:
+            if listslicef[f][s][pat] !=0:
+                npat[pat]+=1
+                npattot[pat]+=1
+    
+    
+   
     totsln=totsln+listslicetot[f]
-print 'number total of images',totsln
-pathpatfile=os.path.join(patchtoppath,'listpat.txt')
-file = open(pathpatfile,"w")
-pat='back_ground'
-file.write(pat+' '+str(classif[pat])+ '\n')
-pat='healthy'
-file.write(pat+' '+str(classif[pat])+ '\n')
-file.write('--------------------\n')
-for pat in listpat:
-    file.write(pat+' '+str(classif[pat])+ '\n')
-for f in listdirc:
-    file.write('patient :'+f+'\n')
-    file.write('number of images :'+str(listslicetot[f]) +'\n')
-    file.write('list of patterns :'+str(listpatf[f]) +'\n')
-    file.write('--------------------\n')
-file.write ('number total of images: '+str(totsln))
-file.close()
+    
+    
+    for pat in classif:
+         if npat[pat]!=0:
+             print 'number of images for :', pat,' :',  npat[pat] 
+             filetw.write('number of images for :'+ pat+' :'+  str(npat[pat])+'\n')
+             
+    filetw.write('--------------------\n')
+    print '-----------------------------'  
+    
+    
+print 'number total of different images',totsln
+filetw.write('number total of different images: '+str(totsln) +'\n')
+totimages=0
+for pat in classif:
+         if npattot[pat]!=0:
+             print 'number of images for :', pat,' :',  npattot[pat] 
+             filetw.write('number of images for :'+ pat+' :'+  str(npattot[pat])+'\n' )
+             totimages+=npattot[pat]
+             
+print ' total number of images :',totimages
+filetw.write('total number of images :'+str(totimages)+'\n')
+             
+#
+#pat='back_ground'
+#filetw.write(pat+' '+str(classif[pat])+ '\n')
+#pat='healthy'
+#filetw.write(pat+' '+str(classif[pat])+ '\n')
+#filetw.write('--------------------\n')
+#for pat in listpat:
+#    filetw.write(pat+' '+str(classif[pat])+ '\n')
+#for f in listdirc:
+#    filetw.write('patient :'+f+'\n')
+#    filetw.write('number of images :'+str(listslicetot[f]) +'\n')
+#    filetw.write('list of patterns :'+str(listpatf[f]) +'\n')
+#    filetw.write('--------------------\n')
+
+
+
+filetw.close()
 
