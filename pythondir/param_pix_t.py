@@ -10,7 +10,7 @@ version 1.0
 #import argparse
 #from appJar import gui
 #import cPickle as pickle
-
+import cPickle as pickle
 from numpy import argmax,amax
 import os
 
@@ -31,7 +31,7 @@ print keras.__version__
 print theano.__version__
 print ' keras.backend.image_data_format :',keras.backend.image_data_format()
 
-setdata='set3'
+setdata='set1'
 
 writeFile=False
 
@@ -162,8 +162,7 @@ dirpickle=os.path.join(cwdtop,path_pickle)
 
 classifnotvisu=['healthy',]
 
-if setdata=='set2':
-#set2
+if setdata=='set0':
     classif ={
         'consolidation':0,
         'HC':1,
@@ -197,9 +196,7 @@ if setdata=='set2':
         'GGpret',
         'bropret'
         ]
-elif setdata=='set3':
-
-#set3
+elif setdata=='set1':
     classif ={
         'consolidation':0,
         'HC':1,
@@ -346,3 +343,162 @@ def maxproba(proba):
     im=argmax(proba)
     m=amax(proba)
     return im,m
+
+#write the log file with label list
+def genelabelloc(patchtoppath,plabelfile,jpegpath):
+    eflabel=os.path.join(patchtoppath,plabelfile)
+    mflabel=open(eflabel,"w")
+    mflabel.write('label  _  localisation\n')
+    mflabel.write('======================\n')
+    categ=os.listdir(jpegpath)
+    for f in categ:
+        if f.find('.txt')>0 and f.find('_nbpat')>0:
+            ends=f.find('.txt')
+            debs=f.find('_')
+#            slnc=f[debs:ends]
+            debs=f.find('_',debs+1)
+            sln=f[debs:ends]
+            deb=f.find('_nbpat')
+            slncc=f[0:deb]
+            slncc=slncc+sln
+            ffle=os.path.join(jpegpath,f)
+            fr=open(ffle,'r')
+            t=fr.read()
+            fr.close()
+            debs=t.find(':')
+            ends=len(t)
+            nump= t[debs+1:ends]
+            mflabel.write(slncc+' number of patches: '+nump+'\n')
+            
+            listlabel={}
+            for pat in usedclassif:
+                 listlabel[pat]=0
+                
+            for f1 in categ:
+                
+    #                print 'f1',f1
+                if  f1.find(slncc+'_')==0 and f1.find('.txt')>0:
+
+    #                    print 'f1found',f1
+    
+                    debl=f1.find('slice_')
+                    debl1=f1.find('_',debl+1)
+                    debl2=f1.find('_',debl1+1)
+                    endl=f1.find('.txt')
+                    posend=endl
+                    while f1.find('_',posend)==-1:
+                        posend-=1
+                    debnumslice=posend+1
+                    label=f1[debl2+1:debnumslice-1]
+#                    print 'label',label
+    
+                    ffle1=os.path.join(jpegpath,f1)
+    #                    print ffle1
+                    fr1=open(ffle1,'r')
+                    t1=fr1.read()
+                    fr1.close()
+                    debsp=t1.find(':')
+                    endsp=  t1.find('\n')
+                    npo=int(t1[debsp+1:endsp])
+    #                print f1, label,npo,listlabel
+                    if label in listlabel:
+    
+                        listlabel[label]=listlabel[label]+npo
+                    else:
+                        listlabel[label]=npo
+    #        listslice.append(sln)
+            
+    #        print listlabel
+            for l in listlabel:
+    #           if l !=labelbg+'_'+locabg:
+                if listlabel[l]>0:
+                    mflabel.write(l+' '+str(listlabel[l])+'\n')
+            mflabel.write('---------------------'+'\n')   
+    mflabel.close()
+    
+def totalpat(jpegpath) :
+#   calculate number of patches
+    ofilepwt = open(os.path.join(jpegpath,'totalnbpat.txt'), 'w')
+    contenupatcht = os.listdir(jpegpath)
+    #print(contenupatcht)
+    npatcht=0
+    for npp in contenupatcht:
+    #    print('1',npp)
+        if npp.find('.txt')>0 and npp.find('nbp')<0:
+    #        print('2',npp)
+            ofilep = open(os.path.join(jpegpath,npp), 'r')
+            tp = ofilep.read()
+    #        print( tp)
+            ofilep.close()
+            numpos2=tp.find('number')
+            numposend2=len(tp)
+            #tp.find('\n',numpos2)
+            numposdeb2 = tp.find(':',numpos2)
+            nump2=tp[numposdeb2+1:numposend2].strip()
+    #        print(nump2)
+            numpn2=int(nump2)
+            npatcht=npatcht+numpn2
+    #        print(npatch)
+ 
+    ofilepwt.write('number of patches: '+str(npatcht))
+    ofilepwt.close()
+    
+    
+def totalnbpat (patchtoppath,picklepathdir):
+
+    #print 'dirlabel',dirlabel
+    #file for data pn patches
+    filepwt1 = open(os.path.join(patchtoppath,'totalpat.txt'), 'w')
+    dirlabel=os.walk( picklepathdir).next()[1]
+    #print filepwt
+    ntot=0;
+    labellist=[]
+    localist=[]
+    labeldict={}
+    for pat in usedclassif:
+        labeldict[pat]=0
+    for dirnam in dirlabel:
+        dirloca=os.path.join(picklepathdir,dirnam)
+    #    print ('dirloca', dirloca)
+        listdirloca=os.listdir(dirloca)
+        label=dirnam
+    #    print ('dirname', dirname)
+    
+        loca=''
+        if dirnam not in labellist:
+                labellist.append(dirnam)
+    #    print('label:',label)
+        for dlo in listdirloca:
+            loca=dlo
+            if dlo not in localist:
+                localist.append(dlo)
+    #        print('localisation:',loca)
+            if label=='' or loca =='':
+                print('not found:',dirnam)
+            subdir = os.path.join(dirloca,loca)
+    #        print 'subdir',subdir
+            n=0
+            listcwd=os.listdir(subdir)
+    #        print 'listcwd',listcwd
+            for ff in listcwd:
+                if ff.find('.pkl') >0 :
+                    p=pickle.load(open(os.path.join(subdir,ff),'rb'))
+                    lp=len(p)
+                    n=n+lp
+                    ntot=ntot+lp
+    #        print(label,loca,n)
+            labeldict[label]+=n
+            filepwt1.write('label: '+label+' localisation: '+loca+\
+            ' number of patches: '+str(n)+'\n')
+    filepwt1.write('-------------------------------------\n')
+    filepwt1.write('total number of patches: '+str(ntot)+'\n')
+
+    print('total number of patches: '+str(ntot))
+    for pat in usedclassif:
+        if labeldict[pat]>0:
+            filepwt1.write('label: '+pat+' : '+str(labeldict[pat])+'\n' )
+#            print('label: '+pat+' : '+str(labeldict[pat]))
+    filepwt1.close()
+    
+###############
+    

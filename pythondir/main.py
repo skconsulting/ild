@@ -1,5 +1,5 @@
 '''
-This is a part of the supplementary material uploaded along with 
+This is a part of the supplementary material uploaded along with
 the manuscript:
 
     "Lung Pattern Classification for Interstitial Lung Diseases Using a Deep Convolutional Neural Network"
@@ -20,19 +20,18 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-For more information please read the README file. The files can also 
+For more information please read the README file. The files can also
 be found at: https://github.com/intact-project/ild-cnn
 '''
 
 import ild_helpers as H
 import cnn_model as CNN
-import h5py
+import os
+
 import datetime
 t = datetime.datetime.now()
 today = str('_'+str(t.month)+'-'+str(t.day)+'-'+str(t.year)+'_'+str(t.hour)+'_'+str(t.minute))
-
-
-
+ptrainfile='trainlog.txt'
 # debug
 #from ipdb import set_trace as bp
 
@@ -55,33 +54,54 @@ train_params = {
      'res_alias': args.csv if args.csv else 'res' + str(today)     # csv results filename alias
 }
 
-#imageDepth=8191 #number of bits used on dicom images (2 **n) 13 bits
-imageDepth=28000 #for dct min dct=-12131 maxdct=27282 on HUG  '16_set1_13b2'
 
-#imageDepth=65535 #number of bits used on dicom images (2 **n) 13 bits
-#class_weights= (1.0, 26.5, 1.0,
-#                 2.27, 1.0,  1.04,  2.27,
-#                 180.5, 5.52,  84.7)
-# loading patch data
-(X_train, y_train), (X_val, y_val),class_weights= H.load_data(imageDepth)
+topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
+
+pickel_dirsource_root='pickle'
+pickel_dirsource_e='train_set' #path for data fort training
+pickel_dirsourcenum='1' #extensioon for path for data for training
+extendir2=''
+
+if len (extendir2)>0:
+    extendir2='_'+extendir2
+
+pickel_dirsource=pickel_dirsource_root+'_'+pickel_dirsource_e+'_'+pickel_dirsourcenum+extendir2
+
+patch_dir=os.path.join(topdir,pickel_dirsource)
+
+print patch_dir
+
+eferror=os.path.join(patch_dir,ptrainfile)
+errorfile = open(eferror, 'w')
+tn = datetime.datetime.now()
+todayn = str(tn.month)+'-'+str(tn.day)+'-'+str(tn.year)+' - '+str(tn.hour)+'h '+str(tn.minute)+'m'+'\n'
+errorfile.write('started ' +pickel_dirsource_root+'_'+pickel_dirsource_e+'_'+pickel_dirsourcenum+' at :'+todayn)
+
+errorfile.write('--------------------\n')
+errorfile.close()
+
+
+(X_train, y_train), (X_val, y_val),class_weights= H.load_data(patch_dir)
+
 
 # train a CNN model
 print 'class weights',class_weights
+
 model = CNN.train(X_train, y_train, X_val, y_val, train_params,class_weights)
 
 # store the model and weights
-H.store_model(model)
+#H.store_model(model)
 
 print 'training completed'
-print 'loading test set'
-
-# load test data set 
-(X_test, y_test) = H.load_testdata(imageDepth)
-
-# predict with test dataset and record results
-pred = CNN.prediction(X_test, y_test, train_params)
-
-print 'assessment with test set completed'
+#print 'loading test set'
+#
+## load test data set
+#(X_test, y_test) = H.load_testdata(imageDepth)
+#
+## predict with test dataset and record results
+#pred = CNN.prediction(X_test, y_test, train_params)
+#
+#print 'assessment with test set completed'
 
 
 

@@ -1,6 +1,6 @@
 # coding: utf-8
 #Sylvain Kritter 4 aout 2017
-"""Top file to generate patches from DICOM database HU method and pixkle out from CHU Grenoble
+"""Top file to generate patches from DICOM database HU method and pixle out from CHU Grenoble
 include new patterns when patterns are super imposed, cross view
 it is for cross view only
 version 1.0
@@ -12,7 +12,7 @@ S. Kritter
 
 from param_pix_t import classif,derivedpat,usedclassif,classifc,pxy
 from param_pix_t import dimpavx,dimpavy,typei,avgPixelSpacing,thrpatch,perrorfile,plabelfile
-from param_pix_t import remove_folder,normi
+from param_pix_t import remove_folder,normi,genelabelloc,totalpat,totalnbpat
 from param_pix_t import white
 from param_pix_t import patchpicklename,scan_bmp,lungmask,lungmask1,sroi,patchesdirname
 from param_pix_t import imagedirname,picklepath,source
@@ -35,14 +35,14 @@ import cPickle as pickle
 topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 namedirHUG = 'CHU'
 #subdir for roi in text
-subHUG='UIP1'
+subHUG='UIP'
 #subHUG='UIP_106530'
 #subHUG='UIPt'
 #subHUG='UIP_S14740'
 
 toppatch= 'TOPPATCH'
 #extension for output dir
-extendir='0'
+extendir='set1'
 #extendir='essai1'
 alreadyDone =['S4550','S106530','S107260','S139430','S145210','S14740','S15440','S1830','S28200','S335940','S359750']
 alreadyDone =[]
@@ -105,9 +105,9 @@ errorfile = open(eferror, 'a')
 tn = datetime.datetime.now()
 todayn = str(tn.month)+'-'+str(tn.day)+'-'+str(tn.year)+' - '+str(tn.hour)+'h '+str(tn.minute)+'m'+'\n'
 errorfile.write('started ' +namedirHUG+' '+subHUG+' at :'+todayn)
+errorfile.close()
 #filetowrite=os.path.join(namedirtopc,'lislabel.txt')
-eflabel=os.path.join(patchtoppath,plabelfile)
-mflabel=open(eflabel,"w")
+
 #end customisation part for datataprep
 #######################################################
 
@@ -277,7 +277,8 @@ def pavs (dirName,pat,slnt,dimtabx,dimtaby):
 #    print pathpicklepat
     pathpicklepatl=os.path.join(pathpicklepat,locabg)
 
-    patchpicklenamepatient=namedirHUG+'_'+tail+'_'+patchpicklename
+#    patchpicklenamepatient=namedirHUG+'_'+tail+'_'+patchpicklename
+    patchpicklenamepatient=namedirHUG+'_'+subHUG+'_'+tail+'_'+patchpicklename
 
     pathpicklepatfile=os.path.join(pathpicklepatl,patchpicklenamepatient)
     if not os.path.exists(pathpicklepat):
@@ -469,6 +470,11 @@ npat=0
 for f in listdirc:
 #    f = 'S335940'
     print('work on:',f)
+    errorfile = open(eferror, 'a')
+    tn = datetime.datetime.now()
+    todayn = str(tn.month)+'-'+str(tn.day)+'-'+str(tn.year)+' - '+str(tn.hour)+'h '+str(tn.minute)+'m'+'\n'
+    errorfile.write('started ' +namedirHUG+' '+f+' at :'+todayn)
+    errorfile.close()
 
     nbpf=0
     listsliceok=[]
@@ -520,153 +526,19 @@ for f in listdirc:
 
     ofilepw.write('number of patches: '+str(nbpf))
     ofilepw.close()
-    errorfile.write('completed : '+namedirHUG+' '+f+'\n')
+    errorfile = open(eferror, 'a')
+    tn = datetime.datetime.now()
+    todayn = str(tn.month)+'-'+str(tn.day)+'-'+str(tn.year)+' - '+str(tn.hour)+'h '+str(tn.minute)+'m'+'\n'
+    errorfile.write('completed ' +f+' at :'+todayn)
+    errorfile.close()
 #
 
 #################################################################
-#   calculate number of patches
-contenupatcht = os.listdir(jpegpath)
-#print(contenupatcht)
-npatcht=0
-for npp in contenupatcht:
-#    print('1',npp)
-    if npp.find('.txt')>0 and npp.find('nbp')<0:
-#        print('2',npp)
-        ofilep = open(os.path.join(jpegpath,npp), 'r')
-        tp = ofilep.read()
-#        print( tp)
-        ofilep.close()
-        numpos2=tp.find('number')
-        numposend2=len(tp)
-        #tp.find('\n',numpos2)
-        numposdeb2 = tp.find(':',numpos2)
-        nump2=tp[numposdeb2+1:numposend2].strip()
-#        print(nump2)
-        numpn2=int(nump2)
-        npatcht=npatcht+numpn2
-#        print(npatch)
-ofilepwt = open(os.path.join(jpegpath,'totalnbpat.txt'), 'w')
-ofilepwt.write('number of patches: '+str(npatcht))
-ofilepwt.close()
-#mf.write('================================\n')
-#mf.write('number of datasets:'+str(npat)+'\n')
-#mf.close()
-#################################################################
-#data statistics on paches
-#nametopc=os.path.join(cwd,namedirtop)
-dirlabel=os.walk( picklepathdir).next()[1]
-#print 'dirlabel',dirlabel
-#file for data pn patches
-filepwt = open(os.path.join(patchtoppath,'totalnbpat.txt'), 'a')
-#print filepwt
-ntot=0;
-
-labellist=[]
-localist=[]
-
-for dirnam in dirlabel:
-    dirloca=os.path.join(picklepathdir,dirnam)
-#    print ('dirloca', dirloca)
-    listdirloca=os.listdir(dirloca)
-    label=dirnam
-#    print ('dirname', dirname)
-
-    loca=''
-    if dirnam not in labellist:
-            labellist.append(dirnam)
-#    print('label:',label)
-    for dlo in listdirloca:
-        loca=dlo
-        if dlo not in localist:
-            localist.append(dlo)
-#        print('localisation:',loca)
-        if label=='' or loca =='':
-            print('not found:',dirnam)
-        subdir = os.path.join(dirloca,loca)
-        print 'subdir',subdir
-        n=0
-        listcwd=os.listdir(subdir)
-        print 'listcwd',listcwd
-        for ff in listcwd:
-            if ff.find('.pkl') >0 :
-                p=pickle.load(open(os.path.join(subdir,ff),'rb'))
-                lp=len(p)
-                n=n+lp
-                ntot=ntot+lp
-        print(label,loca,n)
-        filepwt.write('label: '+label+' localisation: '+loca+\
-        ' number of patches: '+str(n)+'\n')
-filepwt.close()
-#listslice=[]
-#write the log file with label list
-mflabel.write('label  _  localisation\n')
-mflabel.write('======================\n')
-categ=os.listdir(jpegpath)
-for f in categ:
-
-    if f.find('.txt')>0 and f.find('_nbpat')>0:
-        ends=f.find('.txt')
-        debs=f.find('_')
-        slnc=f[debs:ends]
-        debs=f.find('_',debs+1)
-        sln=f[debs:ends]
-        deb=f.find('_nbpat')
-        slncc=f[0:deb]
-        slncc=slncc+sln
-        listlabel={}
-
-        for f1 in categ:
-#                print 'f1',f1
-                if  f1.find(sln+'_')>0 and f1.find('.txt')>0:
-#                    print 'f1found',f1
-
-                    debl=f1.find('slice_')
-                    debl1=f1.find('_',debl+1)
-                    debl2=f1.find('_',debl1+1)
-                    endl=f1.find('.txt')
-                    posend=endl
-                    while f1.find('_',posend)==-1:
-                        posend-=1
-                    debnumslice=posend+1
-                    label=f1[debl2+1:debnumslice-1]
-#                    print 'label',label
-
-                    ffle1=os.path.join(jpegpath,f1)
-#                    print ffle1
-                    fr1=open(ffle1,'r')
-                    t1=fr1.read()
-                    fr1.close()
-                    debsp=t1.find(':')
-                    endsp=  t1.find('\n')
-                    npo=int(t1[debsp+1:endsp])
-#                    print label,npo,listlabel
-                    if label in listlabel:
-
-                        listlabel[label]=listlabel[label]+npo
-                    else:
-                        listlabel[label]=npo
-#                    print label,npo,listlabel
-#        listslice.append(sln)
-        ffle=os.path.join(jpegpath,f)
-#        print ffle
-        fr=open(ffle,'r')
-        t=fr.read()
-        fr.close()
-        debs=t.find(':')
-        ends=len(t)
-        nump= t[debs+1:ends]
-#        print nump,sln
-        mflabel.write(slncc+' number of patches: '+nump+'\n')
-#        print listlabel
-        for l in listlabel:
-#           print l,l.find(labelbg)
-#           if l.find(labelbg<0:
-#             print l
-             mflabel.write(l+' '+str(listlabel[l])+'\n')
-        mflabel.write('---------------------'+'\n')
-mflabel.close()
-
+totalpat(jpegpath)
+totalnbpat (patchtoppath,picklepathdir)
+genelabelloc(patchtoppath,plabelfile,jpegpath)
 ##########################################################
+errorfile = open(eferror, 'a')
 tn = datetime.datetime.now()
 todayn = str(tn.month)+'-'+str(tn.day)+'-'+str(tn.year)+' - '+str(tn.hour)+'h '+str(tn.minute)+'m'+'\n'
 errorfile.write('completed ' +namedirHUG+' '+subHUG+' at :'+todayn)

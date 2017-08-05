@@ -2,12 +2,15 @@
 #Sylvain Kritter 4 august 2017
 """
 Top file to generate patches from DICOM database Geneva with HU
+this is cross view only
+no support of superimposed patterns
+first step
 
 version 1.0
 """
 from param_pix_t import classif,usedclassif,classifc
 from param_pix_t import dimpavx,dimpavy,typei,avgPixelSpacing,thrpatch
-from param_pix_t import remove_folder,normi
+from param_pix_t import remove_folder,normi,genelabelloc,totalpat,totalnbpat
 from param_pix_t import white
 from param_pix_t import patchpicklename,scan_bmp,lungmask,lungmask1,lungmaskbmp,sroi,patchesdirname
 from param_pix_t import imagedirname,picklepath,patchfile,source,perrorfile,plabelfile
@@ -29,15 +32,15 @@ import scipy.misc
 topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 namedirHUG = 'HUG'
 #subdir for roi in text
-#subHUG='ILD_TXT'
-subHUG='ILD3721'
+subHUG='ILD_TXT'
+#subHUG='ILD3721'
 #subHUG='ILD3'
 #subHUG='ILDt'
 
 toppatch= 'TOPPATCH'
 #extension for output dir
 #extendir='essaihug'
-extendir='0'
+extendir='set1'
 
 
 #labelEnh=('consolidation','reticulation,air_trapping','bronchiectasis','cysts')
@@ -95,10 +98,10 @@ errorfile = open(eferror, 'a')
 tn = datetime.datetime.now()
 todayn = str(tn.month)+'-'+str(tn.day)+'-'+str(tn.year)+' - '+str(tn.hour)+'h '+str(tn.minute)+'m'+'\n'
 errorfile.write('started ' +namedirHUG+' '+subHUG+' at :'+todayn)
+errorfile.close()
 
 #filetowrite=os.path.join(namedirtopc,'lislabel.txt')
-eflabel=os.path.join(patchtoppath,plabelfile)
-mflabel=open(eflabel,"w")
+
 
 
 def genepara(namedirtopcf):
@@ -285,7 +288,7 @@ def pavs (namedirtopcf,label,loca,slnt,numslice):
     pathpicklepat=os.path.join(picklepathdir,label)
 #    print pathpicklepat
     pathpicklepatl=os.path.join(pathpicklepat,loca)
-    patchpicklenamepatient=namedirHUG+'_'+tail+'_'+numslice+'_'+patchpicklename
+    patchpicklenamepatient=namedirHUG+'_'+subHUG+'_'+tail+'_'+numslice+'_'+patchpicklename
 
     pathpicklepatfile=os.path.join(pathpicklepatl,patchpicklenamepatient)
     if not os.path.exists(pathpicklepat):
@@ -509,6 +512,11 @@ npat=0
 for f in listdirc:
     #f = 35
     print('work on:',f)
+    errorfile = open(eferror, 'a')
+    tn = datetime.datetime.now()
+    todayn = str(tn.month)+'-'+str(tn.day)+'-'+str(tn.year)+' - '+str(tn.hour)+'h '+str(tn.minute)+'m'+'\n'
+    errorfile.write('started ' +f+' at :'+todayn)
+    errorfile.close()
     nbpf=0
 #    tabroipat[pat][scannumb]
 
@@ -646,153 +654,22 @@ for f in listdirc:
     ofilepw = open(os.path.join(jpegpath,namenbpat), 'w')
     ofilepw.write('number of patches: '+str(nbpf))
     ofilepw.close()
-    errorfile.write('completed : '+namedirHUG+' '+f+'\n')
+
+    errorfile = open(eferror, 'a')
+    tn = datetime.datetime.now()
+    todayn = str(tn.month)+'-'+str(tn.day)+'-'+str(tn.year)+' - '+str(tn.hour)+'h '+str(tn.minute)+'m'+'\n'
+    errorfile.write('completed ' +f+' at :'+todayn)
+    errorfile.close()
+
 
 
 #################################################################
-#   calculate number of patches
-contenupatcht = os.listdir(jpegpath)
-#print 'jpegpath',jpegpath
-#print 'contenupatcht', contenupatcht
-npatcht=0
-for npp in contenupatcht:
-#    print('1',npp)
-    if npp.find('.txt')>0 and npp.find('nbp')<0:
-#        print('2',npp)
-        ofilep = open(os.path.join(jpegpath,npp), 'r')
-
-        tp = ofilep.read()
-#        print( tp)
-        ofilep.close()
-        numpos2=tp.find('number')
-        numposend2=len(tp)
-        #tp.find('\n',numpos2)
-        numposdeb2 = tp.find(':',numpos2)
-        nump2=tp[numposdeb2+1:numposend2].strip()
-#        print(nump2)
-        numpn2=int(nump2)
-        npatcht=npatcht+numpn2
-#        print(npatch)
-
-ofilepwt = open(os.path.join(jpegpath,'totalnbpat.txt'), 'w')
-ofilepwt.write('number of patches: '+str(npatcht))
-ofilepwt.close()
-
-#mf.write('================================\n')
-#mf.write('number of datasets:'+str(npat)+'\n')
-#mf.close()
-#################################################################
-#data statistics on paches
-#nametopc=os.path.join(cwd,namedirtop)
-dirlabel=os.walk( patchpath).next()[1]
-#print patchpath,patchtoppath
-#file for data pn patches
-eftpt=os.path.join(patchtoppath,'totalnbpat.txt')
-filepwt = open(eftpt, 'w')
-ntot=0;
-
-labellist=[]
-localist=[]
-
-dirlabelr=os.listdir(picklepathdir)
-#print dirlabelr
-for label in dirlabelr:
-    dirloca=os.path.join(picklepathdir,label)
-#    print ('dirloca', dirloca)
-    listdirloca=os.listdir(dirloca)
-
-    loca=''
-    if label not in labellist:
-            labellist.append(label)
-
-    for loca in listdirloca:
-
-#        print('loca:',loca)
-        if loca not in localist:
-            localist.append(loca)
-#        print('localisation:',loca)
-        if label=='' or loca =='':
-            print('not found:',label,' ',loca)
-        subdir = os.path.join(dirloca,loca)
-#    print(subdir)
-        n=0
-        listcwd=os.listdir(subdir)
-
-        for ff in listcwd:
-            if ff.find('.pkl') >0 :
-                p=pickle.load(open(os.path.join(subdir,ff),'rb'))
-                lp=len(p)
-                n=n+lp
-                ntot=ntot+lp
-#
-        filepwt.write('label: '+label+' localisation: '+loca+\
-        ' number of patches: '+str(n)+'\n')
-filepwt.close()
-
-#write the log file with label list
-mflabel.write('label  _  localisation\n')
-mflabel.write('======================\n')
-categ=os.listdir(jpegpath)
-for f in categ:
-    if f.find('.txt')>0 and f.find('_nbpat')>0:
-        ends=f.find('.txt')
-        debs=f.find('_')
-        slnc=f[debs:ends]
-        debs=f.find('_',debs+1)
-        sln=f[debs:ends]
-        deb=f.find('_nbpat')
-        slncc=f[0:deb]
-        slncc=slncc+sln
-        listlabel={}
-        
-        for f1 in categ:
-#                print 'f1',f1
-                if  f1.find(sln+'_')>0 and f1.find('.txt')>0:
-#                    print 'f1found',f1
-
-                    debl=f1.find('slice_')
-                    debl1=f1.find('_',debl+1)
-                    debl2=f1.find('_',debl1+1)
-                    endl=f1.find('.txt')
-                    posend=endl
-                    while f1.find('_',posend)==-1:
-                        posend-=1
-                    debnumslice=posend+1
-                    label=f1[debl2+1:debnumslice-1]
-#                    print 'label',label
-
-                    ffle1=os.path.join(jpegpath,f1)
-#                    print ffle1
-                    fr1=open(ffle1,'r')
-                    t1=fr1.read()
-                    fr1.close()
-                    debsp=t1.find(':')
-                    endsp=  t1.find('\n')
-                    npo=int(t1[debsp+1:endsp])
-#                    print label,npo,listlabel
-                    if label in listlabel:
-
-                        listlabel[label]=listlabel[label]+npo
-                    else:
-                        listlabel[label]=npo
-        listslice.append(sln)
-        ffle=os.path.join(jpegpath,f)
-        fr=open(ffle,'r')
-        t=fr.read()
-        fr.close()
-        debs=t.find(':')
-        ends=len(t)
-        nump= t[debs+1:ends]
-        mflabel.write(slncc+' number of patches: '+nump+'\n')
-#        print listlabel
-        for l in listlabel:
-#           if l !=labelbg+'_'+locabg:
-             mflabel.write(l+' '+str(listlabel[l])+'\n')
-        mflabel.write('---------------------'+'\n')
-
-mflabel.close()
+totalpat(jpegpath)
+totalnbpat (patchtoppath,picklepathdir)
+genelabelloc(patchtoppath,plabelfile,jpegpath)
 
 ##########################################################
+errorfile = open(eferror, 'a')
 tn = datetime.datetime.now()
 todayn = str(tn.month)+'-'+str(tn.day)+'-'+str(tn.year)+' - '+str(tn.hour)+'h '+str(tn.minute)+'m'+'\n'
 errorfile.write('completed ' +namedirHUG+' '+subHUG+' at :'+todayn)
