@@ -23,6 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 For more information please read the README file. The files can also
 be found at: https://github.com/intact-project/ild-cnn
 '''
+from param_pix_t import remove_folder
 
 import ild_helpers as H
 import cnn_model as CNN
@@ -48,7 +49,7 @@ train_params = {
      'cl' : int(args.cl) if args.cl else 5,            # Number of Convolutional Layers normal=5
      'opt': args.opt if args.opt else 'Adam',          # Optimizer: SGD, Adagrad, Adam
      'obj': args.obj if args.obj else 'ce',            # Minimization Objective: mse, ce
-     'patience' : args.pat if args.pat else 100
+     'patience' : args.pat if args.pat else 2
      ,       # Patience parameter for early stoping
      'tolerance': args.tol if args.tol else 1.005,     # Tolerance parameter for early stoping [default: 1.005, checks if > 0.5%]
      'res_alias': args.csv if args.csv else 'res' + str(today)     # csv results filename alias
@@ -57,21 +58,29 @@ train_params = {
 
 topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 
+#path with data for training
 pickel_dirsource_root='pickle'
 pickel_dirsource_e='train_set' #path for data fort training
 pickel_dirsourcenum='1' #extensioon for path for data for training
 extendir2=''
 
+
+pickleStore='pickle'
 if len (extendir2)>0:
     extendir2='_'+extendir2
 
 pickel_dirsource=pickel_dirsource_root+'_'+pickel_dirsource_e+'_'+pickel_dirsourcenum+extendir2
 
 patch_dir=os.path.join(topdir,pickel_dirsource)
+patch_dir_store=os.path.join(patch_dir,pickleStore)
 
-print patch_dir
+print 'patch dir source : ',patch_dir #path with data for training
+print 'weight dir store : ',patch_dir_store #path with weights after training
+remove_folder(patch_dir_store)
+os.mkdir(patch_dir_store)
 
-eferror=os.path.join(patch_dir,ptrainfile)
+
+eferror=os.path.join(patch_dir_store,ptrainfile)
 errorfile = open(eferror, 'w')
 tn = datetime.datetime.now()
 todayn = str(tn.month)+'-'+str(tn.day)+'-'+str(tn.year)+' - '+str(tn.hour)+'h '+str(tn.minute)+'m'+'\n'
@@ -80,29 +89,13 @@ errorfile.write('started ' +pickel_dirsource_root+'_'+pickel_dirsource_e+'_'+pic
 errorfile.write('--------------------\n')
 errorfile.close()
 
-
-(X_train, y_train), (X_val, y_val),class_weights= H.load_data(patch_dir)
-
+(X_train, y_train), (X_val, y_val)= H.load_data(patch_dir)
 
 # train a CNN model
-print 'class weights',class_weights
 
-model = CNN.train(X_train, y_train, X_val, y_val, train_params,class_weights)
-
-# store the model and weights
-#H.store_model(model)
+model = CNN.train(X_train, y_train, X_val, y_val, train_params,eferror,patch_dir_store)
 
 print 'training completed'
-#print 'loading test set'
-#
-## load test data set
-#(X_test, y_test) = H.load_testdata(imageDepth)
-#
-## predict with test dataset and record results
-#pred = CNN.prediction(X_test, y_test, train_params)
-#
-#print 'assessment with test set completed'
-
 
 
 

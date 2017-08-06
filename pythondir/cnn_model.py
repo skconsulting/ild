@@ -31,6 +31,7 @@ version 1.1
 # debug
 # from ipdb import set_trace as bp
 import ild_helpers as H
+import datetime
 
 import cv2
 import os
@@ -42,6 +43,8 @@ from keras.layers.convolutional import Conv2D, MaxPooling2D,AveragePooling2D
 from keras.layers.advanced_activations import LeakyReLU
 from keras.layers.core import Dense, Dropout, Flatten
 from keras.models import load_model
+from keras.callbacks import ModelCheckpoint,ReduceLROnPlateau,CSVLogger,EarlyStopping
+from keras.optimizers import Adam
 
 def get_FeatureMaps(L, policy, constant=17):
     return {
@@ -138,23 +141,41 @@ def get_model(input_shape, output_shape, params):
 #    decay = 1.e-6
 #    lr=0.001
 #    lr =1.0
-    
+#    learning_rate=1e-4
     # Compile model and select optimizer and objective function
     if params['opt'] not in ['Adam', 'Adagrad', 'SGD']:
         sys.exit('Wrong optimizer: Please select one of the following. Adam, Adagrad, SGD')
     if get_Obj(params['obj']) not in ['MSE', 'categorical_crossentropy']:
         sys.exit('Wrong Objective: Please select one of the following. MSE, categorical_crossentropy')
     model.compile(optimizer=params['opt'], loss=get_Obj(params['obj']))
+#    model.compile(optimizer=Adam(lr=learning_rate), loss='categorical_crossentropy', metrics=['categorical_accuracy'])
+
 
 #    optimizer=keras.optimizers.Adam(lr=lr,decay=decay)
 #    model.compile(optimizer=optimizer, loss=get_Obj(params['obj']))
 
     return model
 
-def train(x_train, y_train, x_val, y_val, params,class_weights):
+def load_model_set(pickle_dir_train):
+    listmodel=[name for name in os.listdir(pickle_dir_train) if name.find('weights')==0]
+    print 'load_model',pickle_dir_train
+    ordlist=[]
+    for name in listmodel:
+        nfc=os.path.join(pickle_dir_train,name)
+        nbs = os.path.getmtime(nfc)
+        tt=(name,nbs)
+        ordlist.append(tt)
+    ordlistc=sorted(ordlist,key=lambda col:col[1],reverse=True)
+    namelast=ordlistc[0][0]
+    namelastc=os.path.join(pickle_dir_train,namelast)
+    print 'last weights :',namelast   
+    return namelastc
+
+
+def train(x_train, y_train, x_val, y_val, params,eferror,patch_dir_store):
     ''' TODO: documentation '''
 
-    
+    filew = open(eferror, 'a')
     # Parameters String used for saving the files
     parameters_str = str('_d' + str(params['do']).replace('.', '') +
                          '_a' + str(params['a']).replace('.', '') + 
@@ -180,6 +201,22 @@ def train(x_train, y_train, x_val, y_val, params,class_weights):
     print('[Optimizer] \t\t->\t'+ params['opt'])
     print('[Objective] \t\t->\t'+ get_Obj(params['obj']))
     print('[Results filename] \t->\t'+str(params['res_alias']+parameters_str+'.txt'))
+    
+    
+    filew.write('[Dropout Param] \t->\t'+str(params['do'])+'\n')
+    filew.write('[Alpha Param] \t\t->\t'+str(params['a'])+'\n')
+    filew.write('[Multiplier] \t\t->\t'+str(params['k'])+'\n')
+    filew.write('[Patience] \t\t->\t'+str(params['patience'])+'\n')
+    filew.write('[Tolerance] \t\t->\t'+str(params['tolerance'])+'\n')
+    filew.write('[Input Scale Factor] \t->\t'+str(params['s'])+'\n')
+    filew.write('[Pooling Type] \t\t->\t'+ params['pt']+'\n')
+    filew.write('[Pooling Factor] \t->\t'+str(str(params['pf']*100)+'%')+'\n')
+    filew.write('[Feature Maps Policy] \t->\t'+ params['fp']+'\n')
+    filew.write('[Optimizer] \t\t->\t'+ params['opt']+'\n')
+    filew.write('[Objective] \t\t->\t'+ get_Obj(params['obj'])+'\n')
+    filew.write('[Results filename] \t->\t'+str(params['res_alias']+parameters_str+'.txt')+'\n')
+    
+
 
     # Rescale Input Images
     if params['s'] != 1:
@@ -190,65 +227,75 @@ def train(x_train, y_train, x_val, y_val, params,class_weights):
         print('[New Data Shape]\t->\tX: '+str(x_train.shape))
 
     print 'x_shape is: ', x_train.shape
-
-    if os.path.exists('../pickle/ILD_CNN_model.h5'):
-        print 'model exist'   
-        model= load_model('../pickle/ILD_CNN_model.h5')
+    print ('x min max is : '+ str(x_train.min())+' '+str(x_train.max()))
+    filew.write('x_shape is : '+ str(x_train.shape)+'\n')
+    filew.write('x min max is : '+ str(x_train.min())+' '+str(x_train.max())+'\n')
+    
+    listmodel=[name for name in os.listdir(patch_dir_store) if name.find('weights')==0]
+    if len(listmodel)>0:
+         print 'load weight found from last training'
+         
+         namelastc=load_model_set(patch_dir_store) 
+         filew.write('load weight found from last training\n'+namelastc+'\n')
+         model= load_model(namelastc)
     else:
-        print 'restart from 0'   
-        model = get_model(x_train.shape, y_train.shape, params)
-    # Counters-buffers
-    maxf         = 0
-    maxacc       = 0
-    maxit        = 0
-    maxtrainloss = 0
-    maxvaloss    = np.inf
-    best_model   = model
-    it           = 0    
-    p            = 0
+         print 'first training to be run'
+         filew.write('first training to be run\n')
+         model = get_model(x_train.shape, y_train.shape, params)
+    
+    filew.write ('-----------------\n')
+    nb_epoch_i_p=params['patience']
+
     # Open file to write the results
-    open('../pickle/' + params['res_alias']+parameters_str+'.csv', 'a').write('Epoch, Val_fscore, Val_acc, Train_loss, Val_loss\n')
-    open('../pickle/' + params['res_alias']+parameters_str+'-Best.csv', 'a').write('Epoch, Val_fscore, Val_acc, Train_loss, Val_loss\n')
+    rese=os.path.join(patch_dir_store,params['res_alias']+parameters_str+'.csv')
 
     print ('starting the loop of training with number of patience = ', params['patience'])
-    
-    while p < params['patience']:
-        p += 1
+    tn = datetime.datetime.now()
+    todayn = str(tn.month)+'-'+str(tn.day)+'-'+str(tn.year)+' - '+str(tn.hour)+'h '+str(tn.minute)+'m'+'\n'
+  
+    filew.write ('starting the loop of training with number of patience = '+ str(params['patience'])+'\n')
+    filew.write('started at :'+todayn)
 
-        # Fit the model for one epoch
-        print('Epoch: ' + str(it))
-        history = model.fit(x_train, y_train, batch_size=250, epochs=1, validation_data=(x_val,y_val), shuffle=True,class_weight=class_weights)
-
-    
+    early_stopping=EarlyStopping(monitor='val_loss', patience=15, verbose=1,min_delta=0.01)                     
+    model_checkpoint = ModelCheckpoint(os.path.join(patch_dir_store,'weights.{epoch:02d}-{val_loss:.2f}.hdf5'), 
+                                monitor='val_loss', save_best_only=True,save_weights_only=True)       
+    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2,
+                      patience=5, min_lr=1e-5)
+    csv_logger = CSVLogger(rese,append=True)
+    filew.close()
+    model.fit(x_train, y_train, batch_size=250, epochs=nb_epoch_i_p, verbose =1,
+                      validation_data=(x_val,y_val),
+#                      class_weight=class_weights,
+                      callbacks=[model_checkpoint,reduce_lr,csv_logger,early_stopping]  )
         # Evaluate models
-        y_score = model.predict(x_val, batch_size=1050)
-
-        fscore, acc, cm = H.evaluate(np.argmax(y_val, axis=1), np.argmax(y_score, axis=1))
-        print('Val F-score: '+str(fscore)+'\tVal acc: '+str(acc))
-
-        # Write results in file
-        open('../pickle/' + params['res_alias']+parameters_str+'.csv', 'a').write(str(str(it)+', '+str(fscore)+', '+str(acc)+', '+str(np.max(history.history['loss']))+', '+str(np.max(history.history['val_loss']))+'\n'))
-
-        # check if current state of the model is the best and write evaluation metrics to file
-        if fscore > maxf*params['tolerance']:  # if fscore > maxf*params['tolerance']:
-            print 'fscore is still bigger than last iterations fscore + 5%'
-            #p            = 0  # restore patience counter
-            best_model   = model  # store current model state
-            maxf         = fscore 
-            maxacc       = acc
-            maxit        = it
-            maxtrainloss = np.max(history.history['loss'])
-            maxvaloss    = np.max(history.history['val_loss'])
-
-            print(np.round(100*cm/np.sum(cm,axis=1).astype(float)))
-
-            open('../pickle/' + params['res_alias']+parameters_str+'-Best.csv', 'a').write(str(str(maxit)+', '+str(maxf)+', '+str(maxacc)+', '+str(maxtrainloss)+', '+str(maxvaloss)+'\n'))
-            H.store_model(best_model)
-        it += 1
+    filew = open(eferror, 'a')
     
-    print('Max: fscore:', maxf, 'acc:', maxacc, 'epoch: ', maxit, 'train loss: ', maxtrainloss, 'validation loss: ', maxvaloss)
+    print 'predict model'
+    y_score = model.predict(x_val, batch_size=1050)
 
-    return best_model
+    fscore, acc, cm = H.evaluate(np.argmax(y_val, axis=1), np.argmax(y_score, axis=1))
+    print('Val F-score: '+str(fscore)+'\tVal acc: '+str(acc))
+    print cm
+
+    print '---------------'
+    tn = datetime.datetime.now()
+    todayn = str(tn.month)+'-'+str(tn.day)+'-'+str(tn.year)+' - '+str(tn.hour)+'h '+str(tn.minute)+'m'+'\n'
+    filew.write('  finished at :'+todayn)
+    filew.write('  f-score is : '+ str(fscore)+'\n')
+    filew.write('  accuray is : '+ str(acc)+'\n')
+    filew.write('  confusion matrix\n')
+    n= cm.shape[0]
+    for cmi in range (0,n): 
+
+        filew.write('  ')
+        for j in range (0,n):
+            filew.write(str(cm[cmi][j])+' ')
+        filew.write('\n')
+    
+    filew.write('------------------------------------------\n')
+    filew.close()
+    print ('------------------------')
+    return model
 
 
 def prediction(X_test, y_test, params):

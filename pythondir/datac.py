@@ -17,29 +17,30 @@ from param_pix_t import picklepath,perrorfile
 
 import datetime
 import os
-import cv2
+#import cv2
 #import dircache
 import sys
-import shutil
-from scipy import misc
-from scipy.fftpack import fft,dct,idct
+
+#from scipy import misc
+#from scipy.fftpack import fft,dct,idct
 import numpy as np
 import sklearn
 from sklearn.model_selection import train_test_split
 import cPickle as pickle
 #from sklearn.cross_validation import train_test_split
 import random
-import math
-from math import *
+#import math
+#from math import *
 print sklearn.__version__
 
 #####################################################################
-#define the working directory
+#define the working directory for input patches
 topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 
 toppatch= 'TOPPATCH'
 extendir='set1'
 
+#define the directory to store data
 pickel_dirsource_root='pickle'
 pickel_dirsource_e='train_set' #path for data fort training
 pickel_dirsourcenum='1' #extensioon for path for data for training
@@ -90,36 +91,24 @@ tn = datetime.datetime.now()
 todayn = str(tn.month)+'-'+str(tn.day)+'-'+str(tn.year)+' - '+str(tn.hour)+'h '+str(tn.minute)+'m'+'\n'
 errorfile.write('started ' +toppatch+' '+extendir+' at :'+todayn)
 errorfile.write('numbe of loops :'+str(augf)+'\n')
+print 'number of loops:', augf
 errorfile.write('--------------------\n')
 
 
 
 #define a dictionary with labels
-#classif={}
-#i=0
+patclass={}
 
 print '----------'
 #define another dictionaries to calculate the number of label
-patclass={}
 classNumberInit={}
-classNumberNewTr={}
-classNumberNewV={}
-classNumberNewTe={}
-actualClasses=[]
-classAugm={}
 
 for f in usedclassif:
     classNumberInit[f]=0
-    classNumberNewTr[f]=0
-    classNumberNewV[f]=0
-    classNumberNewTe[f]=0
-    classAugm[f]=1
     patclass[f]=[]
 
 # list all directories under patch directory. They are representing the categories
-
 category_list=os.walk( patch_dirsource).next()[1]
-
 
 # print what we have as categories
 print ('all classes in database:',category_list)
@@ -149,7 +138,6 @@ for category in usedclassifFinal:
         for filei in image_files:
                 patclass[category]=patclass[category]+pickle.load(open(os.path.join(subCategory_dir,filei),'rb'))
         classNumberInit[category]=len(patclass[category])
-
 
 
 total=0
@@ -189,9 +177,9 @@ print ('min number of patches : ',str(minl), ' for:' ,patmin)
 errorfile.write ('min number of patches  : '+str(minl)+ ' for:' +patmin+'\n')
 print '----------'
 errorfile.write('--------------------\n')
+
 print ' maximum number of patches ratio'
 classConso={}
-
 for f in usedclassifFinal:
     classConso[f]=float(maxl)/max(1,classNumberInit[f])
 #for f in usedclassifFinal:
@@ -257,7 +245,7 @@ def genf(features_train,labels_train):
     for aug in range(augf):
             for numgen in range(maxl*numclass):
                     pat =usedclassifFinal[numgen%numclass]
-                    numberscan=classNumberNewTr[pat]
+                    numberscan=classNumberInit[pat]
                     indexpatc[pat] =  indexpatc[pat]%numberscan
                     indexpat=indexpatc[pat]
                     indexpatc[pat]=indexpatc[pat]+1
@@ -270,14 +258,13 @@ def genf(features_train,labels_train):
     return feature,label
 
                 
-
+####################################################################################
 # main program
-mindct=0
-maxdct=0
+
 feature_d ={}
 label_d={}
-dataset_listTe ={}
-print ('---')
+
+print ('----------------')
 for f in usedclassifFinal:
      print('genedata from images work on :',f)
      feature_d[f],label_d[f]=genedata(f)
@@ -286,65 +273,37 @@ for f in usedclassifFinal:
 for f in usedclassifFinal:
     print 'initial ',f,len(feature_d[f]),len(label_d[f])
 
-features_train={}
-features_test={}
-labels_train={}
-labels_test={}
-
-print ('---')
-for f in usedclassifFinal:
-    print 'split data',f
-    features_train[f], features_test[f], labels_train[f], labels_test[f] = train_test_split(feature_d[f],label_d[f],test_size=0.1, random_state=42)
-
-print ('---')
-errorfile.write('Number of data and label per pattern\n')
-for f in usedclassifFinal:
-    classNumberNewTr[f]=len(features_train[f])
-    print 'train',f,len(features_train[f]),len(labels_train[f])
-    errorfile.write('train '+f+' '+str(len(features_train[f]))+' '+str(len(labels_train[f]))+'\n')   
-    print 'test',f,len(features_test[f]),len(labels_test[f])
-    errorfile.write('test '+f+' '+str(len(features_test[f]))+' '+str(len(labels_test[f]))+'\n')
-    print ('----')
-    errorfile.write('--------------------\n')
-errorfile.write('--------------------\n')
-
-
+print ('----------------')    
 features_aug_train=[]
 labels_aug_train=[]
 
-features_aug_train,labels_aug_train= genf(features_train,labels_train)
+print 'augmentation '
+features_aug_train,labels_aug_train= genf(feature_d,label_d)
 
-print 'training after augmentation ',len(features_aug_train),len(labels_aug_train)
+print 'data after augmentation ',len(features_aug_train),len(labels_aug_train)
+errorfile.write('data after augmentation '+' '+str(len(features_aug_train))+' '+str(len(labels_aug_train))+'\n')   
+errorfile.write('--------------------\n')    
 
+print 'split data'
+features_train, features_test, labels_train, labels_test = train_test_split(features_aug_train,
+                                                        labels_aug_train,test_size=0.1, random_state=42)
 
-features_train_final=[]
-features_test_final=[]
-labels_train_final=[]
-labels_test_final=[]
-
-features_train_final=features_aug_train
-labels_train_final=labels_aug_train
-
-for f in usedclassifFinal:
-    features_test_final=features_test_final+features_test[f]
-
-    labels_test_final=labels_test_final+labels_test[f]
-
-
-print '---------------------------'
-print ('training set:',len(features_train_final),len(labels_train_final))
-errorfile.write('training set: '+' '+str(len(features_train_final))+' '+str(len(labels_train_final))+'\n')   
-print ('test set:',len(features_test_final),len(labels_test_final))
-errorfile.write('test set: '+' '+str(len(features_test_final))+' '+str(len(labels_test_final))+'\n')   
+print ('------------')
+errorfile.write('Number of data and label \n')
+print ('Number of data and label ')
+print 'train',len(features_train),len(labels_train)
+errorfile.write('train '+' '+str(len(features_train))+' '+str(len(labels_train))+'\n')   
+print 'test',len(features_test),len(labels_test)
+errorfile.write('test '+' '+str(len(features_test))+' '+str(len(labels_test))+'\n')
+print ('----')
 errorfile.write('--------------------\n')
 
-
 # transform dataset list into numpy array
-X_train = np.array(features_train_final)
-y_train = np.array(labels_train_final)
+X_train = np.array(features_train)
+y_train = np.array(labels_train)
 
-X_test = np.array(features_test_final)
-y_test = np.array(labels_test_final)
+X_test = np.array(features_test)
+y_test = np.array(labels_test)
 
 print '-----------FINAL----------------'
 print ('Xtrain :',X_train.shape)
