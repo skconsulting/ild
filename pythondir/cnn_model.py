@@ -30,13 +30,15 @@ version 1.1
 '''
 # debug
 # from ipdb import set_trace as bp
+from param_pix_t import modelname
 import ild_helpers as H
 import datetime
-
+import cPickle as pickle
 import cv2
 import os
 import numpy as np
 import sys
+#import h5py
 
 from keras.models import Sequential
 from keras.layers.convolutional import Conv2D, MaxPooling2D,AveragePooling2D
@@ -44,6 +46,7 @@ from keras.layers.advanced_activations import LeakyReLU
 from keras.layers.core import Dense, Dropout, Flatten
 from keras.models import load_model
 from keras.callbacks import ModelCheckpoint,ReduceLROnPlateau,CSVLogger,EarlyStopping
+from keras.models import model_from_json
 from keras.optimizers import Adam
 
 def get_FeatureMaps(L, policy, constant=17):
@@ -58,7 +61,7 @@ def get_Obj(obj):
         'ce': 'categorical_crossentropy',
     }[obj]
 
-def get_model(input_shape, output_shape, params):
+def get_model(input_shape, output_shape, params,filew):
 
     print('compiling model...')
         
@@ -141,15 +144,16 @@ def get_model(input_shape, output_shape, params):
 #    decay = 1.e-6
 #    lr=0.001
 #    lr =1.0
-#    learning_rate=1e-4
+    learning_rate=1e-4
     # Compile model and select optimizer and objective function
     if params['opt'] not in ['Adam', 'Adagrad', 'SGD']:
         sys.exit('Wrong optimizer: Please select one of the following. Adam, Adagrad, SGD')
     if get_Obj(params['obj']) not in ['MSE', 'categorical_crossentropy']:
         sys.exit('Wrong Objective: Please select one of the following. MSE, categorical_crossentropy')
-    model.compile(optimizer=params['opt'], loss=get_Obj(params['obj']))
-#    model.compile(optimizer=Adam(lr=learning_rate), loss='categorical_crossentropy', metrics=['categorical_accuracy'])
-
+#    model.compile(optimizer=params['opt'], loss=get_Obj(params['obj']), metrics=['categorical_accuracy'])
+    model.compile(optimizer=Adam(lr=learning_rate), loss='categorical_crossentropy', metrics=['categorical_accuracy'])
+    filew.write ('learning rate:'+str(learning_rate)+'\n')
+    print ('learning rate:'+str(learning_rate))
 
 #    optimizer=keras.optimizers.Adam(lr=lr,decay=decay)
 #    model.compile(optimizer=optimizer, loss=get_Obj(params['obj']))
@@ -232,16 +236,30 @@ def train(x_train, y_train, x_val, y_val, params,eferror,patch_dir_store):
     filew.write('x min max is : '+ str(x_train.min())+' '+str(x_train.max())+'\n')
     
     listmodel=[name for name in os.listdir(patch_dir_store) if name.find('weights')==0]
+#    model = get_model(x_train.shape, y_train.shape, params)
+    
+
     if len(listmodel)>0:
-         print 'load weight found from last training'
-         
+         json_string1=pickle.load( open(os.path.join(patch_dir_store,modelname), "rb"))
+         model = model_from_json(json_string1)
+         learning_rate=1e-4
+         filew.write ('learning rate:'+str(learning_rate)+'\n')
+         print ('learning rate:'+str(learning_rate))
+#         model.compile(optimizer=params['opt'], loss=get_Obj(params['obj']), metrics=['categorical_accuracy'])
+         model.compile(optimizer=Adam(lr=learning_rate), loss='categorical_crossentropy', metrics=['categorical_accuracy'])
+
          namelastc=load_model_set(patch_dir_store) 
+         print 'load weight found from last training',namelastc
          filew.write('load weight found from last training\n'+namelastc+'\n')
-         model= load_model(namelastc)
+#         model= load_model(namelastc)
+         model.load_weights(namelastc)  
+
+
+
     else:
          print 'first training to be run'
          filew.write('first training to be run\n')
-         model = get_model(x_train.shape, y_train.shape, params)
+         model = get_model(x_train.shape, y_train.shape, params,filew)
     
     filew.write ('-----------------\n')
     nb_epoch_i_p=params['patience']
@@ -250,20 +268,21 @@ def train(x_train, y_train, x_val, y_val, params,eferror,patch_dir_store):
     rese=os.path.join(patch_dir_store,params['res_alias']+parameters_str+'.csv')
 
     print ('starting the loop of training with number of patience = ', params['patience'])
-    tn = datetime.datetime.now()
-    todayn = str(tn.month)+'-'+str(tn.day)+'-'+str(tn.year)+' - '+str(tn.hour)+'h '+str(tn.minute)+'m'+'\n'
-  
+    t = datetime.datetime.now()
+#    todayn = str(tn.month)+'-'+str(tn.day)+'-'+str(tn.year)+' - '+str(tn.hour)+'h '+str(tn.minute)+'m'+'\n' 
+    todayn = str('m'+str(t.month)+'_d'+str(t.day)+'_y'+str(t.year)+'_'+str(t.hour)+'h_'+str(t.minute)+'m'+'\n')
+    today = str('m'+str(t.month)+'_d'+str(t.day)+'_y'+str(t.year)+'_'+str(t.hour)+'h_'+str(t.minute)+'m')
     filew.write ('starting the loop of training with number of patience = '+ str(params['patience'])+'\n')
     filew.write('started at :'+todayn)
 
-    early_stopping=EarlyStopping(monitor='val_loss', patience=15, verbose=1,min_delta=0.01)                     
-    model_checkpoint = ModelCheckpoint(os.path.join(patch_dir_store,'weights.{epoch:02d}-{val_loss:.2f}.hdf5'), 
+    early_stopping=EarlyStopping(monitor='val_loss', patience=15, verbose=1,min_delta=0.005,mode='min')                     
+    model_checkpoint = ModelCheckpoint(os.path.join(patch_dir_store,'weights_'+today+'.{epoch:02d}-{val_loss:.2f}.hdf5'), 
                                 monitor='val_loss', save_best_only=True,save_weights_only=True)       
     reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2,
-                      patience=5, min_lr=1e-5)
+                      patience=5, min_lr=1e-5,verbose=1)
     csv_logger = CSVLogger(rese,append=True)
     filew.close()
-    model.fit(x_train, y_train, batch_size=250, epochs=nb_epoch_i_p, verbose =1,
+    model.fit(x_train, y_train, batch_size=500, epochs=nb_epoch_i_p, verbose =1,
                       validation_data=(x_val,y_val),
 #                      class_weight=class_weights,
                       callbacks=[model_checkpoint,reduce_lr,csv_logger,early_stopping]  )
@@ -278,8 +297,10 @@ def train(x_train, y_train, x_val, y_val, params,eferror,patch_dir_store):
     print cm
 
     print '---------------'
-    tn = datetime.datetime.now()
-    todayn = str(tn.month)+'-'+str(tn.day)+'-'+str(tn.year)+' - '+str(tn.hour)+'h '+str(tn.minute)+'m'+'\n'
+    t = datetime.datetime.now()
+#    todayn = str(tn.month)+'-'+str(tn.day)+'-'+str(tn.year)+' - '+str(tn.hour)+'h '+str(tn.minute)+'m'+'\n'
+    todayn = str('m'+str(t.month)+'_d'+str(t.day)+'_y'+str(t.year)+'_'+str(t.hour)+'h_'+str(t.minute)+'m'+'\n')
+
     filew.write('  finished at :'+todayn)
     filew.write('  f-score is : '+ str(fscore)+'\n')
     filew.write('  accuray is : '+ str(acc)+'\n')

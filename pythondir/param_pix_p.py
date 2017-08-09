@@ -3,8 +3,8 @@
 Created on Tue May 02 15:04:39 2017
 
 @author: sylvain
-28 july 2017
-version 1.1
+8 august 2017
+version 1.2
 
 """
 #import argparse
@@ -13,12 +13,12 @@ version 1.1
 
 from numpy import argmax,amax
 import os
-
-from scipy.misc import bytescale
+import numpy as np
+#from scipy.misc import bytescale
 import shutil
 
 import time
-
+import sklearn.metrics as metrics
 
 import keras
 import theano
@@ -31,7 +31,7 @@ print keras.__version__
 print theano.__version__
 print ' keras.backend.image_data_format :',keras.backend.image_data_format()
 
-setdata='set2'
+oldFormat=False #for compatibility with old format
 
 writeFile=False
 
@@ -58,6 +58,9 @@ datacrossn='datacross'
 datafrontn='datafront'
 path_data='data'
 path_pickle='CNNparameters'
+path_pickleArch='modelArch'
+modelArch='CNN.h5'
+
 predictout='predicted_results'
 predictout3d='predicted_results_3d'
 predictout3dn='predicted_results_3dn'
@@ -78,7 +81,7 @@ jpegpadirm='jpegpadirm'
 
 lung_name='lung'
 lung_namebmp='bmp'
-lung_name_gen='lung'
+#lung_name_gen='lung'
 #directory with lung mask dicom
 lungmask='lung'
 lungmask1='lung_mask'
@@ -149,12 +152,18 @@ highgrey=(240,240,240)
 cwd=os.getcwd()
 (cwdtop,tail)=os.path.split(cwd)
 dirpickle=os.path.join(cwdtop,path_pickle)
+dirpickleArch=os.path.join(dirpickle,path_pickleArch)
+
 
 classifnotvisu=['healthy',]
-if setdata=='set2':
+setdataref='set1'
 
-#set2
-    classif ={
+classifdict={}
+usedclassifdict={}
+derivedpatdict={}
+
+##set0
+classifdict['set0'] ={
         'consolidation':0,
         'HC':1,
         'ground_glass':2,
@@ -168,7 +177,7 @@ if setdata=='set2':
         'GGpret':9,
         'lung':10
         }
-    usedclassif = [
+usedclassifdict['set0'] = [
         'consolidation',
         'HC',
         'ground_glass',
@@ -180,8 +189,76 @@ if setdata=='set2':
         'bronchiectasis',
         'GGpret'
         ]
-else:
-    print 'error: not defined set'
+derivedpatdict['set0']=[
+        'HCpret',
+        'HCpbro',
+        'GGpbro',
+        'GGpret',
+        'bropret'
+        ]
+##set1
+
+classifdict['set1'] ={
+        'consolidation':0,
+        'HC':1,
+        'ground_glass':2,
+        'healthy':3,
+        'reticulation':4,
+        'air_trapping':5,
+        'bronchiectasis':6,
+        'GGpret':7,
+        'lung':8
+        }
+
+usedclassifdict['set1'] = [
+        'consolidation',
+        'HC',
+        'ground_glass',
+        'healthy',
+        'reticulation',
+        'air_trapping',
+        'bronchiectasis',
+        'GGpret'
+        ]
+derivedpatdict['set1']=[
+        'HCpret',
+        'HCpbro',
+        'GGpbro',
+        'GGpret',
+        'bropret'
+        ]
+
+classifdict['set2'] ={
+        'consolidation':0,
+        'HC':1,
+        'ground_glass':2,
+        'healthy':3,
+        'reticulation':4,
+        'air_trapping':5,
+                'cysts':6,
+        'bronchiectasis':7,
+        'GGpret':8,
+        'lung':9
+        }
+
+usedclassifdict['set2'] = [
+        'consolidation',
+        'HC',
+        'ground_glass',
+        'healthy',
+        'reticulation',
+        'air_trapping',
+        'cysts',
+        'bronchiectasis',
+        'GGpret'
+        ]
+derivedpatdict['set2']=[
+        'HCpret',
+        'HCpbro',
+        'GGpbro',
+        'GGpret',
+        'bropret'
+        ]
 
 classifc ={
     'back_ground':chatain,
@@ -254,15 +331,15 @@ def remove_folder(path):
 
 def normi(tabi):
      """ normalise patches"""
-     tabi2=bytescale(tabi, low=0, high=255)
-#     max_val=float(np.max(tabi))
-#     min_val=float(np.min(tabi))
-#     mm=max_val-min_val
-#     if mm ==0:
-#         mm=1
-##     print 'tabi1',min_val, max_val,imageDepth/float(max_val)
-#     tabi2=(tabi-min_val)*(255/mm)
-#     tabi2=tabi2.astype('uint8')
+#     tabi2=bytescale(tabi, low=0, high=255)
+     max_val=float(np.max(tabi))
+     min_val=float(np.min(tabi))
+     mm=max_val-min_val
+     if mm ==0:
+         mm=1
+#     print 'tabi1',min_val, max_val,imageDepth/float(max_val)
+     tabi2=(tabi-min_val)*(255/mm)
+     tabi2=tabi2.astype('uint8')
      return tabi2
  
 def fidclass(numero,classn):
@@ -297,3 +374,26 @@ def maxproba(proba):
     im=argmax(proba)
     m=amax(proba)
     return im,m
+
+def evaluate(actual,pred,num_class,label):
+#    fscore = metrics.f1_score(actual, pred,labels=label, average='weighted')
+#    acc = metrics.accuracy_score(actual, pred)
+    pres = metrics.precision_score(actual, pred,labels=label,average='weighted')
+    recall = metrics.recall_score(actual, pred,labels=label,average='weighted')
+#    labl=[]
+#    for i in range(num_class):
+#        labl.append(i)
+#    cm = metrics.confusion_matrix(actual,pred,labels=labl)
+#    return fscore, acc, cm,pres,recall
+    return pres,recall
+
+def evaluatef(actual,pred,num_class):
+#    fscore = metrics.f1_score(actual, pred,labels=label, average='weighted')
+#    acc = metrics.accuracy_score(actual, pred)
+#    pres = metrics.precision_score(actual, pred,labels=label,average='weighted')
+#    recall = metrics.recall_score(actual, pred,labels=label,average='weighted')
+    labl=[]
+    for i in range(num_class):
+             labl.append(i)
+    cm = metrics.confusion_matrix(actual,pred,labels=labl)
+    return cm

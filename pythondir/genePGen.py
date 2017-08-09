@@ -9,7 +9,7 @@ first step
 version 1.0
 """
 from param_pix_t import classif,usedclassif,classifc
-from param_pix_t import dimpavx,dimpavy,typei,avgPixelSpacing,thrpatch
+from param_pix_t import dimpavx,dimpavy,typei,typei1,avgPixelSpacing,thrpatch,setdata
 from param_pix_t import remove_folder,normi,genelabelloc,totalpat,totalnbpat
 from param_pix_t import white
 from param_pix_t import patchpicklename,scan_bmp,lungmask,lungmask1,lungmaskbmp,sroi,patchesdirname
@@ -24,36 +24,29 @@ import os
 
 import scipy.misc
 
-
 #general parameters and file, directory names
 #######################################################
 #customisation part for datataprep
 #global directory for scan file
 topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 namedirHUG = 'HUG'
-#subdir for roi in text
 subHUG='ILD_TXT'
-#subHUG='ILD3721'
-#subHUG='ILD3'
-#subHUG='ILDt'
+#subHUG='ILD105'
 
 toppatch= 'TOPPATCH'
 #extension for output dir
-#extendir='essaihug'
-extendir='set1'
-
+extendir='set2'
 
 #labelEnh=('consolidation','reticulation,air_trapping','bronchiectasis','cysts')
 labelEnh=()
-#imageDepth=255 #number of bits used on dicom images (2 **n)
-# average pxixel spacing
+
 print 'class used :',usedclassif
 ########################################################################
 ######################  end ############################################
 ########################################################################
 #define the name of directory for patches
 patchesdirnametop = 'th'+str(round(thrpatch,1))+'_'+toppatch+'_'+extendir
-print patchesdirnametop
+print 'name of directory for patches :', patchesdirnametop
 #define the name of directory for patches
 
 #full path names
@@ -95,9 +88,14 @@ if not os.path.isdir(picklepathdir):
 
 eferror=os.path.join(patchtoppath,perrorfile)
 errorfile = open(eferror, 'a')
+errorfile.write('---------------\n')
 tn = datetime.datetime.now()
 todayn = str(tn.month)+'-'+str(tn.day)+'-'+str(tn.year)+' - '+str(tn.hour)+'h '+str(tn.minute)+'m'+'\n'
 errorfile.write('started ' +namedirHUG+' '+subHUG+' at :'+todayn)
+errorfile.write('using pattern set: ' +setdata+'\n')
+for pat in usedclassif:
+    errorfile.write(pat+'\n')
+errorfile.write('--------------------------------\n')
 errorfile.close()
 
 #filetowrite=os.path.join(namedirtopc,'lislabel.txt')
@@ -158,6 +156,7 @@ def genebmp(dirName):
 
     tabscan=np.zeros((slnt,dimtabx,dimtaby),np.int16)
     tabsroi=np.zeros((slnt,dimtabx,dimtaby,3),np.uint8)
+    tabscanName={}
 #    os.listdir(lung_dir)
     for filename in fileList:
 #            print(filename)
@@ -170,7 +169,8 @@ def genebmp(dirName):
 #                print 'fxs',fxs
             scanNumber=int(RefDs.InstanceNumber)
             endnumslice=filename.find('.dcm')
-            imgcoredeb=filename[0:endnumslice]+'_'+str(scanNumber)+'.'
+            imgcoredebss=filename[0:endnumslice]+'_'+str(scanNumber)
+            imgcoredeb=imgcoredebss+'.'
 #            bmpfile=os.path.join(dirFilePbmp,imgcore)
             dsr[dsr == -2000] = 0
             intercept = RefDs.RescaleIntercept
@@ -186,10 +186,12 @@ def genebmp(dirName):
             dsrforimage=normi(dsr)
 
             tabscan[scanNumber]=dsr
+            tabscanName[scanNumber]=imgcoredebss
 
             imgcored=imgcoredeb+typei
             bmpfiled=os.path.join(bmp_dir,imgcored)
-            imgcoresroi='sroi_'+str(scanNumber)+'.'+typei
+            imgcoresroi=imgcored
+            
             bmpfileroi=os.path.join(sroidir,imgcoresroi)
 #            print imgcoresroi,bmpfileroi
             textw='n: '+tail+' scan: '+str(scanNumber)
@@ -219,7 +221,7 @@ def genebmp(dirName):
                 dsrresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
                 cv2.imwrite (bmpfile, dsrresize)
 
-    return tabscan,tabsroi
+    return tabscan,tabsroi,tabscanName
 
 def reptfulle(tabc,dx,dy,col):
     imgi = np.zeros((dx,dy,3), np.uint8)
@@ -266,9 +268,10 @@ def contour2(im,l):
     return vis
 
 
-def pavs (namedirtopcf,label,loca,slnt,numslice):
+def pavs (namedirtopcf,label,loca,slnt,numslice,namescan):
     """ generate patches from ROI"""
     (top,tail)=os.path.split(namedirtopcf)
+    
 #    print 'pav :',tail,'pattern :',label,'loca :',loca, 'slice :',numslice
     ntotpat=0
     tabf=np.zeros((slnt,dimtabx,dimtaby),np.uint8)
@@ -313,7 +316,7 @@ def pavs (namedirtopcf,label,loca,slnt,numslice):
                 imn=tagview(imn,label,0,100)
                 tabsroi[int(numslice)]=imn
                 imn = cv2.cvtColor(imn, cv2.COLOR_BGR2RGB)
-                sroifile='sroi_'+str(numslice)+'.'+typei
+                sroifile=namescan+'.'+typei
                 filenamesroi=os.path.join(sroidir,sroifile)
 #                print 'filenamesroi',filenamesroi
                 cv2.imwrite(filenamesroi,imn)
@@ -508,7 +511,7 @@ def fileext(namefile,curdir,patchpath):
 
 listdirc= (os.listdir(namedirtopc))
 npat=0
-
+ 
 for f in listdirc:
     #f = 35
     print('work on:',f)
@@ -523,7 +526,6 @@ for f in listdirc:
     tabroipat={}
     for label in usedclassif:
         tabroipat[label]={}
-
     
     listsliceok=[]
     posp=f.find('.',0)
@@ -547,7 +549,7 @@ for f in listdirc:
         fif=False
         dimtabx,dimtaby,slnt = genepara(namedirtopcf)
 #        print dimtabx,dimtaby,slnt
-        tabscan,tabsroi=genebmp(namedirtopcf)
+        tabscan,tabsroi,tabscanname=genebmp(namedirtopcf)
 
         for f1 in contenudir:
 
@@ -637,15 +639,16 @@ for f in listdirc:
                 labeldir=os.path.join(namedirtopcf,label)
                 if not os.path.exists(labeldir):
                     os.mkdir(labeldir)
-                locadir=os.path.join(labeldir,loca)
-                if not os.path.exists(locadir):
-                    os.mkdir(locadir)
-                namepat=f+'_'+numslice+'.'+typei
-                imgcoreScan=os.path.join(locadir,namepat)
+#                locadir=os.path.join(labeldir,loca)
+#                if not os.path.exists(locadir):
+#                    os.mkdir(locadir)
+                namepat=tabscanname[int(numslice)]+'.'+typei1
+                imgcoreScan=os.path.join(labeldir,namepat)
+#                imgcoreScan=os.path.join(locadir,namepat)
                 tabtowrite=cv2.cvtColor(imgc,cv2.COLOR_BGR2RGB)
                 cv2.imwrite(imgcoreScan,tabtowrite)
                 tabroipat[label][numslice]=imgc
-                nbp=pavs(namedirtopcf,label,loca,slnt,numslice)
+                nbp=pavs(namedirtopcf,label,loca,slnt,numslice,tabscanname[int(numslice)])
 #                print 'nbp',nbp
 
                 nbpf=nbpf+nbp
@@ -673,5 +676,6 @@ errorfile = open(eferror, 'a')
 tn = datetime.datetime.now()
 todayn = str(tn.month)+'-'+str(tn.day)+'-'+str(tn.year)+' - '+str(tn.hour)+'h '+str(tn.minute)+'m'+'\n'
 errorfile.write('completed ' +namedirHUG+' '+subHUG+' at :'+todayn)
+errorfile.write('---------------\n')
 errorfile.close()
 print('completed')

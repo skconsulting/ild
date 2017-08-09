@@ -1,8 +1,8 @@
 # coding: utf-8
 '''create dataset from patches 
 support Hu
-
 version 1.0
+second step
 S. Kritter
 5 august 2017
  '''
@@ -24,26 +24,26 @@ import sys
 #from scipy import misc
 #from scipy.fftpack import fft,dct,idct
 import numpy as np
-import sklearn
+#import sklearn
 from sklearn.model_selection import train_test_split
 import cPickle as pickle
 #from sklearn.cross_validation import train_test_split
 import random
 #import math
 #from math import *
-print sklearn.__version__
+#print sklearn.__version__
 
 #####################################################################
 #define the working directory for input patches
 topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 
 toppatch= 'TOPPATCH'
-extendir='set1'
+extendir='set2'
 
 #define the directory to store data
 pickel_dirsource_root='pickle'
 pickel_dirsource_e='train_set' #path for data fort training
-pickel_dirsourcenum='1' #extensioon for path for data for training
+pickel_dirsourcenum='2' #extensioon for path for data for training
 extendir2=''
 
 augf=3#augmentation factor
@@ -72,7 +72,6 @@ patchesdirnametop = 'th'+str(round(thrpatch,1))+'_'+toppatch+'_'+extendir
 hugeClass=['healthy']
 #hugeClass=['']
 
-
 #input patch directory
 patch_dirsource=os.path.join(topdir,patchesdirnametop)
 patch_dirsource=os.path.join(patch_dirsource,patch_dirsource)
@@ -93,7 +92,6 @@ errorfile.write('started ' +toppatch+' '+extendir+' at :'+todayn)
 errorfile.write('numbe of loops :'+str(augf)+'\n')
 print 'number of loops:', augf
 errorfile.write('--------------------\n')
-
 
 
 #define a dictionary with labels

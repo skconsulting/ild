@@ -3,7 +3,7 @@
 Created on Mon Mar 20 17:21:22 2017
 
 @author: sylvain
-version 1.1
+version 1.2
 28 july 2017
 """
 #from param_pix_p import *
@@ -14,11 +14,11 @@ from param_pix_p import lungimage,source_name,sroi,sroi3d,scan_bmp,transbmp
 from param_pix_p import typei,typei1,typei2
 from param_pix_p import threeFileMerge,htmldir,threeFile,threeFile3d,reportdir,reportfile
 
-from param_pix_p import classifc,classif,usedclassif
+from param_pix_p import classifc,classifdict,usedclassifdict,oldFormat,writeFile,volumeweb
 
-from param_pix_p import maxproba,excluvisu,fidclass,rsliceNum
+from param_pix_p import maxproba,excluvisu,fidclass,rsliceNum,evaluate,normi,evaluatef
 
-from tdGenePredictGui import predictrun,calculSurface,uipTree
+from tdGenePredictGui import predictrun
 
 import cPickle as pickle
 import os
@@ -123,10 +123,10 @@ def lumi(tabi,r):
     tabi3=tabi2.astype(np.uint8)
     return tabi3
 
-def addpatchn(col,lab, xt,yt,imgn):
-#    print col,lab
-    cv2.rectangle(imgn,(xt,yt),(xt+dimpavx,yt+dimpavy),col,1)
-    return imgn
+#def addpatchn(col,lab, xt,yt,imgn):
+##    print col,lab
+#    cv2.rectangle(imgn,(xt,yt),(xt+dimpavx,yt+dimpavy),col,1)
+#    return imgn
 
 def tagviewn(fig,label,surface,surftot,roi,tl):
     """write text in image according to label and color"""
@@ -146,13 +146,68 @@ def tagviewn(fig,label,surface,surftot,roi,tl):
         pcroi='0'
     if tl:
         cv2.rectangle(fig,(deltax-10, deltay-6),(deltax-5, deltay-1),col,1)
-    cv2.putText(fig,label+' pre: '+str(surface)+'cm2 '+pc+'%'+' roi: '+str(roi)+'cm2 '+pcroi+'%',(deltax, deltay),cv2.FONT_HERSHEY_PLAIN,gro,col,1)
+#    print label,roi
+    if roi>0:
+        cv2.putText(fig,'%15s'%label+'%8s'%(str(surface)+'cm2')+
+                    '%5s'%(pc+'%')+' roi: '+'%8s'%(str(roi)+'cm2')+'%5s'%(pcroi+'%'),
+                (deltax, deltay),cv2.FONT_HERSHEY_PLAIN,gro,col,1)
+    else:
+        cv2.putText(fig,'%15s'%label+'%8s'%(str(surface)+'cm2')+'%5s'%(pc+'%'),
+                (deltax, deltay),cv2.FONT_HERSHEY_PLAIN,gro,col,1)
+            
+
+def tagvaccuracy(fig,label,precision,recall,fscore):
+    """write text in image according to label and color"""
+
+    col=classifc[label]
+    labnow=classif[label]
+    
+    deltax=480
+    deltay=10+(11*labnow)
+    gro=0.8
+    cv2.putText(fig,'precision: '+'%4s'%(str(precision)+'%')+' recall: '+
+                '%4s'%(str(recall)+'%')+' fscore: '+'%4s'%(str(fscore)+'%'),
+                (deltax, deltay),cv2.FONT_HERSHEY_PLAIN,gro,col,1)
+
+def tagvcm(fig,cm):
+    n= cm.shape[0]
+
+    deltax=10
+    deltay=300
+    gro=0.7
+    deltaxm=110 
+    deltaxt=110
+    lcl=len(classif)-1
+    for pat in classif:
+        cp=classif[pat]
+        if cp==lcl:
+            dy=0
+        elif cp==0:
+            dy=lcl
+        else:
+            dy=cp
+        col=classifc[pat]
+
+        cv2.putText(fig,'%15s'%pat,(deltax, deltay+(12*dy)),cv2.FONT_HERSHEY_PLAIN,gro,col,1)
+        cv2.putText(fig,pat[0:7],(deltaxt+(60*dy), deltay-15),cv2.FONT_HERSHEY_PLAIN,gro,col,1)
+
+     
+    for i in range (0,n):
+        for j in range (0,n):
+            dx=deltaxm+60*j
+            dy=deltay+12*i
+            cv2.putText(fig,'%5s'%str(cm[i][j]),(dx, dy),cv2.FONT_HERSHEY_PLAIN,gro,white,1)
 
 
-def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,patch_list_ref_slice,volumeroi):
+
+
+def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,patch_list_ref_slice,volumeroi,slnt,tabroi,num_class):
 
     imgn = np.zeros((dx,dy,3), np.uint8)
-    datav = np.zeros((200,500,3), np.uint8) 
+    datav = np.zeros((500,800,3), np.uint8)
+    patchdict=np.zeros((slnt,dx,dy), np.uint8)  
+#    np.putmask(patchdict,patchdict==0,classif['lung'])
+    imgpatch=np.zeros((dx,dy), np.uint8)  
    
     th=t/100.0
     numl=0
@@ -196,10 +251,43 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,patch_list_ref_slice
                     surflabel[classlabel]=surfelem
                     listlabelaverage[classlabel]=mprobai
 
-                imgn= addpatchn(classcolor,classlabel,xpat,ypat,imgn)
+#                imgn= addpatchn(classcolor,classlabel,xpat,ypat,imgn)
+                if classif[classlabel]>0:
+                    cv2.rectangle(imgpatch,(xpat,ypat),(xpat+dimpavx,ypat+dimpavy),classif[classlabel],-1)
+                else:
+                    cv2.rectangle(imgpatch,(xpat,ypat),(xpat+dimpavx,ypat+dimpavy),classif['lung'],-1)
+
+                imgray=np.copy(imgpatch)
+                np.putmask(imgray,imgray>0,255)
+                mask=np.bitwise_not(imgray)
+#                a=np.copy(patchdict[slicenumber])
+#                print 'a',a.max()
+                patchdict[slicenumber]=cv2.bitwise_and(patchdict[slicenumber],patchdict[slicenumber],mask=mask)
+#                b=np.copy(patchdict[slicenumber])
+#                print 'b',b.max()
+                patchdict[slicenumber]=cv2.bitwise_or(imgpatch,patchdict[slicenumber])
+#                c=np.copy(patchdict[slicenumber])
+#                print 'c',c.max()
+#                cv2.imshow('mask',normi(mask))
+#                cv2.imshow('a',normi(a))
+#                cv2.imshow('b',normi(b))
+#                cv2.imshow('c',normi(c))
+#                cv2.waitKey(0)
+#                cv2.destroyWindow('c')
+#                cv2.imshow
+                cv2.rectangle(imgn,(xpat,ypat),(xpat+dimpavx,ypat+dimpavy),classcolor,1)
+    
+#    for s in range(slnt):
+##        print s,patchdict[s].max()
+#        if patchdict[s].max()>0:
+#            name=str(s)+'.bmp'
+#            print patchdict[s].min(),patchdict[s].max()
+#            print normi(patchdict[s]).min(),normi(patchdict[s]).max()
+#            cv2.imwrite(name,patchdict[s])
+#            cv2.imwrite('b'+name,normi(patchdict[s]))
     delx=120
     for ll1 in usedclassif:               
-        if ll1 in listlabel:
+        if ll1 in listlabel:            
             tl=True
         else:
             tl=False
@@ -221,7 +309,56 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,patch_list_ref_slice
     cv2.putText(datav,ts,(0,140),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
     cv2.putText(datav,surftot,(delx,140),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
     cv2.putText(datav,sulunk,(delx,150),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
+    
+    
+    referencepat= tabroi[slicenumber].flatten()
+    predictpat=  patchdict[slicenumber].flatten()   
+    
+    precision={}
+    recall={}
+    fscore={}
+    cf=False
+    for pat in usedclassif:
+        numpat=classif[pat]
+        fscore[pat]=0
+        if numpat == 0:
+            numpat=classif['lung']
+        precision[pat],recall[pat] = evaluate(referencepat,predictpat,num_class,(numpat,))
+        if (precision[pat]+recall[pat])>0:
+            fscore[pat]=2*precision[pat]*recall[pat]/(precision[pat]+recall[pat])
+            precisioni=int(round(precision[pat]*100,0))
+            recalli=int(round(recall[pat]*100,0))
+            fscorei=int(round(fscore[pat]*100,0))
+            tagvaccuracy(datav,pat,precisioni,recalli,fscorei)
+            cf=True
+    
+    
+    if cf:
+        cm=evaluatef(referencepat,predictpat,num_class)
+        tagvcm(datav,cm)
     datav=cv2.cvtColor(datav,cv2.COLOR_BGR2RGB)
+#    fscore, acc, cm,pres,recall = evaluate(yvf,ysf,num_class,(8,))
+#    f=open('a.txt','w')
+#    for pat in usedclassif:
+#        f.write('precision is : '+ pat+' '+str(precision[pat])+'\n')
+#        f.write( 'accuray is : '+ pat+ ' '+str(recall[pat])+'\n')
+#        f.write( 'fscore is : '+ pat+ ' '+str(fscore[pat])+'\n')
+#        
+##    
+##    print('Val F-score: '+str(fscore)+'\tVal acc: '+str(acc))  
+##    print cm
+##    f.write('f-score is : '+ str(fscore)+'\n')
+##    f.write( 'accuray is : '+ str(acc)+'\n')
+##    f.write('precision is : '+ str(pres)+'\n')
+##    f.write( 'recall is : '+ str(recall)+'\n')
+##    f.write('confusion matrix\n')
+#    n= cm.shape[0]
+#    for i in range (0,n):
+#        for j in range (0,n):
+#           f.write(str(cm[i][j])+' ')
+#        f.write('\n')
+#    f.close()
+    
     return imgn,datav
 
 
@@ -291,6 +428,254 @@ def findmaxvolume(dictSurf,poslung):
                 patmax=pat
     return surfmax,patmax
 
+def posP(sln, lungSegment):
+    '''define where is the slice number'''
+    if sln in lungSegment['upperset']:
+        psp = 'upperset'
+    elif sln in lungSegment['middleset']:
+        psp = 'middleset'
+    else:
+        psp = 'lowerset'
+    return psp
+
+
+def calcSupNp(dirf, patch_list_cross_slice, pat, tabMed,
+              dictSubP,dictP,thrprobaUIP,lungSegment,patch_list_cross_slice_sub):
+    '''calculate the number of pat in lungsegment and in subpleural according to thrprobaUIP'''
+    (top,tail)=os.path.split(dirf)
+#    print 'number of subpleural for :',tail, 'pattern :', pat
+
+    for slicename in lungSegment['allset']:
+
+        psp=posP(slicename, lungSegment)
+#        ill = 0
+        if len(patch_list_cross_slice[slicename])>0:
+            for ll in range (0, len(patch_list_cross_slice[slicename])):
+    
+                xpat = patch_list_cross_slice[slicename][ll][0][0]
+#                ypat = patch_list_cross_slice[slicename][ll][0][1]
+                proba = patch_list_cross_slice[slicename][ll][1]
+                prec, mprobai = maxproba(proba)
+                classlabel = fidclass(prec, classif)
+#                if pat == 'bronchiectasis' and slicename==14 and classlabel==pat:
+#                    print slicename,pat,xpat,mprobai,classlabel
+    
+                if xpat >= tabMed[slicename]:
+                    pospr = 0
+                    pospl = 1
+                else:
+                    pospr = 1
+                    pospl = 0
+                if classlabel == pat and mprobai > thrprobaUIP:
+                
+                    dictP[pat][psp] = (
+                    dictP[pat][psp][0] + pospl,
+                    dictP[pat][psp][1] + pospr)
+                    dictP[pat]['all'] = (dictP[pat]['all'][0] + pospl, dictP[pat]['all'][1] + pospr)
+                    
+        if len(patch_list_cross_slice_sub[slicename])>0:
+            for ll in range (0, len(patch_list_cross_slice_sub[slicename])):
+                xpat = patch_list_cross_slice_sub[slicename][ll][0][0]
+#                ypat = patch_list_cross_slice_sub[slicename][ll][0][1]
+                proba = patch_list_cross_slice_sub[slicename][ll][1]
+                prec, mprobai = maxproba(proba)
+                classlabel = fidclass(prec, classif)
+#                if pat == 'bronchiectasis' and slicename==14 and classlabel==pat:
+#                    print slicename,pat,xpat,mprobai,classlabel
+                if classlabel == pat and mprobai > thrprobaUIP:
+                    if xpat >= tabMed[slicename]:
+                        pospr = 0
+                        pospl = 1
+                    else:
+                        pospr = 1
+                        pospl = 0
+                    dictSubP[pat]['all'] = (
+                            dictSubP[pat]['all'][0] + pospl,
+                            dictSubP[pat]['all'][1] + pospr)
+                    dictSubP[pat][psp] = (
+                            dictSubP[pat][psp][0] + pospl,
+                            dictSubP[pat][psp][1] + pospr)
+#                ill += 1
+#        if pat == 'bronchiectasis':
+#             print 'tot',slicename, pat, dictP[pat]
+#             print 'sub',slicename, pat, dictSubP[pat]
+    return dictSubP,dictP
+
+#def writedic(p,v,d):
+#    v.write(p+ ' '+d[p]['lower']+' '+d[p]['middle']+' '+d[p]['upper']+' ')
+#    v.write(d[p]['left_sub_lower']+' '+d[p]['left_sub_middle']+' '+d[p]['left_sub_upper']+' ')
+#    v.write(d[p]['right_sub_lower']+' '+d[p]['right_sub_middle']+' '+d[p]['right_sub_upper']+' ')
+#    v.write(d[p]['left_lower']+' '+d[p]['left_middle']+' '+d[p]['left_upper']+' ')
+#    v.write(d[p]['right_lower']+' '+d[p]['right_middle']+' '+d[p]['right_upper']+'\n')
+
+
+def writedict(dirf, dx):
+    (top,tail)=os.path.split(dirf)
+    print 'write file  for :',tail
+    ftw = os.path.join(dirf, str(dx) + '_' + volumeweb)
+    volumefile = open(ftw,'w')
+    volumefile.write(
+        'patient UIP WEB: ' +
+        str(tail) +
+        ' ' +
+        'patch_size: ' +
+        str(dx) +
+        '\n')
+    volumefile.write('pattern   lower  middle  upper')
+    volumefile.write('  left_sub_lower  left_sub_middle  left_sub_upper ')
+    volumefile.write('  right_sub_lower  right_sub_middle  right_sub_upper ')
+    volumefile.write('  left_lower  left_middle  left_upper ')
+    volumefile.write(' right_lower  right_middle  right_upper\n')
+    return volumefile
+
+def cvsarea(p, f, de, dse, s, dc, wf):
+    '''calculate area of patches related to total area
+      p: pat
+      f: volumefile
+      de:  dictP
+      dse:  dictSubP,
+      s:      dictPS
+      dc:      dictSurf,
+      wf:      writeFile
+     ''' 
+    dictint = {}
+    d = de[p]
+    ds = dse[p]
+
+    llungloc = (('lowerset', 'lower'), ('middleset', 'middle'), ('upperset', 'upper'))
+    llunglocsl = (('lowerset', 'left_sub_lower'), ('middleset', 'left_sub_middle'), ('upperset', 'left_sub_upper'))
+    llunglocsr = (('lowerset', 'right_sub_lower'), ('middleset','right_sub_middle'), ('upperset', 'right_sub_upper'))
+    llunglocl = (('lowerset', 'left_lower'), ('middleset', 'left_middle'), ('upperset', 'left_upper'))
+    llunglocr = (('lowerset', 'right_lower'), ('middleset','right_middle'), ('upperset', 'right_upper'))
+    if wf:
+        f.write(p + ': ')
+    for i in llungloc:
+        st = s[i[0]][0] + s[i[0]][1]
+        if st > 0:
+            l = 100 * float(d[i[0]][0] + d[i[0]][1]) / st
+            l = round(l, 1)
+        else:
+            l = 0
+        dictint[i[1]] = l
+        if wf:
+            f.write(str(l) + ' ')
+#        if p == 'bronchiectasis':
+#             print 'surface',i,st
+#             print dictint[i[1]]
+    for i in llunglocsl:
+        st = s[i[0]][0]
+#        print 'cvsarea',s
+#        print 'cvsarea i',i[0], i[1]
+#        print 'cvsarea p d', p,d
+#        oo
+        if st > 0:
+            l = 100 * float(ds[i[0]][0]) / st
+            l = round(l, 1)
+        else:
+            l = 0
+        dictint[i[1]] = l
+        if wf:
+            f.write(str(l) + ' ')
+#        if p == 'bronchiectasis':
+#             print 'surface sub left',i,st
+#             print dictint[i[1]]
+
+    for i in llunglocsr:
+        st = s[i[0]][1]
+        if st > 0:
+            l = 100 * float(ds[i[0]][1]) / st
+            l = round(l, 1)
+        else:
+            l = 0
+        dictint[i[1]] = l
+        if wf:
+            f.write(str(l) + ' ')
+#        if p == 'bronchiectasis':
+#             print 'surface sub right',i,st
+#             print dictint[i[1]]
+
+    for i in llunglocl:
+        st = s[i[0]][0]
+        if st > 0:
+            l = 100 * float(d[i[0]][0]) / st
+            l = round(l, 1)
+        else:
+            l = 0
+        dictint[i[1]] = l
+        if wf:
+            f.write(str(l) + ' ')
+#        if p == 'bronchiectasis':
+#             print 'surface left',i,st
+#             print dictint[i[1]]
+             
+    for i in llunglocr:
+        st = s[i[0]][1]
+        if st > 0:
+            l = 100 * float(d[i[0]][1]) / st
+            l = round(l, 1)
+        else:
+            l = 0
+        dictint[i[1]] = l
+        if wf:
+            f.write(str(l) + ' ')
+#        if p == 'bronchiectasis':
+#             print 'surface right',i,st
+#             print dictint[i[1]]
+
+    dc[p] = dictint
+    if wf:
+        f.write('\n')
+
+    return dc
+
+def uipTree(dirf,patch_list_cross_slice,lungSegment,tabMed,dictPS,
+            dictP,dictSubP,dictSurf,thrprobaUIP,patch_list_cross_slice_sub):
+    '''calculate the number of reticulation and HC in total and subpleural
+    and diffuse micronodules'''
+#    print 'calculate volume'
+    (top,tail)=os.path.split(dirf)
+#    print 'calculate volume in : ',tail
+
+    
+#    print '-------------------------------------------'
+#    print 'surface total  by segment Left Right :'
+#    print dictPS
+#    print '-------------------------------------------'
+    if writeFile:
+         volumefile = writedict(dirf, dimpavx)
+    else:
+        volumefile = ''
+    for pat in usedclassif:
+       
+        dictSubP,dictP= calcSupNp(dirf, patch_list_cross_slice, pat, tabMed,
+              dictSubP,dictP,thrprobaUIP,lungSegment,patch_list_cross_slice_sub)
+#        if pat == 'bronchiectasis':
+#            print ' volume total for:',pat
+#            print dictP[pat]
+#            print '-------------------------------------------'
+#            print ' volume subpleural for:', pat
+#            print dictSubP[pat]
+#            print '-------------------------------------------'
+#            print ' volume total for:',pat
+#            print dictP[pat]
+#            print '-------------------------------------------'
+        dictSurf = cvsarea(
+            pat,
+            volumefile,
+            dictP,
+            dictSubP,
+            dictPS,
+            dictSurf,
+            writeFile)
+    if writeFile:
+            volumefile.write('---------------------\n')
+            volumefile.close()
+#    print ' volume for:',tail
+#    print dictSurf
+#    print '-------------------------------------------'
+    return dictP, dictSubP, dictSurf
+
+
 def initdictP(d, p):
     d[p] = {}
     d[p]['upperset'] = (0, 0)
@@ -298,6 +683,29 @@ def initdictP(d, p):
     d[p]['lowerset'] = (0, 0)
     d[p]['all'] = (0, 0)
     return d
+
+def calculSurface(dirf,posp, midx,lungSegment,dictPS):
+    (top,tail)=os.path.split(dirf)
+    '''calculate surface of lung in term of number of rectangles pavement'''
+#    print 'calculate surface for :',tail
+
+    for ll in posp:
+        sln=ll
+        psp=posP(sln, lungSegment)
+        midsln=midx[sln]
+        for ii in range(len(posp[ll])):
+            xpat = posp[ll][ii][0][0]
+    
+            if xpat >= midsln:
+                pospr = 0
+                pospl = 1
+            else:
+                pospr = 1
+                pospl = 0
+    
+            dictPS[psp] = (dictPS[psp][0] + pospl, dictPS[psp][1] + pospr)
+            dictPS['all'] = (dictPS['all'][0] + pospl, dictPS['all'][1] + pospr)
+    return dictPS
 
 
 def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
@@ -329,6 +737,9 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
                  'right_sub_lower','right_sub_middle','right_sub_upper',
                  'left_lower','left_middle','left_upper',
                   'right_lower','right_middle','right_upper')
+    listPosLungSimpleLeft=( 'left_lower','left_middle','left_upper')
+    listPosLungSimpleRight=( 'right_lower','right_middle','right_upper')
+    listPosLungSimple= listPosLungSimpleLeft+listPosLungSimpleRight
     
     cwd=os.getcwd()
     (cwdtop,tail)=os.path.split(cwd)
@@ -380,7 +791,7 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
 
     dictPosTextImage['left_lower']=(480,570)
     dictPosTextImage['left_middle']=(480,400)
-    dictPosTextImage['left_upper']=(450,215)
+    dictPosTextImage['left_upper']=(460,215)
 
     dictPosTextImage['right_lower']=(170,570)
     dictPosTextImage['right_middle']=(170,400)
@@ -393,6 +804,12 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
     dictPosTextImage['right_sub_lower']=(170,660)
     dictPosTextImage['right_sub_middle']=(43,380)
     dictPosTextImage['right_sub_upper']=(200,150)
+    
+    dictposSubtotal={}
+    dictposSubtotal['left']=(620,672)
+    dictposSubtotal['tleft']=(620,657)
+    dictposSubtotal['right']=(35,672)
+    dictposSubtotal['tright']=(35,657)
 
     dimtabx=lung_left.shape[0]
     dimtaby=lung_left.shape[1]
@@ -504,23 +921,17 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
                 imgtext = np.zeros((dimtabx,dimtaby,3), np.uint8)
                 img = np.zeros((dimtabx,dimtaby,3), np.uint8)
                 cv2.putText(imgtext,'Threshold : '+str(tl),(50,50),cv2.FONT_HERSHEY_PLAIN,1,yellow,1,cv2.LINE_AA)
+#allview 
                 if allview==1:
                     pervoltot=0
+                    
                     for patt in usedclassif:
                         vol=int(round(((dictP[patt]['all'][0]+dictP[patt]['all'][1] )*volelems),0))    
                         pervol=int(round(vol*100./voltotal,0))
                         pervoltot=pervoltot+pervol
-                        
-                        fillblank=''
-                        if vol<10:
-                            fillblank='   '
-                        elif vol <100:
-                            fillblank='  '
-                        elif vol <1000:
-                            fillblank=' '                        
-    
+                
     #                    print patt,vol
-                        cv2.putText(imgtext,'V: '+str(vol)+'ml '+fillblank+str(pervol)+'%',(dictpostotal[patt][0],dictpostotal[patt][1]),
+                        cv2.putText(imgtext,'V: '+'%5s'%(str(vol)+'ml')+'%5s'%(str(pervol)+'%'),(dictpostotal[patt][0],dictpostotal[patt][1]),
                                     cv2.FONT_HERSHEY_PLAIN,1.0,classifc[patt],1 )
                     #total volume
                     cv2.putText(imgtext,'Volume Total: '+str(voltotal)+'ml',(dictpostotal['total'][0],dictpostotal['total'][1]),
@@ -544,26 +955,44 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
     #                    cv2.destroyAllWindows()
                         cv2.rectangle(imgtext,(dictPosTextImage[i][0],dictPosTextImage[i][1]-15),(dictPosTextImage[i][0]+55,dictPosTextImage[i][1]),white,-1)
                         cv2.putText(imgtext,str(surfmax[i])+'%',(dictPosTextImage[i][0],dictPosTextImage[i][1]),cv2.FONT_HERSHEY_PLAIN,1.2,grey,1,)
+#one pattern view                
                 else:
-    
-                    for i in listPosLung:
+                    for pat in usedclassif:
                         olo=0
-                        for pat in usedclassif:
-    #                        img = np.zeros((dimtabx,dimtaby,3), np.uint8)
-                            if viewasked[pat]==True:
-                                 olo+=1
-                                 vol=int(round(((dictP[pat]['all'][0]+dictP[pat]['all'][1] )*volelems),0)) 
-                                 pervol=int(round(vol*100./voltotal,0))
-                                 fillblank=''
-                                 if vol<10:
-                                    fillblank='   '
-                                 elif vol <100:
-                                    fillblank='  '
-                                 elif vol <1000:
-                                    fillblank=' '
-                                 cv2.putText(imgtext,'V: '+str(vol)+'ml '+fillblank+str(pervol)+'%',(dictpostotal[pat][0],
-                                             dictpostotal[pat][1]),
-                                             cv2.FONT_HERSHEY_PLAIN,1.0,classifc[pat],1 )
+                        if viewasked[pat]==True:
+                            #text top
+                            olo+=1
+                            voltotaltotalpat=(dictP[pat]['all'][0]+dictP[pat]['all'][1])*volelems
+                            voltt=int(round(voltotaltotalpat,0))
+                            voltotalpatl=dictP[pat]['all'][0]*volelems
+                            voltotalpatr=dictP[pat]['all'][1]*volelems
+                            if voltotal>0:
+                                     pervoltt=int(round(100.*voltotaltotalpat/voltotal,0))
+                            else:
+                                     pervoltt=0
+                            cv2.putText(imgtext,'V: '+'%5s'%(str(voltt)+'ml')+'%5s'%(str(pervoltt)+'%'),(dictpostotal[pat][0],
+                                    dictpostotal[pat][1]), cv2.FONT_HERSHEY_PLAIN,1.0,classifc[pat],1 )        
+                            #label in figures
+                            for i in listPosLungSimple:                                                    
+                                 if i in listPosLungSimpleLeft:
+                                    indexloca=0
+                                    voltotalpat=voltotalpatl
+                                 else:
+                                    indexloca=1
+                                    voltotalpat=voltotalpatr                                                                  
+                                 if i == 'left_lower' or i =='right_lower':
+                                      posud='lowerset'
+                                 elif i =='left_middle' or i == 'right_middle':
+                                     posud='middleset'
+                                 elif i =='left_upper' or i == 'right_upper':
+                                     posud='upperset'
+                                 volfloat=dictP[pat][posud][indexloca]*volelems
+                                 vol=int(round(volfloat,0))                                                                    
+                                 if voltotalpat>0:
+                                     pervol=int(round(volfloat*100./voltotalpat,0))
+                                 else:
+                                     pervol=0
+                                                         
                                  if olo==1:
                                      if dictSurf[pat][i]>0:
                                          colori=classifc[pat]
@@ -572,10 +1001,31 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
                                      lungtw=colorimage(dictPosImage[i],colori)
                                      img=cv2.add(img,lungtw)
                                      cv2.rectangle(imgtext,(dictPosTextImage[i][0],dictPosTextImage[i][1]-15),(dictPosTextImage[i][0]+55,dictPosTextImage[i][1]),white,-1)
-                                     cv2.putText(imgtext,str(dictSurf[pat][i])+'%',(dictPosTextImage[i][0],dictPosTextImage[i][1]),cv2.FONT_HERSHEY_PLAIN,1.2,grey,1,)
+                                     cv2.putText(imgtext,str(pervol)+'%',(dictPosTextImage[i][0],dictPosTextImage[i][1]),cv2.FONT_HERSHEY_PLAIN,1.2,grey,1,)
                                  else:
                                      img = np.zeros((dimtabx,dimtaby,3), np.uint8)
-                                     imgtext = np.zeros((dimtabx,dimtaby,3), np.uint8)
+                                     imgtext = np.zeros((dimtabx,dimtaby,3), np.uint8)                           
+                            #subpleural        
+                            volsubleft=dictSubP[pat]['all'][0]*volelems
+                            if voltotalpatl>0:
+                                 pervolsubleft=int(round(100*volsubleft/voltotalpatl,0))
+                            else:
+                                 pervolsubleft=0
+                            volsubright=dictSubP[pat]['all'][1]*volelems
+                            if voltotalpatr>0:
+                                 pervolsubright=int(round(100*volsubright/voltotalpatr,0))
+                            else:
+                                 pervolsubright=0
+                            vsubl=int(round(volsubright,0))
+                            vsubr=int(round(volsubleft,0))
+                            cv2.putText(imgtext,'Subpleural',(dictposSubtotal['tleft'][0],
+                                         dictposSubtotal['tleft'][1]), cv2.FONT_HERSHEY_PLAIN,1.0,classifc[pat],1 )
+                            cv2.putText(imgtext,str(vsubl)+'ml '+str(pervolsubleft)+'%',(dictposSubtotal['left'][0],
+                                         dictposSubtotal['left'][1]), cv2.FONT_HERSHEY_PLAIN,1.0,classifc[pat],1 )
+                            cv2.putText(imgtext,'Subpleural',(dictposSubtotal['tright'][0],
+                                         dictposSubtotal['tright'][1]), cv2.FONT_HERSHEY_PLAIN,1.0,classifc[pat],1 )
+                            cv2.putText(imgtext,str(vsubr)+'ml '+str(pervolsubright)+'%',(dictposSubtotal['right'][0],
+                                         dictposSubtotal['right'][1]), cv2.FONT_HERSHEY_PLAIN,1.0,classifc[pat],1 )              
                                  
     #                                 lungtw=colorimage(dictPosImage[i],grey)
     #                                 img=cv2.add(img,lungtw)
@@ -611,14 +1061,14 @@ def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
     volelems=volelem*slicepitch # in mml
 
 #    print 'slicepitch',slicepitch
-    quitl=False
+
     dirf=os.path.join(path_patient,listHug)
    
     dirfreport=os.path.join(dirf,reportdir)
     if not os.path.exists(dirfreport):
         os.mkdir(dirfreport)
     t = datetime.datetime.now()
-    today = '_th'+str(thrprobaUIP)+'_'+str(t.month)+'-'+str(t.day)+'-'+str(t.year)+'_'+str(t.hour)+'_'+str(t.minute)
+    today = '_th'+str(thrprobaUIP)+'_m'+str(t.month)+'-d'+str(t.day)+'-y'+str(t.year)+'_'+str(t.hour)+'h_'+str(t.minute)+'m'
     repf=os.path.join(dirfreport,reportfile+str(today)+'.txt')
 
     f=open(repf,'w')
@@ -629,7 +1079,7 @@ def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
     dictPS = {}  # dictionary with total patch area in lung segment
     dictSubP = {}  # dictionary with patch in subpleural
     dictSurf = {}  # dictionary with patch volume in percentage
-    poslr=['left','right']
+    poslr=['left','right','both']
     posud=['upperset','middleset','lowerset','all']
 
     dictPS['upperset'] = (0, 0)
@@ -657,93 +1107,96 @@ def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
 
     f.write('\n')
     f.write('Threshold : '+str(int(100*thrprobaUIP))+'%\n')
-    f.write('-----------------------\n')
-    f.write('Total volume per pattern (all, left, right)\n')
-    
+    f.write('-----------------------------------------------\n')
+    f.write('Total volume per pattern \n')
+#    f.write('%15s'%+'patern'+'%9s'%'volume total'+'%7s'%'volume pattern, right, % volume pattern)\n')
+    f.write('%15s'%'pattern'+'%14s'%'volume total'+'%5s'%'%'+
+               '%10s'%'Vol. left'+'%5s'%'%'+
+               '%11s'%'Vol. right'+'%5s'%('%')+'\n')
+
     pervoltot=0
     for patt in usedclassif:
 #        print dictSubP[patt]
-        vol=int(round(((dictP[patt]['all'][0]+dictP[patt]['all'][1] )*volelems),0))  
-        voll=int(round((dictP[patt]['all'][0]*volelems),0))  
-        volr=int(round((dictP[patt]['all'][1]*volelems),0))   
+        volf=(dictP[patt]['all'][0]+dictP[patt]['all'][1] )*volelems
+        vol=int(round(volf,0))  
+        vollf=dictP[patt]['all'][0]*volelems
+        voll=int(round(vollf,0))
+        if volf>0:
+            pervoll=int(round(vollf/volf*100,0))
+        else:
+            pervoll=0
+        volrf=dictP[patt]['all'][1]*volelems
+        volr=int(round(volrf,0))   
+        if volr>0:
+            pervolr=int(round(volrf/volf*100,0))
+        else:
+            pervolr=0
         pervol=int(round(vol*100./voltotal,0))
         pervoltot=pervoltot+pervol
         
-        fil={}
-        fil['a']=(4-len(str(vol)))*' '
-        fil['l']=(4-len(str(voll)))*' '
-        fil['r']=(4-len(str(volr)))*' '
-
-#                    print patt,vol
-        lp=len(patt)
-        lc=18-lp
-        if pervol <10:
-            lpv='  '
-        elif pervol<100:
-            lpv=' '
-        elif pervol ==100:
-            lpv= ''
-        
-#        f.write(patt+': Volume: '+"%20s"%(str(vol))+'ml '+fillblank+str(pervol)+'%\n')
-#        f.write("%20s"%(patt)+': Volume: '+str(vol)+'ml '+fillblank+str(pervol)+'%\n')
-        f.write(patt+lc*' '+': Volume: '+str(vol)+'ml '+fil['a']+str(pervol)+lpv+'%'+'  Vol. left:'+str(voll)+
-                fil['l']+'ml'+'  Vol. right:'+str(volr)+fil['r']+'ml\n')
+        f.write('%15s'%patt+'%14s'%(str(vol)+'ml')+'%5s'%(str(pervol)+'%')+
+               '%10s'%(str(voll)+'ml')+'%5s'%(str(pervoll)+'%')+
+               '%11s'%(str(volr)+'ml')+'%5s'%(str(pervolr)+'%')+'\n')
 
     f.write('\n')
     f.write('Volume Total:     '+str(voltotal)+'ml\n')
     f.write('Total unknown:    '+str(100-pervoltot)+'%\n')
-    f.write('-----------------------\n')
+    f.write('-----------------------------------------------\n')
 
-    f.write('Volume subpleural (% is in comparison with total pattern area in left or right)\n')
+    f.write('Pattern localization (% is in comparison with total pattern area in left or right)\n')
+    f.write('\n')
 
-    for patt in usedclassif:
-        
+
+    for patt in usedclassif:       
         f.write(patt+'\n')
-        lp=len(patt)
-        lc=18-lp
         volpatl=dictP[patt]['all'][0]*volelems
         volpatr=dictP[patt]['all'][1]*volelems
         for lr in poslr:
             f.write('  '+lr+'\n')
-            if lr=='left':
-                
+            if lr=='left':               
                 ind=0
                 voltotal=volpatl
-            else:
+            elif lr=='right': 
                 voltotal=volpatr
                 ind=1
+            else:
+                voltotal=volpatr+volpatl
+                ind=2
             for ud in posud:
-                
-                vol=round(dictSubP[patt][ud][ind]*volelems,1)    
-                if voltotal>0:
-                    pervol=int(round(vol*100./voltotal,0))
-                else:
+                    if ind<2:
+                        vol=dictP[patt][ud][ind]*volelems
+                    else:
+                        vol=(dictP[patt][ud][0]+dictP[patt][ud][1])*volelems   
+                    if voltotal>0:
+                        pervol=int(round(vol*100./voltotal,0))
+                    else:
                         pervol=0
-                
-                fillblank=''
-                if vol<10:
-                    fillblank='    '
-                elif vol <100:
-                    fillblank='   '
-                elif vol <1000:
-                    fillblank='  '
-                elif vol <10000:
-                    fillblank=' '                        
+                    volrounded=round(vol,1)
+                    f.write('    '+'%9s'%ud+': Volume:'+'%8s'%(str(volrounded)+'ml')+'%5s'%(str(pervol)+'%')+'\n')
         
-        #                    print patt,vol
-                lp=len(patt)
-                lc=18-lp
-                if pervol <10:
-                    lpv='   '
-                elif pervol<100:
-                    lpv='  '
-                elif pervol ==100:
-                    lpv= ''
-                lud=len(ud)
-                clud=10-lud
-
-                f.write('    '+ud+clud*' '+': Volume: '+str(vol)+'ml '+fillblank+str(pervol)+lpv+'%\n')
-        f.write('---------\n')
+        f.write('  subpleural\n')
+        for lr in poslr:
+            if lr=='left':               
+                ind=0
+                voltotal=volpatl
+            elif lr=='right': 
+                voltotal=volpatr
+                ind=1
+            else:
+                voltotal=volpatr+volpatl
+                ind=2
+            if ind<2:
+                vol=dictSubP[patt]['all'][ind]*volelems
+            else:
+                vol=(dictSubP[patt]['all'][0]+dictSubP[patt]['all'][1])*volelems
+            if voltotal>0:
+                pervol=int(round(vol*100./voltotal,0))
+            else:
+                pervol=0
+            volrounded=round(vol,1)
+            f.write('    '+'%9s'%lr+': Volume:'+'%8s'%(str(volrounded)+'ml')+'%5s'%(str(pervol)+'%')+'\n')
+        
+        f.write('------------------------------------\n')
 
     f.close()
     return ''
@@ -753,12 +1206,12 @@ def writeslice(num,menus):
         cv2.rectangle(menus, (5,60), (150,50), red, -1)
         cv2.putText(menus,'Slice to visualize: '+str(num),(5,60),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
         
-def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,patch_list_ref_slice):   
+def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,patch_list_ref_slice,tabroi):   
     global  quitl,dimtabx,dimtaby,patchi,ix,iy
     print 'openfichier start' 
     
     quitl=False
-    
+    num_class=len(classif)
     slnt=datacross[0]
     dimtabx=datacross[1]
     dimtaby=datacross[2]
@@ -778,7 +1231,8 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,patch_l
             path_data_write=os.path.join(path_img,path_data)
             path_data_writefile=os.path.join(path_data_write,volumeroifile)
             if os.path.exists(path_data_writefile):
-                volumeroilocal=pickle.load(open(path_data_writefile, "rb" ))                
+                volumeroilocal=pickle.load(open(path_data_writefile, "rb" ))    
+#                print volumeroilocal
             sn=''
         else:
             sn=scan_bmp
@@ -840,11 +1294,13 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,patch_l
         slicenumberold=0
         tlold=0
         viewaskedold={}
+        
         for keyne in usedclassif:
                 viewaskedold[keyne]=False
-        datav = np.zeros((200,500,3), np.uint8) 
+        datav = np.zeros((500,800,3), np.uint8) 
         while(1):
             imgwip = np.zeros((200,200,3), np.uint8)  
+            
                       
             cv2.setMouseCallback('imagecr',draw_circle,img)
             c = cv2.getTrackbarPos('Contrast','Slidercr')
@@ -944,7 +1400,9 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,patch_l
 #                print 'view'
                 cv2.putText(imgwip,'WIP',(10,10),cv2.FONT_HERSHEY_PLAIN,5,red,2,cv2.LINE_AA)
                 cv2.imshow('wip',imgwip)
-                imgn,datav= drawpatch(tl,dimtabx,dimtaby,slicenumber,viewasked,patch_list_cross_slice,patch_list_ref_slice,volumeroilocal)
+                
+                imgn,datav= drawpatch(tl,dimtabx,dimtaby,slicenumber,viewasked,patch_list_cross_slice,
+                                                patch_list_ref_slice,volumeroilocal,slnt,tabroi,num_class)
                                
                 cv2.putText(datav,'slice number :'+str(slicenumber),(10,180),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
                 cv2.putText(datav,'patient Name :'+tail,(10,190),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
@@ -1098,8 +1556,10 @@ def openfichierfrpr(path_patient,tabfromfront,thrprobaUIP):
     return ''
 
 def visuarun(indata,path_patient):
+    global classif,usedclassif
 
     messageout=""
+ 
 #    print 'path_patient',path_patient
     lpt=indata['lispatientselect']
     pos=lpt.find(' PREDICT!:')
@@ -1115,6 +1575,16 @@ def visuarun(indata,path_patient):
     patient_path_complet=os.path.join(path_patient,listHug)
 
     path_data_dir=os.path.join(patient_path_complet,path_data)
+    #↓define classif
+    if oldFormat:
+        setref='set0'
+    else:
+        datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "rb" ))
+        setref=datarep[5]
+#        print setref
+    classif=classifdict[setref]
+    usedclassif=usedclassifdict[setref]
+#    print usedclassif
     viewstyle=indata['viewstyle']
 
     pathhtml=os.path.join(patient_path_complet,htmldir)
@@ -1138,15 +1608,17 @@ def visuarun(indata,path_patient):
 
     elif viewstyle=='cross view':
             datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "rb" ))
+            tabroi= pickle.load( open( os.path.join(path_data_dir,"tabroi"), "rb" ))
             patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice"), "rb" ))
             thrprobaUIP=float(indata['thrprobaUIP'])
-            messageout=openfichier(viewstyle,datarep,patient_path_complet,thrprobaUIP,patch_list_cross_slice,patch_list_cross_slice)
+            messageout=openfichier(viewstyle,datarep,patient_path_complet,thrprobaUIP,patch_list_cross_slice,patch_list_cross_slice,tabroi)
             
     elif viewstyle=='front view':
             datarep= pickle.load( open( os.path.join(path_data_dir,"datafront"), "rb" ))
+            tabroif= pickle.load( open( os.path.join(path_data_dir,"tabroif"), "rb" ))
             patch_list_front_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_front_slice"), "rb" ))
             thrprobaUIP=float(indata['thrprobaUIP'])
-            messageout=openfichier(viewstyle,datarep,patient_path_complet,thrprobaUIP,patch_list_front_slice,patch_list_front_slice)
+            messageout=openfichier(viewstyle,datarep,patient_path_complet,thrprobaUIP,patch_list_front_slice,patch_list_front_slice,tabroif)
             
     elif viewstyle=='volume view from cross':
             datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "rb" ))
@@ -1176,11 +1648,12 @@ def visuarun(indata,path_patient):
 
             thrprobaUIP=float(indata['thrprobaUIP'])
             datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "rb" ))
+            tabroi= pickle.load( open( os.path.join(path_data_dir,"tabroi"), "rb" ))
 #            patch_list_merge= pickle.load( open( os.path.join(path_data_dir,"patch_list_merge"), "rb" ))
 #            proba_merge= pickle.load( open( os.path.join(path_data_dir,"proba_merge"), "rb" ))
             patch_list_merge_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_merge_slice"), "rb" ))
             patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice"), "rb" ))
-            messageout=openfichier(viewstyle,datarep,patient_path_complet,thrprobaUIP,patch_list_merge_slice,patch_list_cross_slice)
+            messageout=openfichier(viewstyle,datarep,patient_path_complet,thrprobaUIP,patch_list_merge_slice,patch_list_cross_slice,tabroi)
     
     elif viewstyle=='front projected view':
 

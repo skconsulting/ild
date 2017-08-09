@@ -11,12 +11,36 @@ import os
 
 import matplotlib.pyplot as plt
 
-cwd=os.getcwd()
-(cwdtop,tail)=os.path.split(cwd)
-#print cwd
-#namedirtop='pickle_ex/pickle_ex71'
-namedirtop='pickle'
-pfile = os.path.join(cwdtop,namedirtop)
+
+topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
+
+#path with data for training
+pickel_dirsource_root='pickle'
+pickel_dirsource_e='train_set' #path for data fort training
+pickel_dirsourcenum='2' #extensioon for path for data for training
+extendir2=''
+
+
+pickleStore='pickle'
+if len (extendir2)>0:
+    extendir2='_'+extendir2
+
+pickel_dirsource=pickel_dirsource_root+'_'+pickel_dirsource_e+'_'+pickel_dirsourcenum+extendir2
+
+patch_dir=os.path.join(topdir,pickel_dirsource)
+patch_dir_store=os.path.join(patch_dir,pickleStore)
+
+print 'patch dir source : ',patch_dir #path with data for training
+print 'weight dir store : ',patch_dir_store #path with weights after training
+#
+#oooo
+#
+#cwd=os.getcwd()
+#(cwdtop,tail)=os.path.split(cwd)
+##print cwd
+##namedirtop='pickle_ex/pickle_ex71'
+#namedirtop='pickle'
+pfile = patch_dir_store
 print 'path to get csv with train data',pfile
 # which file is the source
 fileis = [name for name in os.listdir(pfile) if ".csv" in name.lower()]
@@ -48,6 +72,8 @@ with open(filei, 'rb') as csvfile:
     categorical_accuracy = []
     val_accuracy = []
     train_loss = []
+    lr=[]
+    train_loss = []
     val_loss = []
     x = []
 #    print reader
@@ -55,19 +81,41 @@ with open(filei, 'rb') as csvfile:
 #        print row
         categorical_accuracy.append([float(row['categorical_accuracy'])])
         val_accuracy.append([float(row['val_categorical_accuracy'])])
+        lr.append([float(row['lr'])])
         train_loss.append([float(row['loss'])])
         val_loss.append([float(row['val_loss'])])
         x.append(row['epoch'])
 #        print row[' Val_loss']
+lrf= float(row['lr'])
+print '%0.2e'% lrf
+
 print '--------------'
-print 'Current Last Epoch: ',row['epoch'][0:2]
-print ' categorical_accuracy',' val_categorical_accuracy',' loss',' val_loss'
-print (row['categorical_accuracy'][0:6],row['val_categorical_accuracy'][0:6],\
-       row['loss'][0:6],row['val_loss'][0:6])
+print 'Current Last Epoch: ',row['epoch'][0:4]
+print 'loss      ','val_loss  ','lr      ', 'train_acc','val_acc'
+print ( row['loss'][0:6],row['val_loss'][0:6],'%0.2e'% lrf,
+        row['categorical_accuracy'][0:4],row['val_categorical_accuracy'][0:4])
 print '--------------'
 
 # plotting
 
+fig = plt.figure()
+
+#fig.set_size_inches(9, 7)
+
+ax = fig.add_subplot(1,1,1)
+ax.set_title('lr Results',fontsize=10)
+ax.set_xlabel('# Epochs')
+ax.set_ylabel('value')
+ax.yaxis.tick_right()
+ax.yaxis.set_label_position("right")
+ax.yaxis.set_ticks_position('both')
+
+ax.plot(x,lr, label='lr');
+#ax.plot(x,train_loss, label='train_loss');
+#ax.plot(x,val_loss, label='val_loss');
+
+legend = ax.legend(loc='lower left', shadow=True,fontsize=10)
+plt.show()
 fig = plt.figure()
 
 #fig.set_size_inches(9, 7)

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Tue May 02 15:04:39 2017
+parameter common for training
 
 @author: sylvain
 28 july 2017
@@ -31,7 +32,7 @@ print keras.__version__
 print theano.__version__
 print ' keras.backend.image_data_format :',keras.backend.image_data_format()
 
-setdata='set1'
+setdata='set2'
 
 writeFile=False
 
@@ -53,7 +54,7 @@ surfelem= surfelemp*pxy/100 #surface of 1 patch in cm2
 volelemp=avgPixelSpacing*avgPixelSpacing*avgPixelSpacing # for 1 pixel
 volelem= volelemp*pxy/1000 #in ml, to multiply by slicepitch in mm
 
-modelname='ILD_CNN_model.h5'
+modelname='CNN.h5'
 pathjs='../static'
 
 datacrossn='datacross'
@@ -203,9 +204,8 @@ elif setdata=='set1':
         'ground_glass':2,
         'healthy':3,
         'reticulation':4,
-        'air_trapping':5,
+        'air_trapping':5,        
         'bronchiectasis':6,
-#        'emphysema':10,
         'GGpret':7,
         'lung':8
         }
@@ -218,6 +218,97 @@ elif setdata=='set1':
         'air_trapping',
         'bronchiectasis',
         'GGpret'
+        ]
+    derivedpat=[
+        'HCpret',
+        'HCpbro',
+        'GGpbro',
+        'GGpret',
+        'bropret'
+        ]
+    
+elif setdata=='set2':
+    classif ={
+        'consolidation':0,
+        'HC':1,
+        'ground_glass':2,
+        'healthy':3,
+        'reticulation':4,
+        'air_trapping':5,
+        'cysts':6,
+        'bronchiectasis':7,
+        'GGpret':8,
+        'lung':9
+        }
+    usedclassif = [
+        'consolidation',
+        'HC',
+        'ground_glass',
+        'healthy',
+        'reticulation',
+        'air_trapping',
+        'cysts',
+        'bronchiectasis',
+        'GGpret'
+        ]
+    derivedpat=[
+        'HCpret',
+        'HCpbro',
+        'GGpbro',
+        'GGpret',
+        'bropret'
+        ]    
+    
+    
+elif setdata=='setall':
+    classif ={
+        'consolidation':0,
+        'HC':1,
+        'ground_glass':2,
+        'healthy':3,
+        'micronodules':4,
+        'reticulation':5,
+        'air_trapping':6,
+        'cysts':7,
+        'bronchiectasis':8,
+        'emphysema':9,
+        'bronchial_wall_thickening':10,
+        'early_fibrosis':11,
+        'increased_attenuation':12,
+        'macronodules':13,
+        'pcp':14,
+        'peripheral_micronodules':15,
+        'tuberculosis':16,
+        'GGpret':17,
+        'HCpret':18,
+        'HCpbro':19,
+        'GGpbro':20,
+        'bropret':21,
+        'lung':22
+        }
+    usedclassif = [
+        'consolidation',
+        'HC',
+        'ground_glass',
+        'healthy',
+        'micronodules',
+        'reticulation',
+        'air_trapping',
+        'cysts',
+        'bronchiectasis',
+        'emphysema',
+        'bronchial_wall_thickening',
+        'early_fibrosis',
+        'increased_attenuation',
+        'macronodules',
+        'pcp',
+        'peripheral_micronodules',
+        'tuberculosis',
+        'HCpret',
+        'HCpbro',
+        'GGpbro',
+        'GGpret',
+        'bropret'
         ]
     derivedpat=[
         'HCpret',
