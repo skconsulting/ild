@@ -15,7 +15,7 @@ import shutil
 import time
 
 
-setdata='set2'
+setdata='set0'
 
 #avgPixelSpacing=0.734   # average pixel spacing in mm
 #
@@ -36,13 +36,15 @@ typei1='bmp'
 typei2='png' 
 
 lung_mask='lung'
-lung_mask_bmp='bmp'
+lung_mask1='lung_mask'
+lung_mask_bmp='scan_bmp'
+lung_mask_bmp1='bmp'
 path_data='data'
 volumeroifile='volumeroi'
 
 black=(0,0,0)
 grey=(100,100,100)
-highgrey=(240,240,240)
+highgrey=(200,200,200)
 red=(255,0,0)
 green=(0,255,0)
 blue=(0,0,255)
@@ -61,9 +63,8 @@ chatain=(139,108,66)
 cwd=os.getcwd()
 (cwdtop,tail)=os.path.split(cwd)
 
-if setdata=='set2':
-
-#set2
+if setdata=='set0':
+#set0
     classif ={
         'consolidation':0,
         'HC':1,
@@ -76,8 +77,24 @@ if setdata=='set2':
         'bronchiectasis':8,
 #        'emphysema':10,
         'GGpret':9,
-        'lung':10
+        'lung':10,
+        'erase':12
         }
+    usedclassif =[
+        'consolidation',
+        'HC',
+        'ground_glass',
+        'healthy',
+        'micronodules',
+        'reticulation',
+        'air_trapping',
+        'cysts',
+        'bronchiectasis',
+#        'emphysema':10,
+        'GGpret',
+        'lung',
+        'erase'      
+        ]
 
     classifcontour=['lung']
 else:
@@ -107,29 +124,9 @@ classifc ={
      'macronodules':white,
      'pcp':white,
      'peripheral_micronodules':white,
-     'tuberculosis':white
+     'tuberculosis':white,
+     'erase':white
  }
-volcol={
-    'consolidation':'boxMaterialCyan',
-    'HC':'boxMaterialBlue',
-    'ground_glass':'boxMaterialRed',
-    'healthy':'boxMaterialGrey',
-    'micronodules':'boxMaterialGreen',
-    'reticulation':'boxMaterialYellow',
-    'air_trapping':'boxMaterialPink',
-    'cysts':'boxMaterialLightgreen',
-     'bronchiectasis':'boxMaterialOrange',
-     'emphysema':'boxMaterialChatain',
-     'GGpret': 'boxMaterialParme',
-
-     'bronchial_wall_thickening':'boxMaterialWhite',
-     'early_fibrosis':'boxMaterialWhite',
-     'increased_attenuation':'boxMaterialWhite',
-     'macronodules':'boxMaterialWhite',
-     'pcp':'boxMaterialWhite',
-     'peripheral_micronodules':'boxMaterialWhite',
-     'tuberculosis':'boxMaterialWhite'
-  }
 
 def rsliceNum(s,c,e):
     endnumslice=s.find(e)

@@ -5,7 +5,7 @@ version 1.1
 28 july 2017
 '''
 #from param_pix_p import *
-from param_pix_p import scan_bmp,avgPixelSpacing,dimpavx,dimpavy,volumeroifile,dirpickleArch,modelArch
+from param_pix_p import scan_bmp,avgPixelSpacing,dimpavx,dimpavy,volumeroifile,dirpickleArch,modelArch,surfelemp
 from param_pix_p import typei,typei1,typei2
 from param_pix_p import white,yellow
 
@@ -19,7 +19,7 @@ from param_pix_p import threeFileTop0,threeFileTop1,threeFileTop2,htmldir,source
 from param_pix_p import dicomfront,dicomcross,threeFile,threeFile3d,threeFileTxt,transbmp,threeFileMerge
 from param_pix_p import threeFileTxtMerge,volcol,sroi,sroi3d,threeFileTxt3d,threeFileBot,predictout3d1
 from param_pix_p import predictout3dn,predictout3d,jpegpath3d,predictout
-from param_pix_p import jpegpadirm,dicompadirm,volumeweb,source_name,writeFile,datafrontn,path_data,dirpickle,cwdtop
+from param_pix_p import jpegpadirm,dicompadirm,source_name,datafrontn,path_data,dirpickle,cwdtop
 
 from param_pix_p import remove_folder,normi,rsliceNum,norm,maxproba
 from param_pix_p import classifdict,usedclassifdict,oldFormat
@@ -33,7 +33,7 @@ import os
 import cv2
 import dicom
 import random
-import scipy
+
 import shutil
 from skimage import measure
 import cPickle as pickle
@@ -153,7 +153,8 @@ def genebmp(fn,sou,nosource):
         t5= tailw
 
         imtowrite=tagviews(imtowrite,t0,0,10,t1,0,20,t2,0,30,t3,0,40,t4,0,dimtaby-10,t5,0,dimtaby-20)
-        scipy.misc.imsave(bmpfile,imtowrite)
+#        scipy.misc.imsave(bmpfile,imtowrite)
+        cv2.imwrite(bmpfile,imtowrite)
 
     return tabscan,slnt,dimtabx,slicepitch,lislnn
 
@@ -296,7 +297,7 @@ def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan,listsln):
             imgcoreScan=tabscanScan[slicenumber][0]
             bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
             if tabscan[slicenumber].max()==0:
-                scipy.misc.imsave(bmpfile,imgresize)    
+                cv2.imwrite(bmpfile,imgresize)    
                 tabscan[slicenumber]=imgresize
     else:
             print 'no lung scan in dcm'
@@ -401,7 +402,7 @@ def pavgene(dirf,dimtabx,dimtaby,tabscanScan,tabscanLung,slnt,jpegpath,listsln):
                  nameslijpeg='s_'+str(img)+'.'+typei
                  namepatchImage=os.path.join(jpegpathdir,nameslijpeg)
                  tabjpeg=cv2.add(tabfw,tabfrgb)
-                 scipy.misc.imsave(namepatchImage,tabjpeg)
+                 cv2.imwrite(namepatchImage,tabjpeg)
         print "pav time:",round(mytime()-tpav,3),"s"
 
         return patch_list
@@ -458,7 +459,7 @@ def pavgenefront(dirf,dimtabx,dimtaby,tabscanScan,tabscanLung,slnt,jpegpath):
                  nameslijpeg='s_'+str(img)+'.'+typei
                  namepatchImage=os.path.join(jpegpathdir,nameslijpeg)
                  tabjpeg=cv2.add(tabfw,tabfrgb)
-                 scipy.misc.imsave(namepatchImage,tabjpeg)
+                 cv2.imwrite(namepatchImage,tabjpeg)
         print "pav time:",round(mytime()-tpav,3),"s"
         return patch_list
 
@@ -527,7 +528,7 @@ def wtebres(wridir,dirf,tab,dimtabx,slicepitch,lungm,ty):
         if ty=='lung':
             namescan=os.path.join(bgdirf,trscanbmp)
             np.putmask(imgresize,imgresize>0,100)
-            scipy.misc.imsave(namescan,imgresize)
+            cv2.imwrite(namescan,imgresize)
             dimtabxn=imgresize.shape[0]
             dimtabyn=imgresize.shape[1]
         if ty=='scan':
@@ -543,7 +544,7 @@ def wtebres(wridir,dirf,tab,dimtabx,slicepitch,lungm,ty):
             t5= tailw
             imgresize8=normi(imgresize)
             imgresize8r=tagviews(imgresize8,t0,0,10,t1,0,20,t2,(dimtabyn/2)-10,dimtabxn-10,t3,0,38,t4,0,dimtabxn-10,t5,0,dimtabxn-20)
-            scipy.misc.imsave(namescan,imgresize8r)
+            cv2.imwrite(namescan,imgresize8r)
 
         tabres[i]=imgresize
 #        cv2.imwrite (trscan, tab[i],[int(cv2.IMWRITE_PNG_COMPRESSION),0])
@@ -1240,7 +1241,7 @@ def pavf(proba_cross,dirf,pat,scan,tab,
 #     cv2.waitKey(0)
 #     cv2.destroyAllWindows()
 
-     scipy.misc.imsave(namepatchImage,tabjpeg)
+     cv2.imwrite(namepatchImage,tabjpeg)
      return proba_list,patch_list
 
 def mergeproba(dirf,prx,plx,tabx,slnt,dimtabx,dimtaby)  :
@@ -1526,11 +1527,12 @@ def genepatchlistslice(patch_list_cross,proba_cross,lissln,subpleurmask,thrpatch
             ii+=1                   
     return res,ressub
 
-def generoi(dirf,tabroi,dimtabx):
+def generoi(dirf,tabroi,dimtabx,volumeroi):
     for pat in usedclassif:
         pathroi=os.path.join(dirf,pat)
         if os.path.exists(pathroi):
-            lroi=[name for name in os.listdir(pathroi) if name.find(typei)>0 or name.find(typei1)>0 or name.find(typei2)>0]
+    
+            lroi=[name for name in os.listdir(pathroi) if name.find(typei)>0 or name.find(typei1)>0 or name.find(typei2)>0]            
             for s in lroi:
                 numslice=rsliceNum(s,'_','.'+typei)
                 if numslice <0:
@@ -1545,8 +1547,21 @@ def generoi(dirf,tabroi,dimtabx):
                 else:
                     np.putmask(img, img > 0, classif['lung'])
                 tabroi[numslice]+=img
+                np.putmask(img,img>0,1)
+                area= img.sum()* surfelemp /100
+                volumeroi[numslice][pat]=area   
+#                if pat == 'ground_glass' and numslice==4:
+##                    print pat, tabroi[143].max()
+##                    cv2.imshow('143',normi(tabroi[143]))
+#                    cv2.imwrite('a.bmp',normi(img))
+#                    print img.shape
+#                    print area
+#                    print surfelemp
+#                    cv2.waitKey(0)
+#                    cv2.destroyAllWindows()
                 
-    return tabroi
+                               
+    return tabroi,volumeroi
         
 
 def predictrun(indata,path_patient):
@@ -1658,6 +1673,7 @@ def predictrun(indata,path_patient):
             os.mkdir(dicompathdirmerge)
             path_data_writefile=os.path.join(path_data_write,volumeroifile)
             
+            
             fmbmp=os.path.join(dirf,lungmask1)
             if os.path.exists(fmbmp):
                 lungmaski=lungmask1
@@ -1674,21 +1690,24 @@ def predictrun(indata,path_patient):
             print '------------------'
             print source
             tabscanScan,slnt,dimtabx,slicepitch,lissln=genebmp(dirf,source,nosource)
-            tabroi=np.zeros((slnt,dimtabx,dimtabx), np.uint8) 
-                 
-            tabroi=generoi(dirf,tabroi,dimtabx)
-            pickle.dump(tabroi, open( os.path.join(path_data_write,"tabroi"), "wb" ),protocol=-1)
-            lungSegment=selectposition(lissln)
-
-#                print 'slnt',slnt
-            datacross=(slnt,dimtabx,dimtabx,slicepitch,lissln,setref)   
             if not os.path.exists(path_data_writefile):
                 volumeroi={}
                 for i in lissln:
                      volumeroi[i]={}
                      for pat in classif:
                          volumeroi[i][pat]=0
-                pickle.dump(volumeroi, open(path_data_writefile, "wb" ),protocol=-1)
+            else:
+                         
+                volumeroi=pickle.load(open(path_data_writefile, "rb" ))
+                
+            tabroi=np.zeros((slnt,dimtabx,dimtabx), np.uint8) 
+            tabroi,volumeroi=generoi(dirf,tabroi,dimtabx,volumeroi)
+            pickle.dump(volumeroi, open(path_data_writefile, "wb" ),protocol=-1)
+            pickle.dump(tabroi, open( os.path.join(path_data_write,"tabroi"), "wb" ),protocol=-1)
+            lungSegment=selectposition(lissln)
+           
+            datacross=(slnt,dimtabx,dimtabx,slicepitch,lissln,setref)   
+            
             pickle.dump(datacross, open( os.path.join(path_data_write,datacrossn), "wb" ),protocol=-1)
 
 #            pickle.dump(tabscanScan, open( os.path.join(path_data_write,"tabscanScan"), "wb" ),protocol=-1)

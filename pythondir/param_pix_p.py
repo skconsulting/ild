@@ -387,6 +387,22 @@ def evaluate(actual,pred,num_class,label):
 #    return fscore, acc, cm,pres,recall
     return pres,recall
 
+
+def evaluatefull(actual,pred,num_class):
+#    fscore = metrics.f1_score(actual, pred,labels=label, average='weighted')
+#    acc = metrics.accuracy_score(actual, pred)
+    labl=[]
+    for i in range(1,num_class):
+        labl.append(i)
+    pres = metrics.precision_score(actual, pred,labels=labl,average='weighted')
+    recall = metrics.recall_score(actual, pred,labels=labl,average='weighted')
+    
+#    for i in range(num_class):
+#        labl.append(i)
+#    cm = metrics.confusion_matrix(actual,pred,labels=labl)
+#    return fscore, acc, cm,pres,recall
+    return pres,recall
+
 def evaluatef(actual,pred,num_class):
 #    fscore = metrics.f1_score(actual, pred,labels=label, average='weighted')
 #    acc = metrics.accuracy_score(actual, pred)
