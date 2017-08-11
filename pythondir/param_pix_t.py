@@ -32,7 +32,7 @@ print keras.__version__
 print theano.__version__
 print ' keras.backend.image_data_format :',keras.backend.image_data_format()
 
-setdata='set2'
+setdata='set0'
 
 writeFile=False
 
@@ -40,7 +40,7 @@ MIN_BOUND = -1000.0
 MAX_BOUND = 400.0
 PIXEL_MEAN = 0.25
 
-thrpatch = 0.8#patch overlapp tolerance
+thrpatch = 0.9#patch overlapp tolerance
 dimpavx=16
 dimpavy=16
 
@@ -79,14 +79,15 @@ jpegpath='jpegpath'
 jpegpath3d='jpegpath3d'
 jpegpadirm='jpegpadirm'
 
-lung_name='lung'
-lung_namebmp='bmp'
-lung_name_gen='lung'
+#lung_name='lung'
+#lung_namebmp='bmp'
+#lung_name_gen='lung'
 #directory with lung mask dicom
 lungmask='lung'
 lungmask1='lung_mask'
 #directory to put  lung mask bmp
-lungmaskbmp='scan_bmp'
+lungmaskbmp='bmp'
+lungmaskbmp1='scan_bmp'
 lungimage='lungimage'
 
 patchpicklename='picklepatches.pkl'#pickle for patches
@@ -333,6 +334,10 @@ classifc ={
     'bronchiectasis':orange,
     'emphysema':chatain,
     'GGpret': parme,
+    'HCpret': white,
+    'HCpbro': white,
+    'GGpbro': white,
+    'bropret': white,
      'lung': highgrey,
      'nolung': lowgreen,
      'bronchial_wall_thickening':white,

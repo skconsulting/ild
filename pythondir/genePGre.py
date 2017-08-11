@@ -15,7 +15,7 @@ from param_pix_t import dimpavx,dimpavy,typei,typei1,avgPixelSpacing,thrpatch,pe
 from param_pix_t import remove_folder,normi,genelabelloc,totalpat,totalnbpat
 from param_pix_t import white
 from param_pix_t import patchpicklename,scan_bmp,lungmask,lungmask1,sroi,patchesdirname
-from param_pix_t import imagedirname,picklepath,source
+from param_pix_t import imagedirname,picklepath,source,lungmaskbmp
 import os
 #import sys
 #import png
@@ -42,7 +42,7 @@ subHUG='UIP'
 
 toppatch= 'TOPPATCH'
 #extension for output dir
-extendir='set2'
+extendir='set0'
 #extendir='essai1'
 alreadyDone =['S4550','S106530','S107260','S139430','S145210','S14740','S15440','S1830','S28200','S335940','S359750']
 alreadyDone =[]
@@ -159,7 +159,7 @@ def genebmp(dirName, sou,tabscanName):
         remove_folder(dirFilePbmp)
         os.mkdir(dirFilePbmp)
     elif sou == lungmask or sou == lungmask1 :
-        dirFilePbmp=os.path.join(dirFileP,scan_bmp)
+        dirFilePbmp=os.path.join(dirFileP,lungmaskbmp)
         tabscan=np.zeros((slnt,dimtabx,dimtaby),np.uint8)
         remove_folder(dirFilePbmp)
         os.mkdir(dirFilePbmp)
@@ -228,9 +228,11 @@ def genebmp(dirName, sou,tabscanName):
 #                        print 'dssresize' ,sou, dsrresize.min(),dsrresize.max()
 #                        print 'dssresize dsr 2' ,sou, dsr.min(),dsr.max()
 #                        dsrforimage=normi(dsrresize)
-                        imgcored=imgcoredeb+'.'+typei1
+                        
+                        imgcored=tabscanName[scanNumber]+'.'+typei1
                         bmpfiled=os.path.join(dirFilePbmp,imgcored)
-                        cv2.imwrite (bmpfiled, dsrresize)
+                        imgc=colorimage(dsrresize,classifc[sou])
+                        cv2.imwrite (bmpfiled, imgc)
                         dsrresizer=np.copy(dsrresize)
                         np.putmask(dsrresizer,dsrresizer==1,0)
                         np.putmask(dsrresizer,dsrresizer>0,100)
@@ -412,6 +414,14 @@ def pavs (dirName,pat,slnt,dimtabx,dimtaby,tabscanName):
 #                 errorfile.write(tw+' :no patch\n')
     return ntotpat
 
+def colorimage(image,color):
+#    im=image.copy()
+    im = cv2.cvtColor(image,cv2.COLOR_GRAY2BGR)
+    np.putmask(im,im>0,color)
+
+    im=cv2.cvtColor(im,cv2.COLOR_BGR2RGB)
+    return im
+
 
 def calnewpat(dirName,pat,slnt,dimtabx,dimtaby,tabscanName):
     print 'new pattern : ',pat
@@ -477,22 +487,31 @@ def calnewpat(dirName,pat,slnt,dimtabx,dimtaby,tabscanName):
                     naf3=tabscanName[i]+'.'+typei1
 
                     npdn3=os.path.join(npd,naf3)
-                    cv2.imwrite(npdn3,normi(tab3[i]))
+#                    np.putmask(tab3[i],tab3[i]>0,1)
+                    imgc=colorimage(tab3[i],classifc[pat])
+#                    cv2.imwrite(npdn3,normi(tab3[i]))
+                    cv2.imwrite(npdn3,imgc)
 
 #                    naf2=pat2+'_'+str(i)+'.'+typei
                     naf2=tabscanName[i]+'.'+typei1
                     npd2=os.path.join(namedirtopcf,pat2)
 #                    npd2=os.path.join(npd2,scan_bmp)
                     npdn2=os.path.join(npd2,naf2)
-                    cv2.imwrite(npdn2,normi(tab2[i]))
+                    imgc=colorimage(tab2[i],classifc[pat2])
+#                    cv2.imwrite(npdn2,normi(tab2[i]))
+#                    cv2.imwrite(npdn2,normi(tab2[i]))
+                    cv2.imwrite(npdn2,imgc)
+
+
 
 #                    naf1=pat1+'_'+str(i)+'.'+typei
                     naf1=tabscanName[i]+'.'+typei1
                     npd1=os.path.join(namedirtopcf,pat1)
 #                    npd1=os.path.join(npd1,scan_bmp)
                     npdn1=os.path.join(npd1,naf1)
-
-                    cv2.imwrite(npdn1,normi(tab1[i]))
+                    imgc=colorimage(tab1[i],classifc[pat1])
+#                    cv2.imwrite(npdn1,normi(tab1[i]))
+                    cv2.imwrite(npdn1,imgc)
     return tab3
 
 

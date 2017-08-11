@@ -31,11 +31,11 @@ import scipy.misc
 topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 namedirHUG = 'HUG'
 subHUG='ILD_TXT'
-#subHUG='ILD105'
+#subHUG='ILD35'
 
 toppatch= 'TOPPATCH'
 #extension for output dir
-extendir='set2'
+extendir='set0'
 
 #labelEnh=('consolidation','reticulation,air_trapping','bronchiectasis','cysts')
 labelEnh=()
