@@ -37,8 +37,8 @@ typei2='png'
 
 lung_mask='lung'
 lung_mask1='lung_mask'
-lung_mask_bmp='scan_bmp'
-lung_mask_bmp1='bmp'
+lung_mask_bmp1='scan_bmp'
+lung_mask_bmp='bmp'
 path_data='data'
 volumeroifile='volumeroi'
 

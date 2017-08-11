@@ -9,11 +9,11 @@ version 1.2
 """
 #from param_pix_r import *
 from param_pix_r import path_data,dimtabx,dimtaby
-from param_pix_r import typei1,typei
+from param_pix_r import typei1,typei,typei2
 from param_pix_r import source_name,scan_bmp,roi_name,imageDepth,lung_mask_bmp,lung_mask_bmp1,lung_mask,lung_mask1
 from param_pix_r import white,black,red
 from param_pix_r import classifc,classif,classifcontour,usedclassif
-from param_pix_r import remove_folder,volumeroifile,normi
+from param_pix_r import remove_folder,volumeroifile,normi,rsliceNum
 
 from skimage import measure
 
@@ -262,8 +262,8 @@ def completed(imagename,dirpath_patient,dirroit):
         cv2.imwrite(imgcoreRoi,mroi)
     #    cv2.imshow("mroi", mroi)
         for key in usedclassif :
-            if viewasked[key]==True:
-                print key
+#            if viewasked[key]==True:
+#                print key
                 numeropoly=tabroinumber[key][scannumber]
         #        print key,numeropoly,scannumber
                 for n in range (0,numeropoly+1):
@@ -291,6 +291,8 @@ def completed(imagename,dirpath_patient,dirroit):
                     dirroi=os.path.join(dirpath_patient,key)                
                     if key in classifcontour:        
                         dirroi=os.path.join(dirpath_patient,lung_maskf)
+                        if not os.path.exists(dirroi):
+                            os.mkdir(dirroi)
                         dirroi=os.path.join(dirroi,lung_mask_bmpf)
                     if not os.path.exists(dirroi):
                         os.mkdir(dirroi)
@@ -304,6 +306,15 @@ def completed(imagename,dirpath_patient,dirroit):
                         cv2.putText(menus,'ROI '+' slice:'+str(scannumber)+' overwritten',(150,30),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
         
 #                    if key not in classifcontour:
+                    ldrroi=os.listdir(dirroi)
+
+                    for i in ldrroi:
+                        if rsliceNum(i,'_','.'+typei)==scannumber:
+                            os.remove(os.path.join(dirroi,i))
+                        if rsliceNum(i,'_','.'+typei1)==scannumber:
+                            os.remove(os.path.join(dirroi,i))
+                        if rsliceNum(i,'_','.'+typei2)==scannumber:
+                            os.remove(os.path.join(dirroi,i))
                     cv2.imwrite(imgcoreScan,tabtowrite)  
 #                    else:
 #                        tabtowrite=fillcontours(tabtowrite,key)
@@ -326,10 +337,19 @@ def completed(imagename,dirpath_patient,dirroit):
                     mroi=cv2.imread(imgcoreRoi,1)
                     ctkey=contours(tabtowrite,key)
                     mroiaroi=cv2.add(mroi,ctkey)
-        
+                    
+                    ldrroi=os.listdir(dirroit)
+                    for i in ldrroi:
+                        if rsliceNum(i,'_','.'+typei)==scannumber:
+                            os.remove(os.path.join(dirroit,i))
+                        if rsliceNum(i,'_','.'+typei1)==scannumber:
+                            os.remove(os.path.join(dirroit,i))
+                        if rsliceNum(i,'_','.'+typei2)==scannumber:
+                            os.remove(os.path.join(dirroit,i))                   
+                    
                     cv2.imwrite(imgcoreRoi,mroiaroi)
         
-            images[scannumber]=np.zeros((dimtabx,dimtaby,3), np.uint8)
+        images[scannumber]=np.zeros((dimtabx,dimtaby,3), np.uint8)
     else:
         print 'this is erase'        
         key = 'erase'
@@ -420,7 +440,7 @@ def visua():
     images[scannumber] = np.zeros((dimtabx,dimtaby,3), np.uint8)
     for key in usedclassif:
 #        print key,viewasked[key]
-        if viewasked[key]==True:
+#        if viewasked[key]==True:
             numeropoly=tabroinumber[key][scannumber]
             for n in range (0,numeropoly+1):
                 if len(tabroi[key][scannumber][n])>0:
@@ -468,8 +488,8 @@ def reseted():
 #    global viewasked
     for key in usedclassif:
 
-        print key,viewasked[key]
-        if viewasked[key]== True:
+#        print key,viewasked[key]
+#        if viewasked[key]== True:
             numeropoly=tabroinumber[key][scannumber]
             for n in range (0,numeropoly+1):
                 if len(tabroi[key][scannumber][n])>0:
@@ -547,16 +567,6 @@ def lumi(tabi,r):
     tabi3=tabi2.astype(np.uint8)
     return tabi3
 
-def rsliceNum(s,c,e):
-    ''' look for  afile according to slice number'''
-    #s: file name, c: delimiter for snumber, e: end of file extension
-    endnumslice=s.find(e)
-    posend=endnumslice
-    while s.find(c,posend)==-1:
-        posend-=1
-    debnumslice=posend+1
-    return int((s[debnumslice:endnumslice]))
-
 
 def zoomfunction(im,z,px,py):
     global fxs,x0new,y0new
@@ -581,9 +591,10 @@ def zoomfunction(im,z,px,py):
 
 
 def loop(slnt,pdirk,dirpath_patient,dirroi):
-    global quitl,scannumber,imagename,viewasked,pattern
+    global quitl,scannumber,imagename,viewasked,pattern,patternerase
     quitl=False
     pattern='init'
+    patternerase='init'
     list_image={}
     cdelimter='_'
     extensionimage='.'+typei1
@@ -695,18 +706,21 @@ def loop(slnt,pdirk,dirpath_patient,dirroi):
         noneview = cv2.getTrackbarPos('None','Slider2')
 
         for key2 in usedclassif:
-                s = cv2.getTrackbarPos(key2,'Slider2')
-                if allview==1:
-                     viewasked[key2]=True
-                     cv2.setTrackbarPos(key2,'Slider2' ,1)
-                elif noneview ==1:
-                    viewasked[key2]=False
-                    cv2.setTrackbarPos(key2,'Slider2' ,0)
-                elif s==0:
+#            print patternerase
+            if pattern==key2 or patternerase==key2:
+                cv2.setTrackbarPos(key2,'Slider2' ,1)
+            s = cv2.getTrackbarPos(key2,'Slider2')
+            if allview==1:
+                 viewasked[key2]=True
+                 cv2.setTrackbarPos(key2,'Slider2' ,1)
+            elif noneview ==1:
+                viewasked[key2]=False
+                cv2.setTrackbarPos(key2,'Slider2' ,0)
+            elif s==0:
 #            print key
-                    viewasked[key2]=False
-                else:
-                     viewasked[key2]=True        
+                viewasked[key2]=False
+            else:
+                 viewasked[key2]=True        
             
         if key ==13:
 #                print 'this is return'
@@ -852,12 +866,12 @@ def genebmplung(fn,tabscanScan,slnt,listsln):
     (top,tail) =os.path.split(fn)
     print ('load lung segmented dicom files in :',tail)
     
-
     fmbmp=os.path.join(top,lung_mask1)
     if not os.path.exists(fmbmp):
         fmbmp=os.path.join(top,lung_mask)
-        lung_maskf=  lung_mask  
-        os.mkdir(fmbmp)
+        lung_maskf=  lung_mask
+        if not os.path.exists(fmbmp):
+            os.mkdir(fmbmp)
     else:  
         lung_maskf=  lung_mask1 
                 
@@ -936,7 +950,9 @@ def genebmp(fn,nosource,dirroit):
     os.mkdir(fmbmpbmp)
     if nosource:
         fn=top
-     
+    
+    ldiroit=os.listdir(dirroit)
+    
     listdcm=[name for name in  os.listdir(fn) if name.lower().find('.dcm')>0]
 
     slnt=0
@@ -995,7 +1011,22 @@ def genebmp(fn,nosource,dirroit):
         t5=''
         anoted_image=tagviews(dsr,t0,dimtabx-80,dimtaby-10,t1,0,dimtaby-20,t2,dimtabx-250,dimtaby-10,
                      t3,0,dimtaby-30,t4,0,dimtaby-10,t5,0,dimtaby-20)
-        cv2.imwrite(bmpfile,anoted_image)
+        cv2.imwrite(bmpfile,anoted_image)   
+         
+        for i in ldiroit:
+                if rsliceNum(i,'_','.'+typei)==slicenumber:
+                    img=cv2.imread(os.path.join(dirroit,i))
+                    os.remove(os.path.join(dirroit,i))
+                    cv2.imwrite(roibmpfile,img)
+                if rsliceNum(i,'_','.'+typei1)==slicenumber:
+                    img=cv2.imread(os.path.join(dirroit,i))
+                    os.remove(os.path.join(dirroit,i))
+                    cv2.imwrite(roibmpfile,img)
+                if rsliceNum(i,'_','.'+typei2)==slicenumber:
+                    img=cv2.imread(os.path.join(dirroit,i))
+                    os.remove(os.path.join(dirroit,i))
+                    cv2.imwrite(roibmpfile,img)
+            
         if not os.path.exists(roibmpfile):
             cv2.imwrite(roibmpfile,anoted_image)
 #        cv2.imshow('dd',dsr)
@@ -1139,6 +1170,7 @@ def openfichierroi(patient,patient_path_complet):
          os.mkdir(dirsource)
     if not os.path.exists(dirroit):
          os.mkdir(dirroit)
+         
     listdcm=[name for name in os.listdir(dirsource) if name.find('.dcm')>0]
     nosource=True
     if len(listdcm)>0:
