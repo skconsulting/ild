@@ -8,31 +8,26 @@ parameter common for training
 version 1.0
 
 """
-#import argparse
-#from appJar import gui
-#import cPickle as pickle
 import cPickle as pickle
 from numpy import argmax,amax
 import os
-
-from scipy.misc import bytescale
+import numpy as np
+#from scipy.misc import bytescale
 import shutil
-
 import time
-
-
 import keras
 import theano
 
 from keras import backend as K
 K.set_image_dim_ordering('th')
 
-
 print keras.__version__
 print theano.__version__
 print ' keras.backend.image_data_format :',keras.backend.image_data_format()
-
+######################################################################
 setdata='set0'
+thrpatch = 0.8 #patch overlapp tolerance
+######################################################
 
 writeFile=False
 
@@ -40,7 +35,7 @@ MIN_BOUND = -1000.0
 MAX_BOUND = 400.0
 PIXEL_MEAN = 0.25
 
-thrpatch = 0.9#patch overlapp tolerance
+
 dimpavx=16
 dimpavy=16
 
@@ -55,29 +50,19 @@ volelemp=avgPixelSpacing*avgPixelSpacing*avgPixelSpacing # for 1 pixel
 volelem= volelemp*pxy/1000 #in ml, to multiply by slicepitch in mm
 
 modelname='CNN.h5'
-pathjs='../static'
 
-datacrossn='datacross'
-datafrontn='datafront'
-path_data='data'
-path_pickle='CNNparameters'
-predictout='predicted_results'
-predictout3d='predicted_results_3d'
-predictout3dn='predicted_results_3dn'
-predictout3d1='predicted_results_3dn1'
-#predictout3dr='predicted_results_3dr'
-predictoutmerge='predicted_results_merge'
-dicompadirm='predict_dicom'
-dicomcross='cross'
-dicomfront='front'
-dicomcross_merge='merge'
-reportfile='report'
-reportdir='report'
+
+#datafrontn='datafront'
+#path_data='data'
+#path_pickle='CNNparameters'
+#
+#reportfile='report'
+#reportdir='report'
 
 
 jpegpath='jpegpath'
-jpegpath3d='jpegpath3d'
-jpegpadirm='jpegpadirm'
+#jpegpath3d='jpegpath3d'
+#jpegpadirm='jpegpadirm'
 
 #lung_name='lung'
 #lung_namebmp='bmp'
@@ -88,7 +73,7 @@ lungmask1='lung_mask'
 #directory to put  lung mask bmp
 lungmaskbmp='bmp'
 lungmaskbmp1='scan_bmp'
-lungimage='lungimage'
+#lungimage='lungimage'
 
 patchpicklename='picklepatches.pkl'#pickle for patches
 patchesdirname = 'patches'#define the name of directory for patches
@@ -101,43 +86,40 @@ scan_bmp='scan_bmp'
 transbmp='trans_bmp'
 source='source'
 
-bgdir='bgdir3d'
+#bgdir='bgdir3d'
 
 typei='jpg'
 typei1='bmp'
 typei2='png' 
 
-volumeroifile='volumeroi'
+#volumeroifile='volumeroi'
 
 perrorfile='genepatchlog.txt'
 plabelfile='lislabel.txt'
 #excluvisu=['healthy']
 excluvisu=['']
 
-bmpname='scan_bmp'
-
-sourcedcm = 'source'
 
 sroi='sroi'
-sroi3d='sroi3d'
-volumeweb = 'volume.txt'
-htmldir='html'
-threeFileTxt='uip.txt'
-threeFile='uip.html'
-threeFilejs='world.js'
-
-threeFileTxtMerge='uipMerge.txt'
-threeFileMerge='uipMerge.html'
-threeFilejsMerge='worldMerge.js'
-
-threeFileTxt3d='uip3d.txt'
-threeFile3d='uip3d.html'
-threeFilejs3d='world3d.js'
-
-threeFileTop0='uiptop0.html'
-threeFileTop1='uiptop1.html'
-threeFileTop2='uiptop2.html'
-threeFileBot='uipbot.html'
+sroid='sroi3d'
+#volumeweb = 'volume.txt'
+#htmldir='html'
+#threeFileTxt='uip.txt'
+#threeFile='uip.html'
+#threeFilejs='world.js'
+#
+#threeFileTxtMerge='uipMerge.txt'
+#threeFileMerge='uipMerge.html'
+#threeFilejsMerge='worldMerge.js'
+#
+#threeFileTxt3d='uip3d.txt'
+#threeFile3d='uip3d.html'
+#threeFilejs3d='world3d.js'
+#
+#threeFileTop0='uiptop0.html'
+#threeFileTop1='uiptop1.html'
+#threeFileTop2='uiptop2.html'
+#threeFileBot='uipbot.html'
 
 
 black=(0,0,0)
@@ -158,9 +140,9 @@ parme=(234,136,222)
 chatain=(139,108,66)
 highgrey=(240,240,240)
 
-cwd=os.getcwd()
-(cwdtop,tail)=os.path.split(cwd)
-dirpickle=os.path.join(cwdtop,path_pickle)
+#cwd=os.getcwd()
+#(cwdtop,tail)=os.path.split(cwd)
+#dirpickle=os.path.join(cwdtop,path_pickle)
 
 classifnotvisu=['healthy',]
 
@@ -396,15 +378,15 @@ def remove_folder(path):
 
 def normi(tabi):
      """ normalise patches"""
-     tabi2=bytescale(tabi, low=0, high=255)
-#     max_val=float(np.max(tabi))
-#     min_val=float(np.min(tabi))
-#     mm=max_val-min_val
-#     if mm ==0:
-#         mm=1
-##     print 'tabi1',min_val, max_val,imageDepth/float(max_val)
-#     tabi2=(tabi-min_val)*(255/mm)
-#     tabi2=tabi2.astype('uint8')
+#     tabi2=bytescale(tabi, low=0, high=255)
+     max_val=float(np.max(tabi))
+     min_val=float(np.min(tabi))
+     mm=max_val-min_val
+     if mm ==0:
+         mm=1
+#     print 'tabi1',min_val, max_val,imageDepth/float(max_val)
+     tabi2=(tabi-min_val)*(255/mm)
+     tabi2=tabi2.astype('uint8')
      return tabi2
  
 def fidclass(numero,classn):

@@ -30,7 +30,6 @@ import cv2
 import cPickle as pickle
 #general parameters and file, directory names
 #######################################################
-#customisation part for datataprep
 #global directory for scan file
 topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 namedirHUG = 'CHU'
@@ -40,11 +39,15 @@ subHUG='UIP'
 #subHUG='UIP0'
 #subHUG='UIP_S14740'
 
+#global directory for output patches file
 toppatch= 'TOPPATCH'
 #extension for output dir
 extendir='set0'
+extendir1=''
 #extendir='essai1'
-alreadyDone =['S4550','S106530','S107260','S139430','S145210','S14740','S15440','S1830','S28200','S335940','S359750']
+alreadyDone =['S4550','S106530','S107260','S139430','S145210','S14740',
+              'S15440','S1830','S28200','S335940','S359750',
+              'S72260','S72261']
 alreadyDone =[]
 
 #labelEnh=('consolidation','reticulation,air_trapping','bronchiectasis','cysts')
@@ -54,8 +57,9 @@ locabg='anywhere_CHUG'
 ########################################################################
 ######################  end ############################################
 ########################################################################
-
-patchesdirnametop = 'th'+str(round(thrpatch,1))+'_'+toppatch+'_'+extendir
+if len (extendir1)>0:
+    extendir1='_'+extendir1
+patchesdirnametop = 'th'+str(round(thrpatch,1))+'_'+toppatch+'_'+extendir+extendir1
 print 'name of directory for patches :', patchesdirnametop
 
 #full path names
@@ -66,6 +70,7 @@ cwdtop=topdir
 path_HUG=os.path.join(cwdtop,namedirHUG)
 ##directory name with patient databases
 namedirtopc =os.path.join(path_HUG,subHUG)
+print('directory ',namedirtopc)
 if not os.path.exists(namedirtopc):
     print('directory ',namedirtopc, ' does not exist!')
 
@@ -73,7 +78,7 @@ if not os.path.exists(namedirtopc):
 #end general part
 #########################################################
 #log files
-##error file
+
 patchtoppath=os.path.join(cwdtop,patchesdirnametop)
 #create patch and jpeg directory
 patchpath=os.path.join(patchtoppath,patchesdirname)
@@ -101,12 +106,24 @@ if not os.path.isdir(picklepathdir):
 if not os.path.isdir(jpegpath):
     os.mkdir(jpegpath)
 
+listHug= [ name for name in os.listdir(namedirtopc) if os.path.isdir(os.path.join(namedirtopc, name)) and \
+            name not in alreadyDone]
+print 'list of patients :',listHug
+
+
+
 eferror=os.path.join(patchtoppath,perrorfile)
 errorfile = open(eferror, 'a')
 errorfile.write('---------------\n')
 tn = datetime.datetime.now()
 todayn = str(tn.month)+'-'+str(tn.day)+'-'+str(tn.year)+' - '+str(tn.hour)+'h '+str(tn.minute)+'m'+'\n'
 errorfile.write('started ' +namedirHUG+' '+subHUG+' at :'+todayn)
+errorfile.write('--------------------------------\n')
+
+errorfile.write('source directory '+namedirtopc+'\n')
+errorfile.write('th : '+ str(thrpatch)+'\n')
+errorfile.write('name of directory for patches :'+ patchesdirnametop+'\n')
+errorfile.write( 'list of patients :'+str(listHug)+'\n')
 errorfile.write('using pattern set: ' +setdata+'\n')
 for pat in usedclassif:
     errorfile.write(pat+'\n')
@@ -127,11 +144,46 @@ def genepara(namedirtopcf):
     slnt=0
     for filename in fileList:
         FilesDCM =(os.path.join(dirFileP,filename))
-        RefDs = dicom.read_file(FilesDCM)
+        RefDs = dicom.read_file(FilesDCM,force=True)
         scanNumber=int(RefDs.InstanceNumber)
         if scanNumber>slnt:
             slnt=scanNumber
+
+    FilesDCM =(os.path.join(dirFileP,fileList[0]))
+    FilesDCM1 =(os.path.join(dirFileP,fileList[1]))
+    RefDs = dicom.read_file(FilesDCM,force=True)
+    RefDs1 = dicom.read_file(FilesDCM1,force=True)
+    patientPosition=RefDs.PatientPosition
+#    SliceThickness=RefDs.SliceThickness
+    try:
+            slicepitch = np.abs(RefDs.ImagePositionPatient[2] - RefDs1.ImagePositionPatient[2])
+    except:
+            slicepitch = np.abs(RefDs.SliceLocation - RefDs1.SliceLocation)
+
+    
+    SliceThickness=RefDs.SliceThickness
+    try:
+            SliceSpacingB=RefDs. SpacingBetweenSlices
+    except AttributeError:
+             print "Oops! No Slice spacing..."
+             SliceSpacingB=0
     print 'number of slices', slnt
+    print 'slice Thickness :',SliceThickness
+    print 'Slice spacing',SliceSpacingB
+    print 'slice pitch in z :',slicepitch
+    print 'patient position :',patientPosition
+    errorfile = open(eferror, 'a')
+    errorfile.write('---------------\n')
+
+    errorfile.write('number of slices :'+str(slnt)+'\n')
+    errorfile.write('slice Thickness :'+str(SliceThickness)+'\n')
+    errorfile.write('slice spacing :'+str(SliceSpacingB)+'\n')
+    errorfile.write('slice pitch in z :'+str(slicepitch)+'\n')
+    errorfile.write('patient position  :'+str(patientPosition)+'\n')
+
+    errorfile.write('--------------------------------\n')
+    errorfile.close()  
+    
     slnt=slnt+1
     fxs=float(RefDs.PixelSpacing[0])/avgPixelSpacing
     dsr= RefDs.pixel_array
@@ -175,7 +227,7 @@ def genebmp(dirName, sou,tabscanName):
 
     for filename in fileList:
                 FilesDCM =(os.path.join(dirFileP,filename))
-                RefDs = dicom.read_file(FilesDCM)
+                RefDs = dicom.read_file(FilesDCM,force=True)
                 dsr= RefDs.pixel_array
                 dsr=dsr.astype('int16')
                 fxs=float(RefDs.PixelSpacing[0])/avgPixelSpacing

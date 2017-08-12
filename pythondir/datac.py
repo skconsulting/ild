@@ -7,44 +7,33 @@ S. Kritter
 5 august 2017
  '''
  
- 
 from param_pix_t import classif,usedclassif
-from param_pix_t import thrpatch
+from param_pix_t import thrpatch,setdata
 from param_pix_t import remove_folder,norm
-
 from param_pix_t import picklepath,perrorfile
-
 
 import datetime
 import os
-#import cv2
-#import dircache
 import sys
 
-#from scipy import misc
-#from scipy.fftpack import fft,dct,idct
 import numpy as np
-#import sklearn
 from sklearn.model_selection import train_test_split
 import cPickle as pickle
-#from sklearn.cross_validation import train_test_split
 import random
-#import math
-#from math import *
-#print sklearn.__version__
+
 
 #####################################################################
 #define the working directory for input patches
 topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
-
 toppatch= 'TOPPATCH'
-extendir='set2'
+extendir='set0'
+extendir1='3d'
 
 #define the directory to store data
 pickel_dirsource_root='pickle'
 pickel_dirsource_e='train_set' #path for data fort training
-pickel_dirsourcenum='2' #extensioon for path for data for training
-extendir2=''
+pickel_dirsourcenum='0' #extensioon for path for data for training
+extendir2='3d'
 
 augf=3#augmentation factor
 
@@ -55,8 +44,11 @@ augf=3#augmentation factor
 #sepextend2='ROI'
 if len (extendir2)>0:
     extendir2='_'+extendir2
+    
+if len (extendir1)>0:
+    extendir1='_'+extendir1
 
-pickel_dirsource=pickel_dirsource_root+'_'+pickel_dirsource_e+'_'+pickel_dirsourcenum+extendir2
+pickel_dirsource='th'+str(thrpatch)+'_'+pickel_dirsource_root+'_'+pickel_dirsource_e+'_'+pickel_dirsourcenum+extendir2
 
 patch_dir=os.path.join(topdir,pickel_dirsource)
 
@@ -67,7 +59,7 @@ for f in usedclassif:
 print 'path to write data for training',patch_dir
 
 #define the name of directory for patches
-patchesdirnametop = 'th'+str(round(thrpatch,1))+'_'+toppatch+'_'+extendir
+patchesdirnametop = 'th'+str(round(thrpatch,1))+'_'+toppatch+'_'+extendir+extendir1
 
 hugeClass=['healthy']
 #hugeClass=['']
@@ -88,8 +80,12 @@ eferror=os.path.join(patch_dir,perrorfile)
 errorfile = open(eferror, 'w')
 tn = datetime.datetime.now()
 todayn = str(tn.month)+'-'+str(tn.day)+'-'+str(tn.year)+' - '+str(tn.hour)+'h '+str(tn.minute)+'m'+'\n'
-errorfile.write('started ' +toppatch+' '+extendir+' at :'+todayn)
+errorfile.write('started at :'+todayn)
+errorfile.write('--------------------\n')
 errorfile.write('numbe of loops :'+str(augf)+'\n')
+errorfile.write('path for pickle inputs'+patch_dirsource+'\n')
+errorfile.write('path to write data for training'+patch_dir+'\n')
+errorfile.write('pattern set :'+str(setdata)+'\n')
 print 'number of loops:', augf
 errorfile.write('--------------------\n')
 

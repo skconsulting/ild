@@ -275,7 +275,7 @@ def train(x_train, y_train, x_val, y_val, params,eferror,patch_dir_store):
     filew.write ('starting the loop of training with number of patience = '+ str(params['patience'])+'\n')
     filew.write('started at :'+todayn)
 
-    early_stopping=EarlyStopping(monitor='val_loss', patience=15, verbose=1,min_delta=0.005,mode='min')                     
+    early_stopping=EarlyStopping(monitor='val_loss', patience=25, verbose=1,min_delta=0.005,mode='min')                     
     model_checkpoint = ModelCheckpoint(os.path.join(patch_dir_store,'weights_'+today+'.{epoch:02d}-{val_loss:.2f}.hdf5'), 
                                 monitor='val_loss', save_best_only=True,save_weights_only=True)       
     reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2,

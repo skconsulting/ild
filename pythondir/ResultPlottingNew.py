@@ -15,17 +15,18 @@ import matplotlib.pyplot as plt
 topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 
 #path with data for training
+pickel_dirsource_th='0.8'
 pickel_dirsource_root='pickle'
 pickel_dirsource_e='train_set' #path for data fort training
-pickel_dirsourcenum='2' #extensioon for path for data for training
-extendir2=''
+pickel_dirsourcenum='0' #extensioon for path for data for training
+extendir2='td'
 
 
 pickleStore='pickle'
 if len (extendir2)>0:
     extendir2='_'+extendir2
 
-pickel_dirsource=pickel_dirsource_root+'_'+pickel_dirsource_e+'_'+pickel_dirsourcenum+extendir2
+pickel_dirsource='th'+pickel_dirsource_th+'_'+pickel_dirsource_root+'_'+pickel_dirsource_e+'_'+pickel_dirsourcenum+extendir2
 
 patch_dir=os.path.join(topdir,pickel_dirsource)
 patch_dir_store=os.path.join(patch_dir,pickleStore)

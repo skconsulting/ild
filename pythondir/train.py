@@ -23,7 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 For more information please read the README file. The files can also
 be found at: https://github.com/intact-project/ild-cnn
 '''
-from param_pix_t import modelname
+from param_pix_t import modelname,thrpatch
 #from keras.models import load_model
 #from keras.models import model_from_json
 import ild_helpers as H
@@ -63,15 +63,15 @@ topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 #path with data for training
 pickel_dirsource_root='pickle'
 pickel_dirsource_e='train_set' #path for data fort training
-pickel_dirsourcenum='2' #extensioon for path for data for training
-extendir2=''
-
+pickel_dirsourcenum='0' #extensioon for path for data for training
+extendir2='td'
+#########################################################################################
 
 pickleStore='pickle'
 if len (extendir2)>0:
     extendir2='_'+extendir2
 
-pickel_dirsource=pickel_dirsource_root+'_'+pickel_dirsource_e+'_'+pickel_dirsourcenum+extendir2
+pickel_dirsource='th'+str(thrpatch)+'_'+pickel_dirsource_root+'_'+pickel_dirsource_e+'_'+pickel_dirsourcenum+extendir2
 
 patch_dir=os.path.join(topdir,pickel_dirsource)
 patch_dir_store=os.path.join(patch_dir,pickleStore)
@@ -86,8 +86,10 @@ eferror=os.path.join(patch_dir_store,ptrainfile)
 errorfile = open(eferror, 'w')
 tn = datetime.datetime.now()
 todayn = str(tn.month)+'-'+str(tn.day)+'-'+str(tn.year)+' - '+str(tn.hour)+'h '+str(tn.minute)+'m'+'\n'
-errorfile.write('started ' +pickel_dirsource_root+'_'+pickel_dirsource_e+'_'+pickel_dirsourcenum+' at :'+todayn)
-
+errorfile.write('started ' +pickel_dirsource+' at :'+todayn)
+errorfile.write('--------------------\n')
+errorfile.write('patch dir source : '+patch_dir+'\n') #path with data for training
+errorfile.write('weight dir store : ',patch_dir_store+'\n') #path with weights after training
 errorfile.write('--------------------\n')
 errorfile.close()
 
