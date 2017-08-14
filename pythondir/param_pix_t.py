@@ -26,7 +26,7 @@ print theano.__version__
 print ' keras.backend.image_data_format :',keras.backend.image_data_format()
 ######################################################################
 setdata='set0'
-thrpatch = 0.8 #patch overlapp tolerance
+thrpatch = 0.9 #patch overlapp tolerance
 ######################################################
 
 writeFile=False

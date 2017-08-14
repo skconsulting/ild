@@ -1532,7 +1532,7 @@ def generoi(dirf,tabroi,dimtabx,volumeroi):
         pathroi=os.path.join(dirf,pat)
         if os.path.exists(pathroi):
     
-            lroi=[name for name in os.listdir(pathroi) if name.find(typei)>0 or name.find(typei1)>0 or name.find(typei2)>0]            
+            lroi=[name for name in os.listdir(pathroi) if name.find('.'+typei)>0 or name.find('.'+typei1)>0 or name.find('.'+typei2)>0]            
             for s in lroi:
                 numslice=rsliceNum(s,'_','.'+typei)
                 if numslice <0:
@@ -1541,6 +1541,8 @@ def generoi(dirf,tabroi,dimtabx,volumeroi):
                         numslice=rsliceNum(s,'_','.'+typei2)
                     
                 img=cv2.imread(os.path.join(pathroi,s),0)
+#                print os.path.join(pathroi,s)
+#                print img.shape
                 img=cv2.resize(img,(dimtabx,dimtabx),interpolation=cv2.INTER_LINEAR)
                 if classif[pat]>0:
                     np.putmask(img, img > 0, classif[pat])

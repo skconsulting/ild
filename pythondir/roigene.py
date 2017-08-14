@@ -900,6 +900,7 @@ def genebmplung(fn,tabscanScan,slnt,listsln):
             slicenumber=int(RefDs.InstanceNumber)
 
             imgcoreScan=tabscanScan[slicenumber][0]
+            imgresize[imgresize>0]=classifc['lung'][0]
             bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
             cv2.imwrite(bmpfile,imgresize)
     else:

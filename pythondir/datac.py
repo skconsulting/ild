@@ -27,13 +27,13 @@ import random
 topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 toppatch= 'TOPPATCH'
 extendir='set0'
-extendir1='3d'
+extendir1=''
 
 #define the directory to store data
 pickel_dirsource_root='pickle'
 pickel_dirsource_e='train_set' #path for data fort training
 pickel_dirsourcenum='0' #extensioon for path for data for training
-extendir2='3d'
+extendir2=''
 
 augf=3#augmentation factor
 

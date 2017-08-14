@@ -34,7 +34,7 @@ import cPickle as pickle
 topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 namedirHUG = 'CHU'
 #subdir for roi in text
-subHUG='UIP'
+subHUG='UIP2'
 #subHUG='UIP_106530'
 #subHUG='UIP0'
 #subHUG='UIP_S14740'

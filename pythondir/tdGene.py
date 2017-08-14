@@ -25,7 +25,7 @@ import dicom
 topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 namedirHUG = 'CHU'
 #subdir for roi in text
-subHUG='UIP'
+subHUG='UIP2'
 #subHUG='UIP_106530'
 #subHUG='UIP0'
 #subHUG='UIP_S14740'
@@ -36,7 +36,7 @@ toppatch= 'TOPPATCH'
 #extension for output dir
 extendir='set0'
 extendir1='3d'
-#extendir='essai13d'
+extendir='essai13d'
 ############################################################
 if len (extendir1)>0:
     extendir1='_'+extendir1

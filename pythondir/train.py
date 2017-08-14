@@ -64,7 +64,7 @@ topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 pickel_dirsource_root='pickle'
 pickel_dirsource_e='train_set' #path for data fort training
 pickel_dirsourcenum='0' #extensioon for path for data for training
-extendir2='td'
+extendir2=''
 #########################################################################################
 
 pickleStore='pickle'
@@ -89,7 +89,7 @@ todayn = str(tn.month)+'-'+str(tn.day)+'-'+str(tn.year)+' - '+str(tn.hour)+'h '+
 errorfile.write('started ' +pickel_dirsource+' at :'+todayn)
 errorfile.write('--------------------\n')
 errorfile.write('patch dir source : '+patch_dir+'\n') #path with data for training
-errorfile.write('weight dir store : ',patch_dir_store+'\n') #path with weights after training
+errorfile.write('weight dir store : '+patch_dir_store+'\n') #path with weights after training
 errorfile.write('--------------------\n')
 errorfile.close()
 
