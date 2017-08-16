@@ -10,8 +10,8 @@ bug fixed:
 28 july 2017
 """
 #from param_pix_p import *
-from tdGenePredictGui import predictrun
-from modulepredictgui import visuarun,lisdirprocess
+#from tdGenePredictGui import predictrun
+from modulepredictgui import visuarun,lisdirprocess,predictmodule
 
 from appJar import gui
 import os
@@ -98,6 +98,7 @@ if os.path.exists(paramsaveDir):
 def predict(btn):
     global continuevisu,goodir,app
     indata={}
+    message=''
 #    print(app.getListItems("list"))
 #    print(app.getEntry("Percentage of pad Overlapp"))
     indata['thrpatch']=app.getEntry("Percentage of pad Overlapp")
@@ -120,12 +121,19 @@ def predict(btn):
         paramdict['picklein_file']=indata['picklein_file']
         paramdict['subErosion in mm']=indata['subErosion']
         paramdict['picklein_file_front']=indata['picklein_file_front']
+        paramdict['picklein_file']=indata['picklein_file']
         pickle.dump(paramdict,open( paramsaveDirf, "wb" ))
 #    roirun(app.getListItems("list"),lisdir)
 #        print indata
-        predictrun(indata,lisdir)
-        app.stop(Stop)
-        visuDraw()
+        listdir,messsage=predictmodule(indata,lisdir)  
+        print 'message',message
+        if len(message)>1:
+            app.errorBox('error', message)
+            app.stop(Stop)
+            initDraw()
+        else:
+            app.stop(Stop)
+            visuDraw()
     else:
         app.errorBox('error', 'no patient selected for predict')
         app.stop(Stop)
@@ -315,17 +323,17 @@ def initDraw():
         app.addLabel("top1", "Select patient for prediction:")
         app.setLabelBg("top1", "blue")
         app.setLabelFg("top1", "yellow")
-        some_sg,stsdir=lisdirprocess(lisdir)
+        some_sg,stsdir,setrefdict=lisdirprocess(lisdir)
 #        print some_sg
 #        print stsdir
         listannotated=[]
         for user in some_sg:
             if stsdir[user]['front']==True:
                 lroi=' Cross & Front'
-                listannotated.append(user+' PREDICT!: '+lroi)
+                listannotated.append(user+' PREDICT!: ' +setrefdict[user]+lroi)
             elif stsdir[user]['cross']==True:
                 lroi=' Cross'
-                listannotated.append(user+' PREDICT!: '+lroi)
+                listannotated.append(user+' PREDICT!: '+setrefdict[user]+lroi)
             else:
                 listannotated.append(user+' noPREDICT! ')
 #        print listannotated
@@ -414,7 +422,7 @@ def visuDraw():
             app.addLabel("top1", "Select patient to visualize:")
             app.setLabelBg("top1", "blue")
             app.setLabelFg("top1", "yellow")
-            some_sg,stsdir=lisdirprocess(lisdir)
+            some_sg,stsdir,setrefdict=lisdirprocess(lisdir)
             listannotated=[]
             app.startLabelFrame("patient List:")
             app.setSticky("ew")
@@ -422,11 +430,12 @@ def visuDraw():
 #                userf=''
                 if stsdir[user]['front']==True:
                     lroi=' Cross & Front'
-                    listannotated.append(user+' PREDICT!: '+lroi)
+                    listannotated.append(user+' PREDICT!: ' +setrefdict[user]+lroi)
 #                    userf=user+' PREDICT!: '+lroi
                 elif stsdir[user]['cross']==True:
                     lroi=' Cross'
-                    listannotated.append(user+' PREDICT!: '+lroi)
+#                    listannotated.append(user+' PREDICT!: '+lroi)
+                    listannotated.append(user+' PREDICT!: '+setrefdict[user]+lroi)
 #                    userf=user+' PREDICT!: '+lroi
                 else:
                     listannotated.append(user+' noPREDICT! ')

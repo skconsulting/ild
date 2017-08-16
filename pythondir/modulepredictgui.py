@@ -16,7 +16,7 @@ from param_pix_p import threeFileMerge,htmldir,threeFile,threeFile3d,reportdir,r
 
 from param_pix_p import classifc,classifdict,usedclassifdict,oldFormat,writeFile,volumeweb
 
-from param_pix_p import maxproba,excluvisu,fidclass,rsliceNum,evaluate,normi,evaluatef,evaluatefull
+from param_pix_p import maxproba,excluvisu,fidclass,rsliceNum,evaluate,evaluatef,evaluatefull
 
 from tdGenePredictGui import predictrun
 
@@ -32,14 +32,24 @@ def lisdirprocess(d):
     a= os.walk(d).next()[1]
 #    print 'listdirprocess',a
     stsdir={}
+    setrefdict={}
     for dd in a:
         stpred={}
         ddd=os.path.join(d,dd)
         datadir=os.path.join(ddd,path_data)
         pathcross=os.path.join(datadir,datacrossn)
+        
         pathfront=os.path.join(datadir,datafrontn)
+        setrefdict[dd]='no'
+        if os.path.exists(pathcross):
+            datarep= pickle.load( open( os.path.join(datadir,"datacross"), "rb" ))
+            try:
+                setrefdict[dd]=datarep[5]
+            except:
+                setrefdict[dd]='oldset0'
         if os.path.exists(pathcross):
             stpred['cross']=True
+            
         else:
              stpred['cross']=False
         if os.path.exists(pathfront):
@@ -48,10 +58,11 @@ def lisdirprocess(d):
             stpred['front']=False
         stsdir[dd]=stpred
 
-    return a,stsdir
+    return a,stsdir,setrefdict
 
-def predict(indata,path_patient):
+def predictmodule(indata,path_patient):
     print 'module predict'
+    messsage=''
     listdir=[]
     nota=True
     try:
@@ -60,7 +71,7 @@ def predict(indata,path_patient):
             print 'No patient selected'
             nota=False
     if nota:
-        predictrun(indata,path_patient)
+        messsage=predictrun(indata,path_patient)
         if type(listdiri)==unicode:
     #        print 'this is unicode'
 
@@ -68,7 +79,7 @@ def predict(indata,path_patient):
         else:
                 listdir=listdiri
 #    print 'lisdir from module after conv',listdir, type(listdir)
-    return listdir
+    return listdir,messsage
 
 def opennew(dirk, fl,L):
     pdirk = os.path.join(dirk,L[fl])
@@ -1265,7 +1276,7 @@ def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
                 precision={}
                 recall={}
                 fscore={}
-                f.write('   pattern   accuracy  precision  fscore  for slice :'+str(slicenumber)+'\n')
+                f.write('   pattern   precision  recall  fscore  for slice :'+str(slicenumber)+'\n')
                 for pat in usedclassif:
                     numpat=classif[pat]
                     fscore[pat]=0
@@ -1281,8 +1292,7 @@ def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
                         f.write('%14s'%pat+'%7s'%precisioni+'%9s'%recalli+'%9s'%fscorei+'\n')
                         
         referencepat= tabroi.flatten()
-        predictpat=  patchdict.flatten()
-        
+        predictpat=  patchdict.flatten()       
         precisiont,recallt= evaluatefull(referencepat,predictpat,num_class)
         if precisiont+recallt>0:
             fscore=2*precisiont*recallt/(precisiont+recallt)
@@ -1294,8 +1304,10 @@ def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
     #                    print (slicenumber,pat,precisioni,recalli,fscorei)
         f.write('----------------------\n')
         f.write('scores for patient (without lung):\n')
-        f.write('accuracy:'+precisioni+' recall: '+recalli+' fscore: '+fscorei+'\n')
+        f.write('precision:'+precisioni+' recall: '+recalli+' fscore: '+fscorei+'\n')
         f.write('----------------------\n')
+
+        
         f.write('confusion matrix\n')
         
         cm=evaluatef(referencepat,predictpat,num_class)
@@ -1307,18 +1319,39 @@ def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
             if cp>0:
                 newclassif.append(pat)
         newclassif.append(fidclass(0,classif))
+        presip={}
+        recallp={}
+        for pat in newclassif:
+            presip[pat]=0
+            recallp[pat]=0
+            numpat=classif[pat]
+            if numpat == 0:
+                numpat=classif['lung']
+#            print numpat
+            presip[pat], recallp[pat]=evaluate(referencepat,predictpat,num_class,(numpat,))
+#            print pat,presip[pat],recallp[pat]
+        presip['lung'], recallp['lung']=evaluate(referencepat,predictpat,num_class,(0,))
+#        print 'lung',presip['lung'],recallp['lung']
+#                     
+            
         f.write(15*' ')
         for pat in newclassif:
             f.write('%8s'%pat[0:6])
     #    print newclassif
-        f.write('\n')
+        f.write('  recall \n')
             
         for i in range (0,n):
             pat=newclassif[i]
             f.write('%15s'%pat)
             for j in range (0,n):
                 f.write('%8s'%str(cm[i][j]))
-            f.write('\n')        
+            f.write( '%8s'%str(int(round(100*recallp[pat],0)))+'\n')        
+        f.write('----------------------\n')
+        f.write('      precision')
+        for pat in newclassif:
+            f.write('%8s'%str(int(round(100*presip[pat],0))))
+    #    print newclassif
+        f.write('\n')
     f.write('----------------------\n')
     f.close()
     return ''

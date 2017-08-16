@@ -1570,6 +1570,7 @@ def predictrun(indata,path_patient):
         global thrpatch,thrproba,thrprobaMerge,thrprobaUIP,subErosion
         global  picklein_file,picklein_file_front,classif,usedclassif
         td=False
+
 #        print path_patient
 #        print indata
 #        ooo
@@ -1593,6 +1594,17 @@ def predictrun(indata,path_patient):
             setref=picklein_filet[0:posund]
         else:
             setref='set0'
+            
+        picklein_file_front=indata['picklein_file_front']
+        if oldFormat==False:
+            posund=picklein_file_front.find('_')
+            setref2=picklein_file_front[0:posund]
+        else:
+            setref2='set0'
+        if setref!=setref2:
+            return 'ERROR NOT SAME PATTERN SET  FOR CROSS AND FRONT'
+            
+            
         classif=classifdict[setref]
         usedclassif=usedclassifdict[setref]
 
@@ -1849,6 +1861,7 @@ def predictrun(indata,path_patient):
             errorfile.close()
             print 'PREDICT  COMPLETED  for ',f
             print '------------------'
+            return''
 
 
 #errorfile.close()
