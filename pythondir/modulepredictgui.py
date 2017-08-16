@@ -61,8 +61,8 @@ def lisdirprocess(d):
     return a,stsdir,setrefdict
 
 def predictmodule(indata,path_patient):
-    print 'module predict'
-    messsage=''
+#    print 'module predict'
+    message=''
     listdir=[]
     nota=True
     try:
@@ -71,7 +71,8 @@ def predictmodule(indata,path_patient):
             print 'No patient selected'
             nota=False
     if nota:
-        messsage=predictrun(indata,path_patient)
+        message=predictrun(indata,path_patient)
+
         if type(listdiri)==unicode:
     #        print 'this is unicode'
 
@@ -79,7 +80,8 @@ def predictmodule(indata,path_patient):
         else:
                 listdir=listdiri
 #    print 'lisdir from module after conv',listdir, type(listdir)
-    return listdir,messsage
+#    print 'message in predict module',message
+    return listdir,message
 
 def opennew(dirk, fl,L):
     pdirk = os.path.join(dirk,L[fl])
@@ -134,10 +136,6 @@ def lumi(tabi,r):
     tabi3=tabi2.astype(np.uint8)
     return tabi3
 
-#def addpatchn(col,lab, xt,yt,imgn):
-##    print col,lab
-#    cv2.rectangle(imgn,(xt,yt),(xt+dimpavx,yt+dimpavy),col,1)
-#    return imgn
 
 def tagviewn(fig,label,surface,surftot,roi,tl):
     """write text in image according to label and color"""
@@ -177,7 +175,7 @@ def tagvaccuracy(fig,label,precision,recall,fscore):
     deltay=10+(11*labnow)
     gro=0.8
     cv2.putText(fig,'precision: '+'%4s'%(str(precision)+'%')+' recall: '+
-                '%4s'%(str(recall)+'%')+' fscore: '+'%4s'%(str(fscore)+'%'),
+                '%4s'%(str(recall)+'%')+' Fscore: '+'%4s'%(str(fscore)+'%'),
                 (deltax, deltay),cv2.FONT_HERSHEY_PLAIN,gro,col,1)
 
 def tagvcm(fig,cm):
@@ -1219,7 +1217,7 @@ def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
         
         f.write('------------------------------------\n')
     if tabroi.max()>0:
-        print 'start fscore'
+        print 'start Fscore'
         patchdict=np.zeros((slnt,dx,dy), np.uint8)
         num_class=len(classif)
         th=thrprobaUIP
@@ -1276,7 +1274,7 @@ def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
                 precision={}
                 recall={}
                 fscore={}
-                f.write('   pattern   precision  recall  fscore  for slice :'+str(slicenumber)+'\n')
+                f.write('   pattern   precision  recall  Fscore  for slice :'+str(slicenumber)+'\n')
                 for pat in usedclassif:
                     numpat=classif[pat]
                     fscore[pat]=0
@@ -1304,7 +1302,7 @@ def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
     #                    print (slicenumber,pat,precisioni,recalli,fscorei)
         f.write('----------------------\n')
         f.write('scores for patient (without lung):\n')
-        f.write('precision:'+precisioni+' recall: '+recalli+' fscore: '+fscorei+'\n')
+        f.write('precision:'+precisioni+' recall: '+recalli+' Fscore: '+fscorei+'\n')
         f.write('----------------------\n')
 
         
@@ -1321,9 +1319,11 @@ def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
         newclassif.append(fidclass(0,classif))
         presip={}
         recallp={}
+        fscorep={}
         for pat in newclassif:
             presip[pat]=0
             recallp[pat]=0
+            fscorep[pat]=0
             numpat=classif[pat]
             if numpat == 0:
                 numpat=classif['lung']
@@ -1332,8 +1332,11 @@ def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
 #            print pat,presip[pat],recallp[pat]
         presip['lung'], recallp['lung']=evaluate(referencepat,predictpat,num_class,(0,))
 #        print 'lung',presip['lung'],recallp['lung']
-#                     
-            
+        for pat in newclassif:             
+         if presip[pat]+recallp[pat]>0:
+            fscorep[pat]=2*presip[pat]*recallp[pat]/(presip[pat]+recallp[pat])
+        else:
+            fscorep[pat]=0    
         f.write(15*' ')
         for pat in newclassif:
             f.write('%8s'%pat[0:6])
@@ -1345,11 +1348,16 @@ def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
             f.write('%15s'%pat)
             for j in range (0,n):
                 f.write('%8s'%str(cm[i][j]))
-            f.write( '%8s'%str(int(round(100*recallp[pat],0)))+'\n')        
+            f.write( '%8s'%(str(int(round(100*recallp[pat],0)))+'%')+'\n')        
         f.write('----------------------\n')
         f.write('      precision')
         for pat in newclassif:
-            f.write('%8s'%str(int(round(100*presip[pat],0))))
+            f.write('%8s'%(str(int(round(100*presip[pat],0)))+'%'))
+    #    print newclassif
+        f.write('\n')
+        f.write('         Fscore')
+        for pat in newclassif:
+            f.write('%8s'%(str(int(round(100*fscorep[pat],0)))+'%'))
     #    print newclassif
         f.write('\n')
     f.write('----------------------\n')

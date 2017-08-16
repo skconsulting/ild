@@ -125,9 +125,8 @@ def predict(btn):
         pickle.dump(paramdict,open( paramsaveDirf, "wb" ))
 #    roirun(app.getListItems("list"),lisdir)
 #        print indata
-        listdir,messsage=predictmodule(indata,lisdir)  
-        print 'message',message
-        if len(message)>1:
+        listdir,message=predictmodule(indata,lisdir)  
+        if len(message)>0:
             app.errorBox('error', message)
             app.stop(Stop)
             initDraw()

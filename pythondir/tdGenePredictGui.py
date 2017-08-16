@@ -562,6 +562,8 @@ def modelCompilation(t,picklein_file,picklein_file_front,setdata):
         json_string=pickle.load( open(dirpickleArchsc, "rb"))
         model = model_from_json(json_string)
         model.compile(optimizer='Adam', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
+#        model.compile()
+
 
     if t=='cross':
         lismodel=os.listdir(picklein_file)
@@ -1602,6 +1604,7 @@ def predictrun(indata,path_patient):
         else:
             setref2='set0'
         if setref!=setref2:
+            print 'ERROR NOT SAME PATTERN SET  FOR CROSS AND FRONT'
             return 'ERROR NOT SAME PATTERN SET  FOR CROSS AND FRONT'
             
             
