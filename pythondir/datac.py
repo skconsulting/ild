@@ -27,13 +27,13 @@ import random
 #define the working directory for input patches
 topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 toppatch= 'TOPPATCH'
-extendir='set0'
+extendir='set0p'
 extendir1=''
 
 #define the directory to store data
 pickel_dirsource_root='pickle'
 pickel_dirsource_e='train_set' #path for data fort training
-pickel_dirsourcenum='0' #extensioon for path for data for training
+pickel_dirsourcenum='0p' #extensioon for path for data for training
 extendir2=''
 
 augf=3#augmentation factor
@@ -238,13 +238,15 @@ def genf(features_train,labels_train):
     for j in usedclassifFinal:
         indexpatc[j]=0
     for aug in range(augf):
-            for numgen in range(maxl*numclass):
+            for numgen in range(maxl*numclass):    
                     pat =usedclassifFinal[numgen%numclass]
                     numberscan=classNumberInit[pat]
-                    indexpatc[pat] =  indexpatc[pat]%numberscan
+                    if  pat in hugeClass:
+                         indexpatc[pat] =  random.randint(0, numberscan-1)                       
+                    else:                                                   
+                        indexpatc[pat] =  indexpatc[pat]%numberscan
                     indexpat=indexpatc[pat]
-                    indexpatc[pat]=indexpatc[pat]+1
-           
+                    indexpatc[pat]=indexpatc[pat]+1           
                     indexaug = random.randint(0, 11)
                     scan=geneaug(features_train[pat][indexpat],indexaug)
                     mask=classif[pat]
