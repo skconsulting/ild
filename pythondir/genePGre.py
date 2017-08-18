@@ -3,7 +3,9 @@
 """Top file to generate patches from DICOM database HU method and pixle out from CHU Grenoble
 include new patterns when patterns are super imposed, cross view
 it is for cross view only
+includes back_ground
 version 1.0
+18 august 2017
 S. Kritter
 
 """
@@ -12,10 +14,10 @@ S. Kritter
 
 from param_pix_t import classif,derivedpat,usedclassif,classifc
 from param_pix_t import dimpavx,dimpavy,typei,typei1,avgPixelSpacing,thrpatch,perrorfile,plabelfile,setdata,pxy
-from param_pix_t import remove_folder,normi,genelabelloc,totalpat,totalnbpat
+from param_pix_t import remove_folder,normi,genelabelloc,totalpat,totalnbpat,fidclass
 from param_pix_t import white
 from param_pix_t import patchpicklename,scan_bmp,lungmask,lungmask1,sroi,patchesdirname
-from param_pix_t import imagedirname,picklepath,source,lungmaskbmp
+from param_pix_t import imagedirname,picklepath,source,lungmaskbmp,lungmaskbmp1
 import os
 #import sys
 #import png
@@ -34,17 +36,18 @@ import cPickle as pickle
 topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 namedirHUG = 'CHU'
 #subdir for roi in text
-subHUG='UIP2'
+subHUG='UIP'
 #subHUG='UIP_106530'
-#subHUG='UIP0'
+subHUG='UIP0'
 #subHUG='UIP_S14740'
 
 #global directory for output patches file
 toppatch= 'TOPPATCH'
 #extension for output dir
-extendir='set0'
-extendir1=''
-#extendir='essai1'
+extendir='set0p'
+#extendir1=''
+extendir='essai1'
+
 alreadyDone =['S4550','S106530','S107260','S139430','S145210','S14740',
               'S15440','S1830','S28200','S335940','S359750',
               'S72260','S72261']
@@ -211,6 +214,9 @@ def genebmp(dirName, sou,tabscanName):
         remove_folder(dirFilePbmp)
         os.mkdir(dirFilePbmp)
     elif sou == lungmask or sou == lungmask1 :
+        
+        dirFilePbmp=os.path.join(dirFileP,lungmaskbmp1)
+        remove_folder(dirFilePbmp)
         dirFilePbmp=os.path.join(dirFileP,lungmaskbmp)
         tabscan=np.zeros((slnt,dimtabx,dimtaby),np.uint8)
         remove_folder(dirFilePbmp)
@@ -218,8 +224,19 @@ def genebmp(dirName, sou,tabscanName):
     else:
         dirFilePbmp=dirFileP
         tabscan=np.zeros((slnt,dimtabx,dimtaby),np.uint8)
+        fileList = [name for name in os.listdir(dirFilePbmp) if ".bmp" in name.lower()]
+        for f in fileList:
+            os.remove(os.path.join(dirFilePbmp,f))
+        fileList = [name for name in os.listdir(dirFilePbmp) if ".jpg" in name.lower()]
+        for f in fileList:
+            os.remove(os.path.join(dirFilePbmp,f))
+            
         if not os.path.exists(dirFilePbmp):
             os.mkdir(dirFilePbmp)
+    fileListbmp =[name for name in  os.listdir(dirFileP) if ".jpg" in name.lower() or ".bmp" in name.lower()]
+    if len(fileListbmp)>0:
+        for l in fileListbmp:
+            os.remove(os.path.join(dirFileP,l))
                 
     (top,tail)=os.path.split(dirName)
         #list dcm files
@@ -567,10 +584,51 @@ def calnewpat(dirName,pat,slnt,dimtabx,dimtaby,tabscanName):
     return tab3
 
 
+def genebackground(namedir):
+    for sln in range(1,slnt):
+        tabpbac=np.copy(tabslung[sln])
+#        
+        patok=False
+        for pat in usedclassif:
+            if pat !=fidclass(0,classif):
+#                print sln,pat
+                tabpat=tabroipat[pat][sln]
+#                print tabpat.shape
+#                if pat =='ground_glass':
+#                    print tabpat.shape
+#                    cv2.imshow(pat+str(sln),normi(tabpat))
+#                    cv2.waitKey(0)
+#                    cv2.destroyAllWindows()
+                if tabpat.max()>0:
+                    patok=True
+#                    tabp=cv2.cvtColor(tabpat,cv2.COLOR_BGR2GRAY)
+                    np.putmask(tabpat,tabpat>0,255)
+                    mask=np.bitwise_not(tabpat)
+                    tabpbac=np.bitwise_and(tabpbac,mask)
+#                    print tabroipat[fidclass(0,classif)][sln].shape
+                    tabroipat[fidclass(0,classif)][sln]=tabpbac
+                    
+#                    print tabroipat[fidclass(0,classif)][sln].shape
+#                    if sln == 13:
+#                        cv2.imshow(str(sln)+pat, tabroipat[fidclass(0,classif)][sln])
+#                        cv2.waitKey(0)
+#                        cv2.destroyAllWindows()
+        if patok:
+            labeldir=os.path.join(namedir,fidclass(0,classif))
+            if not os.path.exists(labeldir):
+               os.mkdir(labeldir)
+            namepat=tabscanName[sln]+'.'+typei1
+            imgcoreScan=os.path.join(labeldir,namepat)
+    #                imgcoreScan=os.path.join(locadir,namepat)
+            tabtowrite=colorimage(tabroipat[fidclass(0,classif)][sln],classifc[fidclass(0,classif)])
+#            tabtowrite=cv2.cvtColor(tabtowrite,cv2.COLOR_BGR2RGB)
+            cv2.imwrite(imgcoreScan,tabtowrite)    
+
+#############################################################
+
 listdirc= [ name for name in os.listdir(namedirtopc) if os.path.isdir(os.path.join(namedirtopc, name)) and \
             name not in alreadyDone]
 
- 
 print 'class used :',usedclassif
 
 for f in listdirc:
@@ -616,6 +674,8 @@ for f in listdirc:
     for i in derivedpat:
         tabroipat[i]=np.zeros((slnt,dimtabx,dimtaby),np.uint8)
         tabroipat[i]=calnewpat(namedirtopcf,i,slnt,dimtabx,dimtaby,tabscanName)
+    
+    genebackground(namedirtopcf)
 
     contenudir = [name for name in os.listdir(namedirtopcf) if name in usedclassif]
     for i in contenudir:

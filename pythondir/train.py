@@ -63,7 +63,7 @@ topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 #path with data for training
 pickel_dirsource_root='pickle'
 pickel_dirsource_e='train_set' #path for data fort training
-pickel_dirsourcenum='0' #extensioon for path for data for training
+pickel_dirsourcenum='0p' #extensioon for path for data for training
 extendir2=''
 #########################################################################################
 

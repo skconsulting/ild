@@ -1,10 +1,11 @@
 # coding: utf-8
 '''create dataset from patches 
 support Hu
+includes back_ground
 version 1.0
 second step
 S. Kritter
-5 august 2017
+18 august 2017
  '''
  
 from param_pix_t import classif,usedclassif
@@ -61,7 +62,7 @@ print 'path to write data for training',patch_dir
 #define the name of directory for patches
 patchesdirnametop = 'th'+str(round(thrpatch,1))+'_'+toppatch+'_'+extendir+extendir1
 
-hugeClass=['healthy']
+hugeClass=['healthy','back_ground']
 #hugeClass=['']
 
 #input patch directory

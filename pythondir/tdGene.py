@@ -5,10 +5,10 @@
  
 from param_pix_t import classif,derivedpat,usedclassif,classifc
 from param_pix_t import dimpavx,dimpavy,typei,avgPixelSpacing,thrpatch,perrorfile,plabelfile,setdata,pxy
-from param_pix_t import remove_folder,normi,genelabelloc,totalpat,totalnbpat
+from param_pix_t import remove_folder,normi,genelabelloc,totalpat,totalnbpat,fidclass
 from param_pix_t import white
 from param_pix_t import patchpicklename,lungmask,patchesdirname
-from param_pix_t import imagedirname,picklepath,source,transbmp,sroid 
+from param_pix_t import imagedirname,picklepath,source,transbmp,sroid ,typei1
  
 import os
 import cv2
@@ -25,7 +25,7 @@ import dicom
 topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 namedirHUG = 'CHU'
 #subdir for roi in text
-subHUG='UIP2'
+subHUG='UIP0'
 #subHUG='UIP_106530'
 #subHUG='UIP0'
 #subHUG='UIP_S14740'
@@ -34,9 +34,9 @@ subHUG='UIP2'
 #global directory for output patches file
 toppatch= 'TOPPATCH'
 #extension for output dir
-extendir='set0'
+extendir='set0d'
 extendir1='3d'
-extendir='essai13d'
+extendir='essaiset0d3d'
 ############################################################
 if len (extendir1)>0:
     extendir1='_'+extendir1
@@ -198,7 +198,7 @@ def tagviews(tab,text,x,y):
     return viseg
 
 
-def genebmp(dirName, sou,slnt,dx,dy):
+def genebmp(dirName, sou,slnt,dx,dy,tabscanName):
     """generate patches from dicom files and sroi"""
 
     if sou==source:
@@ -220,6 +220,8 @@ def genebmp(dirName, sou,slnt,dx,dy):
                 dsr=dsr.astype('int16')
                 fxs=float(RefDs.PixelSpacing[0])/avgPixelSpacing
                 scanNumber=int(RefDs.InstanceNumber)
+                endnumslice=filename.find('.dcm')
+                imgcoredeb=filename[0:endnumslice]+'_'+str(scanNumber)
                 if dsr.max()>dsr.min():
                     if sou !=source :
                         dsr=normi(dsr)
@@ -242,10 +244,11 @@ def genebmp(dirName, sou,slnt,dx,dy):
                         dsr = dsr.astype('int16')
 #                        print dsr.min(),dsr.max(),dsr.shape
                         dsr=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
+                        tabscanName[scanNumber]=imgcoredeb
 
                     tabres[scanNumber]=  dsr
 
-    return tabres
+    return tabres,tabscanName
 
 def contour2(im,l,dx,dy):
     col=classifc[l]
@@ -520,6 +523,56 @@ def calnewpat(dirName,pat,slnt,dimtabx,dimtaby):
                     cv2.imwrite(npdn1,tab1[i])
     return tab3
 
+def colorimage(image,color):
+#    im=image.copy()
+    im = cv2.cvtColor(image,cv2.COLOR_GRAY2BGR)
+    np.putmask(im,im>0,color)
+
+    im=cv2.cvtColor(im,cv2.COLOR_BGR2RGB)
+    return im
+
+
+def genebackground(namedir):
+    for sln in range(1,slnt):
+        tabpbac=np.copy(tabslung[sln])
+#        
+        patok=False
+        for pat in usedclassif:
+            if pat !=fidclass(0,classif):
+#                print sln,pat
+                tabpat=tabroipat[pat][sln]
+#                print tabpat.shape
+#                if pat =='ground_glass':
+#                    print tabpat.shape
+#                    cv2.imshow(pat+str(sln),normi(tabpat))
+#                    cv2.waitKey(0)
+#                    cv2.destroyAllWindows()
+                if tabpat.max()>0:
+                    patok=True
+#                    tabp=cv2.cvtColor(tabpat,cv2.COLOR_BGR2GRAY)
+                    np.putmask(tabpat,tabpat>0,255)
+                    mask=np.bitwise_not(tabpat)
+                    tabpbac=np.bitwise_and(tabpbac,mask)
+#                    print tabroipat[fidclass(0,classif)][sln].shape
+                    tabroipat[fidclass(0,classif)][sln]=tabpbac
+                    
+#                    print tabroipat[fidclass(0,classif)][sln].shape
+#                    if sln == 13:
+#                        cv2.imshow(str(sln)+pat, tabroipat[fidclass(0,classif)][sln])
+#                        cv2.waitKey(0)
+#                        cv2.destroyAllWindows()
+        if patok:
+            labeldir=os.path.join(namedir,fidclass(0,classif))
+            if not os.path.exists(labeldir):
+               os.mkdir(labeldir)
+            namepat=tabscanName[sln]+'.'+typei1
+            imgcoreScan=os.path.join(labeldir,namepat)
+    #                imgcoreScan=os.path.join(locadir,namepat)
+            tabtowrite=colorimage(tabroipat[fidclass(0,classif)][sln],classifc[fidclass(0,classif)])
+#            tabtowrite=cv2.cvtColor(tabtowrite,cv2.COLOR_BGR2RGB)
+            cv2.imwrite(imgcoreScan,tabtowrite)    
+
+#####################################################################################
 
 for f in listHug:
     print f
@@ -538,7 +591,7 @@ for f in listHug:
     tabroipat3d={}
 
     if isGre:
-
+        tabscanName={}
         dimtabx,dimtaby,slnt,slicepitch = genepara(dirf)
         tabscan =np.zeros((slnt,dimtabx,dimtaby),np.int16)
         tabslung =np.zeros((slnt,dimtabx,dimtaby),np.uint8)
@@ -559,33 +612,25 @@ for f in listHug:
         tabres=np.zeros((dimtabx,slnt,dimtabyd),np.int16)
 
         dirg=os.path.join(dirf,source)
-        tabscan=genebmp(dirf, source,slnt,dimtabx,dimtaby)
-#        tabres=reshapeScan(tabscan,slnt,dimtabx)
+        tabscan,tabscanName=genebmp(dirf, source,slnt,dimtabx,dimtaby,tabscanName)
 
-#        print tabres.shape
         tabres=reshapeScan(tabscan)
-#        tabres=tabres+1
-#
-#        print tabres1.shape
-#        print np.bitwise_xor(tabres,tabres1).max()
-#        ooo
-        
-        
+
         tabscan3d,tabsroi3d=wtebres(dirg,tabres,dimtabx,slicepitch,fxs,dimtabxd)
 
         dirg=os.path.join(dirf,lungmask)
-        tabslung=genebmp(dirf, lungmask,slnt,dimtabx,dimtaby)
+        tabslung,a=genebmp(dirf, lungmask,slnt,dimtabx,dimtaby,tabscanName)
         tabres=reshapeScan(tabslung)
         tablung3,a=wtebres(dirg,tabres,dimtabx,slicepitch,fxs,dimtabxd)
 
         contenudir = [name for name in os.listdir(dirf) if name in usedclassif and name not in derivedpat]
 
         for g in contenudir:
-            tabroipat[g]=genebmp(dirf, g,slnt,dimtabx,dimtaby)
+            tabroipat[g],a=genebmp(dirf, g,slnt,dimtabx,dimtaby,tabscanName)
 
         for i in derivedpat:
            tabroipat[i]=calnewpat(dirf,i,slnt,dimtabx,dimtaby)
-
+        genebackground(dirf)
         contenudir = [name for name in os.listdir(dirf) if name in usedclassif]
         nbpf=0
         for g in contenudir:

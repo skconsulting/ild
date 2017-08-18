@@ -4,7 +4,7 @@ Created on Tue May 02 15:04:39 2017
 parameter common for training
 
 @author: sylvain
-28 july 2017
+18 august 2017
 version 1.0
 
 """
@@ -25,8 +25,8 @@ print keras.__version__
 print theano.__version__
 print ' keras.backend.image_data_format :',keras.backend.image_data_format()
 ######################################################################
-setdata='set0'
-thrpatch = 0.9 #patch overlapp tolerance
+setdata='set0p'
+thrpatch = 0.8 #patch overlapp tolerance
 ######################################################
 
 writeFile=False
@@ -98,28 +98,10 @@ perrorfile='genepatchlog.txt'
 plabelfile='lislabel.txt'
 #excluvisu=['healthy']
 excluvisu=['']
-
+locabg='locabg'
 
 sroi='sroi'
 sroid='sroi3d'
-#volumeweb = 'volume.txt'
-#htmldir='html'
-#threeFileTxt='uip.txt'
-#threeFile='uip.html'
-#threeFilejs='world.js'
-#
-#threeFileTxtMerge='uipMerge.txt'
-#threeFileMerge='uipMerge.html'
-#threeFilejsMerge='worldMerge.js'
-#
-#threeFileTxt3d='uip3d.txt'
-#threeFile3d='uip3d.html'
-#threeFilejs3d='world3d.js'
-#
-#threeFileTop0='uiptop0.html'
-#threeFileTop1='uiptop1.html'
-#threeFileTop2='uiptop2.html'
-#threeFileBot='uipbot.html'
 
 
 black=(0,0,0)
@@ -180,6 +162,42 @@ if setdata=='set0':
         'GGpret',
         'bropret'
         ]
+elif setdata=='set0p':
+    classif ={
+            'back_ground':0,
+        'consolidation':1,
+        'HC':2,
+        'ground_glass':3,
+        'healthy':4,
+        'micronodules':5,
+        'reticulation':6,
+        'air_trapping':7,
+        'cysts':8,
+        'bronchiectasis':9,
+#        'emphysema':10,
+        'GGpret':10,
+        'lung':11
+        }
+    usedclassif = [
+        'back_ground',
+        'consolidation',
+        'HC',
+        'ground_glass',
+        'healthy',
+        'micronodules',
+        'reticulation',
+        'air_trapping',
+        'cysts',
+        'bronchiectasis',
+        'GGpret'
+        ]
+    derivedpat=[
+        'HCpret',
+        'HCpbro',
+        'GGpbro',
+        'GGpret',
+        'bropret'
+        ]
 elif setdata=='set1':
     classif ={
         'consolidation':0,
@@ -193,6 +211,37 @@ elif setdata=='set1':
         'lung':8
         }
     usedclassif = [
+        'consolidation',
+        'HC',
+        'ground_glass',
+        'healthy',
+        'reticulation',
+        'air_trapping',
+        'bronchiectasis',
+        'GGpret'
+        ]
+    derivedpat=[
+        'HCpret',
+        'HCpbro',
+        'GGpbro',
+        'GGpret',
+        'bropret'
+        ]
+elif setdata=='set1p':
+    classif ={
+        'back_ground':0,
+        'consolidation':1,
+        'HC':2,
+        'ground_glass':3,
+        'healthy':4,
+        'reticulation':5,
+        'air_trapping':6,        
+        'bronchiectasis':7,
+        'GGpret':8,
+        'lung':9
+        }
+    usedclassif = [
+        'back_ground',
         'consolidation',
         'HC',
         'ground_glass',
@@ -224,6 +273,40 @@ elif setdata=='set2':
         'lung':9
         }
     usedclassif = [
+        'consolidation',
+        'HC',
+        'ground_glass',
+        'healthy',
+        'reticulation',
+        'air_trapping',
+        'cysts',
+        'bronchiectasis',
+        'GGpret'
+        ]
+    derivedpat=[
+        'HCpret',
+        'HCpbro',
+        'GGpbro',
+        'GGpret',
+        'bropret'
+        ]    
+    
+elif setdata=='set2p':
+    classif ={
+        'back_ground':0,
+        'consolidation':1,
+        'HC':2,
+        'ground_glass':3,
+        'healthy':4,
+        'reticulation':5,
+        'air_trapping':6,
+        'cysts':7,
+        'bronchiectasis':8,
+        'GGpret':9,
+        'lung':10
+        }
+    usedclassif = [
+        'back_ground',
         'consolidation',
         'HC',
         'ground_glass',

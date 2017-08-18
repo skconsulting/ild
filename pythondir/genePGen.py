@@ -4,16 +4,17 @@
 Top file to generate patches from DICOM database Geneva with HU
 this is cross view only
 no support of superimposed patterns
+include back-ground
 first step
 
 version 1.0
 """
 from param_pix_t import classif,usedclassif,classifc
-from param_pix_t import dimpavx,dimpavy,typei,typei1,avgPixelSpacing,thrpatch,setdata
-from param_pix_t import remove_folder,normi,genelabelloc,totalpat,totalnbpat
+from param_pix_t import dimpavx,dimpavy,typei,typei1,avgPixelSpacing,thrpatch,setdata,lungmaskbmp1
+from param_pix_t import remove_folder,normi,genelabelloc,totalpat,totalnbpat,fidclass
 from param_pix_t import white
 from param_pix_t import patchpicklename,scan_bmp,lungmask,lungmask1,lungmaskbmp,sroi,patchesdirname
-from param_pix_t import imagedirname,picklepath,patchfile,source,perrorfile,plabelfile
+from param_pix_t import imagedirname,picklepath,patchfile,source,perrorfile,plabelfile,locabg
 
 import cPickle as pickle
 import cv2
@@ -31,11 +32,11 @@ import scipy.misc
 topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 namedirHUG = 'HUG'
 subHUG='ILD_TXT'
-#subHUG='ILD35'
+#subHUG='ILD105'
 
 toppatch= 'TOPPATCH'
 #extension for output dir
-extendir='set0'
+extendir='set0p'
 extendir1=''
 
 
@@ -177,6 +178,12 @@ def genebmp(dirName):
     (top,tail)=os.path.split(dirName)
 #    global constPixelSpacing, dimtabx,dimtaby
     #directory for patches
+    bmp_dir = os.path.join(dirName, 'bgdir')
+    remove_folder(bmp_dir)
+    bmp_dir = os.path.join(dirName, 'scan_bmp')
+    remove_folder(bmp_dir)
+    bmp_dir = os.path.join(dirName, 'bmp')
+    remove_folder(bmp_dir)
     bmp_dir = os.path.join(dirName, source)
     remove_folder(bmp_dir)
     os.mkdir(bmp_dir)
@@ -190,8 +197,9 @@ def genebmp(dirName):
     if not os.path.exists(lung_dir):
         lung_dir = os.path.join(dirName, lungmask1)
 #            print lung_dir
+    lung_bmp_dir = os.path.join(lung_dir,lungmaskbmp1)
+    remove_folder(lung_bmp_dir)
     lung_bmp_dir = os.path.join(lung_dir,lungmaskbmp)
-
     remove_folder(lung_bmp_dir)
 #             if lungmaskbmp not in lunglist:
     os.mkdir(lung_bmp_dir)
@@ -202,6 +210,8 @@ def genebmp(dirName):
 
     tabscan=np.zeros((slnt,dimtabx,dimtaby),np.int16)
     tabsroi=np.zeros((slnt,dimtabx,dimtaby,3),np.uint8)
+    tabslung=np.zeros((slnt,dimtabx,dimtaby),np.uint8)
+    
     tabscanName={}
 #    os.listdir(lung_dir)
     for filename in fileList:
@@ -265,9 +275,10 @@ def genebmp(dirName):
                 bmpfile=os.path.join(lung_bmp_dir,imgcore)
                 dsr=normi(dsr)
                 dsrresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
+                tabslung[scanNumber]=dsrresize
                 cv2.imwrite (bmpfile, dsrresize)
 
-    return tabscan,tabsroi,tabscanName
+    return tabscan,tabsroi,tabscanName,tabslung
 
 def reptfulle(tabc,dx,dy,col):
     imgi = np.zeros((dx,dy,3), np.uint8)
@@ -349,8 +360,10 @@ def pavs (namedirtopcf,label,loca,slnt,numslice,namescan):
 
 #    for scannumb in range (0,slnt):
     tabp = np.zeros((dimtabx, dimtaby), dtype='i')
-    tabf=np.copy(tabroipat[label][numslice])
+    tabf=np.copy(tabroipat[label][int(numslice)])
     tabfc=np.copy(tabf)
+#    print tabfc.shape,tabfc.shape[2
+#    if tabfc.shape[2]=='3L':
     tabfc=cv2.cvtColor(tabfc, cv2.COLOR_BGR2GRAY)
     nbp=0
     if tabf.max()>0:
@@ -555,6 +568,51 @@ def fileext(namefile,curdir,patchpath):
 #    print('total number of contour',nset,'in:' , namefile)
     return(listlabel,coefi)
 
+def colorimage(image,color):
+#    im=image.copy()
+    im = cv2.cvtColor(image,cv2.COLOR_GRAY2BGR)
+    np.putmask(im,im>0,color)
+    return im
+
+def genebackground(namedir):
+    for sln in range(1,slnt):
+        tabpbac=np.copy(tabslung[sln])
+        patok=False
+#        
+        for pat in usedclassif:
+            if pat !=fidclass(0,classif):
+#                print sln,pat
+                tabpat=tabroipat[pat][sln]
+#                if pat =='ground_glass':
+#                    print tabpat.shape
+#                    cv2.imshow(pat+str(sln),normi(tabpat))
+#                    cv2.waitKey(0)
+#                    cv2.destroyAllWindows()
+                if tabpat.max()>0:
+                    patok=True
+                    tabp=cv2.cvtColor(tabpat,cv2.COLOR_BGR2GRAY)
+                    np.putmask(tabp,tabp>0,255)
+                    mask=np.bitwise_not(tabp)
+                    tabpbac=np.bitwise_and(tabpbac,mask)
+#                    print tabroipat[fidclass(0,classif)][sln].shape
+                    tabroipat[fidclass(0,classif)][sln]=colorimage(tabpbac,classifc[fidclass(0,classif)])
+#                    print tabroipat[fidclass(0,classif)][sln].shape
+#                    if sln == 13:
+#                        cv2.imshow(str(sln)+pat, tabroipat[fidclass(0,classif)][sln])
+#                        cv2.waitKey(0)
+#                        cv2.destroyAllWindows()
+        if patok:
+            labeldir=os.path.join(namedir,fidclass(0,classif))
+            if not os.path.exists(labeldir):
+               os.mkdir(labeldir)
+            namepat=tabscanname[sln]+'.'+typei1
+            imgcoreScan=os.path.join(labeldir,namepat)
+    #                imgcoreScan=os.path.join(locadir,namepat)
+            tabtowrite=cv2.cvtColor(tabroipat[fidclass(0,classif)][sln],cv2.COLOR_BGR2RGB)
+            cv2.imwrite(imgcoreScan,tabtowrite)    
+    
+
+
 listdirc= (os.listdir(namedirtopc))
 npat=0
  
@@ -566,21 +624,30 @@ for f in listdirc:
     todayn = str(tn.month)+'-'+str(tn.day)+'-'+str(tn.year)+' - '+str(tn.hour)+'h '+str(tn.minute)+'m'+'\n'
     errorfile.write('started ' +f+' at :'+todayn)
     errorfile.close()
-    nbpf=0
-#    tabroipat[pat][scannumb]
-
-    tabroipat={}
-    for label in usedclassif:
-        tabroipat[label]={}
-    
-    listsliceok=[]
-    posp=f.find('.',0)
-    posu=f.find('_',0)
     namedirtopcf=os.path.join(namedirtopc,f)
     sroidir=os.path.join(namedirtopcf,sroi)
     if os.path.exists(sroidir):
         remove_folder(sroidir)
     os.mkdir(sroidir)
+    
+    dimtabx,dimtaby,slnt = genepara(namedirtopcf)
+#        print dimtabx,dimtaby,slnt
+    tabscan,tabsroi,tabscanname,tabslung=genebmp(namedirtopcf)
+    nbpf=0
+    tabroipat={}
+    for label in usedclassif:
+        tabroipat[label]={}
+        for sln in range(1,slnt):
+           tabroipat[label][sln]= np.zeros((dimtabx,dimtaby,3),np.uint8)
+#    tabroipat[pat][scannumb]
+
+    
+    
+    listsliceok=[]
+    posp=f.find('.',0)
+    posu=f.find('_',0)
+   
+    
 
     pathpatchfilecomplet=os.path.join(namedirtopcf,patchfile)
 #    pathpatchfilecomplet=unicode(pathpatchfilecomplet)
@@ -593,9 +660,9 @@ for f in listdirc:
         contenudir = os.listdir(namedirtopcf)
 #        print(contenudir)
         fif=False
-        dimtabx,dimtaby,slnt = genepara(namedirtopcf)
-#        print dimtabx,dimtaby,slnt
-        tabscan,tabsroi,tabscanname=genebmp(namedirtopcf)
+        
+        
+                
 
         for f1 in contenudir:
 
@@ -685,20 +752,26 @@ for f in listdirc:
                 labeldir=os.path.join(namedirtopcf,label)
                 if not os.path.exists(labeldir):
                     os.mkdir(labeldir)
-#                locadir=os.path.join(labeldir,loca)
-#                if not os.path.exists(locadir):
-#                    os.mkdir(locadir)
+
                 namepat=tabscanname[int(numslice)]+'.'+typei1
                 imgcoreScan=os.path.join(labeldir,namepat)
 #                imgcoreScan=os.path.join(locadir,namepat)
                 tabtowrite=cv2.cvtColor(imgc,cv2.COLOR_BGR2RGB)
                 cv2.imwrite(imgcoreScan,tabtowrite)
-                tabroipat[label][numslice]=imgc
+                tabroipat[label][int(numslice)]=imgc
+#                if label =='ground_glass' and numslice==13:
+#                print '1',tabroipat[label][numslice].max(),label,numslice
                 nbp=pavs(namedirtopcf,label,loca,slnt,numslice,tabscanname[int(numslice)])
 #                print 'nbp',nbp
 
                 nbpf=nbpf+nbp
-
+#    print '2',tabroipat['ground_glass']['13'].max()
+    genebackground(namedirtopcf)
+#    print listsliceok
+#    print type(listsliceok[0])
+    for numslice in listsliceok:
+        nbp=pavs(namedirtopcf,fidclass(0,classif),locabg,slnt,numslice,tabscanname[int(numslice)])
+        nbpf=nbpf+nbp
     namenbpat=namedirHUG+'_nbpat_'+f+'.txt'
     ofilepw = open(os.path.join(jpegpath,namenbpat), 'w')
     ofilepw.write('number of patches: '+str(nbpf))
