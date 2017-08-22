@@ -1572,7 +1572,8 @@ def predictrun(indata,path_patient):
         global thrpatch,thrproba,thrprobaMerge,thrprobaUIP,subErosion
         global  picklein_file,picklein_file_front,classif,usedclassif
         td=False
-
+#        time.sleep(10)
+#        return 'rrr'
 #        print path_patient
 #        print indata
 #        ooo
@@ -1716,6 +1717,16 @@ def predictrun(indata,path_patient):
             else:
                          
                 volumeroi=pickle.load(open(path_data_writefile, "rb" ))
+                needdu=False
+                for i in lissln:
+                    for pat in classif:
+                        try:
+                         volumeroi[i][pat]
+                        except:
+                            volumeroi[i][pat]=0
+                            needdu=True
+                if needdu:
+                    pickle.dump(volumeroi, open(path_data_writefile, "wb" ),protocol=-1)     
                 
             tabroi=np.zeros((slnt,dimtabx,dimtabx), np.uint8) 
             tabroi,volumeroi=generoi(dirf,tabroi,dimtabx,volumeroi)

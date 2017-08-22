@@ -126,6 +126,51 @@ highgrey=(240,240,240)
 #(cwdtop,tail)=os.path.split(cwd)
 #dirpickle=os.path.join(cwdtop,path_pickle)
 
+usedclassifall = [
+        'back_ground',
+        'consolidation',
+        'HC',
+        'ground_glass',
+        'emphysema',
+        'healthy',
+        'micronodules',
+        'reticulation',
+        'air_trapping',
+        'cysts',
+        'bronchiectasis',
+        'HCpret',
+        'HCpbro',
+        'GGpbro',
+        'GGpret',
+        'bropret',
+        ]
+classifall ={
+     'back_ground':0,
+        'consolidation':1,
+        'HC':2,
+        'ground_glass':3,
+        'healthy':4,
+        'micronodules':5,
+        'reticulation':6,
+        'air_trapping':7,
+        'cysts':8,
+        'bronchiectasis':9,
+        'emphysema':10,
+        'GGpret':11,
+        'HCpret':12,
+        'HCpbro':13,
+        'GGpbro':14,
+        'bropret':15,
+        'lung':16
+        }
+
+derivedpatall=[
+        'HCpret',
+        'HCpbro',
+        'GGpbro',
+        'GGpret',
+        'bropret']
+
 classifnotvisu=['healthy',]
 
 if setdata=='set0':
@@ -532,7 +577,7 @@ def genelabelloc(patchtoppath,plabelfile,jpegpath):
             mflabel.write(slncc+' number of patches: '+nump+'\n')
             
             listlabel={}
-            for pat in usedclassif:
+            for pat in usedclassifall:
                  listlabel[pat]=0
                 
             for f1 in categ:
@@ -616,7 +661,7 @@ def totalnbpat (patchtoppath,picklepathdir):
     labellist=[]
     localist=[]
     labeldict={}
-    for pat in usedclassif:
+    for pat in usedclassifall:
         labeldict[pat]=0
     for dirnam in dirlabel:
         dirloca=os.path.join(picklepathdir,dirnam)
@@ -655,7 +700,7 @@ def totalnbpat (patchtoppath,picklepathdir):
     filepwt1.write('total number of patches: '+str(ntot)+'\n')
 
     print('total number of patches: '+str(ntot))
-    for pat in usedclassif:
+    for pat in usedclassifall:
         if labeldict[pat]>0:
             filepwt1.write('label: '+pat+' : '+str(labeldict[pat])+'\n' )
 #            print('label: '+pat+' : '+str(labeldict[pat]))

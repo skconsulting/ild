@@ -27,7 +27,7 @@ import random
 #define the working directory for input patches
 topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 toppatch= 'TOPPATCH'
-extendir='set0p'
+extendir='all'
 extendir1=''
 
 #define the directory to store data
@@ -159,7 +159,8 @@ print ('max number of patches : '+str(maxl)+' for: '+ patmax)
 errorfile.write ('max number of patches : '+str(maxl)+ ' for:' +patmax+'\n')
 errorfile.write('--------------------\n')
 for i in hugeClass:
-    print ('number of patches : ',classNumberInit[i],' for: ', i)
+    if i in usedclassif:
+        print ('number of patches : ',classNumberInit[i],' for: ', i)
 print '----------'
 #define coeff min
 minl=100000000

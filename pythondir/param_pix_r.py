@@ -58,6 +58,10 @@ lightgreen=(125,237,125)
 orange=(255,153,102)
 lowgreen=(0,51,51)
 parme=(234,136,222)
+parme1=(232,136,224)
+parme2=(230,136,226)
+parme3=(228,136,228)
+parme4=(226,136,230)
 chatain=(139,108,66)
 
 cwd=os.getcwd()
@@ -66,34 +70,46 @@ cwd=os.getcwd()
 if setdata=='set0':
 #set0
     classif ={
-        'consolidation':0,
-        'HC':1,
-        'ground_glass':2,
-        'healthy':3,
-        'micronodules':4,
-        'reticulation':5,
-        'air_trapping':6,
-        'cysts':7,
-        'bronchiectasis':8,
-#        'emphysema':10,
-        'GGpret':9,
-        'lung':10,
-        'erase':12
+        'back_ground':0,
+        'consolidation':1,
+        'HC':2,
+        'ground_glass':3,
+        'healthy':4,
+        'micronodules':5,
+        'reticulation':6,
+        'air_trapping':7,
+        'cysts':8,
+        'bronchiectasis':9,
+        'emphysema':10,
+        'GGpret':11,
+#        'HCpret':12,
+#        'HCpbro':13,
+#        'GGpbro':14,
+#        'bropret':15,
+        'lung':12,
+
+        'erase':14               
         }
+    
     usedclassif =[
+#       'back_ground',
         'consolidation',
         'HC',
         'ground_glass',
+        'emphysema',
         'healthy',
         'micronodules',
         'reticulation',
         'air_trapping',
         'cysts',
         'bronchiectasis',
-#        'emphysema':10,
+#        'HCpret',
+#        'HCpbro',
+#        'GGpbro',
         'GGpret',
+#        'bropret',
         'lung',
-        'erase'      
+        'erase'
         ]
 
     classifcontour=['lung']
@@ -115,7 +131,10 @@ classifc ={
     'bronchiectasis':orange,
     'emphysema':chatain,
     'GGpret': parme,
-
+    'HCpret': parme1,
+    'HCpbro': parme2,
+    'GGpbro': parme3,
+    'bropret': parme4,
      'lung': highgrey,
      'bronchial_wall_thickening':white,
      'early_fibrosis':white,

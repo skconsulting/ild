@@ -631,7 +631,7 @@ def loop(slnt,pdirk,dirpath_patient,dirroi):
     for key1 in usedclassif:
 #            print key1
             viewasked[key1]=True
-            cv2.createTrackbar( key1,'Slider2',0,1,nothing)
+            cv2.createTrackbar( key1,'Slider2',0,1,nothing,)
     populate(dirpath_patient,slnt)
     nbdig=0
     numberentered={}
@@ -1051,13 +1051,13 @@ def menudraw(slnt):
             tabroi[key1][sln]={}
             tabroi[key1][sln][0]=[]
             tabroifinal[key1][sln]= np.zeros((dimtabx,dimtaby,3), np.uint8)
-
-        xr=5
-        yr=15*value1
-        xrn=xr+10
-        yrn=yr+10
-        cv2.rectangle(menus, (xr, yr),(xrn,yrn), classifc[key1], -1)
-        cv2.putText(menus,key1,(xr+15,yr+10),cv2.FONT_HERSHEY_PLAIN,0.7,classifc[key1],1 )
+            if key1 in usedclassif:
+                xr=5
+                yr=15*value1
+                xrn=xr+10
+                yrn=yr+10
+                cv2.rectangle(menus, (xr, yr),(xrn,yrn), classifc[key1], -1)
+                cv2.putText(menus,key1,(xr+15,yr+10),cv2.FONT_HERSHEY_PLAIN,0.7,classifc[key1],1 )
 #        posrc+=1
 
     posxdel=dimtabx-20
@@ -1188,7 +1188,6 @@ def openfichierroi(patient,patient_path_complet):
              volumeroi[i]={}
              for pat in classif:
                  volumeroi[i][pat]=0
-
          pickle.dump(volumeroi, open(path_data_writefile, "wb" ),protocol=-1)       
     else:
         if not os.path.exists(path_data_writefile):
@@ -1199,11 +1198,26 @@ def openfichierroi(patient,patient_path_complet):
                      volumeroi[i][pat]=0
         else:
             volumeroi=pickle.load(open(path_data_writefile, "rb" ))
+            needdu=False
+            for i in listsln:
+                for pat in classif:
+                    try:
+                     volumeroi[i][pat]
+                    except:
+                        volumeroi[i][pat]=0
+                        needdu=True
+            if needdu:
+                pickle.dump(volumeroi, open(path_data_writefile, "wb" ),protocol=-1)      
+                         
+            
     loop(slnt,dirsourcescan,dirpath_patient,dirroit)
     return 'completed'
 
 def openfichierroilung(patient,patient_path_complet):
     global dirpath_patient,dirroit,volumeroi,path_data_writefile
+    imwait=np.zeros((200,200,3),np.uint8)
+    cv2.putText(imwait,'In Progress',(50, 50),cv2.FONT_HERSHEY_PLAIN,1,white,1 )
+    cv2.imshow('wait',imwait)
     dirpath_patient=os.path.join(patient_path_complet,patient)
     dirsource=os.path.join(dirpath_patient,source_name)
     dirroit=os.path.join(dirpath_patient,roi_name)
@@ -1237,14 +1251,28 @@ def openfichierroilung(patient,patient_path_complet):
                      volumeroi[i][pat]=0
         else:
             volumeroi=pickle.load(open(path_data_writefile, "rb" ))
+            needdu=False
+            for i in listsln:
+                for pat in classif:
+                    try:
+                     volumeroi[i][pat]
+                    except:
+                        volumeroi[i][pat]=0
+                        needdu=True
+            if needdu:
+                pickle.dump(volumeroi, open(path_data_writefile, "wb" ),protocol=-1)      
     initmenus(slnt,dirpath_patient)
     menudraw(slnt)
     populate(dirpath_patient,slnt)
     
+    cv2.destroyAllWindows()
     return 'completed lung'
 
 def checkvolumegeneroi(patient,patient_path_complet):
 #    global dirpath_patient
+    imwait=np.zeros((200,200,3),np.uint8)
+    cv2.putText(imwait,'In Progress',(50, 50),cv2.FONT_HERSHEY_PLAIN,1,white,1 )
+    cv2.imshow('wait',imwait)
     dirpath_patient=os.path.join(patient_path_complet,patient)
 #    dirsource=os.path.join(dirpath_patient,source_name)
 #    dirroit=os.path.join(dirpath_patient,roi_name)
@@ -1285,4 +1313,5 @@ def checkvolumegeneroi(patient,patient_path_complet):
                 print value,val2,round(volumeroi[value][val2],1)
                 txt=txt+'Slice: '+str(value)+'  '+str(val2)+'  '+str(round(volumeroi[value][val2],1))+'cm2\n'
 #    print len(txt)
+    cv2.destroyAllWindows()
     return txt

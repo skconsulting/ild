@@ -3,8 +3,8 @@
     sylvain kritter 11 Aug 2017
  '''
  
-from param_pix_t import classif,derivedpat,usedclassif,classifc
-from param_pix_t import dimpavx,dimpavy,typei,avgPixelSpacing,thrpatch,perrorfile,plabelfile,setdata,pxy
+from param_pix_t import classifall,derivedpatall,usedclassifall,classifc
+from param_pix_t import dimpavx,dimpavy,typei,avgPixelSpacing,thrpatch,perrorfile,plabelfile,pxy
 from param_pix_t import remove_folder,normi,genelabelloc,totalpat,totalnbpat,fidclass
 from param_pix_t import white
 from param_pix_t import patchpicklename,lungmask,patchesdirname
@@ -25,7 +25,7 @@ import dicom
 topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 namedirHUG = 'CHU'
 #subdir for roi in text
-subHUG='UIP0'
+subHUG='UIP'
 #subHUG='UIP_106530'
 #subHUG='UIP0'
 #subHUG='UIP_S14740'
@@ -34,7 +34,7 @@ subHUG='UIP0'
 #global directory for output patches file
 toppatch= 'TOPPATCH'
 #extension for output dir
-extendir='set0d'
+extendir='all'
 extendir1='3d'
 extendir='essaiset0d3d'
 ############################################################
@@ -55,7 +55,6 @@ isGre=True
 labelbg='back_ground'
 locabg='td_CHUG'
 
-reserved=['bgdir','sroi','sroi1','bgdir3d','sroi3d']
 notclas=['lung','source','B70f']
 
 patchesdirnametop = 'th'+str(round(thrpatch,1))+'_'+toppatch+'_'+extendir+extendir1
@@ -117,16 +116,14 @@ errorfile.write('source directory '+namedirtopc+'\n')
 errorfile.write('th : '+ str(thrpatch)+'\n')
 errorfile.write('name of directory for patches :'+ patchesdirnametop+'\n')
 errorfile.write( 'list of patients :'+str(listHug)+'\n')
-errorfile.write('using pattern set: ' +setdata+'\n')
-for pat in usedclassif:
+errorfile.write('using pattern set: \n')
+for pat in usedclassifall:
     errorfile.write(pat+'\n')
 errorfile.write('--------------------------------\n')
 errorfile.close()
 
 ###############################################################
 
-
-reserved=reserved+derivedpat
 
 
 def reshapeScan(tabscan):
@@ -265,7 +262,7 @@ def tagview(tab,label,x,y):
     """write text in image according to label and color"""
     font = cv2.FONT_HERSHEY_SIMPLEX
     col=classifc[label]
-    labnow=classif[label]
+    labnow=classifall[label]
 #    print (labnow, text)
     if label == 'back_ground':
         deltay=30
@@ -496,8 +493,9 @@ def calnewpat(dirName,pat,slnt,dimtabx,dimtaby):
 
     if nm:
             npd=os.path.join(dirName,pat)
-            remove_folder(npd)
-            os.mkdir(npd)
+            if not os.path.exists(npd):
+#            remove_folder(npd)
+                os.mkdir(npd)
             npd=os.path.join(npd,transbmp)
             remove_folder(npd)
             os.mkdir(npd)
@@ -537,8 +535,8 @@ def genebackground(namedir):
         tabpbac=np.copy(tabslung[sln])
 #        
         patok=False
-        for pat in usedclassif:
-            if pat !=fidclass(0,classif):
+        for pat in usedclassifall:
+            if pat !=fidclass(0,classifall):
 #                print sln,pat
                 tabpat=tabroipat[pat][sln]
 #                print tabpat.shape
@@ -554,7 +552,7 @@ def genebackground(namedir):
                     mask=np.bitwise_not(tabpat)
                     tabpbac=np.bitwise_and(tabpbac,mask)
 #                    print tabroipat[fidclass(0,classif)][sln].shape
-                    tabroipat[fidclass(0,classif)][sln]=tabpbac
+                    tabroipat[fidclass(0,classifall)][sln]=tabpbac
                     
 #                    print tabroipat[fidclass(0,classif)][sln].shape
 #                    if sln == 13:
@@ -562,24 +560,26 @@ def genebackground(namedir):
 #                        cv2.waitKey(0)
 #                        cv2.destroyAllWindows()
         if patok:
-            labeldir=os.path.join(namedir,fidclass(0,classif))
+            labeldir=os.path.join(namedir,fidclass(0,classifall))
             if not os.path.exists(labeldir):
                os.mkdir(labeldir)
             namepat=tabscanName[sln]+'.'+typei1
             imgcoreScan=os.path.join(labeldir,namepat)
     #                imgcoreScan=os.path.join(locadir,namepat)
-            tabtowrite=colorimage(tabroipat[fidclass(0,classif)][sln],classifc[fidclass(0,classif)])
+            tabtowrite=colorimage(tabroipat[fidclass(0,classifall)][sln],classifc[fidclass(0,classifall)])
 #            tabtowrite=cv2.cvtColor(tabtowrite,cv2.COLOR_BGR2RGB)
             cv2.imwrite(imgcoreScan,tabtowrite)    
 
 #####################################################################################
 
 for f in listHug:
-    print f
+    print '--------------------'
+    print 'work on patient: ',f
     errorfile = open(eferror, 'a')
     tn = datetime.datetime.now()
     todayn = str(tn.month)+'-'+str(tn.day)+'-'+str(tn.year)+' - '+str(tn.hour)+'h '+str(tn.minute)+'m'+'\n'
     errorfile.write('started ' +namedirHUG+' '+f+' at :'+todayn)
+    errorfile.write('-----------------\n')
     errorfile.close()
     dirf=os.path.join(namedirtopc,f)
 
@@ -602,7 +602,7 @@ for f in listHug:
         dimtabyd=dimtaby
         print 'dimtabx:',dimtabx,'dimtabxd:',dimtabxd,'dimtabyd:',dimtabyd,'slnt:',slnt
 
-        for i in usedclassif+derivedpat :
+        for i in usedclassifall :
             tabroipat[i]=np.zeros((slnt,dimtabx,dimtaby),np.uint8)
             tabroipat3d[i]=np.zeros((dimtabx,dimtabxd,dimtabyd),np.uint8)
 
@@ -623,15 +623,15 @@ for f in listHug:
         tabres=reshapeScan(tabslung)
         tablung3,a=wtebres(dirg,tabres,dimtabx,slicepitch,fxs,dimtabxd)
 
-        contenudir = [name for name in os.listdir(dirf) if name in usedclassif and name not in derivedpat]
+        contenudir = [name for name in os.listdir(dirf) if name in usedclassifall and name not in derivedpatall]
 
         for g in contenudir:
             tabroipat[g],a=genebmp(dirf, g,slnt,dimtabx,dimtaby,tabscanName)
 
-        for i in derivedpat:
+        for i in derivedpatall:
            tabroipat[i]=calnewpat(dirf,i,slnt,dimtabx,dimtaby)
         genebackground(dirf)
-        contenudir = [name for name in os.listdir(dirf) if name in usedclassif]
+        contenudir = [name for name in os.listdir(dirf) if name in usedclassifall]
         nbpf=0
         for g in contenudir:
             print g
@@ -653,7 +653,7 @@ for f in listHug:
     tn = datetime.datetime.now()
     todayn = str(tn.month)+'-'+str(tn.day)+'-'+str(tn.year)+' - '+str(tn.hour)+'h '+str(tn.minute)+'m'+'\n'
     errorfile.write('completed ' +f+' at :'+todayn)
-    errorfile.write('-------\n')
+    errorfile.write('-----------------\n')
     errorfile.close()
 #################################################################
 totalpat(jpegpath)

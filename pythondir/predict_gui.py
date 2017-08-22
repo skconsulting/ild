@@ -125,7 +125,21 @@ def predict(btn):
         pickle.dump(paramdict,open( paramsaveDirf, "wb" ))
 #    roirun(app.getListItems("list"),lisdir)
 #        print indata
+#        app.hide()
+#        appn = gui("Predict running","1000x700")
+#        appn.setBg("lightBlue")
+#        appn.addLabel("path_patientt", "path_patient")
+#        appn.addLabel("path_patient", lisdir)
+#        appn.setLabelBg("path_patient", "Blue")
+#        appn.setLabelFg("path_patient", "Yellow")
+#        appn.setLabelBg("path_patientt", "Blue")
+#        appn.setLabelFg("path_patientt", "Yellow")
+#        appn.go()
+#        appn.stop(Stop)
+#        app.errorBox('error', message)
         listdir,message=predictmodule(indata,lisdir)  
+#        app.show()
+        
         if len(message)>0:
             app.errorBox('error', message)
             app.stop(Stop)
@@ -159,7 +173,7 @@ def visualisation(btn):
     else:
         indata['3dasked']=False
     indata['viewstyle']=app.getRadioButton("planar")
-
+    app.hide()
     visuarun(indata,lisdir)
 
     app.stop(Stop)
@@ -291,12 +305,13 @@ def initDrawB(btn):
     goodir=True
     initDraw()
 
-listannotated=[]
-goodir=False
+
 def initDraw():
     global app
 #    print goodir
+
     app = gui("Predict form","1000x700")
+    app.setResizable(canResize=True)
     app.setBg("lightBlue")
     app.setFont(10)
     app.setStopFunction(Stop)
@@ -400,7 +415,9 @@ def initDraw():
 def visuDraw():
     global app
 #    print "visudraw"
-    app = gui("Predict form","1000x600")
+    app = gui("Visualization form","1000x600")
+    app.setResizable(canResize=True)
+
     app.setBg("lightBlue")
 #    app.decreaseButtonFont(2)
     app.setFont(10,font=None)
@@ -517,7 +534,11 @@ def visuDraw():
             app.addHorizontalSeparator( colour="red")
     app.addButton("Quit",  boutonStop)
     app.go()
+
+############################################################################
 selectpatient=''
 frontpredict=False
 continuevisu=False
+listannotated=[]
+goodir=False
 initDraw()

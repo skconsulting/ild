@@ -9,8 +9,8 @@ first step
 
 version 1.0
 """
-from param_pix_t import classif,usedclassif,classifc
-from param_pix_t import dimpavx,dimpavy,typei,typei1,avgPixelSpacing,thrpatch,setdata,lungmaskbmp1
+from param_pix_t import classifall,usedclassifall,classifc
+from param_pix_t import dimpavx,dimpavy,typei,typei1,avgPixelSpacing,thrpatch,lungmaskbmp1
 from param_pix_t import remove_folder,normi,genelabelloc,totalpat,totalnbpat,fidclass
 from param_pix_t import white
 from param_pix_t import patchpicklename,scan_bmp,lungmask,lungmask1,lungmaskbmp,sroi,patchesdirname
@@ -36,7 +36,7 @@ subHUG='ILD_TXT'
 
 toppatch= 'TOPPATCH'
 #extension for output dir
-extendir='set0p'
+extendir='all'
 extendir1=''
 
 
@@ -47,7 +47,7 @@ alreadyDone =[]
 #######################################################################
 ######################  end ############################################
 ########################################################################
-print 'class used :',usedclassif
+print 'class used :',usedclassifall
 if len (extendir1)>0:
     extendir1='_'+extendir1
 #define the name of directory for patches
@@ -106,8 +106,8 @@ errorfile.write('source directory '+namedirtopc+'\n')
 errorfile.write('th : '+ str(thrpatch)+'\n')
 errorfile.write('name of directory for patches :'+ patchesdirnametop+'\n')
 errorfile.write( 'list of patients :'+str(listHug)+'\n')
-errorfile.write('using pattern set: ' +setdata+'\n')
-for pat in usedclassif:
+errorfile.write('using pattern set: \n')
+for pat in usedclassifall:
     errorfile.write(pat+'\n')
 errorfile.write('--------------------------------\n')
 errorfile.close()
@@ -292,7 +292,7 @@ def tagview(tab,label,x,y):
     """write text in image according to label and color"""
     font = cv2.FONT_HERSHEY_SIMPLEX
     col=classifc[label]
-    labnow=classif[label]
+    labnow=classifall[label]
 #    print (labnow, text)
     if label == 'back_ground':
         deltay=30
@@ -579,8 +579,8 @@ def genebackground(namedir):
         tabpbac=np.copy(tabslung[sln])
         patok=False
 #        
-        for pat in usedclassif:
-            if pat !=fidclass(0,classif):
+        for pat in usedclassifall:
+            if pat !=fidclass(0,classifall):
 #                print sln,pat
                 tabpat=tabroipat[pat][sln]
 #                if pat =='ground_glass':
@@ -595,20 +595,20 @@ def genebackground(namedir):
                     mask=np.bitwise_not(tabp)
                     tabpbac=np.bitwise_and(tabpbac,mask)
 #                    print tabroipat[fidclass(0,classif)][sln].shape
-                    tabroipat[fidclass(0,classif)][sln]=colorimage(tabpbac,classifc[fidclass(0,classif)])
+                    tabroipat[fidclass(0,classifall)][sln]=colorimage(tabpbac,classifc[fidclass(0,classifall)])
 #                    print tabroipat[fidclass(0,classif)][sln].shape
 #                    if sln == 13:
 #                        cv2.imshow(str(sln)+pat, tabroipat[fidclass(0,classif)][sln])
 #                        cv2.waitKey(0)
 #                        cv2.destroyAllWindows()
         if patok:
-            labeldir=os.path.join(namedir,fidclass(0,classif))
+            labeldir=os.path.join(namedir,fidclass(0,classifall))
             if not os.path.exists(labeldir):
                os.mkdir(labeldir)
             namepat=tabscanname[sln]+'.'+typei1
             imgcoreScan=os.path.join(labeldir,namepat)
     #                imgcoreScan=os.path.join(locadir,namepat)
-            tabtowrite=cv2.cvtColor(tabroipat[fidclass(0,classif)][sln],cv2.COLOR_BGR2RGB)
+            tabtowrite=cv2.cvtColor(tabroipat[fidclass(0,classifall)][sln],cv2.COLOR_BGR2RGB)
             cv2.imwrite(imgcoreScan,tabtowrite)    
     
 
@@ -635,7 +635,7 @@ for f in listdirc:
     tabscan,tabsroi,tabscanname,tabslung=genebmp(namedirtopcf)
     nbpf=0
     tabroipat={}
-    for label in usedclassif:
+    for label in usedclassifall:
         tabroipat[label]={}
         for sln in range(1,slnt):
            tabroipat[label][sln]= np.zeros((dimtabx,dimtaby,3),np.uint8)
@@ -746,7 +746,7 @@ for f in listdirc:
 #                    print('fin l',l,'c:',c)
 #                    print iln,label,loca
 #            print label,usedclassif
-            if label in usedclassif:
+            if label in usedclassifall:
 #
 #                print('c :',numslice,label,loca,)
                 labeldir=os.path.join(namedirtopcf,label)
@@ -770,7 +770,7 @@ for f in listdirc:
 #    print listsliceok
 #    print type(listsliceok[0])
     for numslice in listsliceok:
-        nbp=pavs(namedirtopcf,fidclass(0,classif),locabg,slnt,numslice,tabscanname[int(numslice)])
+        nbp=pavs(namedirtopcf,fidclass(0,classifall),locabg,slnt,numslice,tabscanname[int(numslice)])
         nbpf=nbpf+nbp
     namenbpat=namedirHUG+'_nbpat_'+f+'.txt'
     ofilepw = open(os.path.join(jpegpath,namenbpat), 'w')

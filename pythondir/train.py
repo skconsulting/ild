@@ -23,13 +23,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 For more information please read the README file. The files can also
 be found at: https://github.com/intact-project/ild-cnn
 '''
-from param_pix_t import modelname,thrpatch
+from param_pix_t import thrpatch
 #from keras.models import load_model
 #from keras.models import model_from_json
 import ild_helpers as H
 import cnn_model as CNN
 import os
-import cPickle as pickle
 
 import datetime
 t = datetime.datetime.now()
@@ -96,7 +95,6 @@ errorfile.close()
 (X_train, y_train), (X_val, y_val)= H.load_data(patch_dir)
 
 # train a CNN model
-
 model = CNN.train(X_train, y_train, X_val, y_val, train_params,eferror,patch_dir_store)
 
 errorfile = open(eferror, 'a')
@@ -104,9 +102,6 @@ t = datetime.datetime.now()
 today = str('m'+str(t.month)+'_d'+str(t.day)+'_y'+str(t.year)+'_'+str(t.hour)+'h_'+str(t.minute)+'m')
 errorfile.write('training completed at '+today+'\n')
 errorfile.close()
-
-json_string = model.to_json()
-pickle.dump(json_string, open(os.path.join(patch_dir_store,modelname), "wb"),protocol=-1)
 
 print 'training completed'
 

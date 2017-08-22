@@ -7,7 +7,7 @@ version 1.1
 28 july 2017
 """
 #from param_pix_r import *
-from param_pix_r import classif,classifcontour,lung_mask_bmp
+from param_pix_r import classif,classifcontour,lung_mask_bmp,lung_mask1,usedclassif
 from roigene import openfichierroi,openfichierroilung,checkvolumegeneroi
 
 import os
@@ -19,15 +19,27 @@ def lisdirprocess(directorytocheck):
     for dd in a:
         stpred=[]
         ddd=os.path.join(directorytocheck,dd)
-        for key in classif:
+        for key in usedclassif:
             datadir=os.path.join(ddd,key)
-            if key in classifcontour:        
-                datadir=os.path.join(datadir,lung_mask_bmp)           
-            if os.path.exists(datadir):
-                listfile=os.listdir(datadir)
-                if len(listfile)>0:
+            if key in classifcontour:      
+                if os.path.exists(datadir):
+                    datadir=os.path.join(datadir,lung_mask_bmp)           
+                if os.path.exists(datadir):
+                    listfile=os.listdir(datadir)
+                else:
+                    datadir=os.path.join(ddd,lung_mask1)   
+                    if os.path.exists(datadir):
+                        listfile=os.listdir(datadir)
+            else:
+                if os.path.exists(datadir):
+                        listfile=os.listdir(datadir)
+                else:
+                        listfile=[]
+#                        print dd,key,listfile
+            if len(listfile)>0:
                     stpred.append(key)
         stsdir[dd]=stpred
+        print dd,stsdir[dd]
 
     return a,stsdir
 

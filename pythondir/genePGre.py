@@ -12,8 +12,8 @@ S. Kritter
 
 #from param_pix_t import *
 
-from param_pix_t import classif,derivedpat,usedclassif,classifc
-from param_pix_t import dimpavx,dimpavy,typei,typei1,avgPixelSpacing,thrpatch,perrorfile,plabelfile,setdata,pxy
+from param_pix_t import derivedpatall,classifc,usedclassifall,classifall
+from param_pix_t import dimpavx,dimpavy,typei,typei1,avgPixelSpacing,thrpatch,perrorfile,plabelfile,pxy
 from param_pix_t import remove_folder,normi,genelabelloc,totalpat,totalnbpat,fidclass
 from param_pix_t import white
 from param_pix_t import patchpicklename,scan_bmp,lungmask,lungmask1,sroi,patchesdirname
@@ -38,21 +38,24 @@ namedirHUG = 'CHU'
 #subdir for roi in text
 subHUG='UIP'
 #subHUG='UIP_106530'
-subHUG='UIP0'
+#subHUG='UIP0'
 #subHUG='UIP_S14740'
 
 #global directory for output patches file
 toppatch= 'TOPPATCH'
 #extension for output dir
-extendir='set0p'
-#extendir1=''
+#extendir='all'
 extendir='essai1'
+#extension1 for output dir
+extendir1=''
 
-alreadyDone =['S4550','S106530','S107260','S139430','S145210','S14740',
-              'S15440','S1830','S28200','S335940','S359750',
-              'S72260','S72261']
-alreadyDone =[]
 
+
+alreadyDone =['S106530', 'S107260', 'S139370', 'S139430', 'S139431', 'S145210', 
+              'S14740', 'S15440', 'S1830', 'S274820', 
+              'S275050', 'S28200', 'S335940', 'S359750', 
+              'S4550', 'S72260', 'S72261']
+alreadyDone =['']
 #labelEnh=('consolidation','reticulation,air_trapping','bronchiectasis','cysts')
 labelEnh=()
 locabg='anywhere_CHUG'
@@ -127,8 +130,8 @@ errorfile.write('source directory '+namedirtopc+'\n')
 errorfile.write('th : '+ str(thrpatch)+'\n')
 errorfile.write('name of directory for patches :'+ patchesdirnametop+'\n')
 errorfile.write( 'list of patients :'+str(listHug)+'\n')
-errorfile.write('using pattern set: ' +setdata+'\n')
-for pat in usedclassif:
+errorfile.write('using pattern set: \n')
+for pat in usedclassifall:
     errorfile.write(pat+'\n')
 errorfile.write('--------------------------------\n')
 errorfile.close()
@@ -322,7 +325,7 @@ def tagview(tab,label,x,y):
     """write text in image according to label and color"""
     font = cv2.FONT_HERSHEY_SIMPLEX
     col=classifc[label]
-    labnow=classif[label]
+    labnow=classifall[label]
 #    print (labnow, text)
     if label == 'back_ground':
         deltay=30
@@ -589,8 +592,8 @@ def genebackground(namedir):
         tabpbac=np.copy(tabslung[sln])
 #        
         patok=False
-        for pat in usedclassif:
-            if pat !=fidclass(0,classif):
+        for pat in usedclassifall:
+            if pat !=fidclass(0,classifall):
 #                print sln,pat
                 tabpat=tabroipat[pat][sln]
 #                print tabpat.shape
@@ -606,7 +609,7 @@ def genebackground(namedir):
                     mask=np.bitwise_not(tabpat)
                     tabpbac=np.bitwise_and(tabpbac,mask)
 #                    print tabroipat[fidclass(0,classif)][sln].shape
-                    tabroipat[fidclass(0,classif)][sln]=tabpbac
+                    tabroipat[fidclass(0,classifall)][sln]=tabpbac
                     
 #                    print tabroipat[fidclass(0,classif)][sln].shape
 #                    if sln == 13:
@@ -614,13 +617,13 @@ def genebackground(namedir):
 #                        cv2.waitKey(0)
 #                        cv2.destroyAllWindows()
         if patok:
-            labeldir=os.path.join(namedir,fidclass(0,classif))
+            labeldir=os.path.join(namedir,fidclass(0,classifall))
             if not os.path.exists(labeldir):
                os.mkdir(labeldir)
             namepat=tabscanName[sln]+'.'+typei1
             imgcoreScan=os.path.join(labeldir,namepat)
     #                imgcoreScan=os.path.join(locadir,namepat)
-            tabtowrite=colorimage(tabroipat[fidclass(0,classif)][sln],classifc[fidclass(0,classif)])
+            tabtowrite=colorimage(tabroipat[fidclass(0,classifall)][sln],classifc[fidclass(0,classifall)])
 #            tabtowrite=cv2.cvtColor(tabtowrite,cv2.COLOR_BGR2RGB)
             cv2.imwrite(imgcoreScan,tabtowrite)    
 
@@ -629,7 +632,7 @@ def genebackground(namedir):
 listdirc= [ name for name in os.listdir(namedirtopc) if os.path.isdir(os.path.join(namedirtopc, name)) and \
             name not in alreadyDone]
 
-print 'class used :',usedclassif
+print 'class used :',usedclassifall
 
 for f in listdirc:
 
@@ -664,20 +667,20 @@ for f in listdirc:
     else:
         tabslung,a,b=genebmp(namedirtopcf, lungmask1,tabscanName)
 
-    for i in usedclassif:
+    for i in usedclassifall:
         tabroipat[i]=np.zeros((slnt,dimtabx,dimtaby),np.uint8)
 
-    contenudir = [name for name in os.listdir(namedirtopcf) if name in usedclassif and name not in derivedpat]
+    contenudir = [name for name in os.listdir(namedirtopcf) if name in usedclassifall and name not in derivedpatall]
     for i in contenudir:
         tabroipat[i],tabsroi,a=genebmp(namedirtopcf, i,tabscanName)
 
-    for i in derivedpat:
+    for i in derivedpatall:
         tabroipat[i]=np.zeros((slnt,dimtabx,dimtaby),np.uint8)
         tabroipat[i]=calnewpat(namedirtopcf,i,slnt,dimtabx,dimtaby,tabscanName)
     
     genebackground(namedirtopcf)
 
-    contenudir = [name for name in os.listdir(namedirtopcf) if name in usedclassif]
+    contenudir = [name for name in os.listdir(namedirtopcf) if name in usedclassifall]
     for i in contenudir:
         nbp=pavs(namedirtopcf,i,slnt,dimtabx,dimtaby,tabscanName)
 #    pavbg(namedirtopcf,slnt,dimtabx,dimtaby)
