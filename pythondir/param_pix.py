@@ -7,8 +7,6 @@ Created on Tue May 02 15:04:39 2017
 setdata='CHU'
 #setdata='S2'
 
-
-
 import collections
 import cPickle as pickle
 import cv2
@@ -91,11 +89,12 @@ transbmp='trans_bmp'
 lungmask='lung'
 lungmask1='lung_mask'
 #directory to put  lung mask bmp
-lungmaskbmp='scan_bmp'
+lungmaskbmp='bmp'
 sourcedcm = 'source'
 
 
 typei='jpg' #can be jpg
+typei1='bmp' #can be jpg
 typeibmp='bmp'
 sroi='sroi'
 #avgPixelSpacing=0.734
@@ -116,10 +115,7 @@ lowgreen=(0,51,51)
 parme=(234,136,222)
 chatain=(139,108,66)
 
-
-
 if setdata=='CHU':
-
 #CHU
     classif ={
         'back_ground':0,
@@ -134,6 +130,18 @@ if setdata=='CHU':
         'air_trapping':9,
         'GGpret':10
         } 
+    usedclassif=[
+        'healthy',    
+        'ground_glass',
+        'HC',
+        'reticulation',
+        'bronchiectasis',
+        'cysts',
+         'consolidation',
+        'micronodules',
+        'air_trapping',
+        'GGpret'
+        ]
 elif setdata=='ILD1':
 #ILD1
     classif ={
@@ -202,22 +210,10 @@ elif setdata=='lc':
         }     
 else:
     print 'error: not defined set'
-print 'patterns for set :',setdata
-for i,j in classif.items():
-    print i, j
+#print 'patterns for set :',setdata
+#for i,j in classif.items():
+#    print i, j
 print '---------------'
-usedclassif=[
-        'back_ground',
-        'healthy',
-        'ground_glass',
-        'reticulation',
-        'HC',
-        'micronodules',
-        'consolidation',
-        'air_trapping',
-        'cysts',
-        'bronchiectasis',
-        ]
 
 notusedclassif=[]
 for i in classif:
@@ -389,6 +385,8 @@ def get_unet(num_class,num_bit,img_rows,img_cols):
 #    weights=w
     coefcon={}
     coefcon[1]=16 #32 for 320
+    coefcon[1]=2 #32 for 320
+
 #coefcon[1]=16 #32 for 320 #16 for gpu
     for i in range (2,6):
         coefcon[i]=coefcon[i-1]*2
