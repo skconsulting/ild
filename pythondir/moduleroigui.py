@@ -62,29 +62,32 @@ def roirun(indata,path_patient):
     return messageout
 
 def roirunlung(indata,path_patient):
-    listHug=indata
+    listHug=indata['ll']
+    centerHU=indata['centerHU'] 
+    limitHU=indata['limitHU'] 
 
-    pos=str(indata).find(' ROI!:')
+    pos=str(listHug).find(' ROI!:')
     if pos >0:
-        listHug=str(indata)[3:pos]
+        listHug=str(listHug)[3:pos]
     else:
-        pos=str(indata).find(' noROI!')
-        listHug=str(indata)[3:pos]
+        pos=str(listHug).find(' noROI!')
+        listHug=str(listHug)[3:pos]
 #    print 'listhug',listHug
 #    print 'indata',indata
 #    print 'path_patient',path_patient
-    messageout=openfichierroilung(listHug,path_patient)
+    messageout=openfichierroilung(listHug,path_patient,centerHU,limitHU)
     return messageout
 
 def checkvolumegene(indata,path_patient):
-    listHug=indata
-
-    pos=str(indata).find(' ROI!:')
+    listHug=indata['ll']
+#    centerHU=indata['centerHU'] 
+#    limitHU=indata['limitHU'] 
+    pos=str(listHug).find(' ROI!:')
     if pos >0:
-        listHug=str(indata)[3:pos]
+        listHug=str(listHug)[3:pos]
     else:
-        pos=str(indata).find(' noROI!')
-        listHug=str(indata)[3:pos]
+        pos=str(listHug).find(' noROI!')
+        listHug=str(listHug)[3:pos]
 #    print 'listhug',listHug
 #    print 'indata',indata
 #    print 'path_patient',path_patient

@@ -144,12 +144,16 @@ def press(btn):
 
 def presslung(btn):
     global app
+    indata={}
+    indata['ll']=app.getListItems("list")
+    indata['centerHU']=app.getEntry("centerHU")
+    indata['limitHU']=app.getEntry("limitHU")
 #    print(app.getListItems("list"))
-    ll =app.getListItems("list")
+#    ll =app.getListItems("list")
 #    print ll
-    if len(ll)>0:
+    if len( indata['ll'])>0:
         app.hide()
-        roirunlung(ll,lisdir)
+        roirunlung(indata,lisdir)
         redraw(app)
     else:
         app.errorBox('error', 'no  patient selected')
@@ -157,12 +161,15 @@ def presslung(btn):
 
 def checkvolume(btn):
     global app
+    indata={}
 #    print(app.getListItems("list"))
-    ll =app.getListItems("list")
+    indata['ll']=app.getListItems("list")
+    indata['centerHU']=app.getEntry("centerHU")
+    indata['limitHU']=app.getEntry("limitHU")
 #    print ll
-    if len(ll)>0:
+    if len(indata['ll'])>0:
         app.hide()
-        mes=checkvolumegene(ll,lisdir)
+        mes=checkvolumegene(indata,lisdir)
         app.show()
         if mes !=None:
             app.infoBox('volume', mes)
