@@ -59,28 +59,84 @@ version ="1.0"
 paramsave='data'
 source='source'
 paramname ='paramname.pkl'
+paramdict={}
 #cwd=os.getcwd()
 #(cwdtop,tail)=os.path.split(pathRoiGene)
 
 paramsaveDir=os.path.join(pathRoiGenelocal,paramsave)
 if not os.path.exists(paramsaveDir):
     os.mkdir(paramsaveDir)
-
 paramsaveDirf=os.path.join(paramsaveDir,paramname)
 
-if os.path.exists(paramsaveDir):
-    if os.path.exists(paramsaveDirf):
-        lisdir=pickle.load(open( paramsaveDirf, "rb" ))
-    else:
-        lisdir=os.environ['USERPROFILE']
+if os.path.exists(paramsaveDirf):
+#        paramdict=pickle.load(open( paramsaveDirf, "rb" ))
+        lisdirold=pickle.load(open( paramsaveDirf, "rb" ))
+        try:
+            paramdict=pickle.load(open( paramsaveDirf, "rb" ))
+            lisdir= paramdict['path_patient']
+            centerHU=paramdict['centerHU']
+            limitHU=paramdict['limitHU']
+        except:
+            paramdict={}
+            lisdir=lisdirold           
+            paramdict['path_patient']=lisdir
+            paramdict['centerHU']=-600
+            paramdict['limitHU']=800
+            pickle.dump(paramdict,open( paramsaveDirf, "wb" ))
+            
+    
+else:
+    lisdir=os.environ['USERPROFILE']     
+    paramdict['path_patient']=lisdir
+    pickle.dump(paramdict,open( paramsaveDirf, "wb" ))       
+
+#        else:
+#            lisdir= paramdict['path_patient']
+#            thrpatch= paramdict['thrpatch']
+#            thrproba= paramdict['thrproba']
+#            thrprobaMerge= paramdict['thrprobaMerge']
+#            thrprobaUIP= paramdict['thrprobaUIP']
+#            picklein_file= paramdict['picklein_file']
+#            picklein_file_front= paramdict['picklein_file_front']
+#            subErosion = paramdict['subErosion in mm']
+
+#    else:
+#        lisdir=os.environ['USERPROFILE']
+#        thrpatch= 0.95
+#        thrproba=0.7
+#        thrprobaMerge=0.7
+#        thrprobaUIP= 0.7
+#        picklein_file= "pickle_ex80"
+#        picklein_file_front= "pickle_ex81"
+#        subErosion = 15  # erosion factor for subpleura in mm
+
+#
+#if os.path.exists(paramsaveDir):
+#    if os.path.exists(paramsaveDirf):
+#        lisdir=pickle.load(open( paramsaveDirf, "rb" ))
+#    else:
+#        lisdir=os.environ['USERPROFILE']
 
 def press(btn):
     global app
+    indata={}
+    indata['centerHU']=app.getEntry("centerHU")
+    indata['limitHU']=app.getEntry("limitHU")
+    indata['ll']=app.getListItems("list")
+
+#    roirun(app.getListItems("list"),lisdir)
+    if len(indata['ll']) >0:
+        paramdict['centerHU']=indata['centerHU']
+        paramdict['limitHU']=indata['limitHU']
+        pickle.dump(paramdict,open( paramsaveDirf, "wb" ))
+    
+    
 #    print(app.getListItems("list"))
-    ll =app.getListItems("list")
+#    ll =app.getListItems("list")
 #    print ll
-    if len(ll)>0:
-        roirun(ll,lisdir)
+    if len(indata['ll'])>0:
+        app.hide()
+        roirun(indata,lisdir)
         redraw(app)
     else:
         app.errorBox('error', 'no  patient selected')
@@ -92,6 +148,7 @@ def presslung(btn):
     ll =app.getListItems("list")
 #    print ll
     if len(ll)>0:
+        app.hide()
         roirunlung(ll,lisdir)
         redraw(app)
     else:
@@ -104,7 +161,9 @@ def checkvolume(btn):
     ll =app.getListItems("list")
 #    print ll
     if len(ll)>0:
+        app.hide()
         mes=checkvolumegene(ll,lisdir)
+        app.show()
         if mes !=None:
             app.infoBox('volume', mes)
 #            app.addMessage('volume', mes)
@@ -154,7 +213,8 @@ def selectPatientDir():
         for i in lisstdirec:
             sourced=os.path.join(os.path.join(lisdir,i),source)
             if os.path.exists(sourced):
-                pickle.dump(lisdir,open( paramsaveDirf, "wb" ))
+                paramdict['path_patient']=lisdir
+                pickle.dump(paramdict,open( paramsaveDirf, "wb" ))
                 if pbg==False:
                     pbg=True
 #                print 'exist',pbg
@@ -162,7 +222,8 @@ def selectPatientDir():
             else:
                ldcm= [name for name in os.listdir(os.path.join(lisdir,i)) if name.find('.dcm')>0]
                if len(ldcm)>0:
-                    pickle.dump(lisdir,open( paramsaveDirf, "wb" ))
+                    paramdict['path_patient']=lisdir
+                    pickle.dump(paramdict,open( paramsaveDirf, "wb" ))
 #                print 'paramdict',paramdict
                     if pbg==False:
                         pbg=True
@@ -183,9 +244,11 @@ listannotated=[]
 goodir=False
 
 def initDraw():
-
+    paramdict=pickle.load(open( paramsaveDirf, "rb" ))
+    centerHU=paramdict['centerHU']
+    limitHU=paramdict['limitHU']
     global app
-    app = gui("ROI form"+version,"1000x400")
+    app = gui("ROI form"+version,"1000x500")
     app.setStopFunction(Stop)
     if not goodir: selectPatientDir()
 
@@ -198,10 +261,12 @@ def initDraw():
         app.setLabelFg("path_patientt", "Yellow")
         
         app.addLabel("top", "Select patient ID:")
-        app.setLabelBg("top", "Blue")
-        app.setLabelFg("top", "Yellow")
+        app.setLabelBg("top", "Grey")
+        app.setLabelFg("top", "Blue")
+
         row = app.getRow()
-        app.addButton("HELP",  presshelp,row,1)
+        app.addButton("HELP",  presshelp,row,1)        
+        
         some_sg,stsdir=lisdirprocess(lisdir)
 
         listannotated=[]
@@ -216,8 +281,16 @@ def initDraw():
 
         app.addListBox("list",listannotated,row,0)
         app.setListBoxRows("list",10)
-        app.addHorizontalSeparator( colour="red",colspan=2)
-#        app.setLabelBg("list", "blue")
+        row = app.getRow()
+#        app.addHorizontalSeparator( row,1,colour="Red")
+#        row = app.getRow()
+        app.addLabelNumericEntry("centerHU",row,1)
+        app.setEntry("centerHU",centerHU)
+        row = app.getRow()
+        app.addLabelNumericEntry("limitHU",row,1)
+        app.setEntry("limitHU", limitHU)
+        row = app.getRow()
+        app.addHorizontalSeparator( row,colour="red",colspan=2)
         row = app.getRow()
         app.addButton("Generate ROI",  press,row,1)
         row = app.getRow()

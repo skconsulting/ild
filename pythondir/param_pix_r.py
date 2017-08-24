@@ -63,11 +63,56 @@ parme2=(230,136,226)
 parme3=(228,136,228)
 parme4=(226,136,230)
 chatain=(139,108,66)
+chatainlow=(109,98,46)
 
 cwd=os.getcwd()
 (cwdtop,tail)=os.path.split(cwd)
 
 if setdata=='set0':
+#set0
+    classif ={
+        'consolidation':0,
+        'HC':1,
+        'ground_glass':2,
+        'healthy':3,
+        'micronodules':4,
+        'reticulation':5,
+        'air_trapping':6,
+        'cysts':7,
+        'bronchiectasis':8,
+        'emphysema':9,
+        'GGpret':10,
+#        'HCpret':12,
+#        'HCpbro':13,
+#        'GGpbro':14,
+#        'bropret':15,
+        'lung':11,
+
+        'erase':13               
+        }
+    
+    usedclassif =[
+        'consolidation',
+        'HC',
+        'ground_glass',
+        'emphysema',
+        'healthy',
+        'micronodules',
+        'reticulation',
+        'air_trapping',
+        'cysts',
+        'bronchiectasis',
+#        'HCpret',
+#        'HCpbro',
+#        'GGpbro',
+        'GGpret',
+#        'bropret',
+        'lung',
+        'erase'
+        ]
+
+    classifcontour=['lung']
+elif setdata=='set0p':
 #set0
     classif ={
         'back_ground':0,
@@ -119,7 +164,7 @@ else:
 
 
 classifc ={
-    'back_ground':chatain,
+    'back_ground':chatainlow,
     'consolidation':cyan,
     'HC':blue,
     'ground_glass':red,
