@@ -1263,12 +1263,14 @@ def populate(pp):
                     pose=roiimage.find('.'+typei)
                     roibmpfile=roiimage[0:pose]+'.'+typei1
 #                    print roiimage,roibmpfile
-
+                    np.putmask(imageroi,imageroi>0,classifc[key])
                     cv2.imwrite(os.path.join(dirroi,roibmpfile),imageroi)
                     
 #                    print slicenumber ,roiimage,key
-                
-
+#                tabgrey=cv2.cvtColor(imageroi,cv2.COLOR_BGR2GRAY)
+#                tabgrey=cv2.cvtColor(tabgrey,cv2.COLOR_GRAY2BGR)
+#                np.putmask(tabgrey,tabgrey>0,classifc[key])
+#                cv2.imwrite(img,tabgrey)
                 imageview=cv2.cvtColor(imageroi,cv2.COLOR_RGB2BGR)  
                   
                 tabgrey=cv2.cvtColor(imageview,cv2.COLOR_BGR2GRAY)
