@@ -4,7 +4,7 @@ Created on Mon Mar 20 17:21:22 2017
 
 @author: sylvain
 version 1.2
-28 july 2017
+17 august 2017
 """
 #from param_pix_p import *
 from param_pix_p import path_data,datafrontn,datacrossn,dimpavx,dimpavy,surfelem,volelem,volumeroifile,avgPixelSpacing
@@ -213,7 +213,7 @@ def tagvcm(fig,cm):
 def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,patch_list_ref_slice,volumeroi,slnt,tabroi,num_class):
 
     imgn = np.zeros((dx,dy,3), np.uint8)
-    datav = np.zeros((500,800,3), np.uint8)
+    datav = np.zeros((500,900,3), np.uint8)
     patchdict=np.zeros((slnt,dx,dy), np.uint8)  
 #    np.putmask(patchdict,patchdict==0,classif['lung'])
     imgpatch=np.zeros((dx,dy), np.uint8)  
@@ -868,7 +868,7 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
 #    cv2.imshow('a',imgbackg)
 #    cv2.waitKey(0)
 #    cv2.destroyAllWindows()
-    tlold=0
+    tlold=-1
     viewaskedold={}
     for keyinit in usedclassif:
         viewaskedold[keyinit]=True
@@ -1249,25 +1249,6 @@ def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
                             patchdict[slicenumber]=cv2.bitwise_and(patchdict[slicenumber],patchdict[slicenumber],mask=mask)
                             patchdict[slicenumber]=cv2.bitwise_or(imgpatch,patchdict[slicenumber])
     
-    #            if slicenumber==143:
-    #                pd=patchdict[slicenumber]
-    #                np.putmask(pd,pd!=5,0)
-    #                pt=tabroi[slicenumber]
-    #                np.putmask(pt,pt!=5,0)
-    #                tp=np.bitwise_and(pt,pd)
-    #                np.putmask(tp,tp>0,1)
-    #                tpa=np.sum(tp)*1.0
-    #                np.putmask(pd,pd>0,1)
-    #                tpt=np.sum(pd)
-    #                tpf=tpt-tpa
-    #                print 'total',tpt
-    #                print 'true positive',tpa
-    #                print 'false positive',tpf
-    #                print 'precision', tpa/(tpa+tpf)
-    #                
-    #                cv2.imwrite('patchdict.bmp',normi(pd))
-    #                cv2.imwrite( 'tabroi.bmp',normi(pt))
-                
                 referencepat= tabroi[slicenumber].flatten()
                 predictpat=  patchdict[slicenumber].flatten()   
                 
@@ -1460,7 +1441,7 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,patch_l
         
         for keyne in usedclassif:
                 viewaskedold[keyne]=False
-        datav = np.zeros((500,800,3), np.uint8) 
+        datav = np.zeros((500,900,3), np.uint8) 
         while(1):
             imgwip = np.zeros((200,200,3), np.uint8)  
             
@@ -1725,6 +1706,8 @@ def visuarun(indata,path_patient):
  
 #    print 'path_patient',path_patient
     lpt=indata['lispatientselect']
+#    centerHU=indata['centerHU']
+#    limitHU=indata['limitHU']
     pos=lpt.find(' PREDICT!:')
     if pos >0:
             listHug=(lpt[0:pos])
@@ -1774,7 +1757,8 @@ def visuarun(indata,path_patient):
             tabroi= pickle.load( open( os.path.join(path_data_dir,"tabroi"), "rb" ))
             patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice"), "rb" ))
             thrprobaUIP=float(indata['thrprobaUIP'])
-            messageout=openfichier(viewstyle,datarep,patient_path_complet,thrprobaUIP,patch_list_cross_slice,patch_list_cross_slice,tabroi)
+            messageout=openfichier(viewstyle,datarep,patient_path_complet,thrprobaUIP,
+                                   patch_list_cross_slice,patch_list_cross_slice,tabroi)
             
     elif viewstyle=='front view':
             datarep= pickle.load( open( os.path.join(path_data_dir,"datafront"), "rb" ))

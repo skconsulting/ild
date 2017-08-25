@@ -62,7 +62,7 @@ def reshapeScanl(tabscan):
     tabres=np.moveaxis(tabscan,0,1)
     return tabres
 
-def genebmp(fn,sou,nosource):
+def genebmp(fn,sou,nosource,centerHU, limitHU):
     """generate patches from dicom files"""
     global picklein_file
     (top,tail) =os.path.split(fn)
@@ -92,6 +92,8 @@ def genebmp(fn,sou,nosource):
     print 'slice pitch in z :',slicepitch
 #    ooo
     print 'patient position :',patientPosition
+    lbHU=centerHU-limitHU
+    lhHU=centerHU+limitHU
     dsr= RefDs.pixel_array
     dsr = dsr.astype('int16')
     fxs=float(RefDs.PixelSpacing[0])/avgPixelSpacing
@@ -133,28 +135,33 @@ def genebmp(fn,sou,nosource):
 
         dsr += np.int16(intercept)
         dsr = dsr.astype('int16')
+        
         imgresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
+        
         endnumslice=l.find('.dcm')
         imgcoreScan=l[0:endnumslice]+'_'+str(slicenumber)+'.'+typei1
         tt=(imgcoreScan,imgresize)
+        
         tabscan[slicenumber]=tt
-
+        np.putmask(imgresize,imgresize<lbHU,lbHU)
+        np.putmask(imgresize,imgresize>lhHU,lhHU)
         imtowrite=normi(imgresize)
 
         bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
-
-        t2='Not for medical use'
-        t1=''
+        (topw,tailw)=os.path.split(picklein_file)
+        t2='Prototype '
+        t1='param :'+tailw
         t0='CONFIDENTIAL'
-        t3=''
+        t3='Scan: '+str(slicenumber)
 
         t4=time.asctime()
-        (topw,tailw)=os.path.split(picklein_file)
-        t5= tailw
-
-        imtowrite=tagviews(imtowrite,t0,0,10,t1,0,20,t2,0,30,t3,0,40,t4,0,dimtaby-10,t5,0,dimtaby-20)
-#        scipy.misc.imsave(bmpfile,imtowrite)
-        cv2.imwrite(bmpfile,imtowrite)
+        t5='CenterHU: '+str(int(centerHU))
+        t6='LimitHU: +/-' +str(int(limitHU))
+                
+        anoted_image=tagviews(imtowrite,t0,dimtabx-300,dimtaby-10,t1,0,dimtaby-20,t2,dimtabx-200,dimtaby-10,
+                     t3,0,dimtaby-30,t4,0,dimtaby-10,t5,0,dimtaby-40,t6,0,dimtaby-50)
+        
+        cv2.imwrite(bmpfile,anoted_image)
 
     return tabscan,slnt,dimtabx,slicepitch,lislnn
 
@@ -253,7 +260,9 @@ def morph(imgt,k):
 def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan,listsln):
     """generate patches from dicom files"""
 
-    
+    tabrange={}
+    tabrange['min']=100000000
+    tabrange['max']=0
     (top,tail) =os.path.split(fn)
     print ('load lung segmented dicom files in :',tail)
     fmbmp=os.path.join(fn,lungname)
@@ -316,21 +325,32 @@ def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan,listsln):
                 if tabscan[i].max()==0:
                     tabscan[i]=tabscan1[i]
                     cv2.imwrite(bmpfile,tabscan[i])
-    return tabscan
+    for sli in listsln:
+        cpt=np.copy(tabscan[sli])
+        np.putmask(cpt,cpt>0,1)
+        area=cpt.sum()
+        if area >pxy:
+            if sli> tabrange['max']:
+                tabrange['max']=sli
+            if sli< tabrange['min']:
+                tabrange['min']=sli
+                
+    return tabscan,tabrange
 
 
-def tagviews (tab,t0,x0,y0,t1,x1,y1,t2,x2,y2,t3,x3,y3,t4,x4,y4,t5,x5,y5):
+def tagviews (tab,t0,x0,y0,t1,x1,y1,t2,x2,y2,t3,x3,y3,t4,x4,y4,t5,x5,y5,t6,x6,y6):
     """write simple text in image """
     font = cv2.FONT_HERSHEY_SIMPLEX
-    col=white
+    col=yellow
 
     viseg=cv2.putText(tab,t0,(x0, y0), font,0.3,col,1)
-    viseg=cv2.putText(viseg,t1,(x1, y1), font,0.3,col,1)
+    viseg=cv2.putText(viseg,t1,(x1, y1), font,0.4,col,1)
     viseg=cv2.putText(viseg,t2,(x2, y2), font,0.3,col,1)
 
-    viseg=cv2.putText(viseg,t3,(x3, y3), font,0.3,col,1)
-    viseg=cv2.putText(viseg,t4,(x4, y4), font,0.3,col,1)
-    viseg=cv2.putText(viseg,t5,(x5, y5), font,0.3,col,1)
+    viseg=cv2.putText(viseg,t3,(x3, y3), font,0.4,col,1)
+    viseg=cv2.putText(viseg,t4,(x4, y4), font,0.4,col,1)
+    viseg=cv2.putText(viseg,t5,(x5, y5), font,0.4,col,1)
+    viseg=cv2.putText(viseg,t6,(x6, y6), font,0.4,col,1)
 
     return viseg
 
@@ -484,7 +504,7 @@ def ILDCNNpredict(patch_list,model):
 
     return proba
 
-def wtebres(wridir,dirf,tab,dimtabx,slicepitch,lungm,ty):
+def wtebres(wridir,dirf,tab,dimtabx,slicepitch,lungm,ty,centerHU,limitHU):
     global picklein_file_front
     print 'generate front images from',ty
     (top,tail)=os.path.split(dirf)
@@ -496,11 +516,8 @@ def wtebres(wridir,dirf,tab,dimtabx,slicepitch,lungm,ty):
 #    print avgPixelSpacing
     fxs=float(slicepitch/avgPixelSpacing )
     lislnn=[]
-#    print 'fxs',fxs
 
-#    print tab[0].shape[0]
     ntd=int(round(fxs*tab[0].shape[0],0))
-#    print  fxs,slicepitch,ntd,avgPixelSpacing,tab[0].shape[0],dimtabx
 
     if ty=='scan':
         tabres=np.zeros((dimtabx,ntd,dimtabx),np.int16)
@@ -509,15 +526,8 @@ def wtebres(wridir,dirf,tab,dimtabx,slicepitch,lungm,ty):
     for i in range (0,dimtabx):
 #        print i, tab[i].max()
         lislnn.append(i)
-#        if tab[i].max()>0:
-#            print tab[i].max()
-#            print tab[i].shape
-#            ooo
 
         imgresize=cv2.resize(tab[i],None,fx=1,fy=fxs,interpolation=cv2.INTER_LINEAR)
-#            print i, imgresize.min(), imgresize.max(),imgresize.shape
-#            ooo
-#            print dimtabx,fxs,imgresize.shape,tab[i].shape
 
         if ty=='scan':
             typext=typei1
@@ -535,16 +545,27 @@ def wtebres(wridir,dirf,tab,dimtabx,slicepitch,lungm,ty):
             namescan=os.path.join(wridir,trscan)
             dimtabxn=imgresize.shape[0]
             dimtabyn=imgresize.shape[1]
-            t2='Not for medical use'
-            t1='Pt: '+tail
+            
+            
+            imgresize8=normi(imgresize)
+            (topw,tailw)=os.path.split(picklein_file_front)
+            t2='Prototype '
+            t1='param :'+tailw
             t0='CONFIDENTIAL'
             t3='Scan: '+str(i)
+    
             t4=time.asctime()
-            (topw,tailw)=os.path.split(picklein_file_front)
-            t5= tailw
-            imgresize8=normi(imgresize)
-            imgresize8r=tagviews(imgresize8,t0,0,10,t1,0,20,t2,(dimtabyn/2)-10,dimtabxn-10,t3,0,38,t4,0,dimtabxn-10,t5,0,dimtabxn-20)
-            cv2.imwrite(namescan,imgresize8r)
+            t5='CenterHU: '+str(int(centerHU))
+            t6='LimitHU: +/-' +str(int(limitHU))
+            
+            
+            anoted_image=tagviews(imgresize8,t0,dimtabxn-300,dimtabyn-10,t1,0,dimtabyn-20,t2,dimtabx-350,dimtabyn-10,
+                         t3,0,dimtabyn-30,t4,0,dimtabyn-10,t5,0,dimtabyn-40,t6,0,dimtabyn-50)
+                    
+#            t1='Pt: '+tail
+            
+#            imgresize8r=tagviews(imgresize8,t0,0,10,t1,0,20,t2,(dimtabyn/2)-10,dimtabxn-10,t3,0,38,t4,0,dimtabxn-10,t5,0,dimtabxn-20)
+            cv2.imwrite(namescan,anoted_image)
 
         tabres[i]=imgresize
 #        cv2.imwrite (trscan, tab[i],[int(cv2.IMWRITE_PNG_COMPRESSION),0])
@@ -1120,7 +1141,7 @@ def reshapepatern(dirf,tabpx,dimtabxn,dimtaby,slnt,slicepitch,predictout,sou,dcm
             impre[t]=cv2.add(impre[t],tabresshape[t])
 
     for scan in range(0,slnt):
-                pf=os.path.join(predictout_dir,'tr_'+str(scan)+'.'+typei)
+                pf=os.path.join(predictout_dir,'tr_'+str(scan)+'.'+typei1)
                 imcolor = cv2.cvtColor(impre[scan], cv2.COLOR_BGR2RGB)
                 imn=cv2.add(imcolor,tablscan[scan])
                 imnc[scan]=imn
@@ -1477,18 +1498,29 @@ def subpleural(dirf,tabscanLung,lungSegment,subErosion,crfr):
     return subpleurmaskset
 
 
-def selectposition(lislnumber):
+def selectposition(lislnumber,tabrange):
+    minr=tabrange['min']
+    maxr=tabrange['max']
+    minsln=10000
+    maxsln=0
+    for i in lislnumber:
+        if i<minsln:
+            minsln=i
+        if i>maxsln:
+            maxsln=i
+    bmax=(maxr+minr)/2
+    bmin=(minr+bmax)/2
     upperset=[]
     middleset=[]
     lowerset=[]
     allset=[]
     lungs={}
-    Nset=len(lislnumber)/3
+#    Nset=len(lislnumber)/3
     for scanumber in lislnumber:
             allset.append(scanumber)
-            if scanumber < Nset:
+            if scanumber < bmin:
                 upperset.append(scanumber)
-            elif scanumber < 2*Nset:
+            elif scanumber < bmax:
                 middleset.append(scanumber)
             else:
                 lowerset.append(scanumber)
@@ -1590,6 +1622,8 @@ def predictrun(indata,path_patient):
         thrprobaUIP=float(indata['thrprobaUIP'])
         thrpatch=float(indata['thrpatch'])
         picklein_filet=indata['picklein_file']
+        centerHU=indata['centerHU']
+        limitHU=indata['limitHU']
         
         #define set data and associated patterns
         if oldFormat==False:
@@ -1707,7 +1741,8 @@ def predictrun(indata,path_patient):
             print 'START PREDICT CROSS'
             print '------------------'
             print source
-            tabscanScan,slnt,dimtabx,slicepitch,lissln=genebmp(dirf,source,nosource)
+#            return ''
+            tabscanScan,slnt,dimtabx,slicepitch,lissln=genebmp(dirf,source,nosource, centerHU, limitHU)
             if not os.path.exists(path_data_writefile):
                 volumeroi={}
                 for i in lissln:
@@ -1732,7 +1767,9 @@ def predictrun(indata,path_patient):
             tabroi,volumeroi=generoi(dirf,tabroi,dimtabx,volumeroi)
             pickle.dump(volumeroi, open(path_data_writefile, "wb" ),protocol=-1)
             pickle.dump(tabroi, open( os.path.join(path_data_write,"tabroi"), "wb" ),protocol=-1)
-            lungSegment=selectposition(lissln)
+            
+            tabscanLung,tabrange=genebmplung(dirf,lungmaski,slnt,dimtabx,dimtabx,tabscanScan,lissln)
+            lungSegment=selectposition(lissln,tabrange)
            
             datacross=(slnt,dimtabx,dimtabx,slicepitch,lissln,setref)   
             
@@ -1752,7 +1789,7 @@ def predictrun(indata,path_patient):
             lissln=datacross[4]
 #            """
 #
-            tabscanLung=genebmplung(dirf,lungmaski,slnt,dimtabx,dimtabx,tabscanScan,lissln)
+#            tabscanLung=genebmplung(dirf,lungmaski,slnt,dimtabx,dimtabx,tabscanScan,lissln)
             
             subpleurmask=subpleural(dirf,tabscanLung,lungSegment,subErosion,'cross')
 #            pickle.dump(subpleurmask, open( os.path.join(path_data_write,"subpleurmask"), "wb" ),protocol=-1)
@@ -1793,9 +1830,11 @@ def predictrun(indata,path_patient):
                 print 'START PREDICT FRONT'
                 print '------------------'
                 tabresScan=reshapeScan(tabscanScan,slnt,lissln,dimtabx,dimtabx)
-                dimtabxn,dimtabyn,tabScan3d,lisslnfront=wtebres(wridir,dirf,tabresScan,dimtabx,slicepitch,lungmaski,'scan')
+                dimtabxn,dimtabyn,tabScan3d,lisslnfront=wtebres(wridir,dirf,tabresScan,
+                                                                dimtabx,slicepitch,lungmaski,'scan',centerHU,limitHU)
                 tabresLung=reshapeScanl(tabscanLung)   
-                dimtabxn,dimtabyn,tabLung3d,a=wtebres(wridir,dirf,tabresLung,dimtabx,slicepitch,lungmaski,'lung')
+                dimtabxn,dimtabyn,tabLung3d,a=wtebres(wridir,dirf,tabresLung,dimtabx,slicepitch,
+                                                      lungmaski,'lung',centerHU,limitHU)
 
                 datafront=(dimtabx,dimtabxn,dimtabyn,slicepitch,lisslnfront)
                 

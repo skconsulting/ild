@@ -4,14 +4,13 @@ V1.0 Created on Sun Apr 05 09:52:27 2017
 
 @author: sylvain Kritter 
 
-Version 1.1 15-June-2017
-bug fixed:
-    1
-28 july 2017
+
+version 1.4 24 August 2017
 """
 #from param_pix_p import *
 #from tdGenePredictGui import predictrun
 from modulepredictgui import visuarun,lisdirprocess,predictmodule
+from param_pix_p import source
 
 from appJar import gui
 import os
@@ -54,49 +53,64 @@ if not os.path.exists(pathPredictlocal):
 #workingdir= os.path.join(os.environ['USERPROFILE'],workdiruser)
 
 
-version ="1.0"
+version ="1.4"
 paramsave='data'
-source='source'
 paramname ='paramname.pkl'
-#cwd=os.getcwd()
 
-#pathPredict=cwd
 paramsaveDir=os.path.join(pathPredictlocal,paramsave)
 if not os.path.exists(paramsaveDir):
     os.mkdir(paramsaveDir)
-
+    
 paramsaveDirf=os.path.join(paramsaveDir,paramname)
-
 paramdict={}
 
-if os.path.exists(paramsaveDir):
-    if os.path.exists(paramsaveDirf):
+if os.path.exists(paramsaveDirf):
+    paramdictold=pickle.load(open( paramsaveDirf, "rb" ))
+    try:
         paramdict=pickle.load(open( paramsaveDirf, "rb" ))
-        if len(paramdict)==1:
-            lisdir= paramdict['path_patient']
+        lisdir= paramdict['path_patient']
+        thrpatch= paramdict['thrpatch']
+        thrproba= paramdict['thrproba']
+        thrprobaMerge= paramdict['thrprobaMerge']
+        thrprobaUIP= paramdict['thrprobaUIP']
+        picklein_file= paramdict['picklein_file']
+        picklein_file_front= paramdict['picklein_file_front']
+        subErosion = paramdict['subErosion in mm']
+        limitHU=paramdict['limitHU']
+        centerHU=paramdict['centerHU']
+    except:
+        paramdict=paramdictold          
+        limitHU=800
+        centerHU=-600
+        paramdict['centerHU']=centerHU
+        paramdict['limitHU']=limitHU
+        pickle.dump(paramdict,open( paramsaveDirf, "wb" )) 
+else:
+    lisdir=os.environ['USERPROFILE']
+    thrpatch= 0.90
+    thrproba=0.7
+    thrprobaMerge=0.7
+    thrprobaUIP= 0.7
+    picklein_file= "set0_c08"
+    picklein_file_front= "set0_f08"
+    subErosion = 15  # erosion factor for subpleura in mm
+    limitHU=800
+    centerHU=-600
+    paramdict['thrpatch']=thrpatch
+    paramdict['thrproba']=thrproba
+    paramdict['thrprobaMerge']= thrprobaMerge
+    paramdict['thrprobaUIP']=thrprobaUIP
+    paramdict['picklein_file']=picklein_file
+    paramdict['subErosion in mm']=subErosion
+    paramdict['picklein_file_front']=picklein_file_front
+    paramdict['centerHU']=centerHU
+    paramdict['limitHU']=limitHU
 
-        else:
-            lisdir= paramdict['path_patient']
-            thrpatch= paramdict['thrpatch']
-            thrproba= paramdict['thrproba']
-            thrprobaMerge= paramdict['thrprobaMerge']
-            thrprobaUIP= paramdict['thrprobaUIP']
-            picklein_file= paramdict['picklein_file']
-            picklein_file_front= paramdict['picklein_file_front']
-            subErosion = paramdict['subErosion in mm']
-
-    else:
-        lisdir=os.environ['USERPROFILE']
-        thrpatch= 0.95
-        thrproba=0.7
-        thrprobaMerge=0.7
-        thrprobaUIP= 0.7
-        picklein_file= "pickle_ex80"
-        picklein_file_front= "pickle_ex81"
-        subErosion = 15  # erosion factor for subpleura in mm
+    pickle.dump(paramdict,open( paramsaveDirf, "wb" )) 
 
 def predict(btn):
     global continuevisu,goodir,app
+   
     indata={}
     message=''
 #    print(app.getListItems("list"))
@@ -111,46 +125,39 @@ def predict(btn):
     indata['subErosion']= app.getEntry("subErosion in mm")
     indata['lispatientselect']=app.getListItems("list")
     indata['Fast']=app.getCheckBox("Fast")
+    indata['centerHU']=app.getEntry("centerHU")
+    indata['limitHU']=app.getEntry("limitHU")
+    paramdict['thrpatch']=indata['thrpatch']
+    paramdict['thrproba']=indata['thrproba']
+    paramdict['thrprobaMerge']= indata['thrprobaMerge']
+    paramdict['thrprobaUIP']=indata['thrprobaUIP']
+    paramdict['picklein_file']=indata['picklein_file']
+    paramdict['subErosion in mm']=indata['subErosion']
+    paramdict['picklein_file_front']=indata['picklein_file_front']
+    paramdict['picklein_file']=indata['picklein_file']
+    paramdict['centerHU']=indata['centerHU']
+    paramdict['limitHU']=indata['limitHU']
+    paramdict['lispatientselect']= indata['lispatientselect']
+    pickle.dump(paramdict,open( paramsaveDirf, "wb" ))
 
 #    roirun(app.getListItems("list"),lisdir)
     if len(indata['lispatientselect']) >0:
-        paramdict['thrpatch']=indata['thrpatch']
-        paramdict['thrproba']=indata['thrproba']
-        paramdict['thrprobaMerge']= indata['thrprobaMerge']
-        paramdict['thrprobaUIP']=indata['thrprobaUIP']
-        paramdict['picklein_file']=indata['picklein_file']
-        paramdict['subErosion in mm']=indata['subErosion']
-        paramdict['picklein_file_front']=indata['picklein_file_front']
-        paramdict['picklein_file']=indata['picklein_file']
-        pickle.dump(paramdict,open( paramsaveDirf, "wb" ))
-#    roirun(app.getListItems("list"),lisdir)
-#        print indata
-#        app.hide()
-#        appn = gui("Predict running","1000x700")
-#        appn.setBg("lightBlue")
-#        appn.addLabel("path_patientt", "path_patient")
-#        appn.addLabel("path_patient", lisdir)
-#        appn.setLabelBg("path_patient", "Blue")
-#        appn.setLabelFg("path_patient", "Yellow")
-#        appn.setLabelBg("path_patientt", "Blue")
-#        appn.setLabelFg("path_patientt", "Yellow")
-#        appn.go()
-#        appn.stop(Stop)
-#        app.errorBox('error', message)
+        app.hide()
         listdir,message=predictmodule(indata,lisdir)  
-#        app.show()
-        
+        app.show()        
         if len(message)>0:
             app.errorBox('error', message)
             app.stop(Stop)
             initDraw()
         else:
             app.stop(Stop)
+            continuevisu=True
             visuDraw()
     else:
         app.errorBox('error', 'no patient selected for predict')
         app.stop(Stop)
         initDraw()
+#        continuevisu=False
     goodir=False
     continuevisu=False
 
@@ -159,15 +166,13 @@ def visualisation(btn):
     global app,continuevisu,thrprobaUIP
 #    print(app.getListItems("list"))
     indata={}
-#    indata['subErosion']= app.getEntry("subErosion in mm")
-    indata['thrprobaUIP']=app.getEntry("Threshold proba")
+    indata['thrprobaUIP']=app.getEntry("Threshold proba")   
+    indata['lispatientselect']=selectpatient
     paramdict['thrprobaUIP']=indata['thrprobaUIP']
+    paramdict['lispatientselect']=indata['lispatientselect']
     thrprobaUIP=indata['thrprobaUIP']
     pickle.dump(paramdict,open( paramsaveDirf, "wb" ))
-    indata['lispatientselect']=selectpatient
 
-#    indata['thrpatch']=app.getEntry("Percentage of pad Overlapp")
-#    print 'frontpredict',frontpredict
     if frontpredict:
         indata['3dasked']=True
     else:
@@ -188,6 +193,8 @@ def visuDrawl(btn):
     global frontpredict,continuevisu,selectpatient,app
 
     selectvisu=app.getListItems("list")
+    paramdict['lispatientselect']=selectvisu
+    pickle.dump(paramdict,open( paramsaveDirf, "wb" ))
     if len(selectvisu) >0:
          selectpatient=selectvisu[0]
          frontexist=selectvisu[0].find('Cross & Front')
@@ -221,7 +228,11 @@ def boutonStop(btn):
 def selection(btn):
     global frontpredict,continuevisu,selectpatient,app
     selectvisu=app.getListItems("list")
+    
+    
     selectpatient=selectvisu[0]
+    paramdict['lispatientselect']=selectvisu
+    pickle.dump(paramdict,open( paramsaveDirf, "wb" ))
     frontexist=selectvisu[0].find('Cross & Front')
     selectpatient=selectvisu[0]
     if frontexist>0:
@@ -276,7 +287,6 @@ def selectPatientDir():
                         pbg=True
                     break
                    
-
     if pbg:
         app.stop(Stop)
         goodir=True
@@ -309,7 +319,17 @@ def initDrawB(btn):
 def initDraw():
     global app
 #    print goodir
-
+    paramdict=pickle.load(open( paramsaveDirf, "rb" ))
+    thrpatch= paramdict['thrpatch']
+    thrproba= paramdict['thrproba']
+    thrprobaMerge= paramdict['thrprobaMerge']
+    thrprobaUIP= paramdict['thrprobaUIP']
+    picklein_file= paramdict['picklein_file']
+    picklein_file_front= paramdict['picklein_file_front']
+    subErosion = paramdict['subErosion in mm']
+    centerHU=paramdict['centerHU']
+    limitHU=paramdict['limitHU']
+    
     app = gui("Predict form","1000x700")
     app.setResizable(canResize=True)
     app.setBg("lightBlue")
@@ -375,8 +395,16 @@ def initDraw():
         app.setEntry("Threshold proba for merge cross and front view", thrprobaMerge)
         row = app.getRow()
 
-        app.addLabelNumericEntry("subErosion in mm",row,1)
+        app.addLabelNumericEntry("subErosion in mm",row,0)
         app.setEntry("subErosion in mm", subErosion)
+#        row = app.getRow()
+        app.addLabelNumericEntry("centerHU",row,1)
+        app.setEntry("centerHU", centerHU)
+            
+        row = app.getRow()
+        app.addLabelNumericEntry("limitHU",row,1)
+        app.setEntry("limitHU", limitHU)
+       
         row = app.getRow()
 
         app.addHorizontalSeparator(row,0,2, colour="red")
@@ -415,6 +443,7 @@ def initDraw():
 def visuDraw():
     global app
 #    print "visudraw"
+    paramdict=pickle.load(open( paramsaveDirf, "rb" ))
     app = gui("Visualization form","1000x600")
     app.setResizable(canResize=True)
 
@@ -431,6 +460,9 @@ def visuDraw():
     app.addButton("Change Patient Dir",  selectPatientDirB,colspan=2)
     app.addButton("Go back to prediction form",  initDrawB,colspan=2)
     app.addHorizontalSeparator( colour="red",colspan=2)
+#    centerHU=paramdict['centerHU']
+#    limitHU=paramdict['limitHU']
+    thrprobaUIP=paramdict['thrprobaUIP']
 #    app.setFont(10)
     if goodir:
 
@@ -470,9 +502,12 @@ def visuDraw():
 #            app.setEntry("subErosion in mm", subErosion)
             app.addLabelNumericEntry("Threshold proba",row,0)
             app.setEntry("Threshold proba",thrprobaUIP)
-           
+                                  
 #            app.addLabelNumericEntry("Percentage of pad Overlapp")
 #            app.setEntry("Percentage of pad Overlapp", thrpatch)
+            selectpatient=str(paramdict['lispatientselect'][0])
+            posb=selectpatient.find(' ')
+            selectpatient=selectpatient[0:posb]
             app.addLabel("l11", "Patient selected: "+selectpatient)
             app.addButton("Go back to Selection",  gobackselection)
             app.setLabelBg("l11","blue")

@@ -123,17 +123,14 @@ def press(btn):
     indata['centerHU']=app.getEntry("centerHU")
     indata['limitHU']=app.getEntry("limitHU")
     indata['ll']=app.getListItems("list")
+    pickle.dump(paramdict,open( paramsaveDirf, "wb" ))
 
 #    roirun(app.getListItems("list"),lisdir)
     if len(indata['ll']) >0:
         paramdict['centerHU']=indata['centerHU']
         paramdict['limitHU']=indata['limitHU']
-        pickle.dump(paramdict,open( paramsaveDirf, "wb" ))
-    
-    
-#    print(app.getListItems("list"))
-#    ll =app.getListItems("list")
-#    print ll
+
+
     if len(indata['ll'])>0:
         app.hide()
         roirun(indata,lisdir)
@@ -148,6 +145,7 @@ def presslung(btn):
     indata['ll']=app.getListItems("list")
     indata['centerHU']=app.getEntry("centerHU")
     indata['limitHU']=app.getEntry("limitHU")
+    pickle.dump(paramdict,open( paramsaveDirf, "wb" ))
 #    print(app.getListItems("list"))
 #    ll =app.getListItems("list")
 #    print ll
@@ -166,6 +164,7 @@ def checkvolume(btn):
     indata['ll']=app.getListItems("list")
     indata['centerHU']=app.getEntry("centerHU")
     indata['limitHU']=app.getEntry("limitHU")
+    pickle.dump(paramdict,open( paramsaveDirf, "wb" ))
 #    print ll
     if len(indata['ll'])>0:
         app.hide()
