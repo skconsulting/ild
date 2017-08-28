@@ -5,7 +5,7 @@ version 1.1
 28 july 2017
 '''
 #from param_pix_p import *
-from param_pix_p import scan_bmp,avgPixelSpacing,dimpavx,dimpavy,volumeroifile,dirpickleArch,modelArch,surfelemp
+from param_pix_p import scan_bmp,avgPixelSpacing,dimpavx,dimpavy,volumeroifilep,dirpickleArch,modelArch,surfelemp
 from param_pix_p import typei,typei1,typei2
 from param_pix_p import white,yellow
 
@@ -1561,8 +1561,9 @@ def genepatchlistslice(patch_list_cross,proba_cross,lissln,subpleurmask,thrpatch
             ii+=1                   
     return res,ressub
 
-def generoi(dirf,tabroi,dimtabx,volumeroi):
+def generoi(dirf,tabroi,dimtabx,lissln):
     for pat in usedclassif:
+#        print pat
         pathroi=os.path.join(dirf,pat)
         if os.path.exists(pathroi):
     
@@ -1578,17 +1579,15 @@ def generoi(dirf,tabroi,dimtabx,volumeroi):
 #                print os.path.join(pathroi,s)
 #                print img.shape
                 img=cv2.resize(img,(dimtabx,dimtabx),interpolation=cv2.INTER_LINEAR)
+                np.putmask(tabroi[numslice], img > 0, 0)
                 if classif[pat]>0:
                     np.putmask(img, img > 0, classif[pat])
                 else:
                     np.putmask(img, img > 0, classif['lung'])
                 tabroi[numslice]+=img
-                np.putmask(img,img>0,1)
-                area= img.sum()* surfelemp /100
-                volumeroi[numslice][pat]=area   
-#                if pat == 'ground_glass' and numslice==4:
+#                if  numslice==225:
 ##                    print pat, tabroi[143].max()
-##                    cv2.imshow('143',normi(tabroi[143]))
+#                    cv2.imshow(pat+'143',normi(tabroi[225]))
 #                    cv2.imwrite('a.bmp',normi(img))
 #                    print img.shape
 #                    print area
@@ -1596,7 +1595,27 @@ def generoi(dirf,tabroi,dimtabx,volumeroi):
 #                    cv2.waitKey(0)
 #                    cv2.destroyAllWindows()
                 
-                               
+    volumeroi={}
+    for numslice in lissln:
+            volumeroi[numslice]={}
+            for pat in classif:
+                img=np.copy(tabroi[numslice])
+                if img.max()>0:                    
+                    if classif[pat]>0:
+                        np.putmask(img, img !=classif[pat], 0)
+                        np.putmask(img, img ==classif[pat], 1)
+                    else:
+                        np.putmask(img, img !=classif['lung'], 0)
+                        np.putmask(img, img == classif['lung'],1)
+    #                if  numslice==225:
+    #                    cv2.imshow(pat+'143',normi(img))
+                    area= img.sum()* surfelemp /100
+                    volumeroi[numslice][pat]=area  
+                else:
+                    volumeroi[numslice][pat]=0
+#    print    volumeroi[225]['ground_glass']   
+
+#    cv2.imshow('gg',normi(tabroi[225]))                   
     return tabroi,volumeroi
         
 
@@ -1723,9 +1742,8 @@ def predictrun(indata,path_patient):
 #            """
             remove_folder(dicompathdirmerge)
             os.mkdir(dicompathdirmerge)
-            path_data_writefile=os.path.join(path_data_write,volumeroifile)
-            
-            
+#            path_data_writefile=os.path.join(path_data_write,volumeroifilep)
+                       
             fmbmp=os.path.join(dirf,lungmask1)
             if os.path.exists(fmbmp):
                 lungmaski=lungmask1
@@ -1742,32 +1760,15 @@ def predictrun(indata,path_patient):
             print '------------------'
             crosscompleted=False
             pickle.dump(crosscompleted, open( os.path.join(path_data_write,"crosscompleted"), "wb" ),protocol=-1)
-            print source
+            print 'source',source
 #            return ''
+
             tabscanScan,slnt,dimtabx,slicepitch,lissln=genebmp(dirf,source,nosource, centerHU, limitHU)
-            if not os.path.exists(path_data_writefile):
-                volumeroi={}
-                for i in lissln:
-                     volumeroi[i]={}
-                     for pat in classif:
-                         volumeroi[i][pat]=0
-            else:
-                         
-                volumeroi=pickle.load(open(path_data_writefile, "rb" ))
-                needdu=False
-                for i in lissln:
-                    for pat in classif:
-                        try:
-                         volumeroi[i][pat]
-                        except:
-                            volumeroi[i][pat]=0
-                            needdu=True
-                if needdu:
-                    pickle.dump(volumeroi, open(path_data_writefile, "wb" ),protocol=-1)     
+
                 
             tabroi=np.zeros((slnt,dimtabx,dimtabx), np.uint8) 
-            tabroi,volumeroi=generoi(dirf,tabroi,dimtabx,volumeroi)
-            pickle.dump(volumeroi, open(path_data_writefile, "wb" ),protocol=-1)
+            tabroi,volumeroi=generoi(dirf,tabroi,dimtabx,lissln)
+            pickle.dump(volumeroi, open(os.path.join(path_data_write,volumeroifilep), "wb" ),protocol=-1)
             pickle.dump(tabroi, open( os.path.join(path_data_write,"tabroi"), "wb" ),protocol=-1)
             
             tabscanLung,tabrange=genebmplung(dirf,lungmaski,slnt,dimtabx,dimtabx,tabscanScan,lissln)

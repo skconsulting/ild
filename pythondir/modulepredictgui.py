@@ -7,7 +7,7 @@ version 1.2
 17 august 2017
 """
 #from param_pix_p import *
-from param_pix_p import path_data,datafrontn,datacrossn,dimpavx,dimpavy,surfelem,volelem,volumeroifile,avgPixelSpacing
+from param_pix_p import path_data,datafrontn,datacrossn,dimpavx,dimpavy,surfelem,volelem,volumeroifilep,avgPixelSpacing
 
 from param_pix_p import white,red,yellow,grey,black
 from param_pix_p import lungimage,source_name,sroi,sroi3d,scan_bmp,transbmp
@@ -16,7 +16,7 @@ from param_pix_p import threeFileMerge,htmldir,threeFile,threeFile3d,reportdir,r
 
 from param_pix_p import classifc,classifdict,usedclassifdict,oldFormat,writeFile,volumeweb
 
-from param_pix_p import maxproba,excluvisu,fidclass,rsliceNum,evaluate,evaluatef,evaluatefull
+from param_pix_p import maxproba,excluvisu,fidclass,rsliceNum,evaluate,evaluatef,evaluatefull,normi
 
 from tdGenePredictGui import predictrun
 
@@ -221,7 +221,7 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,patch_list_ref_slice
     th=t/100.0
     numl=0
     listlabel={}
-    listlabelaverage={}
+#    listlabelaverage={}
     surflabel={}
     for pat in classif:
         surflabel[pat]=0
@@ -231,6 +231,7 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,patch_list_ref_slice
     surftotpat=0
     lvexist=False
     if len (volumeroi)>0:
+        print 'volumeroi exists'
         lv=volumeroi[slicenumber]
         lvexist=True
     
@@ -246,54 +247,29 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,patch_list_ref_slice
             classlabel=fidclass(prec,classif)
             classcolor=classifc[classlabel]
 
-            if mprobai >th and classlabel not in excluvisu and va[classlabel]==True:
+            if mprobai >th and classlabel not in excluvisu:
                 if classlabel in listlabel:
-#                        print 'found'
                     numl=listlabel[classlabel]
                     listlabel[classlabel]=numl+1
                     surflabel[classlabel]= (numl+1)*surfelem
-                    cur=listlabelaverage[classlabel]
-                    averageproba= round((cur*numl+mprobai)/(numl+1),2)
-                    listlabelaverage[classlabel]=averageproba
                 else:
                     listlabel[classlabel]=1
                     surflabel[classlabel]=surfelem
-                    listlabelaverage[classlabel]=mprobai
-
-#                imgn= addpatchn(classcolor,classlabel,xpat,ypat,imgn)
+                
                 if classif[classlabel]>0:
-                    cv2.rectangle(imgpatch,(xpat,ypat),(xpat+dimpavx,ypat+dimpavy),classif[classlabel],-1)
+                        cv2.rectangle(imgpatch,(xpat,ypat),(xpat+dimpavx,ypat+dimpavy),classif[classlabel],-1)
                 else:
-                    cv2.rectangle(imgpatch,(xpat,ypat),(xpat+dimpavx,ypat+dimpavy),classif['lung'],-1)
+                        cv2.rectangle(imgpatch,(xpat,ypat),(xpat+dimpavx,ypat+dimpavy),classif['lung'],-1)
+                if va[classlabel]==True:
+                    cv2.rectangle(imgn,(xpat,ypat),(xpat+dimpavx,ypat+dimpavy),classcolor,1)
+
                 if lvexist:
                     imgray=np.copy(imgpatch)
                     np.putmask(imgray,imgray>0,255)
                     mask=np.bitwise_not(imgray)
-    #                a=np.copy(patchdict[slicenumber])
-    #                print 'a',a.max()
                     patchdict[slicenumber]=cv2.bitwise_and(patchdict[slicenumber],patchdict[slicenumber],mask=mask)
-    #                b=np.copy(patchdict[slicenumber])
-    #                print 'b',b.max()
                     patchdict[slicenumber]=cv2.bitwise_or(imgpatch,patchdict[slicenumber])
-#                c=np.copy(patchdict[slicenumber])
-#                print 'c',c.max()
-#                cv2.imshow('mask',normi(mask))
-##                cv2.imshow('a',normi(a))
-##                cv2.imshow('b',normi(b))
-#                cv2.imshow('c',normi(c))
-#                cv2.waitKey(0)
-#                cv2.destroyWindow('c')
-#                cv2.imshow
-                cv2.rectangle(imgn,(xpat,ypat),(xpat+dimpavx,ypat+dimpavy),classcolor,1)
-    
-#    for s in range(slnt):
-##        print s,patchdict[s].max()
-#        if patchdict[s].max()>0:
-#            name=str(s)+'.bmp'
-#            print patchdict[s].min(),patchdict[s].max()
-#            print normi(patchdict[s]).min(),normi(patchdict[s]).max()
-#            cv2.imwrite(name,patchdict[s])
-#            cv2.imwrite('b'+name,normi(patchdict[s]))
+
     delx=120
     for ll1 in usedclassif:               
         if ll1 in listlabel:            
@@ -320,14 +296,9 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,patch_list_ref_slice
     cv2.putText(datav,sulunk,(delx,150),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
     
     if lvexist:
-        referencepat= tabroi[slicenumber].flatten()
-        
+        referencepat= tabroi[slicenumber].flatten()        
         predictpat=  patchdict[slicenumber].flatten()   
-#        cv2.imwrite('roi.bmp',tabroi[slicenumber])
-#        cv2.imwrite('patch.bmp',patchdict[slicenumber])
-#        cv2.imwrite('nroi.bmp',normi(tabroi[slicenumber]))
-#        cv2.imwrite('npatch.bmp',normi(patchdict[slicenumber]))
-        
+       
         precision={}
         recall={}
         fscore={}
@@ -347,31 +318,11 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,patch_list_ref_slice
                 cf=True       
         
         if cf:
+            print 'num_class',num_class
             cm=evaluatef(referencepat,predictpat,num_class)
             tagvcm(datav,cm)
     datav=cv2.cvtColor(datav,cv2.COLOR_BGR2RGB)
-#    fscore, acc, cm,pres,recall = evaluate(yvf,ysf,num_class,(8,))
-#    f=open('a.txt','w')
-#    for pat in usedclassif:
-#        f.write('precision is : '+ pat+' '+str(precision[pat])+'\n')
-#        f.write( 'accuray is : '+ pat+ ' '+str(recall[pat])+'\n')
-#        f.write( 'fscore is : '+ pat+ ' '+str(fscore[pat])+'\n')
-#        
-##    
-##    print('Val F-score: '+str(fscore)+'\tVal acc: '+str(acc))  
-##    print cm
-##    f.write('f-score is : '+ str(fscore)+'\n')
-##    f.write( 'accuray is : '+ str(acc)+'\n')
-##    f.write('precision is : '+ str(pres)+'\n')
-##    f.write( 'recall is : '+ str(recall)+'\n')
-##    f.write('confusion matrix\n')
-#    n= cm.shape[0]
-#    for i in range (0,n):
-#        for j in range (0,n):
-#           f.write(str(cm[i][j])+' ')
-#        f.write('\n')
-#    f.close()
-    
+
     return imgn,datav
 
 
@@ -1054,9 +1005,13 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
     #            imgtowrite=cv2.add(imgtext,imgtowrite)
                 imgtowrite=cv2.cvtColor(imgtowrite,cv2.COLOR_BGR2RGB)
                 cv2.destroyWindow("wip")
-
-            cv2.imshow('imageVol',imgtowrite)
-
+            imsstatus=cv2.getWindowProperty('SliderVol', 0)
+            imistatus= cv2.getWindowProperty('imageVol', 0)
+#            print imsstatus,imistatus,imdstatus
+            if (imsstatus==0) and (imistatus==0)  :
+                cv2.imshow('imageVol',imgtowrite)
+            else:
+                  quitl=True            
             if quitl or cv2.waitKey(20) & 0xFF == 27 :
     #            print 'on quitte', quitl
                 break
@@ -1373,7 +1328,7 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,patch_l
         if os.path.exists(pdirkroicross):
             pdirk = pdirkroicross
             path_data_write=os.path.join(path_img,path_data)
-            path_data_writefile=os.path.join(path_data_write,volumeroifile)
+            path_data_writefile=os.path.join(path_data_write,volumeroifilep)
             if os.path.exists(path_data_writefile):
                 volumeroilocal=pickle.load(open(path_data_writefile, "rb" ))    
 #                print volumeroilocal
@@ -1503,18 +1458,21 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,patch_l
             if key==2555904:
                 fl=min(slnt-2,fl+1)
                 cv2.setTrackbarPos('Flip','Sliderfi' ,fl)
-            
+                
+            if allview==1:
+                for key2 in usedclassif:
+                    cv2.setTrackbarPos(key2,'Sliderfi' ,1)
+                cv2.setTrackbarPos('All','Sliderfi' ,0)
+            if noneview==1:
+                for key2 in usedclassif:
+                    cv2.setTrackbarPos(key2,'Sliderfi' ,0)
+                cv2.setTrackbarPos('None','Sliderfi' ,0)
             for key2 in usedclassif:
                 s = cv2.getTrackbarPos(key2,'Sliderfi')
-                if allview==1:
-                     viewasked[key2]=True
-                elif noneview ==1:
-                    viewasked[key2]=False
-                elif s==0:
-#            print key
-                    viewasked[key2]=False
+                if s==1:
+                     viewasked[key2]=True               
                 else:
-                     viewasked[key2]=True
+                     viewasked[key2]=False
             
             slicenumber=fl+corectnumber
             
@@ -1722,26 +1680,13 @@ def visuarun(indata,path_patient):
         
     patient_path_complet=os.path.join(path_patient,listHug)
     path_data_dir=os.path.join(patient_path_complet,path_data)
-    
-    frontcompleted = pickle.load(open( os.path.join(path_data_dir,"frontcompleted"), "rb" ))
+
     crosscompleted = pickle.load(open( os.path.join(path_data_dir,"crosscompleted"), "rb" ))
-#    centerHU=indata['centerHU']
-#    limitHU=indata['limitHU']
-    
-   
+  
     if not crosscompleted:
         messageout="no predict!for "+listHug
         return messageout
 
-#    if pos >0:
-#            listHug=(lpt[0:pos])
-#    else:
-#            pos=str(indata).find(' noPREDICT!')
-##            print 'no predict'
-#            listHug=(lpt[0:pos])
-            
-   
-    #↓define classif
     if oldFormat:
         setref='set0'
     else:

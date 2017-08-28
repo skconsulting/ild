@@ -3,13 +3,10 @@
 Created on Tue May 02 15:04:39 2017
 
 @author: sylvain
-8 august 2017
-version 1.2
+19 august 2017
+version 1.3
 
 """
-#import argparse
-#from appJar import gui
-#import cPickle as pickle
 
 from numpy import argmax,amax
 import os
@@ -101,6 +98,7 @@ typei1='bmp'
 typei2='png' 
 
 volumeroifile='volumeroi'
+volumeroifilep='volumeroip'
 
 #excluvisu=['healthy']
 excluvisu=['']
@@ -146,6 +144,7 @@ lightgreen=(125,237,125)
 orange=(255,153,102)
 lowgreen=(0,51,51)
 parme=(234,136,222)
+chatainlow=(109,98,46)
 chatain=(139,108,66)
 highgrey=(240,240,240)
 
@@ -196,6 +195,42 @@ derivedpatdict['set0']=[
         'GGpret',
         'bropret'
         ]
+
+classifdict['set0p'] ={
+        'back_ground':0,
+        'consolidation':1,
+        'HC':2,
+        'ground_glass':3,
+        'healthy':4,
+        'micronodules':5,
+        'reticulation':6,
+        'air_trapping':7,
+        'cysts':8,
+        'bronchiectasis':9,
+#        'emphysema':10,
+        'GGpret':10,
+        'lung':11
+        }
+usedclassifdict['set0p'] = [
+        'back_ground',
+        'consolidation',
+        'HC',
+        'ground_glass',
+        'healthy',
+        'micronodules',
+        'reticulation',
+        'air_trapping',
+        'cysts',
+        'bronchiectasis',
+        'GGpret'
+        ]
+derivedpatdict['set0p']=[
+        'HCpret',
+        'HCpbro',
+        'GGpbro',
+        'GGpret',
+        'bropret'
+        ]
 ##set1
 
 classifdict['set1'] ={
@@ -221,6 +256,38 @@ usedclassifdict['set1'] = [
         'GGpret'
         ]
 derivedpatdict['set1']=[
+        'HCpret',
+        'HCpbro',
+        'GGpbro',
+        'GGpret',
+        'bropret'
+        ]
+
+classifdict['set1p'] ={
+       'back_ground':0,
+        'consolidation':1,
+        'HC':2,
+        'ground_glass':3,
+        'healthy':4,
+        'reticulation':5,
+        'air_trapping':6,        
+        'bronchiectasis':7,
+        'GGpret':8,
+        'lung':9
+        }
+
+usedclassifdict['set1p'] = [
+        'back_ground',
+        'consolidation',
+        'HC',
+        'ground_glass',
+        'healthy',
+        'reticulation',
+        'air_trapping',
+        'bronchiectasis',
+        'GGpret'
+        ]
+derivedpatdict['set1p']=[
         'HCpret',
         'HCpbro',
         'GGpbro',
@@ -259,9 +326,43 @@ derivedpatdict['set2']=[
         'GGpret',
         'bropret'
         ]
+#set2p###########################☻
+classifdict['set2p'] ={
+        'back_ground':0,
+        'consolidation':1,
+        'HC':2,
+        'ground_glass':3,
+        'healthy':4,
+        'reticulation':5,
+        'air_trapping':6,
+        'cysts':7,
+        'bronchiectasis':8,
+        'GGpret':9,
+        'lung':10
+        }
+
+usedclassifdict['set2p'] = [
+        'back_ground',
+        'consolidation',
+        'HC',
+        'ground_glass',
+        'healthy',
+        'reticulation',
+        'air_trapping',
+        'cysts',
+        'bronchiectasis',
+        'GGpret'
+        ]
+derivedpatdict['set2p']=[
+        'HCpret',
+        'HCpbro',
+        'GGpbro',
+        'GGpret',
+        'bropret'
+        ]
 
 classifc ={
-    'back_ground':chatain,
+    'back_ground':chatainlow,
     'consolidation':cyan,
     'HC':blue,
     'ground_glass':red,
@@ -289,6 +390,7 @@ volcol={
     'HC':'boxMaterialBlue',
     'ground_glass':'boxMaterialRed',
     'healthy':'boxMaterialGrey',
+    'back_ground':'boxMaterialGrey',
     'micronodules':'boxMaterialGreen',
     'reticulation':'boxMaterialYellow',
     'air_trapping':'boxMaterialPink',

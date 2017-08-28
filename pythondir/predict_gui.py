@@ -463,10 +463,7 @@ def visuDraw():
     app.addButton("Change Patient Dir",  selectPatientDirB,colspan=2)
     app.addButton("Go back to prediction form",  initDrawB,colspan=2)
     app.addHorizontalSeparator( colour="red",colspan=2)
-#    centerHU=paramdict['centerHU']
-#    limitHU=paramdict['limitHU']
     thrprobaUIP=paramdict['thrprobaUIP']
-#    app.setFont(10)
     if goodir:
 
         if not continuevisu:
@@ -478,21 +475,15 @@ def visuDraw():
             app.startLabelFrame("patient List:")
             app.setSticky("ew")
             for user in some_sg:
-#                userf=''
                 if stsdir[user]['front']==True:
                     lroi=' Cross & Front'
                     listannotated.append(user+' PREDICT!: ' +setrefdict[user]+lroi)
-#                    userf=user+' PREDICT!: '+lroi
                 elif stsdir[user]['cross']==True:
                     lroi=' Cross'
-#                    listannotated.append(user+' PREDICT!: '+lroi)
                     listannotated.append(user+' PREDICT!: '+setrefdict[user]+lroi)
-#                    userf=user+' PREDICT!: '+lroi
                 else:
                     listannotated.append(user+' noPREDICT! ')
-#                    userf=user+' noPREDICT! '
-#                app.addRadioButton("patienttovisu",userf)
-    #        print listannotated
+
             app.addListBox("list",listannotated)
             app.setListBoxMulti("list", multi=False)
             app.setListBoxRows("list",10)
@@ -501,15 +492,9 @@ def visuDraw():
 
         else:
             row = app.getRow() # get current row
-#            app.addLabelNumericEntry("subErosion in mm",row,1)
-#            app.setEntry("subErosion in mm", subErosion)
             app.addLabelNumericEntry("Threshold proba",row,0)
             app.setEntry("Threshold proba",thrprobaUIP)
-                                  
-#            app.addLabelNumericEntry("Percentage of pad Overlapp")
-#            app.setEntry("Percentage of pad Overlapp", thrpatch)
-#            print '1',paramdict['lispatientselect']
-#            print '2',paramdict['lispatientselect'][0]
+
             selectpatient=str(paramdict['lispatientselect'][0])
             posb=selectpatient.find(' ')
             selectpatient=selectpatient[0:posb]
