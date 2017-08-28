@@ -25,7 +25,7 @@ print keras.__version__
 print theano.__version__
 print ' keras.backend.image_data_format :',keras.backend.image_data_format()
 ######################################################################
-setdata='set0p'
+setdata='set0'
 thrpatch = 0.8 #patch overlapp tolerance
 ######################################################
 
@@ -171,6 +171,10 @@ derivedpatall=[
         'GGpret',
         'bropret']
 
+layertokeep= [
+        'bronchiectasis',
+        ]
+    
 classifnotvisu=['healthy',]
 
 if setdata=='set0':

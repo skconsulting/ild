@@ -1740,6 +1740,8 @@ def predictrun(indata,path_patient):
             print '------------------'
             print 'START PREDICT CROSS'
             print '------------------'
+            crosscompleted=False
+            pickle.dump(crosscompleted, open( os.path.join(path_data_write,"crosscompleted"), "wb" ),protocol=-1)
             print source
 #            return ''
             tabscanScan,slnt,dimtabx,slicepitch,lissln=genebmp(dirf,source,nosource, centerHU, limitHU)
@@ -1823,12 +1825,16 @@ def predictrun(indata,path_patient):
                 visua(listelabelfinal,dirf,patch_list_cross_slice,dimtabx,
                   dimtabx,slnt,predictout,sroi,scan_bmp,source,dicompathdircross,True,errorfile,nosource,'cross')            
             genethreef(dirf,patch_list_cross,proba_cross,slicepitch,dimtabx,dimtabx,dimpavx,slnt,'cross')
+            crosscompleted=True
+            pickle.dump(crosscompleted, open( os.path.join(path_data_write,"crosscompleted"), "wb" ),protocol=-1)
 #            """
     ###       cross
             if td:
 #                """
                 print 'START PREDICT FRONT'
                 print '------------------'
+                frontcompleted=False
+                pickle.dump(frontcompleted, open( os.path.join(path_data_write,"frontcompleted"), "wb" ),protocol=-1)
                 tabresScan=reshapeScan(tabscanScan,slnt,lissln,dimtabx,dimtabx)
                 dimtabxn,dimtabyn,tabScan3d,lisslnfront=wtebres(wridir,dirf,tabresScan,
                                                                 dimtabx,slicepitch,lungmaski,'scan',centerHU,limitHU)
@@ -1912,6 +1918,8 @@ def predictrun(indata,path_patient):
 
             errorfile.write('completed :'+f)
             errorfile.close()
+            frontcompleted=False
+            pickle.dump(frontcompleted, open( os.path.join(path_data_write,"frontcompleted"), "wb" ),protocol=-1)
             print 'PREDICT  COMPLETED  for ',f
             print '------------------'
             return''

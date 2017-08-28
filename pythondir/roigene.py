@@ -812,28 +812,36 @@ def loop(slnt,pdirk,dirpath_patient,dirroi):
         if key==2555904:
                 fl=min(slnt-2,fl+1)
                 cv2.setTrackbarPos('Flip','SliderRoi' ,fl)
-        scannumber=fl+1
-        imagename=list_image[scannumber]
-        imagenamecomplet=os.path.join(pdirk,imagename)
-        image = cv2.imread(imagenamecomplet)
-        image=cv2.cvtColor(image,cv2.COLOR_BGR2RGB)
-
-        image=zoomfunction(image,z,px,py)
-        imagesview=zoomfunction(images[scannumber],z,px,py)
-
         
-        imglumi=lumi(image,l)
-        image=contrasti(imglumi,c)
-        imageview=cv2.add(image,imagesview)
-        imageview=cv2.add(imageview,menus)
-        for key1 in usedclassif:
-            if viewasked[key1]:
-#                print key1,scannumber
-                tabroifinalview=zoomfunction(tabroifinal[key1][scannumber],z,px,py)
-                imageview=cv2.addWeighted(imageview,1,tabroifinalview,0.5,0)
-                
-        imageview=cv2.cvtColor(imageview,cv2.COLOR_BGR2RGB)
-        cv2.imshow("imageRoi", imageview)
+        imsstatus=cv2.getWindowProperty('imageRoi', 0)
+        imistatus= cv2.getWindowProperty('SliderRoi', 0)
+        if (imsstatus==0) and (imistatus==0)  :
+            scannumber=fl+1
+            imagename=list_image[scannumber]
+            imagenamecomplet=os.path.join(pdirk,imagename)
+            image = cv2.imread(imagenamecomplet)
+            image=cv2.cvtColor(image,cv2.COLOR_BGR2RGB)
+    
+            image=zoomfunction(image,z,px,py)
+            imagesview=zoomfunction(images[scannumber],z,px,py)
+    
+            
+            imglumi=lumi(image,l)
+            image=contrasti(imglumi,c)
+            imageview=cv2.add(image,imagesview)
+            imageview=cv2.add(imageview,menus)
+            for key1 in usedclassif:
+                if viewasked[key1]:
+    #                print key1,scannumber
+                    tabroifinalview=zoomfunction(tabroifinal[key1][scannumber],z,px,py)
+                    imageview=cv2.addWeighted(imageview,1,tabroifinalview,0.5,0)
+            imageview=cv2.cvtColor(imageview,cv2.COLOR_BGR2RGB)
+            cv2.imshow("imageRoi", imageview)
+        else:
+            print 'quit', quitl
+            cv2.destroyAllWindows()
+            break
+            
 
 def tagviews (tab,t0,x0,y0,t1,x1,y1,t2,x2,y2,t3,x3,y3,t4,x4,y4,t5,x5,y5,t6,x6,y6):
     """write simple text in image """

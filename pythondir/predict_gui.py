@@ -167,9 +167,12 @@ def visualisation(btn):
 #    print(app.getListItems("list"))
     indata={}
     indata['thrprobaUIP']=app.getEntry("Threshold proba")   
-    indata['lispatientselect']=selectpatient
+    indata['lispatientselect']=paramdict['lispatientselect'][0]
+    indata['picklein_file']=paramdict['lispatientselect']
+    indata['picklein_file']=paramdict['picklein_file_front']
+    indata['picklein_file']=paramdict['picklein_file']
     paramdict['thrprobaUIP']=indata['thrprobaUIP']
-    paramdict['lispatientselect']=indata['lispatientselect']
+#    paramdict['lispatientselect']=indata['lispatientselect']
     thrprobaUIP=indata['thrprobaUIP']
     pickle.dump(paramdict,open( paramsaveDirf, "wb" ))
 
@@ -190,15 +193,15 @@ def redraw(app):
     initDraw()
 
 def visuDrawl(btn):
-    global frontpredict,continuevisu,selectpatient,app
+    global frontpredict,continuevisu,app
 
     selectvisu=app.getListItems("list")
     paramdict['lispatientselect']=selectvisu
     pickle.dump(paramdict,open( paramsaveDirf, "wb" ))
     if len(selectvisu) >0:
-         selectpatient=selectvisu[0]
+#         selectpatient=selectvisu[0]
          frontexist=selectvisu[0].find('Cross & Front')
-         selectpatient=selectvisu[0]
+#         selectpatient=selectvisu[0]
          if frontexist>0:
              frontpredict=True
          else:
@@ -226,15 +229,15 @@ def boutonStop(btn):
         redraw(app)
 
 def selection(btn):
-    global frontpredict,continuevisu,selectpatient,app
+    global frontpredict,continuevisu,app
     selectvisu=app.getListItems("list")
     
     
-    selectpatient=selectvisu[0]
+#    selectpatient=selectvisu[0]
     paramdict['lispatientselect']=selectvisu
     pickle.dump(paramdict,open( paramsaveDirf, "wb" ))
     frontexist=selectvisu[0].find('Cross & Front')
-    selectpatient=selectvisu[0]
+#    selectpatient=selectvisu[0]
     if frontexist>0:
         frontpredict=True
 
@@ -505,6 +508,8 @@ def visuDraw():
                                   
 #            app.addLabelNumericEntry("Percentage of pad Overlapp")
 #            app.setEntry("Percentage of pad Overlapp", thrpatch)
+#            print '1',paramdict['lispatientselect']
+#            print '2',paramdict['lispatientselect'][0]
             selectpatient=str(paramdict['lispatientselect'][0])
             posb=selectpatient.find(' ')
             selectpatient=selectpatient[0:posb]
@@ -571,7 +576,7 @@ def visuDraw():
     app.go()
 
 ############################################################################
-selectpatient=''
+#selectpatient=''
 frontpredict=False
 continuevisu=False
 listannotated=[]

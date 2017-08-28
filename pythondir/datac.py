@@ -28,13 +28,15 @@ import random
 topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 toppatch= 'TOPPATCH'
 extendir='all'
+extendir0='1'
 extendir1=''
 
 #define the directory to store data
 pickel_dirsource_root='pickle'
-pickel_dirsource_e='train_set' #path for data fort training
-pickel_dirsourcenum='0p' #extensioon for path for data for training
-extendir2=''
+pickel_dirsource_e='train' #path for data fort training
+pickel_dirsourcenum=setdata #extensioon for path for data for training
+extendir2='1'
+extendir3=extendir1
 
 augf=3#augmentation factor
 
@@ -43,13 +45,14 @@ augf=3#augmentation factor
 ########################################################################
 
 #sepextend2='ROI'
-if len (extendir2)>0:
-    extendir2='_'+extendir2
+if len (extendir3)>0:
+    extendir3='_'+extendir3
     
 if len (extendir1)>0:
     extendir1='_'+extendir1
 
-pickel_dirsource='th'+str(thrpatch)+'_'+pickel_dirsource_root+'_'+pickel_dirsource_e+'_'+pickel_dirsourcenum+extendir2
+pickel_dirsource='th'+str(thrpatch)+'_'+pickel_dirsource_root+'_'+pickel_dirsource_e+'_'+pickel_dirsourcenum+'_'+extendir2+extendir3
+print pickel_dirsource
 
 patch_dir=os.path.join(topdir,pickel_dirsource)
 
@@ -60,7 +63,7 @@ for f in usedclassif:
 print 'path to write data for training',patch_dir
 
 #define the name of directory for patches
-patchesdirnametop = 'th'+str(round(thrpatch,1))+'_'+toppatch+'_'+extendir+extendir1
+patchesdirnametop = 'th'+str(round(thrpatch,1))+'_'+toppatch+'_'+extendir+'_'+extendir0+extendir1
 
 hugeClass=['healthy','back_ground']
 #hugeClass=['']

@@ -1350,7 +1350,7 @@ def writeslice(num,menus):
         cv2.rectangle(menus, (5,60), (150,50), red, -1)
         cv2.putText(menus,'Slice to visualize: '+str(num),(5,60),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
         
-def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,patch_list_ref_slice,tabroi):   
+def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,patch_list_ref_slice,tabroi,cnnweigh):   
     global  quitl,dimtabx,dimtaby,patchi,ix,iy
     print 'openfichier start' 
     
@@ -1416,7 +1416,7 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,patch_l
 #        cv2.destroyAllWindows()
         imgtext = np.zeros((dimtabx,dimtaby,3), np.uint8)
         
-        cv2.namedWindow('imagecr',cv2.WINDOW_NORMAL)
+        cv2.namedWindow('imagepredict',cv2.WINDOW_NORMAL)
         cv2.namedWindow("Sliderfi",cv2.WINDOW_NORMAL)
         cv2.namedWindow("datavisu",cv2.WINDOW_AUTOSIZE)
 
@@ -1443,10 +1443,10 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,patch_l
                 viewaskedold[keyne]=False
         datav = np.zeros((500,900,3), np.uint8) 
         while(1):
+        
             imgwip = np.zeros((200,200,3), np.uint8)  
-            
-                      
-            cv2.setMouseCallback('imagecr',draw_circle,img)
+                                 
+            cv2.setMouseCallback('imagepredict',draw_circle,img)
             c = cv2.getTrackbarPos('Contrast','Sliderfi')
             l = cv2.getTrackbarPos('Brightness','Sliderfi')
             tl = cv2.getTrackbarPos('Threshold','Sliderfi')
@@ -1550,6 +1550,8 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,patch_l
                                
                 cv2.putText(datav,'slice number :'+str(slicenumber),(10,180),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
                 cv2.putText(datav,'patient Name :'+tail,(10,190),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
+                cv2.putText(datav,'CNN weight: '+cnnweigh,(10,170),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
+
                 cv2.destroyWindow("wip")
             imgngray = cv2.cvtColor(imgn,cv2.COLOR_BGR2GRAY)
             np.putmask(imgngray,imgngray>0,255)
@@ -1561,9 +1563,7 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,patch_l
             cv2.putText(imgt,'quit',(dxrect+10,dimtabx-10),cv2.FONT_HERSHEY_PLAIN,1,yellow,1,cv2.LINE_AA)
             imgtoshow=cv2.add(imgt,imgtext)
             imgtoshow=cv2.cvtColor(imgtoshow,cv2.COLOR_BGR2RGB)
-            cv2.imshow('imagecr',imgtoshow)
-            cv2.imshow('datavisu',datav)
-
+    
             if patchi :
                 cv2.putText(imgwip,'WIP',(10,10),cv2.FONT_HERSHEY_PLAIN,5,red,2,cv2.LINE_AA)
                 cv2.imshow('wip',imgwip)
@@ -1572,10 +1572,20 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,patch_l
                 patchi=False
                 cv2.destroyWindow("wip")
 
+            imsstatus=cv2.getWindowProperty('Sliderfi', 0)
+            imistatus= cv2.getWindowProperty('imagepredict', 0)
+            imdstatus=cv2.getWindowProperty('datavisu', 0)
+#            print imsstatus,imistatus,imdstatus
+            if (imdstatus==0) and (imsstatus==0) and (imistatus==0)  :
+                cv2.imshow('imagepredict',imgtoshow)
+                cv2.imshow('datavisu',datav)
+            else:
+                  quitl=True
+
             if quitl or cv2.waitKey(20) & 0xFF == 27 :
                 break
         quitl=False
-        cv2.destroyWindow("imagecr")
+        cv2.destroyWindow("imagepredict")
         cv2.destroyWindow("Sliderfi")
         cv2.destroyWindow("datavisu")
 
@@ -1701,26 +1711,36 @@ def openfichierfrpr(path_patient,tabfromfront,thrprobaUIP):
 
 def visuarun(indata,path_patient):
     global classif,usedclassif
+    print 'visuarun start'
 
     messageout=""
  
 #    print 'path_patient',path_patient
     lpt=indata['lispatientselect']
+    pos=lpt.find(' ')
+    listHug=(lpt[0:pos])
+        
+    patient_path_complet=os.path.join(path_patient,listHug)
+    path_data_dir=os.path.join(patient_path_complet,path_data)
+    
+    frontcompleted = pickle.load(open( os.path.join(path_data_dir,"frontcompleted"), "rb" ))
+    crosscompleted = pickle.load(open( os.path.join(path_data_dir,"crosscompleted"), "rb" ))
 #    centerHU=indata['centerHU']
 #    limitHU=indata['limitHU']
-    pos=lpt.find(' PREDICT!:')
-    if pos >0:
-            listHug=(lpt[0:pos])
-    else:
-            pos=str(indata).find(' noPREDICT!')
-#            print 'no predict'
-            listHug=(lpt[0:pos])
-            messageout="no predict!for "+listHug
-            return messageout
+    
+   
+    if not crosscompleted:
+        messageout="no predict!for "+listHug
+        return messageout
 
-    patient_path_complet=os.path.join(path_patient,listHug)
-
-    path_data_dir=os.path.join(patient_path_complet,path_data)
+#    if pos >0:
+#            listHug=(lpt[0:pos])
+#    else:
+#            pos=str(indata).find(' noPREDICT!')
+##            print 'no predict'
+#            listHug=(lpt[0:pos])
+            
+   
     #↓define classif
     if oldFormat:
         setref='set0'
@@ -1757,8 +1777,10 @@ def visuarun(indata,path_patient):
             tabroi= pickle.load( open( os.path.join(path_data_dir,"tabroi"), "rb" ))
             patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice"), "rb" ))
             thrprobaUIP=float(indata['thrprobaUIP'])
+            cnnweigh=indata['picklein_file']
+#            print cnnweigh
             messageout=openfichier(viewstyle,datarep,patient_path_complet,thrprobaUIP,
-                                   patch_list_cross_slice,patch_list_cross_slice,tabroi)
+                                   patch_list_cross_slice,patch_list_cross_slice,tabroi,cnnweigh)
             
     elif viewstyle=='front view':
             datarep= pickle.load( open( os.path.join(path_data_dir,"datafront"), "rb" ))
@@ -1767,7 +1789,8 @@ def visuarun(indata,path_patient):
             tabroi=np.zeros((slnt,dimtabx,dimtabx), np.uint8)
             patch_list_front_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_front_slice"), "rb" ))
             thrprobaUIP=float(indata['thrprobaUIP'])
-            messageout=openfichier(viewstyle,datarep,patient_path_complet,thrprobaUIP,patch_list_front_slice,patch_list_front_slice,tabroi)
+            cnnweigh=indata['picklein_file_front']
+            messageout=openfichier(viewstyle,datarep,patient_path_complet,thrprobaUIP,patch_list_front_slice,patch_list_front_slice,tabroi,cnnweigh)
             
     elif viewstyle=='volume view from cross':
             datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "rb" ))
@@ -1802,7 +1825,8 @@ def visuarun(indata,path_patient):
 #            proba_merge= pickle.load( open( os.path.join(path_data_dir,"proba_merge"), "rb" ))
             patch_list_merge_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_merge_slice"), "rb" ))
             patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice"), "rb" ))
-            messageout=openfichier(viewstyle,datarep,patient_path_complet,thrprobaUIP,patch_list_merge_slice,patch_list_cross_slice,tabroi)
+            cnnweigh=indata['picklein_file']
+            messageout=openfichier(viewstyle,datarep,patient_path_complet,thrprobaUIP,patch_list_merge_slice,patch_list_cross_slice,tabroi,cnnweigh)
     
     elif viewstyle=='front projected view':
 
