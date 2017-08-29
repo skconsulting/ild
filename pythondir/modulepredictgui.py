@@ -296,8 +296,20 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,patch_list_ref_slice
     cv2.putText(datav,sulunk,(delx,150),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
     
     if lvexist:
-        referencepat= tabroi[slicenumber].flatten()        
+        referencepat= tabroi[slicenumber].flatten()            
+#        rc=np.copy(tabroi[slicenumber])
+#        np.putmask(rc,rc>0,200)
+##        rcp=np.copy(rc)
+##        np.putmask(rcp,rcp==0,100)
+#        cv2.imshow('referencepat',rc)
+        
         predictpat=  patchdict[slicenumber].flatten()   
+#        pc=np.copy(patchdict[slicenumber])
+#        np.putmask(pc,pc==0,200)
+##        np.putmask(pc,pc!=4 and pc!=0,100)
+##        pcc=np.copy(pc)
+##        np.putmask(pcc,pcc==0,50)
+#        cv2.imshow('predictpat',pc)
        
         precision={}
         recall={}
@@ -823,6 +835,7 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
     viewaskedold={}
     for keyinit in usedclassif:
         viewaskedold[keyinit]=True
+    keyvisu={}
     while(1):
             imgwip = np.zeros((200,200,3), np.uint8)           
             drawok=False
@@ -836,26 +849,34 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
                 for key1 in usedclassif:
                     cv2.setTrackbarPos(key1,'SliderVol',0)
                     viewasked[key1]=True
+                    keyvisu[key1]=False
+                cv2.setTrackbarPos('All','SliderVol',0)
 
             if noneview==1:
                 for key1 in usedclassif:
                     cv2.setTrackbarPos(key1,'SliderVol',0)
                     viewasked[key1]=False
+                    keyvisu[key1]=False
                 cv2.setTrackbarPos('Reset','SliderVol',0) 
                 cv2.setTrackbarPos('All','SliderVol',0)
                 allview=0          
             
-            if allview ==0:
-                for key1 in usedclassif:
+#            if allview ==0:
+            
+            for key1 in usedclassif:
                     s = cv2.getTrackbarPos(key1,'SliderVol')  
                         
-                    if s==1 and viewasked[key1]==False:
-                        
+                    if s==1  and keyvisu[key1]==False:
+#                        cv2.setTrackbarPos('All','SliderVol',0)
+                        allview=0
+#                        print 'key',key1,allview
+                        keyvisu[key1]=True
                         viewasked[key1]=True
                         for key8 in usedclassif:
                              if key8!= key1:
                                 cv2.setTrackbarPos(key8,'SliderVol',0)
-                                viewasked[key8]=False                      
+                                viewasked[key8]=False   
+                                keyvisu[key8]=False
                             
             if tl != tlold:
                 tlold=tl
@@ -1731,7 +1752,9 @@ def visuarun(indata,path_patient):
             datarep= pickle.load( open( os.path.join(path_data_dir,"datafront"), "rb" ))
 #            tabroif= pickle.load( open( os.path.join(path_data_dir,"tabroif"), "rb" ))
             slnt=datarep[0]
-            tabroi=np.zeros((slnt,dimtabx,dimtabx), np.uint8)
+            dimtabx=datarep[1]
+            dimtaby=datarep[2]
+            tabroi=np.zeros((slnt,dimtabx,dimtaby), np.uint8)
             patch_list_front_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_front_slice"), "rb" ))
             thrprobaUIP=float(indata['thrprobaUIP'])
             cnnweigh=indata['picklein_file_front']
@@ -1750,11 +1773,12 @@ def visuarun(indata,path_patient):
                       lungSegment,tabMed,thrprobaUIP,patch_list_cross_slice_sub,slicepitch)
     
     elif viewstyle=='volume view from front':
+            return 'not implemented'
             datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "rb" ))
             slicepitch=avgPixelSpacing
             patch_list_front_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_front_slice"), "rb" ))
             patch_list_front_slice_sub= pickle.load( open( os.path.join(path_data_dir,"patch_list_front_slice_sub"), "rb" ))
-            lungSegmentfront= pickle.load( open( os.path.join(path_data_dir,"lungSegmentfront"), "rb" ))
+#            lungSegmentfront= pickle.load( open( os.path.join(path_data_dir,"lungSegmentfront"), "rb" ))
             tabMedfront= pickle.load( open( os.path.join(path_data_dir,"tabMedfront"), "rb" ))
             thrprobaUIP=float(indata['thrprobaUIP'])
             
@@ -1774,10 +1798,15 @@ def visuarun(indata,path_patient):
             messageout=openfichier(viewstyle,datarep,patient_path_complet,thrprobaUIP,patch_list_merge_slice,patch_list_cross_slice,tabroi,cnnweigh)
     
     elif viewstyle=='front projected view':
-
+            datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "rb" ))
+            tabroi= pickle.load( open( os.path.join(path_data_dir,"tabroi"), "rb" ))
+            patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice_from_front"), "rb" ))
             thrprobaUIP=float(indata['thrprobaUIP'])
-            tabfromfront= pickle.load( open( os.path.join(path_data_dir,"tabfromfront"), "rb" ))
-            messageout=openfichierfrpr(path_patient,tabfromfront,thrprobaUIP)
+            cnnweigh=indata['picklein_file_front']
+            messageout=openfichier(viewstyle,datarep,patient_path_complet,thrprobaUIP,patch_list_front_slice,patch_list_front_slice,tabroi,cnnweigh)
+#            thrprobaUIP=float(indata['thrprobaUIP'])
+#            tabfromfront= pickle.load( open( os.path.join(path_data_dir,"tabfromfront"), "rb" ))
+#            messageout=openfichierfrpr(path_patient,tabfromfront,thrprobaUIP)
     
     elif viewstyle=='report':
         datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "rb" ))

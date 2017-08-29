@@ -138,6 +138,7 @@ def predict(btn):
     paramdict['centerHU']=indata['centerHU']
     paramdict['limitHU']=indata['limitHU']
     paramdict['lispatientselect']= indata['lispatientselect']
+    paramdict['threedpredictrequest']= indata['threedpredictrequest']
     pickle.dump(paramdict,open( paramsaveDirf, "wb" ))
 
 #    roirun(app.getListItems("list"),lisdir)
@@ -168,18 +169,14 @@ def visualisation(btn):
     indata={}
     indata['thrprobaUIP']=app.getEntry("Threshold proba")   
     indata['lispatientselect']=paramdict['lispatientselect'][0]
-    indata['picklein_file']=paramdict['lispatientselect']
-    indata['picklein_file']=paramdict['picklein_file_front']
+#    indata['picklein_file']=paramdict['lispatientselect']
+    indata['picklein_file_front']=paramdict['picklein_file_front']
     indata['picklein_file']=paramdict['picklein_file']
     paramdict['thrprobaUIP']=indata['thrprobaUIP']
-#    paramdict['lispatientselect']=indata['lispatientselect']
+
     thrprobaUIP=indata['thrprobaUIP']
     pickle.dump(paramdict,open( paramsaveDirf, "wb" ))
 
-    if frontpredict:
-        indata['3dasked']=True
-    else:
-        indata['3dasked']=False
     indata['viewstyle']=app.getRadioButton("planar")
     app.hide()
     visuarun(indata,lisdir)
@@ -193,19 +190,19 @@ def redraw(app):
     initDraw()
 
 def visuDrawl(btn):
-    global frontpredict,continuevisu,app
+    global continuevisu,app
 
     selectvisu=app.getListItems("list")
     paramdict['lispatientselect']=selectvisu
     pickle.dump(paramdict,open( paramsaveDirf, "wb" ))
     if len(selectvisu) >0:
 #         selectpatient=selectvisu[0]
-         frontexist=selectvisu[0].find('Cross & Front')
-#         selectpatient=selectvisu[0]
-         if frontexist>0:
-             frontpredict=True
-         else:
-            frontpredict=False
+#         frontexist=selectvisu[0].find('Cross & Front')
+##         selectpatient=selectvisu[0]
+#         if frontexist>0:
+#             frontpredict=True
+#         else:
+#            frontpredict=False
          continuevisu=True
     else: 
         continuevisu=False
@@ -447,6 +444,7 @@ def visuDraw():
     global app
 #    print "visudraw"
     paramdict=pickle.load(open( paramsaveDirf, "rb" ))
+
     app = gui("Visualization form","1000x600")
     app.setResizable(canResize=True)
 
@@ -491,19 +489,29 @@ def visuDraw():
             app.addButton("Selection",  selection)
 
         else:
+
             row = app.getRow() # get current row
             app.addLabelNumericEntry("Threshold proba",row,0)
             app.setEntry("Threshold proba",thrprobaUIP)
 
             selectpatient=str(paramdict['lispatientselect'][0])
+            frontexist=selectpatient.find('Cross & Front')
+            if frontexist>0:
+                frontpredict=True
+            else:
+                if paramdict['threedpredictrequest'] =='Cross Only':
+                    frontpredict=False
+                else:
+                    frontpredict=True
             posb=selectpatient.find(' ')
             selectpatient=selectpatient[0:posb]
+           
             app.addLabel("l11", "Patient selected: "+selectpatient)
             app.addButton("Go back to Selection",  gobackselection)
             app.setLabelBg("l11","blue")
             app.setLabelFg("l11","yellow")
             app.addHorizontalSeparator( colour="red")
-#            app.setFont(8)
+
             app.setSticky("w")
             if not frontpredict:
                 row = app.getRow() # get current row
@@ -513,9 +521,7 @@ def visuDraw():
                 app.setLabelFg("l1","yellow")
                 app.setLabelBg("l2","blue")
                 app.setLabelFg("l2","yellow")
-#                row = app.getRow() # get current row
-#                app.addRadioButton("planar","none",row,0)
-#                app.addRadioButton("planar","none",row,1)
+
                 row = app.getRow() # get current row
                 app.addRadioButton("planar","cross view",row,0)
 
@@ -541,11 +547,11 @@ def visuDraw():
                 app.addRadioButton("planar","volume view from cross",row,0)
                 app.addRadioButton("planar","from front predict",row,1)
                 row = app.getRow() # get current row
-                app.addRadioButton("planar","volume view from front",row,0)
+#                app.addRadioButton("planar","volume view from front",row,0)
                 app.addRadioButton("planar","from cross + front merge",row,1)
 
                 app.addRadioButton("planar","front view")
-                app.addRadioButton("planar","merge view")
+#                app.addRadioButton("planar","merge view")
                 app.addRadioButton("planar","front projected view")
                 app.addRadioButton("planar","report")
                 
@@ -562,7 +568,7 @@ def visuDraw():
 
 ############################################################################
 #selectpatient=''
-frontpredict=False
+#frontpredict=False
 continuevisu=False
 listannotated=[]
 goodir=False
