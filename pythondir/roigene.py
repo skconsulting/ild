@@ -38,7 +38,7 @@ def contours(im,pat):
     ret,thresh = cv2.threshold(imgray,1,255,0)
     _,contours,heirarchy=cv2.findContours(thresh,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
     im2 = np.zeros((dimtabx,dimtaby,3), np.uint8)
-    cv2.drawContours(im2,contours,-1,classifc[pat],2)
+    cv2.drawContours(im2,contours,-1,classifc[pat],1)
     im2=cv2.cvtColor(im2,cv2.COLOR_BGR2RGB)
     return im2
 
