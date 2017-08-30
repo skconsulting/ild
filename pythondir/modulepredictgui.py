@@ -7,7 +7,8 @@ version 1.2
 17 august 2017
 """
 #from param_pix_p import *
-from param_pix_p import path_data,datafrontn,datacrossn,dimpavx,dimpavy,surfelem,volelem,volumeroifilep,avgPixelSpacing
+from param_pix_p import path_data,datafrontn,datacrossn,dimpavx,dimpavy,surfelem
+from param_pix_p import surfelemp,volelem,volumeroifilep,avgPixelSpacing
 
 from param_pix_p import white,red,yellow,grey,black
 from param_pix_p import lungimage,source_name,sroi,sroi3d,scan_bmp,transbmp
@@ -157,11 +158,11 @@ def tagviewn(fig,label,surface,surftot,roi,tl):
         cv2.rectangle(fig,(deltax-10, deltay-6),(deltax-5, deltay-1),col,1)
 #    print label,roi
     if roi>0:
-        cv2.putText(fig,'%15s'%label+'%8s'%(str(surface)+'cm2')+
-                    '%5s'%(pc+'%')+' roi: '+'%8s'%(str(roi)+'cm2')+'%5s'%(pcroi+'%'),
+        cv2.putText(fig,'%15s'%label+'%10s'%(str(surface)+'cm2')+
+                    '%5s'%(pc+'%')+' roi: '+'%10s'%(str(roi)+'cm2')+'%5s'%(pcroi+'%'),
                 (deltax, deltay),cv2.FONT_HERSHEY_PLAIN,gro,col,1)
     else:
-        cv2.putText(fig,'%15s'%label+'%8s'%(str(surface)+'cm2')+'%5s'%(pc+'%'),
+        cv2.putText(fig,'%15s'%label+'%10s'%(str(surface)+'cm2')+'%5s'%(pc+'%'),
                 (deltax, deltay),cv2.FONT_HERSHEY_PLAIN,gro,col,1)
             
 
@@ -210,7 +211,7 @@ def tagvcm(fig,cm):
 
 
 
-def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,patch_list_ref_slice,volumeroi,slnt,tabroi,num_class):
+def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,slnt,tabroi,num_class,tabscanLung):
 
     imgn = np.zeros((dx,dy,3), np.uint8)
     datav = np.zeros((500,900,3), np.uint8)
@@ -221,17 +222,19 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,patch_list_ref_slice
     th=t/100.0
     numl=0
     listlabel={}
-#    listlabelaverage={}
-    surflabel={}
-    for pat in classif:
-        surflabel[pat]=0
-    surftot=len(patch_list_ref_slice[slicenumber])
-    surftotf=surftot*surfelem
+
+    surftot=np.count_nonzero(tabscanLung[slicenumber])
+
+    surftotf= surftot*surfelemp/100
     surftot='surface totale :'+str(int(round(surftotf,0)))+'cm2'
-    surftotpat=0
+    volpat={}
+    for pat in usedclassif:
+        volpat[pat]=np.zeros((dx,dy), np.uint8)
+    
+    
     lvexist=False
     if len (volumeroi)>0:
-        print 'volumeroi exists'
+#        print 'volumeroi exists'
         lv=volumeroi[slicenumber]
         lvexist=True
     
@@ -248,13 +251,12 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,patch_list_ref_slice
             classcolor=classifc[classlabel]
 
             if mprobai >th and classlabel not in excluvisu:
+                volpat[classlabel][ypat:ypat+dimpavy,xpat:xpat+dimpavx]=1
                 if classlabel in listlabel:
                     numl=listlabel[classlabel]
                     listlabel[classlabel]=numl+1
-                    surflabel[classlabel]= (numl+1)*surfelem
                 else:
                     listlabel[classlabel]=1
-                    surflabel[classlabel]=surfelem
                 
                 if classif[classlabel]>0:
                         cv2.rectangle(imgpatch,(xpat,ypat),(xpat+dimpavx,ypat+dimpavy),classif[classlabel],-1)
@@ -271,17 +273,22 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,patch_list_ref_slice
                     patchdict[slicenumber]=cv2.bitwise_or(imgpatch,patchdict[slicenumber])
 
     delx=120
-    for ll1 in usedclassif:               
+    surftotpat=0
+    tablung=np.copy(tabscanLung[slicenumber])
+    np.putmask(tablung,tablung>0,1)
+        
+    for ll1 in usedclassif:     
+        volpat[ll1]=np.bitwise_and(tablung, volpat[ll1])          
         if ll1 in listlabel:            
             tl=True
         else:
             tl=False
-        sul=round(surflabel[ll1],1)
+        sul=round(np.count_nonzero(volpat[ll1])*surfelemp/100,1)
         if lvexist:
             suroi=round(lv[ll1],1)
         else:
             suroi=0
-        surftotpat=surftotpat+surflabel[ll1]
+        surftotpat=surftotpat+sul
         tagviewn(datav,ll1,sul,surftotf,suroi,tl)
     ts='Threshold:'+str(t)
     surfunkn=surftotf-surftotpat
@@ -289,8 +296,10 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,patch_list_ref_slice
         surfp=str(abs(round(100-(100.0*surftotpat/surftotf),1)))
     else:
         surfp='NA'
-        
-    sulunk='surface unknow :'+str(abs(round(surfunkn,1)))+'cm2 ='+surfp+'%'
+    if surfunkn>0:
+        sulunk='surface unknow :'+str(abs(round(surfunkn,1)))+'cm2 ='+surfp+'%'
+    else:
+        sulunk=''
     cv2.putText(datav,ts,(0,140),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
     cv2.putText(datav,surftot,(delx,140),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
     cv2.putText(datav,sulunk,(delx,150),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
@@ -330,7 +339,7 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,patch_list_ref_slice
                 cf=True       
         
         if cf:
-            print 'num_class',num_class
+#            print 'num_class',num_class
             cm=evaluatef(referencepat,predictpat,num_class)
             tagvcm(datav,cm)
     datav=cv2.cvtColor(datav,cv2.COLOR_BGR2RGB)
@@ -1326,7 +1335,7 @@ def writeslice(num,menus):
         cv2.rectangle(menus, (5,60), (150,50), red, -1)
         cv2.putText(menus,'Slice to visualize: '+str(num),(5,60),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
         
-def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,patch_list_ref_slice,tabroi,cnnweigh):   
+def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,tabroi,cnnweigh,tabscanLung):   
     global  quitl,dimtabx,dimtaby,patchi,ix,iy
     print 'openfichier start' 
     
@@ -1345,7 +1354,7 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,patch_l
     pdirkroicross = os.path.join(path_img,sroi)
     pdirkroifront = os.path.join(path_img,sroi3d)
 
-    if ti =="cross view" or ti =="merge view":
+    if ti =="cross view" or ti =="merge view" or ti =='front projected view':
         if os.path.exists(pdirkroicross):
             pdirk = pdirkroicross
             path_data_write=os.path.join(path_img,path_data)
@@ -1376,8 +1385,8 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,patch_l
     if len(limage)==0:
          limage=[name for name in os.listdir(pdirk) if name.find('.'+typei2,1)>0 ]
          extensionimage='.'+typei2
-        
-    if ((ti =="cross view" or ti =="merge view") and len(limage)+1==slnt) or ti =="front view":
+#    print len(limage), slnt
+    if ((ti =="cross view" or ti =="merge view"  or ti =='front projected view' ) and len(limage)+1==slnt) or ti =="front view":
 
         for iimage in limage:
 
@@ -1525,7 +1534,7 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,patch_l
                 cv2.imshow('wip',imgwip)
                 
                 imgn,datav= drawpatch(tl,dimtabx,dimtaby,slicenumber,viewasked,patch_list_cross_slice,
-                                                patch_list_ref_slice,volumeroilocal,slnt,tabroi,num_class)
+                                                volumeroilocal,slnt,tabroi,num_class,tabscanLung)
                                
                 cv2.putText(datav,'slice number :'+str(slicenumber),(10,180),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
                 cv2.putText(datav,'patient Name :'+tail,(10,190),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
@@ -1741,12 +1750,13 @@ def visuarun(indata,path_patient):
     elif viewstyle=='cross view':
             datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "rb" ))
             tabroi= pickle.load( open( os.path.join(path_data_dir,"tabroi"), "rb" ))
+            tabscanLung= pickle.load( open( os.path.join(path_data_dir,"tabscanLung"), "rb" ))
             patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice"), "rb" ))
             thrprobaUIP=float(indata['thrprobaUIP'])
             cnnweigh=indata['picklein_file']
 #            print cnnweigh
             messageout=openfichier(viewstyle,datarep,patient_path_complet,thrprobaUIP,
-                                   patch_list_cross_slice,patch_list_cross_slice,tabroi,cnnweigh)
+                                   patch_list_cross_slice,tabroi,cnnweigh,tabscanLung)
             
     elif viewstyle=='front view':
             datarep= pickle.load( open( os.path.join(path_data_dir,"datafront"), "rb" ))
@@ -1754,11 +1764,14 @@ def visuarun(indata,path_patient):
             slnt=datarep[0]
             dimtabx=datarep[1]
             dimtaby=datarep[2]
+            
+            tabLung3d= pickle.load( open( os.path.join(path_data_dir,"tabLung3d"), "rb" ))
             tabroi=np.zeros((slnt,dimtabx,dimtaby), np.uint8)
             patch_list_front_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_front_slice"), "rb" ))
             thrprobaUIP=float(indata['thrprobaUIP'])
             cnnweigh=indata['picklein_file_front']
-            messageout=openfichier(viewstyle,datarep,patient_path_complet,thrprobaUIP,patch_list_front_slice,patch_list_front_slice,tabroi,cnnweigh)
+            messageout=openfichier(viewstyle,datarep,patient_path_complet,thrprobaUIP,
+                                   patch_list_front_slice,tabroi,cnnweigh,tabLung3d)
             
     elif viewstyle=='volume view from cross':
             datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "rb" ))
@@ -1773,37 +1786,41 @@ def visuarun(indata,path_patient):
                       lungSegment,tabMed,thrprobaUIP,patch_list_cross_slice_sub,slicepitch)
     
     elif viewstyle=='volume view from front':
-            return 'not implemented'
             datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "rb" ))
             slicepitch=avgPixelSpacing
-            patch_list_front_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_front_slice"), "rb" ))
-            patch_list_front_slice_sub= pickle.load( open( os.path.join(path_data_dir,"patch_list_front_slice_sub"), "rb" ))
+            patch_list_cross_slice_from_front= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice_from_front"), "rb" ))
+            patch_list_cross_slice_sub_from_front= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice_sub_from_front"), "rb" ))
 #            lungSegmentfront= pickle.load( open( os.path.join(path_data_dir,"lungSegmentfront"), "rb" ))
-            tabMedfront= pickle.load( open( os.path.join(path_data_dir,"tabMedfront"), "rb" ))
+            lungSegment= pickle.load( open( os.path.join(path_data_dir,"lungSegment"), "rb" ))
+            tabMed= pickle.load( open( os.path.join(path_data_dir,"tabMed"), "rb" ))
             thrprobaUIP=float(indata['thrprobaUIP'])
             
-            messageout = openfichiervolume(listHug,path_patient,patch_list_front_slice,
-                      lungSegmentfront,tabMedfront,thrprobaUIP,patch_list_front_slice_sub,slicepitch)
+            messageout = openfichiervolume(listHug,path_patient,patch_list_cross_slice_from_front,
+                      lungSegment,tabMed,thrprobaUIP,patch_list_cross_slice_sub_from_front,slicepitch)
 
     elif viewstyle=='merge view':
 
             thrprobaUIP=float(indata['thrprobaUIP'])
             datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "rb" ))
             tabroi= pickle.load( open( os.path.join(path_data_dir,"tabroi"), "rb" ))
+            tabscanLung= pickle.load( open( os.path.join(path_data_dir,"tabscanLung"), "rb" ))
 #            patch_list_merge= pickle.load( open( os.path.join(path_data_dir,"patch_list_merge"), "rb" ))
 #            proba_merge= pickle.load( open( os.path.join(path_data_dir,"proba_merge"), "rb" ))
             patch_list_merge_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_merge_slice"), "rb" ))
-            patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice"), "rb" ))
+#            patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice"), "rb" ))
             cnnweigh=indata['picklein_file']
-            messageout=openfichier(viewstyle,datarep,patient_path_complet,thrprobaUIP,patch_list_merge_slice,patch_list_cross_slice,tabroi,cnnweigh)
+            messageout=openfichier(viewstyle,datarep,patient_path_complet,thrprobaUIP,
+                                   patch_list_merge_slice,tabroi,cnnweigh,tabscanLung)
     
     elif viewstyle=='front projected view':
             datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "rb" ))
             tabroi= pickle.load( open( os.path.join(path_data_dir,"tabroi"), "rb" ))
-            patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice_from_front"), "rb" ))
-            thrprobaUIP=float(indata['thrprobaUIP'])
+            patch_list_cross_slice_from_front= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice_from_front"), "rb" ))
+            thrprobaUIP=float(indata['thrprobaUIP']) 
             cnnweigh=indata['picklein_file_front']
-            messageout=openfichier(viewstyle,datarep,patient_path_complet,thrprobaUIP,patch_list_front_slice,patch_list_front_slice,tabroi,cnnweigh)
+            tabscanLung= pickle.load( open( os.path.join(path_data_dir,"tabscanLung"), "rb" ))
+            messageout=openfichier(viewstyle,datarep,patient_path_complet,thrprobaUIP,
+                                   patch_list_cross_slice_from_front,tabroi,cnnweigh,tabscanLung)
 #            thrprobaUIP=float(indata['thrprobaUIP'])
 #            tabfromfront= pickle.load( open( os.path.join(path_data_dir,"tabfromfront"), "rb" ))
 #            messageout=openfichierfrpr(path_patient,tabfromfront,thrprobaUIP)

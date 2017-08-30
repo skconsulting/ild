@@ -496,7 +496,7 @@ def ILDCNNpredict(patch_list,model):
     # look if the predict source is empty
     # predict and store  classification and probabilities if not empty
     if X0 > 0:
-        proba = model.predict_proba(pa, batch_size=200,verbose=1)
+        proba = model.predict_proba(pa, batch_size=500,verbose=1)
 
     else:
         print (' no patch in selected slice')
@@ -1003,33 +1003,47 @@ def genethreef(dirpatientdb,patchPositions,probabilities_raw,slicepitch,dimtabx,
         vtb.close()
 #        volumefilejs.close()
 
-def genecrossfromfront(proba_front,patch_list_front,dimtabx,dimtaby,lissln,dimtabxn,slnt):
+def genecrossfromfront(proba_front,patch_list_front,dimtabx,lissln,dimtabxn,slnt):
     pl=[]
     pr=[]
-    maxhight=dimtabxn*avgPixelSpacing
+    maxhight=1.0*(slnt-1)/dimtabxn
+
     print 'maxhight',maxhight
-    tabhight={}
-    pitchslice=maxhight/slnt
-    for i in range (0,slnt):
-        tabhight[i]=pitchslice*(i)
-        print i, tabhight[i]
+#    tabhight={}
+#    pitchslice=maxhight/slnt
+#    for i in range (0,slnt):
+#        tabhight[i]=pitchslice*(i)
+#        print i, tabhight[i]
     def findsln(y):
-        for i in range (0,slnt):
-            if y<tabhight[i]:
-                return i
-        
+        return max(1,int(round(y*maxhight,0)))
+#        for i in range (0,slnt):
+#            if y+(dimpavx/2)<tabhight[i]:
+#                return i
+#        return i
+#    maxx=0
+#    maxy=0
+#    maxz=0
     for ll in range(0,len(patch_list_front)):
         proba=proba_front[ll]
-        x=patch_list_front[1]
-        y=patch_list_front[2]
-        z=patch_list_front[0]
-        sln=findsln(y)
-        t=(sln,z,x)
-        print sln,z,x
-        print type(z),type(x)
+        x=patch_list_front[ll][1]
+        y=patch_list_front[ll][2]
+        z=patch_list_front[ll][0]
+#        if x>maxx:
+#            maxx=x
+#        if y>maxy:
+#            maxy=y
+#        if z>maxz:
+#            maxz=z
+
+        sln=findsln(y+(dimpavx/2))
+#        print y,sln
+        t=(sln,x,z)
+#        print sln,z,x
+#        print type(z),type(x)
         pl.append(t)
         pr.append(proba)
-    return pl,pr
+#    print maxx,maxy,maxz
+    return pr,pl
     
 
 
@@ -1303,80 +1317,57 @@ def pavf(proba_cross,dirf,pat,scan,tab,
      cv2.imwrite(namepatchImage,tabjpeg)
      return proba_list,patch_list
 
-def mergeproba(dirf,prx,plx,tabx,slnt,dimtabx,dimtaby)  :
-    global thrprobaUIP
+def  mergeproba(list_cross,from_front,slnt,dimtabx,dimtaby):
     print "merge proba list"
-
     patch_list_merge=[]
     proba_merge=[]
+    frontpat={}
+    print 'fill table'
+    for sln in from_front:
+        frontpat[sln]={}
+        for pat in usedclassif:
+            frontpat[sln][pat]=[]
 
-    plxd={}
-    prxd={}
+        for ii in range(0,len(from_front[sln])):
+                (xpat,ypat)=from_front[sln][ii][0]
+                proba=from_front[sln][ii][1]
+                prec, mproba = maxproba(proba)   
+                t=((xpat,ypat),proba)
+                frontpat[sln][fidclass(prec,classif)].append(t)
 
-    listp=[name for name in usedclassif if name not in excluvisu]
-#    print 'used patterns :',listp
-
-    for i in usedclassif:
-
-        plxd[i]=[]
-        prxd[i]=[]
-    probabg=createProba('healthy',0.1,prx[0])
-
-    print 'sort plx'
-    for ll in range(0,len(plx)):
-        proba=prx[ll]
-        prec, mprobai = maxproba(proba)
-        classlabel=fidclass(prec,classif)
-        if mprobai> thrprobaUIP:
-            plxd[classlabel].append(plx[ll])
-            prxd[classlabel].append(prx[ll])
-        else:
-            plxd['healthy'].append(plx[ll])
-            prxd['healthy'].append(probabg)
-
-
-    print 'merge pattern'
-    for p in listp:
-#        print p
-        for i in range (1, slnt):
-#            tab0=np.zeros((dimtabx,dimtaby),np.uint8)
+    print 'scan'
+    for sln in list_cross:
+        print sln
+        for jj in range(0,len(list_cross[sln])):
+#            print list_cross[jj]
+            (xpat,ypat)=list_cross[sln][jj][0]
+            proba=list_cross[sln][jj][1]
+            prec, mproba = maxproba(proba)  
+            pat=fidclass(prec,classif)
             tab1=np.zeros((dimtabx,dimtaby),np.uint8)
-            tab2=np.zeros((dimtabx,dimtaby),np.uint8)
-            tab0=  tabx[p][i]
-            for ll in range(0,len(plxd[p])):
-                if plxd[p][ll][0]==i:
-                    tab1[plxd[p][ll][2]:plxd[p][ll][2]+dimpavy,plxd[p][ll][1]:plxd[p][ll][1]+dimpavx]=100
-            tab2=np.bitwise_and(tab0,tab1)
-#            if i ==25 and p =='ground_glass':
-#                 cv2.imshow('tab0',tab0)
-#                 cv2.imshow('tab1',tab1)
-#                 cv2.imshow('tab2',tab2)
-#                 cv2.waitKey(0)
-#                 cv2.destroyAllWindows()
-#
-            nz= np.count_nonzero(tab2)
-            if nz>0:
-                proba_merge,patch_list_merge=pavf(prx,dirf,p,i,tab2,dimpavx,dimpavy,
-                dimtabx,dimtaby,jpegpadirm,patch_list_merge,proba_merge,False)
-    print 'merge exclu'
-    if len(excluvisu)>1:
-        for p in excluvisu:
-            print'excluvisu', p
-            for i in range (1, slnt):
-                tab2=np.zeros((dimtabx,dimtaby),np.uint8)
-                for ll in range(0,len(plxd[p])):
-                    if plxd[p][ll][0]==i:
-                        tab2[plxd[p][ll][2]:plxd[p][ll][2]+dimpavy,plxd[p][ll][1]:plxd[p][ll][1]+dimpavx]=100
-                nz= np.count_nonzero(tab2)
-                if nz>0:
-                    proba_merge,patch_list_merge=pavf(prx,dirf,p,i,tab2,dimpavx,dimpavy,
-                    dimtabx,dimtaby,jpegpadirm,patch_list_merge,proba_merge,True)
-
-#    print ' end excluvisu'
-#                if len(pr)>0:
-#                    proba_merge.append(pr)
-#                    patch_list_merge.append(pl)
-#    print patch_list_merge
+            tab1[ypat:ypat+dimpavy,xpat:xpat+dimpavx]=255
+#            if sln==12 and pat=='ground_glass':
+#                print xpat,ypat
+            try:
+                for ii in range(0,len(frontpat[sln][pat])):
+                    (xpat1,ypat1)=frontpat[sln][pat][ii][0]
+#                    if sln==12 and pat=='ground_glass':
+#                         print xpat1,ypat1
+                    proba1=frontpat[sln][pat][ii][1]
+                    prec1, mproba1 = maxproba(proba1) 
+                    tab2=np.zeros((dimtabx,dimtaby),np.uint8)
+                    tab2[ypat1:ypat1+dimpavy,xpat1:xpat1+dimpavx]=255
+                    tab3=np.bitwise_and(tab1,tab2)
+                    nz= np.count_nonzero(tab3)
+                    if nz>pxy/2:
+                        patch_list_merge.append((int(sln),xpat,ypat))
+                        if mproba1<mproba:
+                         proba_merge.append(proba1)
+                        else:
+                         proba_merge.append(proba)
+            except:
+                continue
+                                     
     return proba_merge,patch_list_merge
 
 def  calcMed (tabscanLung,lisslnfront):
@@ -1569,6 +1560,7 @@ def selectposition(lislnumber,tabrange):
 
 
 def genepatchlistslice(patch_list_cross,proba_cross,lissln,subpleurmask,thrpatch):
+    print 'start genepatchilist'
     res={}   
     ressub={}  
     dimtabx=subpleurmask[lissln[0]].shape[0]
@@ -1585,6 +1577,7 @@ def genepatchlistslice(patch_list_cross,proba_cross,lissln,subpleurmask,thrpatch
                 t=((xpat,ypat),proba_cross[ii])
                 res[sln].append(t)                
                 tabpatch = np.zeros((dimtabx, dimtaby), np.uint8)
+    
                 tabpatch[ypat:ypat + dimpavy, xpat:xpat + dimpavx] = 1
                 tabsubpl = np.bitwise_and(subpleurmask[i], tabpatch)
                 np.putmask(tabsubpl, tabsubpl > 0, 1)
@@ -1813,8 +1806,7 @@ def predictrun(indata,path_patient):
             datacross=(slnt,dimtabx,dimtabx,slicepitch,lissln,setref)   
             
             pickle.dump(datacross, open( os.path.join(path_data_write,datacrossn), "wb" ),protocol=-1)
-
-#            pickle.dump(tabscanScan, open( os.path.join(path_data_write,"tabscanScan"), "wb" ),protocol=-1)
+            pickle.dump(tabscanLung, open( os.path.join(path_data_write,"tabscanLung"), "wb" ),protocol=-1)
             pickle.dump(lungSegment, open( os.path.join(path_data_write,"lungSegment"), "wb" ),protocol=-1)
             """
             datacross= pickle.load( open( os.path.join(path_data_write,"datacross"), "rb" ))
@@ -1835,11 +1827,16 @@ def predictrun(indata,path_patient):
             """
             subpleurmask= pickle.load( open( os.path.join(path_data_write,"subpleurmask"), "rb" ))
             """
-            if os.path.exists(os.path.join(path_data_write,"patch_list_cross")):
-                patch_list_cross= pickle.load( open( os.path.join(path_data_write,"patch_list_cross"), "rb" ))
+            if os.path.exists(os.path.join(path_data_write,"thrpatch")):
+                    thrpatch1= pickle.load( open( os.path.join(path_data_write,"thrpatch"), "rb" ))
+                    if thrpatch == thrpatch1:
+                        if os.path.exists(os.path.join(path_data_write,"patch_list_cross")):
+                            patch_list_cross= pickle.load( open( os.path.join(path_data_write,"patch_list_cross"), "rb" ))
+                  
             else:
                 patch_list_cross=pavgene(dirf,dimtabx,dimtabx,tabscanScan,tabscanLung,slnt,jpegpath,lissln)
                 pickle.dump(patch_list_cross, open( os.path.join(path_data_write,"patch_list_cross"), "wb" ),protocol=-1)
+                pickle.dump(thrpatch, open( os.path.join(path_data_write,"thrpatch"), "wb" ),protocol=-1)
 
             
             modelcross=modelCompilation('cross',picklein_file,picklein_file_front,setref)
@@ -1887,6 +1884,7 @@ def predictrun(indata,path_patient):
                 datafront=(dimtabx,dimtabxn,dimtabyn,slicepitch,lisslnfront)
                 
                 pickle.dump(datafront, open( os.path.join(path_data_write,datafrontn), "wb" ),protocol=-1)
+                pickle.dump(tabLung3d, open( os.path.join(path_data_write,"tabLung3d"), "wb" ),protocol=-1)
                 """
                 datafront= pickle.load( open( os.path.join(path_data_write,"datafront"), "rb" ))               
                 dimtabx=datafront[0]                
@@ -1936,17 +1934,18 @@ def predictrun(indata,path_patient):
                 lungSegmentfront=pickle.load(open( os.path.join(path_data_write,"lungSegmentfront"), "rb" ))
                 """
                 genethreef(dirf,patch_list_front,proba_front,avgPixelSpacing,dimtabxn,dimtabyn,dimpavx,dimtabx,'front')
-                tabpx=genecross(proba_cross,proba_front,patch_list_front,dimtabxn,dimtabyn)
+#                tabpx=genecross(proba_cross,proba_front,patch_list_front,dimtabxn,dimtabyn)
                 
                 
                 proba_cross_from_front,patch_list_cross_from_front= genecrossfromfront(proba_front,patch_list_front,
-                                                                    dimtabx,dimtabx,lissln,dimtabxn,slnt)
+                                                                   dimtabx,lissln,dimtabxn,slnt)
+                
                 patch_list_cross_slice_from_front,patch_list_cross_slice_sub_from_front=genepatchlistslice(patch_list_cross_from_front,
                                                             proba_cross_from_front,lissln,subpleurmask,thrpatch)
                 
                 pickle.dump(patch_list_cross_slice_from_front, open( os.path.join(path_data_write,"patch_list_cross_slice_from_front"), "wb" ),protocol=-1)
                 pickle.dump(patch_list_cross_slice_sub_from_front, open( os.path.join(path_data_write,"patch_list_cross_slice_sub_from_front"), "wb" ),protocol=-1)
-                return ''
+
                 
                 
                 """
@@ -1956,15 +1955,20 @@ def predictrun(indata,path_patient):
 #                pickle.dump(tabfromfront, open( os.path.join(path_data_write,"tabfromfront"), "wb" ),protocol=-1)
         #        tabx=pickle.load(open( os.path.join(path_data_write,"tabx"), "rb" ),protocol=-1)
 #                    print 'before merge proba'
-                proba_merge,patch_list_merge=mergeproba(dirf,proba_cross,patch_list_cross,tabx,slnt,dimtabx,dimtabx)
+                """
+#                print '0',patch_list_cross_slice
+#                print 'len',len(patch_list_cross_slice)
+                proba_merge,patch_list_merge=mergeproba(patch_list_cross_slice,
+                                                        patch_list_cross_slice_from_front,slnt,dimtabx,dimtabx)
                 patch_list_merge_slice,patch_list_merge_slice_sub=genepatchlistslice(patch_list_merge,
                                                             proba_merge,lissln,subpleurmask,thrpatch)
                 
+                
 #                pickle.dump(proba_merge, open( os.path.join(path_data_write,"proba_merge"), "wb" ),protocol=-1)
 #                pickle.dump(patch_list_merge, open( os.path.join(path_data_write,"patch_list_merge"), "wb" ),protocol=-1)
-#                pickle.dump(patch_list_merge_slice, open( os.path.join(path_data_write,"patch_list_merge_slice"), "wb" ),protocol=-1)
-#                pickle.dump(patch_list_merge_slice_sub, open( os.path.join(path_data_write,"patch_list_merge_slice_sub"), "wb" ),protocol=-1)
-                """
+                pickle.dump(patch_list_merge_slice, open( os.path.join(path_data_write,"patch_list_merge_slice"), "wb" ),protocol=-1)
+                pickle.dump(patch_list_merge_slice_sub, open( os.path.join(path_data_write,"patch_list_merge_slice_sub"), "wb" ),protocol=-1)
+            
                 """
                 proba_merge=pickle.load(open( os.path.join(path_data_write,"proba_merge"), "rb" ))
                 patch_list_merge=pickle.load(open( os.path.join(path_data_write,"patch_list_merge"), "rb" ))
