@@ -1319,25 +1319,31 @@ def pavf(proba_cross,dirf,pat,scan,tab,
 
 def  mergeproba(list_cross,from_front,slnt,dimtabx,dimtaby):
     print "merge proba list"
+    volpat={}
+    for sln in range(slnt):
+        volpat[sln]={}
+        for pat in usedclassif:
+            volpat[sln][pat]=np.zeros((dimtabx,dimtaby), np.uint8)
     patch_list_merge=[]
     proba_merge=[]
     frontpat={}
     print 'fill table'
     for sln in from_front:
-        frontpat[sln]={}
-        for pat in usedclassif:
-            frontpat[sln][pat]=[]
+#        frontpat[sln]={}
+#        for pat in usedclassif:
+#            frontpat[sln][pat]=[]
 
         for ii in range(0,len(from_front[sln])):
                 (xpat,ypat)=from_front[sln][ii][0]
                 proba=from_front[sln][ii][1]
                 prec, mproba = maxproba(proba)   
-                t=((xpat,ypat),proba)
-                frontpat[sln][fidclass(prec,classif)].append(t)
-
+                volpat[sln][fidclass(prec,classif)][ypat:ypat+dimpavy,xpat:xpat+dimpavx]=1
+#                t=((xpat,ypat),proba)
+#                frontpat[sln][fidclass(prec,classif)].append(t)
+    
     print 'scan'
     for sln in list_cross:
-        print sln
+#        print sln
         for jj in range(0,len(list_cross[sln])):
 #            print list_cross[jj]
             (xpat,ypat)=list_cross[sln][jj][0]
@@ -1345,28 +1351,24 @@ def  mergeproba(list_cross,from_front,slnt,dimtabx,dimtaby):
             prec, mproba = maxproba(proba)  
             pat=fidclass(prec,classif)
             tab1=np.zeros((dimtabx,dimtaby),np.uint8)
-            tab1[ypat:ypat+dimpavy,xpat:xpat+dimpavx]=255
+            tab1[ypat:ypat+dimpavy,xpat:xpat+dimpavx]=1
 #            if sln==12 and pat=='ground_glass':
 #                print xpat,ypat
-            try:
-                for ii in range(0,len(frontpat[sln][pat])):
-                    (xpat1,ypat1)=frontpat[sln][pat][ii][0]
-#                    if sln==12 and pat=='ground_glass':
-#                         print xpat1,ypat1
-                    proba1=frontpat[sln][pat][ii][1]
-                    prec1, mproba1 = maxproba(proba1) 
-                    tab2=np.zeros((dimtabx,dimtaby),np.uint8)
-                    tab2[ypat1:ypat1+dimpavy,xpat1:xpat1+dimpavx]=255
-                    tab3=np.bitwise_and(tab1,tab2)
-                    nz= np.count_nonzero(tab3)
-                    if nz>pxy/2:
-                        patch_list_merge.append((int(sln),xpat,ypat))
-                        if mproba1<mproba:
-                         proba_merge.append(proba1)
-                        else:
-                         proba_merge.append(proba)
-            except:
-                continue
+#            try:
+#                for ii in range(0,len(frontpat[sln][pat])):
+#                    (xpat1,ypat1)=frontpat[sln][pat][ii][0]
+#                    tab2=np.zeros((dimtabx,dimtaby),np.uint8)
+#                    tab2[ypat1:ypat1+dimpavy,xpat1:xpat1+dimpavx]=255
+            tab2=volpat[sln][pat]
+
+            tab3=np.bitwise_and(tab1,tab2)
+            nz= np.count_nonzero(tab3)
+            if nz>pxy/2:
+                patch_list_merge.append((int(sln),xpat,ypat))
+                proba_merge.append(proba)
+#                break
+#            except:
+#                continue
                                      
     return proba_merge,patch_list_merge
 
