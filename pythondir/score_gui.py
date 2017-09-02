@@ -121,8 +121,10 @@ def predict(btn):
     indata['threedpredictrequest']=app.getRadioButton("predict_style")
     indata['picklein_file']=app.getEntry("cross view weight")
     indata['picklein_file_front']= app.getEntry("front view weight")
-#    indata['subErosion']= app.getEntry("subErosion in mm")
     indata['lispatientselect']=app.getListItems("list")
+
+#    indata['subErosion']= app.getEntry("subErosion in mm")
+    
     indata['Fast']=app.getCheckBox("Fast")
     indata['centerHU']=app.getEntry("centerHU")
     indata['limitHU']=app.getEntry("limitHU")
@@ -130,23 +132,22 @@ def predict(btn):
     paramdict['thrpatch']=indata['thrpatch']
     paramdict['thrproba']=indata['thrproba']
 #    paramdict['thrprobaUIP']=indata['thrprobaUIP']
-    paramdict['picklein_file']=indata['picklein_file']
-    paramdict['subErosion in mm']=indata['subErosion']
+#    paramdict['picklein_file']=indata['picklein_file']
+#    paramdict['subErosion in mm']=indata['subErosion']
     paramdict['picklein_file_front']=indata['picklein_file_front']
     paramdict['picklein_file']=indata['picklein_file']
     paramdict['centerHU']=indata['centerHU']
     paramdict['limitHU']=indata['limitHU']
-    paramdict['lispatientselect']= indata['lispatientselect']
+#    paramdict['lispatientselect']= indata['lispatientselect']
     paramdict['threedpredictrequest']= indata['threedpredictrequest']
-    pickle.dump(paramdict,open( paramsaveDirf, "wb" ))
 
-#    roirun(app.getListItems("list"),lisdir)
-    if indata['Select All']:
+
+    if len(app.getListItems("list"))==0 and indata['Select All']:
 #        print lisdir
-        indata['lispatientselect']= os.walk(lisdir).next()[1]
-        paramdict['lispatientselect']= indata['lispatientselect']
-        pickle.dump(paramdict,open( paramsaveDirf, "wb" ))
-            
+        indata['lispatientselect'],b,c=lisdirprocess(lisdir)
+    paramdict['lispatientselect']= indata['lispatientselect']
+
+    pickle.dump(paramdict,open( paramsaveDirf, "wb" ))       
     if len(indata['lispatientselect']) >0:
         app.hide()
         listdir,message=predictmodule(indata,lisdir)  
@@ -157,8 +158,13 @@ def predict(btn):
             initDraw()
         else:
             app.stop(Stop)
-            continuevisu=True
-            visuDraw()
+
+            if indata['Select All']:
+                continuevisu=False
+                initDraw()
+            else:
+                continuevisu=True
+                visuDraw()
     else:
         app.errorBox('error', 'no patient selected for predict')
         app.stop(Stop)
@@ -239,21 +245,36 @@ def gscore(btn):
     indata['thrpatch']=app.getEntry("Percentage of pad Overlapp")   
     a,b,c=lisdirprocess(lisdir)
     indata['lispatientselect']= a[0]
+    tf=True
+    goodp=True
+    for p,v in c.items():
+        if tf:
+            vold=v
+            tf=False
+        else:
+            if v != vold:
+                app.errorBox('error', 'not same set or no predict for some patients')
+                goodp=False
+                break
+                
+    if goodp:
 
-    indata['picklein_file_front']=paramdict['picklein_file_front']
-    indata['picklein_file']=paramdict['picklein_file']
+        indata['picklein_file']=vold
+    
+        paramdict['thrproba']=indata['thrproba']
+        paramdict['thrpatch']=indata['thrpatch']
+    
+        pickle.dump(paramdict,open( paramsaveDirf, "wb" ))
+    
+        app.hide()
+        visuarun(indata,lisdir)
 
-    paramdict['thrproba']=indata['thrproba']
-    paramdict['thrpatch']=indata['thrpatch']
-
-    pickle.dump(paramdict,open( paramsaveDirf, "wb" ))
-
-    app.hide()
-    visuarun(indata,lisdir)
-
-    app.stop(Stop)
-    continuevisu=True
-    visuDraw()
+        app.stop(Stop)
+        continuevisu=True
+        visuDraw()
+    else:
+        app.stop(Stop)
+        initDraw()
 
 def selection(btn):
     global frontpredict,continuevisu,app
@@ -542,47 +563,47 @@ def visuDraw():
             if not frontpredict:
                 row = app.getRow() # get current row
                 app.addLabel("l1", "Type of planar view,select one",row,0)
-                app.addLabel("l2", "Type of orbit 3d view,select one",row,1)
+#                app.addLabel("l2", "Type of orbit 3d view,select one",row,1)
                 app.setLabelBg("l1","blue")
                 app.setLabelFg("l1","yellow")
-                app.setLabelBg("l2","blue")
-                app.setLabelFg("l2","yellow")
+#                app.setLabelBg("l2","blue")
+#                app.setLabelFg("l2","yellow")
 
                 row = app.getRow() # get current row
                 app.addRadioButton("planar","cross view",row,0)
 
-                app.addRadioButton("planar","from cross predict",row,1)
+#                app.addRadioButton("planar","from cross predict",row,1)
                 row = app.getRow() # get current row
-                app.addRadioButton("planar","volume view from cross",row,0)
+#                app.addRadioButton("planar","volume view from cross",row,0)
                 app.addRadioButton("planar","report")
-                app.addRadioButton("planar","reportAll")
+#                app.addRadioButton("planar","reportAll")
             else:
                 row = app.getRow() # get current row
                 app.addLabel("l1", "Type of planar view,select one",row,0)
-                app.addLabel("l2", "Type of orbit 3d view,select one",row,1)
+#                app.addLabel("l2", "Type of orbit 3d view,select one",row,1)
                 app.setLabelBg("l1","blue")
                 app.setLabelFg("l1","yellow")
-                app.setLabelBg("l2","blue")
-                app.setLabelFg("l2","yellow")
+#                app.setLabelBg("l2","blue")
+#                app.setLabelFg("l2","yellow")
                 row = app.getRow() # get current row
 #                app.addRadioButton("planar","none",row,0)
 #                app.addRadioButton("3d","none",row,1)
 
                 app.addRadioButton("planar","cross view",row,0)
-                app.addRadioButton("planar","from cross predict",row,1)
+#                app.addRadioButton("planar","from cross predict",row,1)
                 row = app.getRow() # get current row
-                app.addRadioButton("planar","volume view from cross",row,0)
-                app.addRadioButton("planar","from front predict",row,1)
+#                app.addRadioButton("planar","volume view from cross",row,0)
+#                app.addRadioButton("planar","from front predict",row,1)
                 row = app.getRow() # get current row
-                app.addRadioButton("planar","volume view from front",row,0)
-                app.addRadioButton("planar","from cross + front merge",row,1)
+#                app.addRadioButton("planar","volume view from front",row,0)
+#                app.addRadioButton("planar","from cross + front merge",row,1)
 
                 app.addRadioButton("planar","front view")
                
                 app.addRadioButton("planar","front projected view")
                 app.addRadioButton("planar","merge view")
                 app.addRadioButton("planar","report")
-                app.addRadioButton("planar","reportAll")
+
                 
                
             app.addHorizontalSeparator( colour="red")
