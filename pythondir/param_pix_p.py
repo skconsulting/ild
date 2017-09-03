@@ -70,6 +70,7 @@ dicomfront='front'
 dicomcross_merge='merge'
 reportfile='report'
 reportdir='report'
+reportalldir='REPORT_SCORE'
 
 source_name='source'
 jpegpath='jpegpath'
@@ -134,6 +135,7 @@ grey=(100,100,100)
 red=(255,0,0)
 green=(0,255,0)
 blue=(0,0,255)
+lblue=(30,30,255)
 yellow=(255,255,0)
 cyan=(0,255,255)
 purple=(255,0,255)
@@ -364,7 +366,7 @@ derivedpatdict['set2p']=[
 classifc ={
     'back_ground':chatainlow,
     'consolidation':cyan,
-    'HC':blue,
+    'HC':lblue,
     'ground_glass':red,
     'healthy':darkgreen,
     'micronodules':green,

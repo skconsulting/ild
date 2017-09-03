@@ -491,12 +491,12 @@ def cfma(f,referencepat,predictpat,num_class, namep,thrprobaUIP,cnnweigh):
             pat=newclassif[i]
             f.write('%15s'%pat)
             for j in range (0,n):
-                f.write('%10s'%str(cm[i][j]))
-            f.write( '%10s'%(str(int(round(100*recallp[pat],0)))+'%')+'\n')        
+                f.write('%8s'%str(cm[i][j]))
+            f.write( '%8s'%(str(int(round(100*recallp[pat],0)))+'%')+'\n')        
         f.write('----------------------\n')
         f.write('      precision')
         for pat in newclassif:
-            f.write('%10s'%(str(int(round(100*presip[pat],0)))+'%'))
+            f.write('%8s'%(str(int(round(100*presip[pat],0)))+'%'))
     #    print newclassif
         f.write('\n')
         f.write('         Fscore')
@@ -650,7 +650,7 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,tabroi,
     slnt=datacross[0]
     dimtabx=datacross[1]
     dimtaby=datacross[2]
-
+    print slnroi
     patchi=False
     ix=0
     iy=0
@@ -671,14 +671,13 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,tabroi,
             sn=''
         else:
             sn=scan_bmp
-        corectnumber=0
     else:        
         if os.path.exists(pdirkroifront):
             pdirk = pdirkroifront
             sn=''
         else:
             sn=transbmp
-        corectnumber=0
+
     pdirk = os.path.join(pdirk,sn)
 
     list_image={}
@@ -770,34 +769,29 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,tabroi,
             else:
                 cv2.rectangle(initimg, (5,60), (150,50), black, -1)
                 
-        if nbdig>0 and key ==13 and numberfinal>0:
+        if nbdig>0 and key ==13 and numberfinal>0 :
+            if numberfinal in slnroi:
 #                    print numberfinal
                 numberfinal = min(slnt-1,numberfinal)
 #                    writeslice(numberfinal,initimg)
                 cv2.rectangle(initimg, (5,60), (150,50), black, -1)
-                if corectnumber==0:
-                    cv2.setTrackbarPos('Flip','Sliderfi' ,numberfinal)
-                    for i in slnroi:
-                        if i == numberfinal:
-                            fl=i
-                            break
-                else:
-                    cv2.setTrackbarPos('Flip','Sliderfi' ,numberfinal-1)
-                    for i in slnroi:
-                        if i == numberfinal-1:
-                            fl=i
-                            break
-
+  
+                fld=slnroi.index(numberfinal)
+#                print fl,numberfinal
+                cv2.setTrackbarPos('Flip','Sliderfi' ,fld)
+            else:
+                print 'number not in set'
+#                fl=numberfinal
                 
-                numberfinal=0
-                nbdig=0
-                numberentered={}
+            numberfinal=0
+            nbdig=0
+            numberentered={}
         if key==2424832:
-            fl=max(0,fl-1)
-            cv2.setTrackbarPos('Flip','Sliderfi' ,fl)
+            fld=max(0,fld-1)
+            cv2.setTrackbarPos('Flip','Sliderfi' ,fld)
         if key==2555904:
-            fl=min(slnt-2,fl+1)
-            cv2.setTrackbarPos('Flip','Sliderfi' ,fl)
+            fld=min(lenlimage-1,fld+1)
+            cv2.setTrackbarPos('Flip','Sliderfi' ,fld)
             
         if allview==1:
             for key2 in usedclassif:
@@ -813,8 +807,9 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,tabroi,
                  viewasked[key2]=True               
             else:
                  viewasked[key2]=False
-        
-        slicenumber=fl+corectnumber
+
+        slicenumber=fl
+#        print slicenumber
         
         imagel=os.path.join(pdirk,list_image[slicenumber])
         img = cv2.imread(imagel,1)               

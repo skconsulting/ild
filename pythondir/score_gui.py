@@ -159,7 +159,7 @@ def predict(btn):
         else:
             app.stop(Stop)
 
-            if indata['Select All']:
+            if indata['Select All'] and len(app.getListItems("list"))==0:
                 continuevisu=False
                 initDraw()
             else:
