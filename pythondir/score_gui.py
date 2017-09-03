@@ -159,7 +159,7 @@ def predict(btn):
         else:
             app.stop(Stop)
 
-            if indata['Select All'] and len(app.getListItems("list"))==0:
+            if len(indata['lispatientselect'])==0 and indata['Select All']:
                 continuevisu=False
                 initDraw()
             else:
