@@ -7,13 +7,15 @@ version 1.1
 28 july 2017
 """
 #from param_pix_r import *
-from param_pix_r import classif,classifcontour,lung_mask_bmp,lung_mask1,usedclassif
+from param_pix_r import classifcontour,lung_mask_bmp,lung_mask1,usedclassif,reportalldir
 from roigene import openfichierroi,openfichierroilung,checkvolumegeneroi
 
 import os
 
 def lisdirprocess(directorytocheck):
     a= os.walk(directorytocheck).next()[1]
+    if reportalldir in a:
+        a.remove(reportalldir)
 #    print 'listdirprocess',a
     stsdir={}
     for dd in a:
