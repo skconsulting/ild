@@ -1650,7 +1650,7 @@ def predictrun(indata,path_patient):
 
         for f in listHug:
             print '------------------'
-            print 'work on patient',f
+            print 'work on patient',f, 'set',setref
             lungSegment={}
             patch_list_cross_slice={}
             
@@ -1735,7 +1735,7 @@ def predictrun(indata,path_patient):
 
             slnroi=[]
             tabroi=np.zeros((slnt,dimtabx,dimtabx), np.uint8) 
-            tabroi,volumeroi=generoi,slnroi(dirf,tabroi,dimtabx,lissln,tabscanLung,slnroi)
+            tabroi,volumeroi,slnroi=generoi(dirf,tabroi,dimtabx,lissln,tabscanLung,slnroi)
             pickle.dump(volumeroi, open(os.path.join(path_data_write,volumeroifilep), "wb" ),protocol=-1)
             pickle.dump(tabroi, open( os.path.join(path_data_write,"tabroi"), "wb" ),protocol=-1)
             pickle.dump(slnroi, open( os.path.join(path_data_write,"slnroi"), "wb" ),protocol=-1)

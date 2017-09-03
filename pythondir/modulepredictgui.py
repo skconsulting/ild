@@ -1356,7 +1356,7 @@ def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
                         fscorei=str(round(fscore[pat]*100,0))+'%'
     #                    print (slicenumber,pat,precisioni,recalli,fscorei)
                         f.write('%14s'%pat+'%7s'%precisioni+'%9s'%recalli+'%9s'%fscorei+'\n')
-                    f.write('\n')
+                f.write('\n')
         f.write('-----------------------\n')
         referencepat= referencepatu.flatten()
         predictpat=  predictpatu.flatten()       
