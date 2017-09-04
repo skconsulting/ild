@@ -906,6 +906,7 @@ def largest_label_volume(im, bg=-1):
     else:
         return None
 def segment_lung_mask(image, slnt ,fill_lung_structures=True):
+    print 'start generation'
 
     # not actually binary, but 1 and 2.
     # 0 is treated as background, which we do not want
@@ -964,15 +965,21 @@ def segment_lung_mask(image, slnt ,fill_lung_structures=True):
             if l_max is not None: #This slice contains some lung
                 binary_image[i][labeling != l_max] = 1
 
-
+    print 'fill_lung_structures'
+    plt.imshow(binary_image[slnt/2])
+    plt.show()
     binary_image -= 1 #Make the image actual binary
     binary_image = 1-binary_image # Invert it, lungs are now 1
 
     # Remove other air pockets insided body
-    labels = measure.label(binary_image, background=0)
-    l_max = largest_label_volume(labels, bg=0)
-    if l_max is not None: # There are air pockets
-        binary_image[labels != l_max] = 0
+#    labels = measure.label(binary_image, background=0)
+#    l_max = largest_label_volume(labels, bg=0)
+#    if l_max is not None: # There are air pockets
+#        binary_image[labels != l_max] = 0
+        
+    print 'remove air pocket'
+    plt.imshow(binary_image[slnt/2])
+    plt.show()
     return binary_image
 
 def morph(imgt,k):
@@ -997,7 +1004,7 @@ def colorimage(image,color):
     np.putmask(im,im>0,color)
     return im
 
-def genebmplung(fn,tabscanScan,slnt,listsln,tabroifinal,volumeroi):
+def genebmplung(fn,tabscanScan,tabscanName,slnt,listsln,tabroifinal,volumeroi):
     """generate lung mask from dicom files"""
     global lung_maskf,lung_mask_bmpf
     (top,tail) =os.path.split(fn)
@@ -1022,8 +1029,6 @@ def genebmplung(fn,tabscanScan,slnt,listsln,tabroifinal,volumeroi):
     os.mkdir(fmbmpbmp)
 
     listdcm=[name for name in  os.listdir(fmbmp) if name.lower().find('.dcm')>0]
-#    print len(listdcm),fmbmp
-#    tabscan = np.zeros((slnt,dimtabx,dimtaby), np.uint8)
     if len(listdcm)>0:  
         print 'lung scan exists'
            
@@ -1036,28 +1041,21 @@ def genebmplung(fn,tabscanScan,slnt,listsln,tabroifinal,volumeroi):
             imgresize=cv2.resize(dsr,(dimtabx,dimtaby),interpolation=cv2.INTER_LINEAR)    
             slicenumber=int(RefDs.InstanceNumber)
 
-            imgcoreScan=tabscanScan[slicenumber][0]
+            imgcoreScan=tabscanName[slicenumber]
             imgresize[imgresize>0]=classifc['lung'][0]
             bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
             cv2.imwrite(bmpfile,imgresize)
     else:
             print 'no lung scan, generation proceeds'
-            tabscan = np.zeros((slnt,dimtabx,dimtaby), np.int16)
             tabscanlung = np.zeros((slnt,dimtabx,dimtaby), np.uint8)
-            for i in listsln:
-                tabscan[i]=tabscanScan[i][1]
-#            print tabscan[i].min(),tabscan[i].max()
-            segmented_lungs_fill = segment_lung_mask(tabscan,slnt, True)
-#            print segmented_lungs_fill.min(),segmented_lungs_fill.max()
 
-
+            segmented_lungs_fill = segment_lung_mask(tabscanScan,slnt, True)
             for i in listsln:
-#                tabscan[i]=normi(tabscan[i][1])
                 
                 tabscanlung[i]=morph(segmented_lungs_fill[i],13)
                 if tabscanlung[i].max()>0:
-#                tabscanlung[i]=normi(tabscanlung[i])
-                    imgcoreScan=tabscanScan[i][0]
+                    imgcoreScan=tabscanName[i]
+#                    print imgcoreScan
                     bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
                     cv2.imwrite(bmpfile,tabscanlung[i])
                     tabroifinal['lung'][i]=colorimage(tabscanlung[i],classifc['lung'])
@@ -1067,6 +1065,34 @@ def genebmplung(fn,tabscanScan,slnt,listsln,tabroifinal,volumeroi):
                     area= tabgrey.sum()*pixelSpacing*pixelSpacing/100
                     volumeroi[i]['lung']=area   
     return tabroifinal,volumeroi
+
+
+# Print iterations progress
+def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█'):
+    """
+    Call in a loop to create terminal progress bar
+    @params:
+        iteration   - Required  : current iteration (Int)
+        total       - Required  : total iterations (Int)
+        prefix      - Optional  : prefix string (Str)
+        suffix      - Optional  : suffix string (Str)
+        decimals    - Optional  : positive number of decimals in percent complete (Int)
+        length      - Optional  : character length of bar (Int)
+        fill        - Optional  : bar fill character (Str)
+    """
+    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+    filledLength = int(length * iteration // total)
+    bar = fill * filledLength + '-' * (length - filledLength)
+    
+    
+    
+#    print '\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix),  '\033[F'
+    print '\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix),  '\033[4A' 
+
+    # Print New Line on Complete
+    if iteration == total: 
+        print()
+
 
 
 def genebmp(fn,nosource,dirroit,centerHU,limitHU):
@@ -1097,8 +1123,6 @@ def genebmp(fn,nosource,dirroit,centerHU,limitHU):
     if nosource:
         fn=top
     
-#    ldiroit=os.listdir(dirroit)
-    
     listdcm=[name for name in  os.listdir(fn) if name.lower().find('.dcm')>0]
 
     slnt=0
@@ -1112,16 +1136,18 @@ def genebmp(fn,nosource,dirroit,centerHU,limitHU):
         listsln.append(slicenumber)
         if slicenumber> slnt:
             slnt=slicenumber
-#    createvolumeroi(dirpath_patient,listsln)
-#    populate(top)
-#    tabsroi=np.zeros((slnt,dimtabx,dimtaby), np.uint8) 
     slnt=slnt+1
-    tabscan = {}
+    tabscan = np.zeros((slnt,dimtabx,dimtaby),np.int16)
+    tabscanName = {}
     lbHU=centerHU-limitHU
     lhHU=centerHU+limitHU
-    for i in range(slnt):
-        tabscan[i] = []
+    ll=len(listdcm)
+    printProgressBar(0,ll , prefix = 'Progress:', suffix = 'Complete', length = 50)
+    i=0
     for l in listdcm:
+        i+=1
+        if i%10==0:
+            printProgressBar(i + 1, ll, prefix = 'Progress:', suffix = 'Complete', length = 50)
 #        print l
         FilesDCM =(os.path.join(fn,l))
         RefDs = RefDs = dicom.read_file(FilesDCM,force=True)
@@ -1136,16 +1162,14 @@ def genebmp(fn,nosource,dirroit,centerHU,limitHU):
              dsr = slope * dsr.astype(np.float64)
              dsr = dsr.astype(np.int16)
 
-        dsr += np.int16(intercept)
-        
-
+        dsr += np.int16(intercept)       
         dsr=cv2.resize(dsr,(dimtabx,dimtaby),interpolation=cv2.INTER_LINEAR)
 
         endnumslice=l.find('.dcm')
         imgcoreScan=l[0:endnumslice]+'_'+str(slicenumber)+'.'+typei1
 #        imgcoreRoi=l[0:endnumslice]+'_'+str(slicenumber)+'.'+typei
-        tt=(imgcoreScan,dsr)
-        tabscan[slicenumber]=tt  
+        tabscan[slicenumber]=dsr 
+        tabscanName[slicenumber]=imgcoreScan
         np.putmask(dsr,dsr<lbHU,lbHU)
         np.putmask(dsr,dsr>lhHU,lhHU)
         dsrnormi=normi(dsr)
@@ -1166,44 +1190,10 @@ def genebmp(fn,nosource,dirroit,centerHU,limitHU):
                      t3,0,dimtaby-30,t4,0,dimtaby-10,t5,0,dimtaby-40,t6,0,dimtaby-50)
         anoted_image=cv2.cvtColor(anoted_image,cv2.COLOR_BGR2RGB)
         cv2.imwrite(bmpfile,anoted_image)
-#        tabsroi[slicenumber]=anoted_image
-        
-#        
-#        for i in ldiroit:
-#                if rsliceNum(i,'_','.'+typei)==slicenumber:
-#                    img=cv2.imread(os.path.join(dirroit,i))
-#                    os.remove(os.path.join(dirroit,i))
-#                    cv2.imwrite(roibmpfile,img)
-#                if rsliceNum(i,'_','.'+typei1)==slicenumber:
-#                    img=cv2.imread(os.path.join(dirroit,i))
-#                    os.remove(os.path.join(dirroit,i))
-#                    cv2.imwrite(roibmpfile,img)
-#                if rsliceNum(i,'_','.'+typei2)==slicenumber:
-#                    img=cv2.imread(os.path.join(dirroit,i))
-#                    os.remove(os.path.join(dirroit,i))
-#                    cv2.imwrite(roibmpfile,img)
-            
-#        if not os.path.exists(roibmpfile):
+
         cv2.imwrite(roibmpfile,anoted_image)
-#        for pat in usedclassif:
-##                     print 'pat 1',pat
-#                 try:
-##                     print 'try',pat,slicenumber
-#                     tabtowrite=tabroifinal[pat][slicenumber]
-#                     tabgrey=cv2.cvtColor(tabtowrite,cv2.COLOR_BGR2GRAY)
-#    #                 np.putmask(tabgrey,tabgrey>0,1)
-#                     area= tabgrey.sum()
-#                     if area>0:
-#    #                        print 'pat 2',pat
-#                        ctkey=drawcontours(tabtowrite,pat)
-#                        anoted_image=cv2.add(anoted_image,ctkey)
-#                        cv2.imwrite(roibmpfile,anoted_image)      
-#                 except:
-##                    print 'except',pat,slicenumber
-#                    tabroifinal[pat][slicenumber]=np.zeros((dimtabx,dimtaby,3), np.uint8)
-#                            
-#        cv2.imshow('dd',dsr)
-    return slnt,tabscan,listsln,pixelSpacing
+
+    return slnt,tabscan,listsln,pixelSpacing,tabscanName
 
 def nothing(x):
     pass
@@ -1296,13 +1286,7 @@ def drawcontours2(im,pat,dimtabx,dimtaby):
 #
 def populate(pp,lissln,slnt,pixelSpacing):
 #    print 'populate'
-#    global pixelSpacing
-#    path_data_write=os.path.join(pp,path_data)
     pathroi=os.path.join(pp,roi_name)
-#    print 'lung_mask',lung_mask
-#    print 'lung_mask1',lung_mask1
-#    print 'lung_mask_bmp',lung_mask_bmp
-#    print 'lung_mask_bmp1',lung_mask_bmp1
     volumeroi={}
     tabroifinal={}
     for sln in lissln:
@@ -1338,7 +1322,6 @@ def populate(pp,lissln,slnt,pixelSpacing):
 #            print 'exist', dirroi
             listroi =[name for name in  os.listdir(dirroi) if name.lower().find('.'+typei1)>0 ]
             for roiimage in listroi:
-#                    tabroi[key][sl]=genepoly(os.path.join(dirroi,roiimage))
 
                 img=os.path.join(dirroi,roiimage)
                 imageroi= cv2.imread(img,1)              
@@ -1352,14 +1335,7 @@ def populate(pp,lissln,slnt,pixelSpacing):
                     
                     pose=roiimage.find('.'+typei1)
                     roibmpfile=roiimage[0:pose]+'.'+typei1               
-                        
-    #                    print slicenumber ,roiimage,key
-    #                tabg1=cv2.cvtColor(imageroi,cv2.COLOR_BGR2GRAY)
-    #                tabgrey=cv2.cvtColor(tabgrey,cv2.COLOR_GRAY2BGR)
-    #                np.putmask(tabgrey,tabgrey>0,classifc[key])
-    #                cv2.imwrite(img,tabgrey)
                     sroiname=os.path.join(pathroi,roibmpfile)
-    #                print sroiname
                     imageview=cv2.cvtColor(imageroi,cv2.COLOR_RGB2BGR)  
                       
                     tabgrey=cv2.cvtColor(imageview,cv2.COLOR_BGR2GRAY)
@@ -1371,11 +1347,7 @@ def populate(pp,lissln,slnt,pixelSpacing):
 
                     np.putmask(tabgrey, tabgrey >0, 100)
                     ctkey=drawcontours2(tabgrey,key,dimtabx,dimtaby)
-                    anoted_image=cv2.imread(sroiname,1)
-#                    plt.imshow(anoted_image)
-#                    plt.imshow(ctkey)
-#                    plt.show()
-#                
+                    anoted_image=cv2.imread(sroiname,1)               
                     anoted_image=cv2.add(anoted_image,ctkey)
                     cv2.imwrite(sroiname,anoted_image)
        
@@ -1397,9 +1369,12 @@ def initmenus(slnt,dirpath_patient):
 
 
 
-def openfichierroi(patient,patient_path_complet,centerHU,limitHU):
+def openfichierroi(patient,patient_path_complet,centerHU,limitHU,lungask):
     global dirpath_patient,dirroit,path_data_write,volumeroi,path_data_writefile,pixelSpacing
     global tabroifinal
+    imwait=np.zeros((200,200,3),np.uint8)
+    cv2.putText(imwait,'In Progress',(50, 50),cv2.FONT_HERSHEY_PLAIN,1,white,1 )
+    cv2.imshow('wait',imwait)
     dirpath_patient=os.path.join(patient_path_complet,patient)
     
     dirsource=os.path.join(dirpath_patient,source_name)
@@ -1416,11 +1391,6 @@ def openfichierroi(patient,patient_path_complet,centerHU,limitHU):
     path_data_write=os.path.join(dirpath_patient,path_data)
     path_data_writefile=os.path.join(path_data_write,volumeroifile)
 
-#    paramsaveDirf=os.path.join(paramsaveDir,paramname)
-#
-#    lisdirold=pickle.load(open( paramsaveDirf, "rb" ))
-#
-#    paramdict=pickle.load(open( paramsaveDirf, "rb" ))
     centerHU1=0
     limitHU1=0
     if os.path.exists(os.path.join(path_data_write,'centerHU')):
@@ -1432,91 +1402,32 @@ def openfichierroi(patient,patient_path_complet,centerHU,limitHU):
         print 'no need to regenerate'
         slnt=pickle.load( open(os.path.join(path_data_write,'slnt'), "rb" ))
         tabscanScan=pickle.load( open(os.path.join(path_data_write,'tabscanScan'), "rb" ))
+        tabscanName=pickle.load( open(os.path.join(path_data_write,'tabscanName'), "rb" ))
         listsln=pickle.load( open(os.path.join(path_data_write,'listsln'), "rb" ))
         tabroifinal=pickle.load( open(os.path.join(path_data_write,'tabroifinal'), "rb" ))
         pixelSpacing=pickle.load( open(os.path.join(path_data_write,'pixelSpacing'), "rb" ))
         volumeroi=pickle.load( open(os.path.join(path_data_write,'volumeroi'), "rb" ))
     else:
-        slnt,tabscanScan,listsln,pixelSpacing=genebmp(dirsource,nosource,dirroit,centerHU,limitHU)  
-        tabroifinal,volumeroi,path_data_writefile=populate(dirpath_patient,listsln,slnt,pixelSpacing)
+        slnt,tabscanScan,listsln,pixelSpacing,tabscanName=genebmp(dirsource,nosource,dirroit,centerHU,limitHU)  
+        tabroifinal,volumeroi=populate(dirpath_patient,listsln,slnt,pixelSpacing)
         pickle.dump(centerHU, open(os.path.join(path_data_write,'centerHU'), "wb" ),protocol=-1) 
         pickle.dump(limitHU, open(os.path.join(path_data_write,'limitHU'), "wb" ),protocol=-1) 
         pickle.dump(slnt, open(os.path.join(path_data_write,'slnt'), "wb" ),protocol=-1) 
         pickle.dump(tabscanScan, open(os.path.join(path_data_write,'tabscanScan'), "wb" ),protocol=-1) 
+        pickle.dump(tabscanName, open(os.path.join(path_data_write,'tabscanName'), "wb" ),protocol=-1) 
         pickle.dump(listsln, open(os.path.join(path_data_write,'listsln'), "wb" ),protocol=-1) 
         pickle.dump(tabroifinal, open(os.path.join(path_data_write,'tabroifinal'), "wb" ),protocol=-1) 
         pickle.dump(pixelSpacing, open(os.path.join(path_data_write,'pixelSpacing'), "wb" ),protocol=-1)
         pickle.dump(volumeroi, open(os.path.join(path_data_write,'volumeroi'), "wb" ),protocol=-1)
         
     dirsourcescan=os.path.join(dirsource,scan_bmp)
-
-    
-#    tabroifinal=np.zeros((slnt,512,512), np.uint8) 
-#    tabroifinal,volumeroi,slnroi=generoi(dirf,tabroi,listsln,slnroi)
+    if lungask:
+        tabroifinal,volumeroi=genebmplung(dirsource,tabscanScan,tabscanName,slnt,listsln,tabroifinal,volumeroi)
     initmenus(slnt,dirpath_patient)  
-            
+    cv2.destroyWindow('wait')      
     loop(slnt,dirsourcescan,dirpath_patient,dirroit)
     return 'completed'
 
-def openfichierroilung(patient,patient_path_complet,centerHU,limitHU):
-    global dirpath_patient,dirroit,path_data_write,volumeroi,path_data_writefile,pixelSpacing
-    global tabroifinal
-    
-    imwait=np.zeros((200,200,3),np.uint8)
-    cv2.putText(imwait,'In Progress',(50, 50),cv2.FONT_HERSHEY_PLAIN,1,white,1 )
-    cv2.imshow('wait',imwait)
-    dirpath_patient=os.path.join(patient_path_complet,patient)
-    dirsource=os.path.join(dirpath_patient,source_name)
-    dirroit=os.path.join(dirpath_patient,roi_name)
-    path_data_write=os.path.join(dirpath_patient,path_data)
-    path_data_writefile=os.path.join(path_data_write,volumeroifile)
-    if not os.path.exists(dirsource):
-         os.mkdir(dirsource)
-    if not os.path.exists(dirroit):
-         os.mkdir(dirroit)
-    listdcm=[name for name in os.listdir(dirsource) if name.find('.dcm')>0]
-    nosource=True
-    if len(listdcm)>0:
-        nosource=False
-    centerHU1=0
-    limitHU1=0
-    if os.path.exists(os.path.join(path_data_write,'centerHU')):
-        centerHU1=pickle.load( open(os.path.join(path_data_write,'centerHU'), "rb" ))
-    if os.path.exists(os.path.join(path_data_write,'limitHU')):
-        limitHU1=pickle.load( open(os.path.join(path_data_write,'limitHU'), "rb" ))
-        
-    if centerHU1==centerHU and limitHU1==limitHU:
-        print 'no need to regenerate'
-        slnt=pickle.load( open(os.path.join(path_data_write,'slnt'), "rb" ))
-        tabscanScan=pickle.load( open(os.path.join(path_data_write,'tabscanScan'), "rb" ))
-        listsln=pickle.load( open(os.path.join(path_data_write,'listsln'), "rb" ))
-        tabroifinal=pickle.load( open(os.path.join(path_data_write,'tabroifinal'), "rb" ))
-        pixelSpacing=pickle.load( open(os.path.join(path_data_write,'pixelSpacing'), "rb" ))
-        volumeroi=pickle.load( open(os.path.join(path_data_write,'volumeroi'), "rb" ))
-        print 'load completed'
-    else:
-        slnt,tabscanScan,listsln,pixelSpacing=genebmp(dirsource,nosource,dirroit,centerHU,limitHU)
-        tabroifinal,volumeroi=populate(dirpath_patient,listsln,slnt,pixelSpacing)
-
-
-        pickle.dump(centerHU, open(os.path.join(path_data_write,'centerHU'), "wb" ),protocol=-1) 
-        pickle.dump(limitHU, open(os.path.join(path_data_write,'limitHU'), "wb" ),protocol=-1) 
-        pickle.dump(slnt, open(os.path.join(path_data_write,'slnt'), "wb" ),protocol=-1) 
-        pickle.dump(tabscanScan, open(os.path.join(path_data_write,'tabscanScan'), "wb" ),protocol=-1) 
-        pickle.dump(listsln, open(os.path.join(path_data_write,'listsln'), "wb" ),protocol=-1) 
-        pickle.dump(tabroifinal, open(os.path.join(path_data_write,'tabroifinal'), "wb" ),protocol=-1) 
-        pickle.dump(pixelSpacing, open(os.path.join(path_data_write,'pixelSpacing'), "wb" ),protocol=-1)
-        pickle.dump(volumeroi, open(os.path.join(path_data_write,'volumeroi'), "wb" ),protocol=-1)
-#    slnt,tabscanScan,listsln=genebmp(dirsource,nosource,dirroit,centerHU,limitHU)
-    tabroifinal=genebmplung(dirsource,tabscanScan,slnt,listsln,tabroifinal,volumeroi)
-#    createvolumeroi(dirpath_patient,listsln)
-    
-    initmenus(slnt,dirpath_patient)
-#    menudraw(slnt)
-#    populate(dirpath_patient)
-    
-    cv2.destroyAllWindows()
-    return 'completed lung'
 
 def checkvolumegeneroi(patient,patient_path_complet):
     global path_data_writefile

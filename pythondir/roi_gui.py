@@ -11,7 +11,7 @@ bug fixed:
 """
 #from param_pix_r import *
 #from moduleroigui import *
-from moduleroigui import roirun,roirunlung,lisdirprocess,checkvolumegene
+from moduleroigui import roirun,lisdirprocess,checkvolumegene
 
 from appJar import gui
 import os
@@ -66,6 +66,7 @@ paramdict={}
 paramsaveDir=os.path.join(pathRoiGenelocal,paramsave)
 if not os.path.exists(paramsaveDir):
     os.mkdir(paramsaveDir)
+
 paramsaveDirf=os.path.join(paramsaveDir,paramname)
 
 if os.path.exists(paramsaveDirf):
@@ -80,8 +81,8 @@ if os.path.exists(paramsaveDirf):
             paramdict={}
             lisdir=lisdirold           
             paramdict['path_patient']=lisdir
-            paramdict['centerHU']=-600
-            paramdict['limitHU']=800
+            paramdict['centerHU']=-662
+            paramdict['limitHU']=1700
             pickle.dump(paramdict,open( paramsaveDirf, "wb" ))
             
     
@@ -90,50 +91,19 @@ else:
     paramdict['path_patient']=lisdir
     pickle.dump(paramdict,open( paramsaveDirf, "wb" ))       
 
-#        else:
-#            lisdir= paramdict['path_patient']
-#            thrpatch= paramdict['thrpatch']
-#            thrproba= paramdict['thrproba']
-#            thrprobaMerge= paramdict['thrprobaMerge']
-#            thrprobaUIP= paramdict['thrprobaUIP']
-#            picklein_file= paramdict['picklein_file']
-#            picklein_file_front= paramdict['picklein_file_front']
-#            subErosion = paramdict['subErosion in mm']
-
-#    else:
-#        lisdir=os.environ['USERPROFILE']
-#        thrpatch= 0.95
-#        thrproba=0.7
-#        thrprobaMerge=0.7
-#        thrprobaUIP= 0.7
-#        picklein_file= "pickle_ex80"
-#        picklein_file_front= "pickle_ex81"
-#        subErosion = 15  # erosion factor for subpleura in mm
-
-#
-#if os.path.exists(paramsaveDir):
-#    if os.path.exists(paramsaveDirf):
-#        lisdir=pickle.load(open( paramsaveDirf, "rb" ))
-#    else:
-#        lisdir=os.environ['USERPROFILE']
-
 def press(btn):
     global app
     indata={}
     indata['centerHU']=app.getEntry("centerHU")
     indata['limitHU']=app.getEntry("limitHU")
     indata['ll']=app.getListItems("list")
-    pickle.dump(paramdict,open( paramsaveDirf, "wb" ))
-
-#    roirun(app.getListItems("list"),lisdir)
-    if len(indata['ll']) >0:
+    
+    if len(indata['ll'])>0:
         paramdict['centerHU']=indata['centerHU']
         paramdict['limitHU']=indata['limitHU']
-
-
-    if len(indata['ll'])>0:
+        pickle.dump(paramdict,open( paramsaveDirf, "wb" ))
         app.hide()
-        roirun(indata,lisdir)
+        roirun(indata,lisdir,False)
         redraw(app)
     else:
         app.errorBox('error', 'no  patient selected')
@@ -145,13 +115,13 @@ def presslung(btn):
     indata['ll']=app.getListItems("list")
     indata['centerHU']=app.getEntry("centerHU")
     indata['limitHU']=app.getEntry("limitHU")
-    pickle.dump(paramdict,open( paramsaveDirf, "wb" ))
-#    print(app.getListItems("list"))
-#    ll =app.getListItems("list")
-#    print ll
+    
     if len( indata['ll'])>0:
         app.hide()
-        roirunlung(indata,lisdir)
+        paramdict['centerHU']=indata['centerHU']
+        paramdict['limitHU']=indata['limitHU']
+        pickle.dump(paramdict,open( paramsaveDirf, "wb" ))
+        roirun(indata,lisdir,True)
         redraw(app)
     else:
         app.errorBox('error', 'no  patient selected')

@@ -8,7 +8,7 @@ version 1.1
 """
 #from param_pix_r import *
 from param_pix_r import classifcontour,lung_mask_bmp,lung_mask1,usedclassif,reportalldir
-from roigene import openfichierroi,openfichierroilung,checkvolumegeneroi
+from roigene import openfichierroi,checkvolumegeneroi
 
 import os
 
@@ -46,7 +46,7 @@ def lisdirprocess(directorytocheck):
     return a,stsdir
 
 
-def roirun(indata,path_patient):
+def roirun(indata,path_patient,lungask):
     listHug=indata['ll']
     centerHU=indata['centerHU'] 
     limitHU=indata['limitHU'] 
@@ -60,25 +60,25 @@ def roirun(indata,path_patient):
 #    print 'listhug',listHug
 #    print 'indata',indata
 #    print 'path_patient',path_patient
-    messageout=openfichierroi(listHug,path_patient,centerHU,limitHU)
+    messageout=openfichierroi(listHug,path_patient,centerHU,limitHU,lungask)
     return messageout
 
-def roirunlung(indata,path_patient):
-    listHug=indata['ll']
-    centerHU=indata['centerHU'] 
-    limitHU=indata['limitHU'] 
-
-    pos=str(listHug).find(' ROI!:')
-    if pos >0:
-        listHug=str(listHug)[3:pos]
-    else:
-        pos=str(listHug).find(' noROI!')
-        listHug=str(listHug)[3:pos]
-#    print 'listhug',listHug
-#    print 'indata',indata
-#    print 'path_patient',path_patient
-    messageout=openfichierroilung(listHug,path_patient,centerHU,limitHU)
-    return messageout
+#def roirunlung(indata,path_patient):
+#    listHug=indata['ll']
+#    centerHU=indata['centerHU'] 
+#    limitHU=indata['limitHU'] 
+#
+#    pos=str(listHug).find(' ROI!:')
+#    if pos >0:
+#        listHug=str(listHug)[3:pos]
+#    else:
+#        pos=str(listHug).find(' noROI!')
+#        listHug=str(listHug)[3:pos]
+##    print 'listhug',listHug
+##    print 'indata',indata
+##    print 'path_patient',path_patient
+#    messageout=openfichierroilung(listHug,path_patient,centerHU,limitHU)
+#    return messageout
 
 def checkvolumegene(indata,path_patient):
     listHug=indata['ll']
