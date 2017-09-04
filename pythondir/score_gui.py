@@ -122,6 +122,7 @@ def predict(btn):
     indata['picklein_file']=app.getEntry("cross view weight")
     indata['picklein_file_front']= app.getEntry("front view weight")
     indata['lispatientselect']=app.getListItems("list")
+    indata['ForceGenerate']=app.getCheckBox("ForceGenerate")
 
 #    indata['subErosion']= app.getEntry("subErosion in mm")
     
@@ -141,8 +142,9 @@ def predict(btn):
 #    paramdict['lispatientselect']= indata['lispatientselect']
     paramdict['threedpredictrequest']= indata['threedpredictrequest']
 
-
+    allAsked=False
     if len(app.getListItems("list"))==0 and indata['Select All']:
+        allAsked=True
 #        print lisdir
         indata['lispatientselect'],b,c=lisdirprocess(lisdir)
     paramdict['lispatientselect']= indata['lispatientselect']
@@ -158,8 +160,78 @@ def predict(btn):
             initDraw()
         else:
             app.stop(Stop)
+            if allAsked:
+                continuevisu=False
+                initDraw()
+            else:
+                continuevisu=True
+                visuDraw()
+    else:
+        app.errorBox('error', 'no patient selected for predict')
+        app.stop(Stop)
+        initDraw()
+#        continuevisu=False
+    goodir=False
+    continuevisu=False
 
-            if len(indata['lispatientselect'])==0 and indata['Select All']:
+
+def predictScore (btn):
+    global continuevisu,goodir,app
+   
+    indata={}
+    message=''
+#    print(app.getListItems("list"))
+#    print(app.getEntry("Percentage of pad Overlapp"))
+    indata['Select All']=app.getCheckBox("Select All")
+    indata['thrpatch']=app.getEntry("Percentage of pad Overlapp")
+    indata['thrproba']=app.getEntry("Threshold proba")
+#    indata['thrprobaUIP']=app.getEntry("Threshold proba for volume calculation")
+    indata['threedpredictrequest']=app.getRadioButton("predict_style")
+    indata['picklein_file']=app.getEntry("cross view weight")
+    indata['picklein_file_front']= app.getEntry("front view weight")
+    indata['lispatientselect']=app.getListItems("list")
+    indata['ForceGenerate']=app.getCheckBox("ForceGenerate")
+
+#    indata['subErosion']= app.getEntry("subErosion in mm")
+    
+    indata['Fast']=app.getCheckBox("Fast")
+    indata['centerHU']=app.getEntry("centerHU")
+    indata['limitHU']=app.getEntry("limitHU")
+    paramdict['Select All']=indata['Select All']
+    paramdict['thrpatch']=indata['thrpatch']
+    paramdict['thrproba']=indata['thrproba']
+#    paramdict['thrprobaUIP']=indata['thrprobaUIP']
+#    paramdict['picklein_file']=indata['picklein_file']
+#    paramdict['subErosion in mm']=indata['subErosion']
+    paramdict['picklein_file_front']=indata['picklein_file_front']
+    paramdict['picklein_file']=indata['picklein_file']
+    paramdict['centerHU']=indata['centerHU']
+    paramdict['limitHU']=indata['limitHU']
+#    paramdict['lispatientselect']= indata['lispatientselect']
+    paramdict['threedpredictrequest']= indata['threedpredictrequest']
+
+    allAsked=False
+    if len(app.getListItems("list"))==0 and indata['Select All']:
+        allAsked=True
+#        print lisdir
+        indata['lispatientselect'],b,c=lisdirprocess(lisdir)
+    paramdict['lispatientselect']= indata['lispatientselect']
+
+    pickle.dump(paramdict,open( paramsaveDirf, "wb" ))       
+    if len(indata['lispatientselect']) >0:
+        app.hide()
+        listdir,message=predictmodule(indata,lisdir) 
+        indata['viewstyle']='reportAll'
+        indata['lispatientselect']= indata['lispatientselect'][0]
+        visuarun(indata,lisdir)
+        app.show()        
+        if len(message)>0:
+            app.errorBox('error', message)
+            app.stop(Stop)
+            initDraw()
+        else:
+            app.stop(Stop)
+            if allAsked:
                 continuevisu=False
                 initDraw()
             else:
@@ -242,7 +314,7 @@ def gscore(btn):
 
     indata['thrproba']=app.getEntry("Threshold proba")
     indata['viewstyle']='reportAll'
-    indata['thrpatch']=app.getEntry("Percentage of pad Overlapp")   
+#    indata['thrpatch']=app.getEntry("Percentage of pad Overlapp")   
     a,b,c=lisdirprocess(lisdir)
     indata['lispatientselect']= a[0]
     tf=True
@@ -262,7 +334,7 @@ def gscore(btn):
         indata['picklein_file']=vold
     
         paramdict['thrproba']=indata['thrproba']
-        paramdict['thrpatch']=indata['thrpatch']
+#        paramdict['thrpatch']=indata['thrpatch']
     
         pickle.dump(paramdict,open( paramsaveDirf, "wb" ))
     
@@ -270,8 +342,8 @@ def gscore(btn):
         visuarun(indata,lisdir)
 
         app.stop(Stop)
-        continuevisu=True
-        visuDraw()
+        continuevisu=False
+        initDraw()
     else:
         app.stop(Stop)
         initDraw()
@@ -470,11 +542,17 @@ def initDraw():
         app.addLabel("Fast","Tick  for fast run (without store on disk of predict results):",row,0)
         app.addCheckBox("Fast",row,1)
         app.setCheckBox("Fast",ticked=True,callFunction=False)
+        row = app.getRow()
+        app.addLabel("ForceGenerate","Tick to force re-generate all files:",row,0)
+        app.addCheckBox("ForceGenerate",row,1)
+        app.setCheckBox("ForceGenerate",ticked=False,callFunction=False)
 
 #        app.setFont(10)
         app.setSticky("n")
         app.addHorizontalSeparator( colour="red")
         app.addButton("Predict",  predict)
+        app.addHorizontalSeparator( colour="red")
+        app.addButton("Predict and Score",  predictScore)
         app.addHorizontalSeparator( colour="red")
         app.addButton("Visualisation",  visuDrawl)
         app.addHorizontalSeparator( colour="red")

@@ -92,8 +92,8 @@ def genebmp(fn,sou,nosource,centerHU, limitHU):
     print 'slice pitch in z :',slicepitch
 #    ooo
     print 'patient position :',patientPosition
-    lbHU=centerHU-limitHU
-    lhHU=centerHU+limitHU
+    lbHU=centerHU-limitHU/2
+    lhHU=centerHU+limitHU/2
     dsr= RefDs.pixel_array
     dsr = dsr.astype('int16')
     fxs=float(RefDs.PixelSpacing[0])/avgPixelSpacing
@@ -140,11 +140,13 @@ def genebmp(fn,sou,nosource,centerHU, limitHU):
         
         endnumslice=l.find('.dcm')
         imgcoreScan=l[0:endnumslice]+'_'+str(slicenumber)+'.'+typei1
+        np.putmask(imgresize,imgresize<lbHU,lbHU)
+        np.putmask(imgresize,imgresize>lhHU,lhHU)
         tt=(imgcoreScan,imgresize)
         
         tabscan[slicenumber]=tt
-        np.putmask(imgresize,imgresize<lbHU,lbHU)
-        np.putmask(imgresize,imgresize>lhHU,lhHU)
+#        np.putmask(imgresize,imgresize<lbHU,lbHU)
+#        np.putmask(imgresize,imgresize>lhHU,lhHU)
         imtowrite=normi(imgresize)
 
         bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
@@ -156,7 +158,7 @@ def genebmp(fn,sou,nosource,centerHU, limitHU):
 
         t4=time.asctime()
         t5='CenterHU: '+str(int(centerHU))
-        t6='LimitHU: +/-' +str(int(limitHU))
+        t6='LimitHU: +/-' +str(int(limitHU/2))
                 
         anoted_image=tagviews(imtowrite,t0,dimtabx-300,dimtaby-10,t1,0,dimtaby-20,t2,dimtabx-200,dimtaby-10,
                      t3,0,dimtaby-30,t4,0,dimtaby-10,t5,0,dimtaby-40,t6,0,dimtaby-50)
@@ -180,7 +182,7 @@ def segment_lung_mask(image, fill_lung_structures=True):
 
     # not actually binary, but 1 and 2.
     # 0 is treated as background, which we do not want
-    binary_image = np.array(image > -320, dtype=np.int8)+1
+    binary_image = np.array(image > -350, dtype=np.int8)+1 #init 320
 #    binary_image = clear_border(binary_image)
     labels = measure.label(binary_image)
 
@@ -557,7 +559,7 @@ def wtebres(wridir,dirf,tab,dimtabx,slicepitch,lungm,ty,centerHU,limitHU):
     
             t4=time.asctime()
             t5='CenterHU: '+str(int(centerHU))
-            t6='LimitHU: +/-' +str(int(limitHU))
+            t6='LimitHU: +/-' +str(int(limitHU/2))
             
             
             anoted_image=tagviews(imgresize8,t0,dimtabxn-300,dimtabyn-10,t1,0,dimtabyn-20,t2,dimtabx-350,dimtabyn-10,
@@ -1650,7 +1652,7 @@ def predictrun(indata,path_patient):
 
         for f in listHug:
             print '------------------'
-            print 'work on patient',f, 'set',setref
+            print 'work on patient',f, 'set',setref,'thrproba',thrproba,'thrpatch',thrpatch
             lungSegment={}
             patch_list_cross_slice={}
             
@@ -1931,7 +1933,7 @@ def predictrun(indata,path_patient):
             errorfile.close()
             frontcompleted=False
             pickle.dump(frontcompleted, open( os.path.join(path_data_write,"frontcompleted"), "wb" ),protocol=-1)
-            print 'PREDICT  COMPLETED  for ',f
+            print 'PREDICT  COMPLETED  for ',f,'thrproba',thrproba,'thrpatch',thrpatch
             print '------------------'
         return''
 

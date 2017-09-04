@@ -45,15 +45,15 @@ from keras.models import model_from_json
 
 t0=mytime()
 
-def reshapeScan(tabscanScan,slnt,lissln,dimtabx,dimtaby):
-    print 'reshape'
-    tabscan = np.zeros((slnt,dimtabx,dimtaby), np.int16)
-    for i in lissln:
-                tabscan[i]=tabscanScan[i][1]
-
-#    print tabscan.shape
-    tabres=np.moveaxis(tabscan,0,1)
-    return tabres
+#def reshapeScan(tabscanScan,slnt,lissln,dimtabx,dimtaby):
+#    print 'reshape'
+#    tabscan = np.zeros((slnt,dimtabx,dimtaby), np.int16)
+#    for i in lissln:
+#                tabscan[i]=tabscanScan[i][1]
+#
+##    print tabscan.shape
+#    tabres=np.moveaxis(tabscan,0,1)
+#    return tabres
 
 def reshapeScanl(tabscan):
     print 'reshape lung'
@@ -91,8 +91,8 @@ def genebmp(fn,sou,nosource,centerHU, limitHU, tabscanName,tabscanroi):
     print 'slice pitch in z :',slicepitch
 #    ooo
     print 'patient position :',patientPosition
-    lbHU=centerHU-limitHU
-    lhHU=centerHU+limitHU
+    lbHU=centerHU-limitHU/2
+    lhHU=centerHU+limitHU/2
     dsr= RefDs.pixel_array
     dsr = dsr.astype('int16')
     fxs=float(RefDs.PixelSpacing[0])/avgPixelSpacing
@@ -113,9 +113,9 @@ def genebmp(fn,sou,nosource,centerHU, limitHU, tabscanName,tabscanroi):
 
     print 'number of slices', slnt
     slnt=slnt+1
-    tabscan = {}
-    for i in range(slnt):
-        tabscan[i] = []
+    tabscan = np.zeros((slnt,dimtabx,dimtaby),np.int16)
+#    for i in range(slnt):
+#        tabscan[i] = []
 #    tabscan = np.zeros((slnt,dimtabx,dimtaby), np.int16)
     for l in listdcm:
 #        print l
@@ -136,14 +136,14 @@ def genebmp(fn,sou,nosource,centerHU, limitHU, tabscanName,tabscanroi):
         dsr = dsr.astype('int16')
         
         imgresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
-        
-        endnumslice=l.find('.dcm')
-        imgcoreScan=l[0:endnumslice]+'_'+str(slicenumber)+'.'+typei1
-        tt=(imgcoreScan,imgresize)
-        
-        tabscan[slicenumber]=tt
         np.putmask(imgresize,imgresize<lbHU,lbHU)
         np.putmask(imgresize,imgresize>lhHU,lhHU)
+        
+        endnumslice=l.find('.dcm')
+        imgcoreScan=l[0:endnumslice]+'_'+str(slicenumber)+'.'+typei1  
+        
+        tabscan[slicenumber]=imgresize
+        
         imtowrite=normi(imgresize)
         imtowrite = cv2.cvtColor(imtowrite, cv2.COLOR_GRAY2RGB)
 
@@ -157,7 +157,7 @@ def genebmp(fn,sou,nosource,centerHU, limitHU, tabscanName,tabscanroi):
 
         t4=time.asctime()
         t5='CenterHU: '+str(int(centerHU))
-        t6='LimitHU: +/-' +str(int(limitHU))
+        t6='LimitHU: +/-' +str(int(limitHU/2))
                 
         anoted_image=tagviews(imtowrite,t0,0,10,t1,0,dimtaby-20,t2,0,20,
                      t3,0,dimtaby-30,t4,0,dimtaby-10,t5,0,dimtaby-40,t6,0,dimtaby-50)        
@@ -180,7 +180,7 @@ def segment_lung_mask(image, fill_lung_structures=True):
 
     # not actually binary, but 1 and 2.
     # 0 is treated as background, which we do not want
-    binary_image = np.array(image > -320, dtype=np.int8)+1
+    binary_image = np.array(image > -350, dtype=np.int8)+1#init 320
 #    binary_image = clear_border(binary_image)
     labels = measure.label(binary_image)
 
@@ -257,7 +257,7 @@ def morph(imgt,k):
     return img
 
 
-def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan,listsln):
+def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan,listsln,tabscanName):
     """generate patches from dicom files"""
 
     tabrange={}
@@ -303,7 +303,7 @@ def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan,listsln):
     
             slicenumber=int(RefDs.InstanceNumber)
 
-            imgcoreScan=tabscanScan[slicenumber][0]
+            imgcoreScan=tabscanName[slicenumber]
             bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
             if tabscan[slicenumber].max()==0:
                 cv2.imwrite(bmpfile,imgresize)    
@@ -312,15 +312,14 @@ def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan,listsln):
             print 'no lung scan in dcm'
             tabscan1 = np.zeros((slnt,dimtabx,dimtaby), np.int16)
 #            tabscanlung = np.zeros((slnt,dimtabx,dimtaby), np.uint8)
-            for i in listsln:
-                tabscan1[i]=tabscanScan[i][1]
-            segmented_lungs_fill = segment_lung_mask(tabscan1, True)
+#            print tabscanScan.shape
+            segmented_lungs_fill = segment_lung_mask(tabscanScan, True)
 #            print segmented_lungs_fill.shape
             for i in listsln:
 #                tabscan[i]=normi(tabscan[i])
                 tabscan1[i]=morph(segmented_lungs_fill[i],13)
 #                imgcoreScan='lung_'+str(i)+'.'+typei
-                imgcoreScan=tabscanScan[i][0]
+                imgcoreScan=tabscanName[i]
                 bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
                 if tabscan[i].max()==0:
                     tabscan[i]=tabscan1[i]
@@ -371,7 +370,7 @@ def pavgene(dirf,dimtabx,dimtaby,tabscanScan,tabscanLung,slnt,jpegpath,listsln):
 #        for i in listsln:
                 
         for img in listsln:
-             tabscan[img]=tabscanScan[img][1]
+             tabscan[img]=tabscanScan[img]
 
              tabfw = np.zeros((dimtabx,dimtaby,3), np.uint8)
              tablung = np.copy(tabscanLung[img])
@@ -1000,7 +999,7 @@ def genepatchlistslice(patch_list_cross,proba_cross,lissln,dimtabx,dimtaby):
             ii+=1                   
     return res
 
-def generoi(dirf,tabroi,dimtabx,dimtaby,slnroi,tabscanScan,dirroit,tabscanroi,tabscanLung):
+def generoi(dirf,tabroi,dimtabx,dimtaby,slnroi,tabscanName,dirroit,tabscanroi,tabscanLung):
     (top,tail)=os.path.split(dirf)
     for pat in usedclassif:
 #        print pat
@@ -1033,7 +1032,7 @@ def generoi(dirf,tabroi,dimtabx,dimtaby,slnroi,tabscanScan,dirroit,tabscanroi,ta
     slnroi.sort()
     volumeroi={}
     for numslice in slnroi:
-            imgcoreScan=tabscanScan[numslice]
+            imgcoreScan=tabscanName[numslice]
             roibmpfile=os.path.join(dirroit,imgcoreScan)
             anoted_image=tabscanroi[numslice]
             anoted_image=cv2.cvtColor(anoted_image,cv2.COLOR_BGR2RGB)
@@ -1083,11 +1082,11 @@ def predictrun(indata,path_patient):
             td=True
             print 'CROSS +FRONT PREDICT'
         thrproba=float(indata['thrproba'])
-#        thrprobaUIP=float(indata['thrprobaUIP'])
         thrpatch=float(indata['thrpatch'])
         picklein_filet=indata['picklein_file']
         centerHU=indata['centerHU']
         limitHU=indata['limitHU']
+        ForceGenerate=indata['ForceGenerate']
         
         #define set data and associated patterns
         if oldFormat==False:
@@ -1138,7 +1137,7 @@ def predictrun(indata,path_patient):
 
         for f in listHug:
             print '------------------'
-            print 'work on patient',f,' set:',setref
+            print 'work on patient',f,' set:',setref,'thrproba',thrproba,'thrpatch',thrpatch
             patch_list_cross_slice={}
             
 #            listelabelfinal={}
@@ -1195,23 +1194,63 @@ def predictrun(indata,path_patient):
             tabscanName={}
             tabscanroi={}
 
-            tabscanScan,slnt,dimtabx,slicepitch,lissln,tabscanroi,tabscanName=genebmp(dirf,
-                    source,nosource, centerHU, limitHU,tabscanName,tabscanroi)
-            tabscanLung,tabrange=genebmplung(dirf,lungmaski,slnt,dimtabx,dimtabx,tabscanScan,lissln)
-            datacross=(slnt,dimtabx,dimtabx,slicepitch,lissln,setref)   
-            pickle.dump(datacross, open( os.path.join(path_data_write,datacrossn), "wb" ),protocol=-1)
-            pickle.dump(tabscanLung, open( os.path.join(path_data_write,"tabscanLung"), "wb" ),protocol=-1)
+            centerHU1=0
+            limitHU1=0
+            if os.path.exists(os.path.join(path_data_write,'centerHU')):
+                centerHU1=pickle.load( open(os.path.join(path_data_write,'centerHU'), "rb" ))
+            if os.path.exists(os.path.join(path_data_write,'limitHU')):
+                limitHU1=pickle.load( open(os.path.join(path_data_write,'limitHU'), "rb" ))
+        
+            if centerHU1==centerHU and limitHU1==limitHU and not(ForceGenerate):
+                print 'no need to regenerate'
+                datacross=pickle.load(open( os.path.join(path_data_write,datacrossn), "rb" ))
+                slnt= datacross[0]
+                dimtabx=datacross[1]
+#                dimtaby=datacross[2]
+                slicepitch=datacross[3]
+                lissln=datacross[4]
+                
+                tabscanScan=pickle.load( open(os.path.join(path_data_write,'tabscanScan'), "rb" ))
+                tabscanName=pickle.load( open(os.path.join(path_data_write,'tabscanName'), "rb" ))
+                volumeroi=pickle.load( open(os.path.join(path_data_write,'volumeroi'), "rb" ))
+                tabscanroi=pickle.load( open(os.path.join(path_data_write,'tabscanroi'), "rb" ))
+                tabscanLung=pickle.load( open(os.path.join(path_data_write,'tabscanLung'), "rb" ))
+                tabrange=pickle.load( open(os.path.join(path_data_write,'tabrange'), "rb" ))
+                tabroi=pickle.load( open(os.path.join(path_data_write,'tabroi'), "rb" ))
+                slnroi=pickle.load( open(os.path.join(path_data_write,'slnroi'), "rb" ))
+ 
+                print 'end load'
+            else:
+                print 'generate'
+                
+                tabscanScan,slnt,dimtabx,slicepitch,lissln,tabscanroi,tabscanName=genebmp(dirf,
+                        source,nosource, centerHU, limitHU,tabscanName,tabscanroi)
+                tabscanLung,tabrange=genebmplung(dirf,lungmaski,slnt,dimtabx,dimtabx,tabscanScan,lissln,tabscanName)
 
-            slnroi=[]
-            tabroi=np.zeros((slnt,dimtabx,dimtabx), np.uint8) 
-            tabroi,volumeroi,slnroi=generoi(dirf,tabroi,dimtabx,dimtabx,slnroi,
+                slnroi=[]
+                tabroi=np.zeros((slnt,dimtabx,dimtabx), np.uint8) 
+                tabroi,volumeroi,slnroi=generoi(dirf,tabroi,dimtabx,dimtabx,slnroi,
                                             tabscanName,dirroi,tabscanroi,tabscanLung)
-            pickle.dump(volumeroi, open(os.path.join(path_data_write,volumeroifilep), "wb" ),protocol=-1)
-            pickle.dump(tabroi, open( os.path.join(path_data_write,"tabroi"), "wb" ),protocol=-1)
-            pickle.dump(slnroi, open( os.path.join(path_data_write,"slnroi"), "wb" ),protocol=-1)
+                
+                
+                pickle.dump(centerHU, open(os.path.join(path_data_write,'centerHU'), "wb" ),protocol=-1) 
+                pickle.dump(limitHU, open(os.path.join(path_data_write,'limitHU'), "wb" ),protocol=-1) 
+                
+                pickle.dump(tabscanScan, open(os.path.join(path_data_write,'tabscanScan'), "wb" ),protocol=-1) 
+                pickle.dump(tabscanroi, open(os.path.join(path_data_write,'tabscanroi'), "wb" ),protocol=-1) 
+                pickle.dump(tabscanName, open(os.path.join(path_data_write,'tabscanName'), "wb" ),protocol=-1) 
+                pickle.dump(volumeroi, open(os.path.join(path_data_write,'volumeroi'), "wb" ),protocol=-1)
+                pickle.dump(tabscanLung, open( os.path.join(path_data_write,"tabscanLung"), "wb" ),protocol=-1)
+                pickle.dump(tabrange, open( os.path.join(path_data_write,"tabrange"), "wb" ),protocol=-1)
 
             
+                pickle.dump(volumeroi, open(os.path.join(path_data_write,volumeroifilep), "wb" ),protocol=-1)
+                pickle.dump(tabroi, open( os.path.join(path_data_write,"tabroi"), "wb" ),protocol=-1)
+                pickle.dump(slnroi, open( os.path.join(path_data_write,"slnroi"), "wb" ),protocol=-1)
+
             
+            datacross=(slnt,dimtabx,dimtabx,slicepitch,lissln,setref, thrproba, thrpatch)
+            pickle.dump(datacross, open( os.path.join(path_data_write,datacrossn), "wb" ),protocol=-1)
 #            pickle.dump(lungSegment, open( os.path.join(path_data_write,"lungSegment"), "wb" ),protocol=-1)
             """
             datacross= pickle.load( open( os.path.join(path_data_write,"datacross"), "rb" ))
@@ -1223,6 +1262,10 @@ def predictrun(indata,path_patient):
             dimtaby=datacross[2]
             slicepitch=datacross[3]
             lissln=datacross[4]
+            setref=datacross[5]
+            thrproba=datacross[6]
+            thrpatch=datacross[7]
+            
 #            """
 #
 #            tabscanLung=genebmplung(dirf,lungmaski,slnt,dimtabx,dimtabx,tabscanScan,lissln)
@@ -1237,14 +1280,17 @@ def predictrun(indata,path_patient):
                     thrpatch1= pickle.load( open( os.path.join(path_data_write,"thrpatch"), "rb" ))
                     if thrpatch == thrpatch1:
                         if os.path.exists(os.path.join(path_data_write,"patch_list_cross")):
-                            regene=False
-                            print 'no need to regenerate patch list'
+                            regene=False                            
                             patch_list_cross= pickle.load( open( os.path.join(path_data_write,"patch_list_cross"), "rb" ))
                   
-            if regene:
+            if regene or ForceGenerate:
+                print 'regenerate patch list'
                 patch_list_cross=pavgene(dirf,dimtabx,dimtabx,tabscanScan,tabscanLung,slnt,jpegpath,slnroi)
                 pickle.dump(patch_list_cross, open( os.path.join(path_data_write,"patch_list_cross"), "wb" ),protocol=-1)
                 pickle.dump(thrpatch, open( os.path.join(path_data_write,"thrpatch"), "wb" ),protocol=-1)
+            else:
+                print 'no need to regenerate patch list'
+                
 
             
             modelcross=modelCompilation('cross',picklein_file,picklein_file_front,setref)
@@ -1279,7 +1325,7 @@ def predictrun(indata,path_patient):
                 print '------------------'
                 frontcompleted=False
                 pickle.dump(frontcompleted, open( os.path.join(path_data_write,"frontcompleted"), "wb" ),protocol=-1)
-                tabresScan=reshapeScan(tabscanScan,slnt,lissln,dimtabx,dimtabx)
+                tabresScan=reshapeScanl(tabscanScan)
                 dimtabxn,dimtabyn,tabScan3d,lisslnfront=wtebres(wridir,dirf,tabresScan,
                                                                 dimtabx,slicepitch,lungmaski,'scan',centerHU,limitHU)
                 tabresLung=reshapeScanl(tabscanLung)   
@@ -1304,11 +1350,14 @@ def predictrun(indata,path_patient):
                     if thrpatch == thrpatch1:
                         if os.path.exists(os.path.join(path_data_write,"patch_list_front")):
                             regene=False
-                            print 'no need to regenerate patch list'
+
                             patch_list_front= pickle.load( open( os.path.join(path_data_write,"patch_list_front"), "rb" ))
-                if regene:
+                if regene or ForceGenerate:
+                    print 'regenerate patch list'
                     patch_list_front=pavgenefront(dirf,dimtabxn,dimtabx,tabScan3d,tabLung3d,dimtabyn,jpegpath3d)
                     pickle.dump(patch_list_front, open( os.path.join(path_data_write,"patch_list_front"), "wb" ),protocol=-1)
+                else:
+                    print 'no need to regenerate patch list'
                 
                 modelfront=modelCompilation('front',picklein_file,picklein_file_front,setref)
 
@@ -1393,7 +1442,7 @@ def predictrun(indata,path_patient):
             errorfile.close()
             frontcompleted=False
             pickle.dump(frontcompleted, open( os.path.join(path_data_write,"frontcompleted"), "wb" ),protocol=-1)
-            print 'PREDICT  COMPLETED  for ',f
+            print 'PREDICT  COMPLETED  for ',f,' set ',setref,'thrproba',thrproba,'thrpatch',thrpatch
             print '------------------'
         return''
 

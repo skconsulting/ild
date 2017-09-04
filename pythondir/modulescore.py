@@ -401,7 +401,7 @@ def retrievepatch(x,y,sln,dx,dy,patch_list_cross_slice):
     return tabtext
 
 
-def openfichiervolumetxtall(listHug,path_patient,indata,thrprobaUIP,cnnweigh,f):
+def openfichiervolumetxtall(listHug,path_patient,indata,thrprobaUIP,cnnweigh,f,thrpatch):
 
     num_class=len(classif)
 #    t = datetime.datetime.now()
@@ -429,7 +429,7 @@ def openfichiervolumetxtall(listHug,path_patient,indata,thrprobaUIP,cnnweigh,f):
         tabroi= pickle.load( open( os.path.join(path_data_dir,"tabroi"), "rb" ))
                   
         ref,pred,messageout = openfichiervolumetxt(patient,path_patient,patch_list_cross_slice,
-                      thrprobaUIP,tabroi,datarep,slnroi,tabscanLung,f,cnnweigh)
+                      thrprobaUIP,tabroi,datarep,slnroi,tabscanLung,f,cnnweigh,thrpatch)
 #        print ref.shape
         if pf:
 #            print 'first'
@@ -508,9 +508,9 @@ def cfma(f,referencepat,predictpat,num_class, namep,thrprobaUIP,cnnweigh):
         for pat in newclassif:
             
             if pat !='lung' and fscorep[pat]>0:
-                f.write('%14s'%pat+
+                f.write('%17s'%pat+
+                        '  precision:'+'%5s'%(str(int(round(100*presip[pat],0)))+'%')+
                         ' recall: '+'%5s'%(str(int(round(100*recallp[pat],0)))+'%')+
-                        ' precision:'+'%5s'%(str(int(round(100*presip[pat],0)))+'%')+
                         ' fscore:'+'%5s'%(str(int(round(100*fscorep[pat],0)))+'%')+'\n')
                   
         precisiont,recallt= evaluatefull(referencepat,predictpat,num_class)
@@ -518,37 +518,28 @@ def cfma(f,referencepat,predictpat,num_class, namep,thrprobaUIP,cnnweigh):
             fscore=2*precisiont*recallt/(precisiont+recallt)
         else:
             fscore=0
-        precisioni=str(round(precisiont*100,0))+'%'
-        recalli=str(round(recallt*100,))+'%'
-        fscorei=str(round(fscore*100,0))+'%'
+        precisioni=str(int(round(precisiont*100,0)))+'%'
+        recalli=str(int(round(recallt*100,0)))+'%'
+        fscorei=str(int(round(fscore*100,0)))+'%'
     #                    print (slicenumber,pat,precisioni,recalli,fscorei)
         f.write('----------------------\n')
         f.write('Global scores for patient '+namep+' (without lung):\n')
-        f.write('precision:'+precisioni+' recall: '+recalli+' Fscore: '+fscorei+'\n')
+        f.write('precision: '+precisioni+' recall: '+recalli+' Fscore: '+fscorei+'\n')
         f.write('----------------------\n')
 
 def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
-                      thrprobaUIP,tabroi,datacross,slnroi,tabscanLung,f,cnnweigh):
+                      thrprobaUIP,tabroi,datacross,slnroi,tabscanLung,f,cnnweigh,thrpatch):
     global  quitl,dimtabx,dimtaby,patchi,ix,iy
     print 'openfichiervolume txt start in',path_patient,' for', listHug
     slnt=datacross[0]
     dx=datacross[1]
     dy=datacross[2]
-#    print 'slicepitch',slicepitch
 
-   
-#    dirfreport=pathreport
-#    if not os.path.exists(dirfreport):
-#        os.mkdir(dirfreport)
     t = datetime.datetime.now()
-#    today = '_th'+str(thrprobaUIP)+'_m'+str(t.month)+'-d'+str(t.day)+'-y'+str(t.year)+'_'+str(t.hour)+'h_'+str(t.minute)+'m'
-#    repf=os.path.join(dirfreport,reportfile+str(today)+'.txt')
-
-#    f=open(repf,'w')
-    
+ 
     f.write('report for patient :'+listHug+
             ' - date : m'+str(t.month)+'-d'+str(t.day)+'-y'+str(t.year)+' at '+str(t.hour)+'h '+str(t.minute)+'mn\n')
-    f.write('Cross View , threshold: '+str(thrprobaUIP)+ ' CNN param: '+cnnweigh+'\n\n')
+    f.write('Cross View , threshold: '+str(thrprobaUIP)+ ' CNN_param: '+cnnweigh+'  th_patch: '+str(thrpatch) +'\n\n')
  
     slntroi=len(slnroi)
 
@@ -989,6 +980,7 @@ def visuarun(indata,path_patient):
 #        lungSegment= pickle.load( open( os.path.join(path_data_dir,"lungSegment"), "rb" ))
 #        tabMed= pickle.load( open( os.path.join(path_data_dir,"tabMed"), "rb" ))
         thrproba=float(indata['thrproba'])
+        thrpatch=pickle.load( open( os.path.join(path_data_dir,"thrpatch"), "rb" ))
         tabscanLung= pickle.load( open( os.path.join(path_data_dir,"tabscanLung"), "rb" ))
         tabroi= pickle.load( open( os.path.join(path_data_dir,"tabroi"), "rb" ))
         dirf=os.path.join(path_patient,listHug)
@@ -996,22 +988,26 @@ def visuarun(indata,path_patient):
         if not os.path.exists(dirfreport):
             os.mkdir(dirfreport)
         t = datetime.datetime.now()
-        today = '_weight_'+cnnweigh+ '_th'+str(thrproba)+'_m'+str(t.month)+'-d'+str(t.day)+'-y'+str(t.year)+'_'+str(t.hour)+'h_'+str(t.minute)+'m'
+        today ='_weight_'+cnnweigh+ '_th'+str(thrproba)+'_tpat'+str(thrpatch)+'_m'+str(t.month)+'-d'+str(t.day)+'-y'+str(t.year)+'_'+str(t.hour)+'h_'+str(t.minute)+'m'
         repf=os.path.join(dirfreport,reportfile+str(today)+'.txt')
         f=open(repf,'w')
         x,x,messageout = openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
                       thrproba,
-                      tabroi,datarep,slnroi,tabscanLung,f,cnnweigh)
+                      tabroi,datarep,slnroi,tabscanLung,f,cnnweigh,thrpatch)
         f.close()
         os.startfile(repf)
         
     elif viewstyle=='reportAll':
         print 'report All'
         thrproba=float(indata['thrproba'])
+        thrpatch=pickle.load( open( os.path.join(path_data_dir,"thrpatch"), "rb" ))
+
         cnnweigh=indata['picklein_file']
         pathreport=os.path.join(path_patient,reportalldir)
+        if not os.path.exists(pathreport):
+            os.mkdir(pathreport)
         t = datetime.datetime.now()
-        today ='_weight_'+cnnweigh+ '_th'+str(thrproba)+'_m'+str(t.month)+'-d'+str(t.day)+'-y'+str(t.year)+'_'+str(t.hour)+'h_'+str(t.minute)+'m'
+        today ='_weight_'+cnnweigh+ '_th'+str(thrproba)+'_tpat'+str(thrpatch)+'_m'+str(t.month)+'-d'+str(t.day)+'-y'+str(t.year)+'_'+str(t.hour)+'h_'+str(t.minute)+'m'
         repf=os.path.join(pathreport,reportfile+str(today)+'.txt')
         f=open(repf,'w')
 #        remove_folder(pathreport)
@@ -1023,7 +1019,7 @@ def visuarun(indata,path_patient):
 
         if not os.path.exists(pathreport):
             os.mkdir(pathreport)
-        messageout = openfichiervolumetxtall(listHug,path_patient,indata,thrproba,cnnweigh,f)
+        messageout = openfichiervolumetxtall(listHug,path_patient,indata,thrproba,cnnweigh,f,thrpatch)
         os.startfile(repf)
         
     else:
