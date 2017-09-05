@@ -454,27 +454,24 @@ def openfichiervolumetxtall(listHug,path_patient,indata,thrprobaUIP,cnnweigh,f,t
                   
         ref,pred,messageout = openfichiervolumetxt(patient,path_patient,patch_list_cross_slice,
                       thrprobaUIP,tabroi,datarep,slnroi,tabscanLung,f,cnnweigh,thrpatch,tp)
-#        print ref.shape
+
         if pf:
-#            print 'first'
+
             referencepat=ref
             predictpat=pred
             pf=False
         else:           
-#            print 'after'
+
             referencepat= np.concatenate((referencepat,ref),axis=0)
             predictpat= np.concatenate((predictpat,pred),axis=0)
-#        print referencepat.shape
-#    print referencepat.shape
 
         
-    cfma(f,referencepat,predictpat,num_class,'all set',thrprobaUIP,cnnweigh,tp)
+    cfma(f,referencepat,predictpat,num_class,'all set',thrprobaUIP,cnnweigh,tp,thrpatch)
     f.close()
 
-def cfma(f,referencepat,predictpat,num_class, namep,thrprobaUIP,cnnweigh,tp):
+def cfma(f,referencepat,predictpat,num_class, namep,thrprobaUIP,cnnweigh,tp,thrpatch):
         f.write('confusion matrix for '+namep+'\n')
-        f.write(tp+' View , threshold: '+str(thrprobaUIP)+ ' CNN param: '+cnnweigh+'\n\n')
-
+        f.write(tp+' View , threshold: '+str(thrprobaUIP)+ ' CNN param: '+cnnweigh+' th_patch'+str(thrpatch)+'\n\n')
         
         cm=evaluatef(referencepat,predictpat,num_class)
         n= cm.shape[0]
@@ -563,7 +560,7 @@ def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
  
     f.write('report for patient :'+listHug+
             ' - date : m'+str(t.month)+'-d'+str(t.day)+'-y'+str(t.year)+' at '+str(t.hour)+'h '+str(t.minute)+'mn\n')
-    f.write(tp +' View , threshold: '+str(thrprobaUIP)+ ' CNN_param: '+cnnweigh+'  th_patch: '+str(thrpatch) +'\n\n')
+    f.write(tp +' View , threshold: '+str(thrprobaUIP)+ ' CNN_param: '+cnnweigh+' th_patch: '+str(thrpatch) +'\n\n')
  
     slntroi=len(slnroi)
 
@@ -645,7 +642,7 @@ def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
             f.write('\n')
     referencepat= referencepatu.flatten()
     predictpat=  predictpatu.flatten() 
-    cfma(f,referencepat,predictpat,num_class,listHug,thrprobaUIP,cnnweigh,tp)
+    cfma(f,referencepat,predictpat,num_class,listHug,thrprobaUIP,cnnweigh,tp,thrpatch)
     f.write('----------------------\n')
 
     return referencepat,predictpat,''

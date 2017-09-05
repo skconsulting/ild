@@ -1299,7 +1299,7 @@ def drawcontours2(im,pat,dimtabx,dimtaby):
     return im2   
 
 #
-def populate(pp,lissln,slnt,pixelSpacing):
+def populate(pp,lissln,slnt,pixelSpacing,tabscanName):
     print 'start populate'
     pathroi=os.path.join(pp,roi_name)
     volumeroi={}
@@ -1326,43 +1326,52 @@ def populate(pp,lissln,slnt,pixelSpacing):
 
                 if not os.path.exists(dirroi):
                     dirroi=os.path.join(dirroil,lung_mask_bmp1)
-
             else:
                 dirroi=''
                     
         if os.path.exists(dirroi):
 #            print 'exist', dirroi
             listroi =[name for name in  os.listdir(dirroi) if name.lower().find('.'+typei1)>0 ]
-            for roiimage in listroi:
-                
-                img=os.path.join(dirroi,roiimage)
-                imageroi= cv2.imread(img,1)              
-                imageroi=cv2.resize(imageroi,(dimtabx,dimtaby),interpolation=cv2.INTER_LINEAR)  
-
-                cdelimter='_'
-                extensionimage='.'+typei1
-                slicenumber=rsliceNum(roiimage,cdelimter,extensionimage)
-                if imageroi.max() >0:
-#                    tabroifinal[key]=np.zeros((slnt,dimtabx,dimtaby,3), np.uint8)
-                    tabroifinal[key][slicenumber]=imageroi
-                    
-                    pose=roiimage.find('.'+typei1)
-                    roibmpfile=roiimage[0:pose]+'.'+typei1               
-                    sroiname=os.path.join(pathroi,roibmpfile)
-                    imageview=cv2.cvtColor(imageroi,cv2.COLOR_RGB2BGR)  
-                      
-                    tabgrey=cv2.cvtColor(imageview,cv2.COLOR_BGR2GRAY)
-                    np.putmask(tabgrey,tabgrey>0,1)
-                    area= tabgrey.sum()*pixelSpacing*pixelSpacing/100
-                    volumeroi[slicenumber][key]=area   
-#                    pickle.dump(volumeroi, open(path_data_writefile, "wb" ),protocol=-1)
-                    tabroifinal[key][slicenumber]=imageview   
-
-                    np.putmask(tabgrey, tabgrey >0, 100)
-                    ctkey=drawcontours2(tabgrey,key,dimtabx,dimtaby)
-                    anoted_image=cv2.imread(sroiname,1)               
-                    anoted_image=cv2.add(anoted_image,ctkey)
-                    cv2.imwrite(sroiname,anoted_image)
+            if len(listroi)>0:
+                for roiimage in listroi:
+                     
+                    img=os.path.join(dirroi,roiimage)
+                    imageroi= cv2.imread(img,1)              
+                    imageroi=cv2.resize(imageroi,(dimtabx,dimtaby),interpolation=cv2.INTER_LINEAR)  
+    
+                    cdelimter='_'
+                    extensionimage='.'+typei1
+                    slicenumber=rsliceNum(roiimage,cdelimter,extensionimage)
+#                    print roiimage,tabscanName[slicenumber]
+                    if roiimage!= tabscanName[slicenumber]:
+                         imgnew=os.path.join(dirroi,tabscanName[slicenumber])
+                         cv2.imwrite(imgnew,imageroi)
+                         os.remove(img)
+                        
+                    if imageroi.max() >0:
+    #                    tabroifinal[key]=np.zeros((slnt,dimtabx,dimtaby,3), np.uint8)
+                        tabroifinal[key][slicenumber]=imageroi
+                                      
+                        sroiname=os.path.join(pathroi,tabscanName[slicenumber])
+#                        print pathroi
+                        imageview=cv2.cvtColor(imageroi,cv2.COLOR_RGB2BGR)  
+                          
+                        tabgrey=cv2.cvtColor(imageview,cv2.COLOR_BGR2GRAY)
+                        np.putmask(tabgrey,tabgrey>0,1)
+                        area= tabgrey.sum()*pixelSpacing*pixelSpacing/100
+                        volumeroi[slicenumber][key]=area   
+    #                    pickle.dump(volumeroi, open(path_data_writefile, "wb" ),protocol=-1)
+                        tabroifinal[key][slicenumber]=imageview   
+    
+                        np.putmask(tabgrey, tabgrey >0, 100)
+                        ctkey=drawcontours2(tabgrey,key,dimtabx,dimtaby)
+     
+                        anoted_image=cv2.imread(sroiname,1)    
+#                        print sroiname
+    
+                        anoted_image=cv2.add(anoted_image,ctkey)
+                        cv2.imwrite(sroiname,anoted_image)
+                        
        
 
     return tabroifinal,volumeroi
@@ -1389,7 +1398,7 @@ def initmenus(slnt,dirpath_patient):
 
 
 
-def openfichierroi(patient,patient_path_complet,centerHU,limitHU,lungask):
+def openfichierroi(patient,patient_path_complet,centerHU,limitHU,lungask,ForceGenerate):
     global dirpath_patient,dirroit,path_data_write,volumeroi,path_data_writefile,pixelSpacing
     global tabroifinal
     print 'load ',patient
@@ -1419,7 +1428,7 @@ def openfichierroi(patient,patient_path_complet,centerHU,limitHU,lungask):
     if os.path.exists(os.path.join(path_data_write,'limitHUr')):
         limitHU1=pickle.load( open(os.path.join(path_data_write,'limitHUr'), "rb" ))
         
-    if centerHU1==centerHU and limitHU1==limitHU:
+    if centerHU1==centerHU and limitHU1==limitHU and not ForceGenerate:
         print 'no need to regenerate'
         slnt=pickle.load( open(os.path.join(path_data_write,'slntr'), "rb" ))
         tabscanScan=pickle.load( open(os.path.join(path_data_write,'tabscanScanr'), "rb" ))
@@ -1432,7 +1441,7 @@ def openfichierroi(patient,patient_path_complet,centerHU,limitHU,lungask):
     else:
         print 'generate'
         slnt,tabscanScan,listsln,pixelSpacing,tabscanName=genebmp(dirsource,nosource,dirroit,centerHU,limitHU)  
-        tabroifinal,volumeroi=populate(dirpath_patient,listsln,slnt,pixelSpacing)
+        tabroifinal,volumeroi=populate(dirpath_patient,listsln,slnt,pixelSpacing,tabscanName)
         pickle.dump(centerHU, open(os.path.join(path_data_write,'centerHUr'), "wb" ),protocol=-1) 
         pickle.dump(limitHU, open(os.path.join(path_data_write,'limitHUr'), "wb" ),protocol=-1) 
         pickle.dump(slnt, open(os.path.join(path_data_write,'slntr'), "wb" ),protocol=-1) 

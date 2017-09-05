@@ -49,7 +49,8 @@ def lisdirprocess(directorytocheck):
 def roirun(indata,path_patient,lungask):
     listHug=indata['ll']
     centerHU=indata['centerHU'] 
-    limitHU=indata['limitHU'] 
+    limitHU=indata['limitHU']
+    ForceGenerate=indata['ForceGenerate']
 
     pos=str(listHug).find(' ROI!:')
     if pos >0:
@@ -60,7 +61,7 @@ def roirun(indata,path_patient,lungask):
 #    print 'listhug',listHug
 #    print 'indata',indata
 #    print 'path_patient',path_patient
-    messageout=openfichierroi(listHug,path_patient,centerHU,limitHU,lungask)
+    messageout=openfichierroi(listHug,path_patient,centerHU,limitHU,lungask,ForceGenerate)
     return messageout
 
 #def roirunlung(indata,path_patient):

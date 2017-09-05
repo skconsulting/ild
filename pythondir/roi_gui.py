@@ -96,6 +96,7 @@ def press(btn):
     indata={}
     indata['centerHU']=app.getEntry("centerHU")
     indata['limitHU']=app.getEntry("limitHU")
+    indata['ForceGenerate']=app.getCheckBox("ForceGenerate")
     indata['ll']=app.getListItems("list")
     
     if len(indata['ll'])>0:
@@ -115,6 +116,7 @@ def presslung(btn):
     indata['ll']=app.getListItems("list")
     indata['centerHU']=app.getEntry("centerHU")
     indata['limitHU']=app.getEntry("limitHU")
+    indata['ForceGenerate']=app.getCheckBox("ForceGenerate")
     
     if len( indata['ll'])>0:
         app.hide()
@@ -265,6 +267,12 @@ def initDraw():
         row = app.getRow()
         app.addLabelNumericEntry("limitHU",row,1)
         app.setEntry("limitHU", limitHU)
+        row = app.getRow()
+        app.addHorizontalSeparator( row,colour="red",colspan=2)
+        row = app.getRow()
+        app.addLabel("ForceGenerate","Tick to force re-generate all files:",row,0)
+        app.addCheckBox("ForceGenerate",row,1)
+        app.setCheckBox("ForceGenerate",ticked=False,callFunction=False)
         row = app.getRow()
         app.addHorizontalSeparator( row,colour="red",colspan=2)
         row = app.getRow()
