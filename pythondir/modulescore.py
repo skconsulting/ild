@@ -60,6 +60,27 @@ def lisdirprocess(d):
                 stpred['front']=True
             else:
                 stpred['front']=False
+                      
+            crosscompletedf=os.path.join(datadir,'crosscompleted')
+            frontcompletedf=os.path.join(datadir,'frontcompleted')
+            if os.path.exists(crosscompletedf):
+                crosscompleted= pickle.load( open(crosscompletedf, "rb") )
+                if crosscompleted:
+                    stpred['cross']=True
+                else:
+                    stpred['cross']=False
+                    
+            if os.path.exists(frontcompletedf):
+                frontcompleted= pickle.load( open(frontcompletedf , "rb") )
+
+                if frontcompleted:
+
+                    stpred['front']=True
+                else:
+                    stpred['front']=False
+
+                    
+
             stsdir[dd]=stpred
 
     return a,stsdir,setrefdict
@@ -401,14 +422,10 @@ def retrievepatch(x,y,sln,dx,dy,patch_list_cross_slice):
     return tabtext
 
 
-def openfichiervolumetxtall(listHug,path_patient,indata,thrprobaUIP,cnnweigh,f,thrpatch):
+def openfichiervolumetxtall(listHug,path_patient,indata,thrprobaUIP,cnnweigh,f,thrpatch,tp):
 
     num_class=len(classif)
-#    t = datetime.datetime.now()
-#    today = '_th'+str(thrprobaUIP)+'_m'+str(t.month)+'-d'+str(t.day)+'-y'+str(t.year)+'_'+str(t.hour)+'h_'+str(t.minute)+'m'
-#    repf=os.path.join(pathreport,reportfile+str(today)+'.txt')
-#
-#    f=open(repf,'w')
+
     f.write('Score for list of patients:\n')
     for patient in listHug:
         f.write(str(patient)+' ')
@@ -421,7 +438,14 @@ def openfichiervolumetxtall(listHug,path_patient,indata,thrprobaUIP,cnnweigh,f,t
         datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "rb" ))
 #        slicepitch=datarep[3]
         slnroi= pickle.load( open( os.path.join(path_data_dir,"slnroi"), "rb" ))
-        patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice"), "rb" ))
+        if tp=='Cross':
+            filepatch="patch_list_cross_slice"
+        if tp=='FrontProjected':
+            filepatch="patch_list_cross_slice_from_front"
+        if tp=='Merge':
+            filepatch="patch_list_merge_slice"
+            
+        patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,filepatch), "rb" ))
 #        patch_list_cross_slice_sub= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice_sub"), "rb" ))
 #        lungSegment= pickle.load( open( os.path.join(path_data_dir,"lungSegment"), "rb" ))
 #        tabMed= pickle.load( open( os.path.join(path_data_dir,"tabMed"), "rb" ))
@@ -429,7 +453,7 @@ def openfichiervolumetxtall(listHug,path_patient,indata,thrprobaUIP,cnnweigh,f,t
         tabroi= pickle.load( open( os.path.join(path_data_dir,"tabroi"), "rb" ))
                   
         ref,pred,messageout = openfichiervolumetxt(patient,path_patient,patch_list_cross_slice,
-                      thrprobaUIP,tabroi,datarep,slnroi,tabscanLung,f,cnnweigh,thrpatch)
+                      thrprobaUIP,tabroi,datarep,slnroi,tabscanLung,f,cnnweigh,thrpatch,tp)
 #        print ref.shape
         if pf:
 #            print 'first'
@@ -444,12 +468,12 @@ def openfichiervolumetxtall(listHug,path_patient,indata,thrprobaUIP,cnnweigh,f,t
 #    print referencepat.shape
 
         
-    cfma(f,referencepat,predictpat,num_class,'all set',thrprobaUIP,cnnweigh)
+    cfma(f,referencepat,predictpat,num_class,'all set',thrprobaUIP,cnnweigh,tp)
     f.close()
 
-def cfma(f,referencepat,predictpat,num_class, namep,thrprobaUIP,cnnweigh):
+def cfma(f,referencepat,predictpat,num_class, namep,thrprobaUIP,cnnweigh,tp):
         f.write('confusion matrix for '+namep+'\n')
-        f.write('Cross View , threshold: '+str(thrprobaUIP)+ ' CNN param: '+cnnweigh+'\n\n')
+        f.write(tp+' View , threshold: '+str(thrprobaUIP)+ ' CNN param: '+cnnweigh+'\n\n')
 
         
         cm=evaluatef(referencepat,predictpat,num_class)
@@ -528,9 +552,9 @@ def cfma(f,referencepat,predictpat,num_class, namep,thrprobaUIP,cnnweigh):
         f.write('----------------------\n')
 
 def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
-                      thrprobaUIP,tabroi,datacross,slnroi,tabscanLung,f,cnnweigh,thrpatch):
+                      thrprobaUIP,tabroi,datacross,slnroi,tabscanLung,f,cnnweigh,thrpatch,tp):
     global  quitl,dimtabx,dimtaby,patchi,ix,iy
-    print 'openfichiervolume txt start in',path_patient,' for', listHug
+    print 'openfichiervolume txt start in',path_patient,' for', listHug, 'predict type ',tp
     slnt=datacross[0]
     dx=datacross[1]
     dy=datacross[2]
@@ -539,7 +563,7 @@ def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
  
     f.write('report for patient :'+listHug+
             ' - date : m'+str(t.month)+'-d'+str(t.day)+'-y'+str(t.year)+' at '+str(t.hour)+'h '+str(t.minute)+'mn\n')
-    f.write('Cross View , threshold: '+str(thrprobaUIP)+ ' CNN_param: '+cnnweigh+'  th_patch: '+str(thrpatch) +'\n\n')
+    f.write(tp +' View , threshold: '+str(thrprobaUIP)+ ' CNN_param: '+cnnweigh+'  th_patch: '+str(thrpatch) +'\n\n')
  
     slntroi=len(slnroi)
 
@@ -621,7 +645,7 @@ def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
             f.write('\n')
     referencepat= referencepatu.flatten()
     predictpat=  predictpatu.flatten() 
-    cfma(f,referencepat,predictpat,num_class,listHug,thrprobaUIP,cnnweigh)
+    cfma(f,referencepat,predictpat,num_class,listHug,thrprobaUIP,cnnweigh,tp)
     f.write('----------------------\n')
 
     return referencepat,predictpat,''
@@ -928,6 +952,7 @@ def visuarun(indata,path_patient):
                                    patch_list_cross_slice,tabroi,cnnweigh,tabscanLung,viewstyle,slnroi)
             
     elif viewstyle=='front view':
+            return 'not implemented'
             datarep= pickle.load( open( os.path.join(path_data_dir,"datafront"), "rb" ))
 #            tabroif= pickle.load( open( os.path.join(path_data_dir,"tabroif"), "rb" ))
             slnt=datarep[0]
@@ -949,33 +974,41 @@ def visuarun(indata,path_patient):
             datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "rb" ))
             tabroi= pickle.load( open( os.path.join(path_data_dir,"tabroi"), "rb" ))
             tabscanLung= pickle.load( open( os.path.join(path_data_dir,"tabscanLung"), "rb" ))
+            slnroi= pickle.load( open( os.path.join(path_data_dir,"slnroi"), "rb" ))
+
 #            patch_list_merge= pickle.load( open( os.path.join(path_data_dir,"patch_list_merge"), "rb" ))
 #            proba_merge= pickle.load( open( os.path.join(path_data_dir,"proba_merge"), "rb" ))
             patch_list_merge_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_merge_slice"), "rb" ))
 #            patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice"), "rb" ))
             cnnweigh=indata['picklein_file']
             messageout=openfichier(viewstyle,datarep,patient_path_complet,thrprobaUIP,
-                                   patch_list_merge_slice,tabroi,cnnweigh,tabscanLung,viewstyle)
+                                   patch_list_merge_slice,tabroi,cnnweigh,tabscanLung,viewstyle,slnroi)
     
     elif viewstyle=='front projected view':
             datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "rb" ))
             tabroi= pickle.load( open( os.path.join(path_data_dir,"tabroi"), "rb" ))
+            slnroi= pickle.load( open( os.path.join(path_data_dir,"slnroi"), "rb" ))
+
             patch_list_cross_slice_from_front= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice_from_front"), "rb" ))
             thrprobaUIP=float(indata['thrproba']) 
             cnnweigh=indata['picklein_file_front']
             tabscanLung= pickle.load( open( os.path.join(path_data_dir,"tabscanLung"), "rb" ))
             messageout=openfichier(viewstyle,datarep,patient_path_complet,thrprobaUIP,
-                                   patch_list_cross_slice_from_front,tabroi,cnnweigh,tabscanLung,viewstyle)
+                                   patch_list_cross_slice_from_front,tabroi,cnnweigh,tabscanLung,viewstyle,slnroi)
 #            thrprobaUIP=float(indata['thrprobaUIP'])
 #            tabfromfront= pickle.load( open( os.path.join(path_data_dir,"tabfromfront"), "rb" ))
 #            messageout=openfichierfrpr(path_patient,tabfromfront,thrprobaUIP)
     
-    elif viewstyle=='report':
+    elif viewstyle=='reportCross':
         datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "rb" ))
 #        slicepitch=datarep[3]
         slnroi= pickle.load( open( os.path.join(path_data_dir,"slnroi"), "rb" ))
         cnnweigh=indata['picklein_file']
-        patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice"), "rb" ))
+
+        tp='Cross'
+        
+        patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,'patch_list_cross_slice'), "rb" ))
+#        patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice"), "rb" ))
 #        patch_list_cross_slice_sub= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice_sub"), "rb" ))
 #        lungSegment= pickle.load( open( os.path.join(path_data_dir,"lungSegment"), "rb" ))
 #        tabMed= pickle.load( open( os.path.join(path_data_dir,"tabMed"), "rb" ))
@@ -988,17 +1021,79 @@ def visuarun(indata,path_patient):
         if not os.path.exists(dirfreport):
             os.mkdir(dirfreport)
         t = datetime.datetime.now()
-        today ='_weight_'+cnnweigh+ '_th'+str(thrproba)+'_tpat'+str(thrpatch)+'_m'+str(t.month)+'-d'+str(t.day)+'-y'+str(t.year)+'_'+str(t.hour)+'h_'+str(t.minute)+'m'
+        today =tp+'_weight_'+cnnweigh+ '_th'+str(thrproba)+'_tpat'+str(thrpatch)+'_m'+str(t.month)+'-d'+str(t.day)+'-y'+str(t.year)+'_'+str(t.hour)+'h_'+str(t.minute)+'m'
         repf=os.path.join(dirfreport,reportfile+str(today)+'.txt')
         f=open(repf,'w')
         x,x,messageout = openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
                       thrproba,
-                      tabroi,datarep,slnroi,tabscanLung,f,cnnweigh,thrpatch)
+                      tabroi,datarep,slnroi,tabscanLung,f,cnnweigh,thrpatch,tp)
+        f.close()
+        os.startfile(repf)
+        
+    elif viewstyle=='reportFront':
+        datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "rb" ))
+#        slicepitch=datarep[3]
+        slnroi= pickle.load( open( os.path.join(path_data_dir,"slnroi"), "rb" ))
+        cnnweigh=indata['picklein_file']
+
+        tp='FrontProjected'
+            
+        patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,'patch_list_cross_slice_from_front'), "rb" ))
+#        patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice"), "rb" ))
+#        patch_list_cross_slice_sub= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice_sub"), "rb" ))
+#        lungSegment= pickle.load( open( os.path.join(path_data_dir,"lungSegment"), "rb" ))
+#        tabMed= pickle.load( open( os.path.join(path_data_dir,"tabMed"), "rb" ))
+        thrproba=float(indata['thrproba'])
+        thrpatch=pickle.load( open( os.path.join(path_data_dir,"thrpatch"), "rb" ))
+        tabscanLung= pickle.load( open( os.path.join(path_data_dir,"tabscanLung"), "rb" ))
+        tabroi= pickle.load( open( os.path.join(path_data_dir,"tabroi"), "rb" ))
+        dirf=os.path.join(path_patient,listHug)
+        dirfreport=os.path.join(dirf,reportdir)   
+        if not os.path.exists(dirfreport):
+            os.mkdir(dirfreport)
+        t = datetime.datetime.now()
+        today =tp+'_weight_'+cnnweigh+ '_th'+str(thrproba)+'_tpat'+str(thrpatch)+'_m'+str(t.month)+'-d'+str(t.day)+'-y'+str(t.year)+'_'+str(t.hour)+'h_'+str(t.minute)+'m'
+        repf=os.path.join(dirfreport,reportfile+str(today)+'.txt')
+        f=open(repf,'w')
+        x,x,messageout = openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
+                      thrproba,
+                      tabroi,datarep,slnroi,tabscanLung,f,cnnweigh,thrpatch,tp)
+        f.close()
+        os.startfile(repf)
+    elif viewstyle=='reportMerge':
+        datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "rb" ))
+#        slicepitch=datarep[3]
+        slnroi= pickle.load( open( os.path.join(path_data_dir,"slnroi"), "rb" ))
+        cnnweigh=indata['picklein_file']
+
+        tp='Merge'
+            
+        patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,'patch_list_merge_slice'), "rb" ))
+#        patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice"), "rb" ))
+#        patch_list_cross_slice_sub= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice_sub"), "rb" ))
+#        lungSegment= pickle.load( open( os.path.join(path_data_dir,"lungSegment"), "rb" ))
+#        tabMed= pickle.load( open( os.path.join(path_data_dir,"tabMed"), "rb" ))
+        thrproba=float(indata['thrproba'])
+        thrpatch=pickle.load( open( os.path.join(path_data_dir,"thrpatch"), "rb" ))
+        tabscanLung= pickle.load( open( os.path.join(path_data_dir,"tabscanLung"), "rb" ))
+        tabroi= pickle.load( open( os.path.join(path_data_dir,"tabroi"), "rb" ))
+        dirf=os.path.join(path_patient,listHug)
+        dirfreport=os.path.join(dirf,reportdir)   
+        if not os.path.exists(dirfreport):
+            os.mkdir(dirfreport)
+        t = datetime.datetime.now()
+        today =tp+'_weight_'+cnnweigh+ '_th'+str(thrproba)+'_tpat'+str(thrpatch)+'_m'+str(t.month)+'-d'+str(t.day)+'-y'+str(t.year)+'_'+str(t.hour)+'h_'+str(t.minute)+'m'
+        repf=os.path.join(dirfreport,reportfile+str(today)+'.txt')
+        f=open(repf,'w')
+        x,x,messageout = openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
+                      thrproba,
+                      tabroi,datarep,slnroi,tabscanLung,f,cnnweigh,thrpatch,tp)
         f.close()
         os.startfile(repf)
         
     elif viewstyle=='reportAll':
-        print 'report All'
+        tp=indata['viewstylet']
+        print 'report All for', tp
         thrproba=float(indata['thrproba'])
         thrpatch=pickle.load( open( os.path.join(path_data_dir,"thrpatch"), "rb" ))
 
@@ -1007,7 +1102,7 @@ def visuarun(indata,path_patient):
         if not os.path.exists(pathreport):
             os.mkdir(pathreport)
         t = datetime.datetime.now()
-        today ='_weight_'+cnnweigh+ '_th'+str(thrproba)+'_tpat'+str(thrpatch)+'_m'+str(t.month)+'-d'+str(t.day)+'-y'+str(t.year)+'_'+str(t.hour)+'h_'+str(t.minute)+'m'
+        today =tp+'_'+'_weight_'+cnnweigh+ '_th'+str(thrproba)+'_tpat'+str(thrpatch)+'_m'+str(t.month)+'-d'+str(t.day)+'-y'+str(t.year)+'_'+str(t.hour)+'h_'+str(t.minute)+'m'
         repf=os.path.join(pathreport,reportfile+str(today)+'.txt')
         f=open(repf,'w')
 #        remove_folder(pathreport)
@@ -1019,7 +1114,7 @@ def visuarun(indata,path_patient):
 
         if not os.path.exists(pathreport):
             os.mkdir(pathreport)
-        messageout = openfichiervolumetxtall(listHug,path_patient,indata,thrproba,cnnweigh,f,thrpatch)
+        messageout = openfichiervolumetxtall(listHug,path_patient,indata,thrproba,cnnweigh,f,thrpatch,tp)
         os.startfile(repf)
         
     else:

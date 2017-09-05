@@ -1189,6 +1189,8 @@ def predictrun(indata,path_patient):
             print '------------------'
             crosscompleted=False
             pickle.dump(crosscompleted, open( os.path.join(path_data_write,"crosscompleted"), "wb" ),protocol=-1)
+            frontcompleted=False
+            pickle.dump(frontcompleted, open( os.path.join(path_data_write,"frontcompleted"), "wb" ),protocol=-1)
             print 'source',source
 #            return ''
             tabscanName={}
@@ -1438,10 +1440,11 @@ def predictrun(indata,path_patient):
                       ,slnt,predictoutmerge,sroi,scan_bmp,source,dicompathdirmerge,True,errorfile,nosource,'merge')
                 genethreef(dirf,patch_list_merge,proba_merge,slicepitch,dimtabx,dimtabx,dimpavx,slnt,'merge')
                 """
+                frontcompleted=True
+                pickle.dump(frontcompleted, open( os.path.join(path_data_write,"frontcompleted"), "wb" ),protocol=-1)
             errorfile.write('completed :'+f)
             errorfile.close()
-            frontcompleted=False
-            pickle.dump(frontcompleted, open( os.path.join(path_data_write,"frontcompleted"), "wb" ),protocol=-1)
+            
             print 'PREDICT  COMPLETED  for ',f,' set ',setref,'thrproba',thrproba,'thrpatch',thrpatch
             print '------------------'
         return''

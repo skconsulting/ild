@@ -221,9 +221,20 @@ def predictScore (btn):
     if len(indata['lispatientselect']) >0:
         app.hide()
         listdir,message=predictmodule(indata,lisdir) 
+        
+    
         indata['viewstyle']='reportAll'
         indata['lispatientselect']= indata['lispatientselect'][0]
+         
+        indata['viewstylet']='Cross'
         visuarun(indata,lisdir)
+        if indata['threedpredictrequest']!='Cross Only':
+            indata['viewstylet']='FrontProjected'
+            visuarun(indata,lisdir)
+            indata['viewstylet']='Merge'
+            visuarun(indata,lisdir)
+
+        
         app.show()        
         if len(message)>0:
             app.errorBox('error', message)
@@ -260,6 +271,7 @@ def visualisation(btn):
     pickle.dump(paramdict,open( paramsaveDirf, "wb" ))
 
     indata['viewstyle']=app.getRadioButton("planar")
+
     app.hide()
     visuarun(indata,lisdir)
 
@@ -307,18 +319,28 @@ def boutonStop(btn):
     else:
         redraw(app)
 
-def gscore(btn):
+def gscore(indata):
     global app,continuevisu
 #    print(app.getListItems("list"))
-    indata={}
-
-    indata['thrproba']=app.getEntry("Threshold proba")
+    
     indata['viewstyle']='reportAll'
+    indata['thrproba']=app.getEntry("Threshold proba")
+#    indata['viewstyle']='reportAll'
 #    indata['thrpatch']=app.getEntry("Percentage of pad Overlapp")   
     a,b,c=lisdirprocess(lisdir)
-    indata['lispatientselect']= a[0]
-    tf=True
     goodp=True
+    indata['lispatientselect']= a[0]
+    frontasked=False
+    tp=indata['viewstylet']
+    if tp=='FrontProjected' or tp == 'Merge':
+        frontasked=True
+    if frontasked:
+        for p,v in b.items():
+                if v['front'] == False:
+                    app.errorBox('error', 'no front predict for some patients')
+                    goodp=False
+                    break
+    tf=True
     for p,v in c.items():
         if tf:
             vold=v
@@ -347,6 +369,22 @@ def gscore(btn):
     else:
         app.stop(Stop)
         initDraw()
+        
+def gscorec(btn):
+    indata={}
+    indata['viewstylet']='Cross'
+    gscore(indata)
+    
+def gscoref(btn):
+    indata={}
+    indata['viewstylet']='FrontProjected'
+    gscore(indata)
+
+def gscorem(btn):
+    indata={}
+    indata['viewstylet']='Merge'
+    gscore(indata)
+   
 
 def selection(btn):
     global frontpredict,continuevisu,app
@@ -556,7 +594,10 @@ def initDraw():
         app.addHorizontalSeparator( colour="red")
         app.addButton("Visualisation",  visuDrawl)
         app.addHorizontalSeparator( colour="red")
-        app.addButton("Global Score",  gscore)
+        row = app.getRow()
+        app.addButtons(["Global Score Cross","Global Score Front Projected","Global Score Merge"], [gscorec,gscoref,gscorem])
+#        app.addButton("Global Score Front Projected", row,1, gscore)
+#        app.addButton("Global Score Merge", row,2, gscore)
         app.addHorizontalSeparator( colour="red")
     app.addButton("Quit",  boutonStop)
     app.go()
@@ -653,7 +694,7 @@ def visuDraw():
 #                app.addRadioButton("planar","from cross predict",row,1)
                 row = app.getRow() # get current row
 #                app.addRadioButton("planar","volume view from cross",row,0)
-                app.addRadioButton("planar","report")
+                app.addRadioButton("planar","reportCross")
 #                app.addRadioButton("planar","reportAll")
             else:
                 row = app.getRow() # get current row
@@ -676,11 +717,18 @@ def visuDraw():
 #                app.addRadioButton("planar","volume view from front",row,0)
 #                app.addRadioButton("planar","from cross + front merge",row,1)
 
-                app.addRadioButton("planar","front view")
+#                app.addRadioButton("planar","front view")
                
                 app.addRadioButton("planar","front projected view")
                 app.addRadioButton("planar","merge view")
-                app.addRadioButton("planar","report")
+
+                app.addLabel("Report", "Report Selection")
+                app.setLabelBg("Report","blue")
+                app.setLabelFg("Report","yellow")
+                row = app.getRow() 
+                app.addRadioButton("planar","reportCross",row,0)
+                app.addRadioButton("planar","reportFront",row,1)
+                app.addRadioButton("planar","reportMerge",row,2)
 
                 
                
