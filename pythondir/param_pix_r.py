@@ -25,6 +25,8 @@ setdata='set0'
 imageDepth=255
 dimtabx=512
 dimtaby=512
+dimtabmenu=150
+
 source_name='source'
 roi_name='sroi'
 path_patient='path_patient'
@@ -40,7 +42,8 @@ lung_mask1='lung_mask'
 lung_mask_bmp1='scan_bmp'
 lung_mask_bmp='bmp'
 path_data='data'
-volumeroifile='volumeroi'
+volumeroifile='volumeroir'
+reportalldir='REPORT_SCORE'
 
 black=(0,0,0)
 grey=(100,100,100)
@@ -48,6 +51,7 @@ highgrey=(200,200,200)
 red=(255,0,0)
 green=(0,255,0)
 blue=(0,0,255)
+lblue=(30,30,255)
 yellow=(255,255,0)
 cyan=(0,255,255)
 purple=(255,0,255)
@@ -64,6 +68,7 @@ parme3=(228,136,228)
 parme4=(226,136,230)
 chatain=(139,108,66)
 chatainlow=(109,98,46)
+lowyellow=(239,228,176)
 
 cwd=os.getcwd()
 (cwdtop,tail)=os.path.split(cwd)
@@ -81,12 +86,14 @@ if setdata=='set0':
         'cysts':7,
         'bronchiectasis':8,
         'emphysema':9,
-        'GGpret':10,
+#        'GGpret':10,
 #        'HCpret':12,
 #        'HCpbro':13,
 #        'GGpbro':14,
 #        'bropret':15,
+        'unclass':10,
         'lung':11,
+
 
         'erase':13               
         }
@@ -105,9 +112,10 @@ if setdata=='set0':
 #        'HCpret',
 #        'HCpbro',
 #        'GGpbro',
-        'GGpret',
+#        'GGpret',
 #        'bropret',
         'lung',
+        'unclass',
         'erase'
         ]
 
@@ -126,14 +134,14 @@ elif setdata=='set0p':
         'cysts':8,
         'bronchiectasis':9,
         'emphysema':10,
-        'GGpret':11,
+#        'GGpret':11,
 #        'HCpret':12,
 #        'HCpbro':13,
 #        'GGpbro':14,
 #        'bropret':15,
-        'lung':12,
+        'lung':11,
 
-        'erase':14               
+        'erase':13               
         }
     
     usedclassif =[
@@ -151,7 +159,7 @@ elif setdata=='set0p':
 #        'HCpret',
 #        'HCpbro',
 #        'GGpbro',
-        'GGpret',
+#        'GGpret',
 #        'bropret',
         'lung',
         'erase'
@@ -166,7 +174,7 @@ else:
 classifc ={
     'back_ground':chatainlow,
     'consolidation':cyan,
-    'HC':blue,
+    'HC':lblue,
     'ground_glass':red,
     'healthy':darkgreen,
     'micronodules':green,
@@ -189,7 +197,8 @@ classifc ={
      'pcp':white,
      'peripheral_micronodules':white,
      'tuberculosis':white,
-     'erase':white
+     'erase':white,
+     'unclass':lowyellow
  }
 
 def rsliceNum(s,c,e):

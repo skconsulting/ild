@@ -8,7 +8,7 @@ version 1.2
 10 aout 2017
 """
 #from param_pix_r import *
-from param_pix_r import path_data,dimtabx,dimtaby
+from param_pix_r import path_data,dimtabx,dimtaby,dimtabmenu
 from param_pix_r import typei1,typei,typei2
 from param_pix_r import source_name,scan_bmp,roi_name,imageDepth,lung_mask_bmp,lung_mask_bmp1,lung_mask,lung_mask1
 from param_pix_r import white,black,red,yellow
@@ -98,7 +98,7 @@ def contour5(vis,im,l):
 
 
 def click_and_crop(event, x, y, flags, param):
-    global quitl,pattern,dirpath_patient,dirroit,zoneverticalgauche,zoneverticaldroite,zonehorizontal
+    global quitl,pattern,dirpath_patient,dirroit,zoneverticalgauche,zoneverticaldroite
     global posxdel,menus,posydel,posyquit,posxquit,posxdellast,posydellast,posxdelall,posydelall
     global posxcomp,posycomp,imagename,posxreset,posyreset,posxvisua,posyvisua,posxeraseroi,posyeraseroi,posxlastp
     global posylastp,scannumber,patternerase,posxgeneh,posygeneh
@@ -107,16 +107,18 @@ def click_and_crop(event, x, y, flags, param):
 
 
     if event == cv2.EVENT_LBUTTONDOWN:
-        cv2.rectangle(menus, (150,12), (370,32), black, -1)
-#        posrc=0
-        print 'click location :',x,y
 
+        cv2.rectangle(menus, (150,12), (511,32), black, -1)
+#        posrc=0
+        
+        print 'click location :',x,y
+        
         for key1,value1 in classif.items():
             labelfound=False
             xr=5
-            yr=15*value1
-            xrn=xr+10
-            yrn=yr+10
+            yr=25*value1
+            xrn=xr+20
+            yrn=yr+20
             if x>xr and x<xrn and y>yr and y< yrn:
                 print 'this is',key1
                 if key1=='erase' :
@@ -124,7 +126,7 @@ def click_and_crop(event, x, y, flags, param):
                             patternerase=pattern
                     addt='erase :'
                     cv2.rectangle(menus, (200,0), (210,10), classifc[patternerase], -1)
-                    cv2.rectangle(menus, (212,0), (340,12), black, -1)
+                    cv2.rectangle(menus, (212,0), (511,12), black, -1)
                     cv2.putText(menus,addt+patternerase,(215,10),cv2.FONT_HERSHEY_PLAIN,0.7,classifc[patternerase],1 )
 #                    
                     pattern=key1
@@ -135,7 +137,7 @@ def click_and_crop(event, x, y, flags, param):
                     viewasked[key1]=True
                     cv2.setTrackbarPos(key1,'SliderRoi' ,1)
                     cv2.rectangle(menus, (200,0), (210,10), classifc[pattern], -1)
-                    cv2.rectangle(menus, (212,0), (340,12), black, -1)
+                    cv2.rectangle(menus, (212,0), (511,12), black, -1)
                     cv2.putText(menus,addt+key1,(215,10),cv2.FONT_HERSHEY_PLAIN,0.7,classifc[key1],1 )
                 labelfound=True
                 break
@@ -149,54 +151,54 @@ def click_and_crop(event, x, y, flags, param):
             print 'this is in menu'
             labelfound=True
 
-        if  x> zonehorizontal[0][0] and y > zonehorizontal[0][1] and x<zonehorizontal[1][0] and y<zonehorizontal[1][1]:
-            print 'this is in menu'
-            labelfound=True
+#        if  x> zonehorizontal[0][0] and y > zonehorizontal[0][1] and x<zonehorizontal[1][0] and y<zonehorizontal[1][1]:
+#            print 'this is in menu'
+#            labelfound=True
 
-        if x>posxdel and x<posxdel+10 and y>posydel and y< posydel+10:
+        if x>posxdel and x<posxdel+20 and y>posydel and y< posydel+20:
             print 'this is suppress'
             suppress()
             labelfound=True
 
-        if x>posxquit-10 and x<posxquit+20 and y>posyquit-10 and y< posyquit+20:
+        if x>posxquit-20 and x<posxquit+20 and y>posyquit-20 and y< posyquit+20:
             print 'this is quit'
             quitl=True
             labelfound=True
-  
-        if x>posxdellast and x<posxdellast+10 and y>posydellast and y< posydellast+10:
+#        print posxdellast,posydellast
+        if x>posxdellast and x<posxdellast+20 and y>posydellast and y< posydellast+20:
             print 'this is delete last'
             labelfound=True
             dellast()
 
-        if x>posxdelall and x<posxdelall+10 and y>posydelall and y< posydelall+10:
+        if x>posxdelall and x<posxdelall+20 and y>posydelall and y< posydelall+20:
             print 'this is delete all'
             labelfound=True
             delall()
 
-        if x>posxcomp and x<posxcomp+10 and y>posycomp and y< posycomp+10:
+        if x>posxcomp and x<posxcomp+20 and y>posycomp and y< posycomp+20:
             print 'this is completed for all'
             labelfound=True
             completed(imagename,dirpath_patient,dirroit)
 
-        if x>posxreset and x<posxreset+10 and y>posyreset and y< posyreset+10:
+        if x>posxreset and x<posxreset+20 and y>posyreset and y< posyreset+20:
             print 'this is reset'
             labelfound=True
             reseted()
-        if x>posxvisua and x<posxvisua+10 and y>posyvisua and y< posyvisua+10:
+        if x>posxvisua and x<posxvisua+20 and y>posyvisua and y< posyvisua+20:
             print 'this is visua'
             labelfound=True
             visua()
-        if x>posxeraseroi and x<posxeraseroi+10 and y>posyeraseroi and y< posyeraseroi+10:
+        if x>posxeraseroi and x<posxeraseroi+20 and y>posyeraseroi and y< posyeraseroi+20:
             print 'this is erase roi'
             labelfound=True
             eraseroi(imagename,dirpath_patient,dirroit)
 
-        if x>posxlastp and x<posxlastp+10 and y>posylastp and y< posylastp+10:
+        if x>posxlastp and x<posxlastp+20 and y>posylastp and y< posylastp+20:
             print 'this is last point'
             labelfound=True
             closepolygon()
         
-        if x>posxgeneh and x<posxgeneh+10 and y>posygeneh and y< posygeneh+10:
+        if x>posxgeneh and x<posxgeneh+20 and y>posygeneh and y< posygeneh+20:
             print 'generate healthy'
             labelfound=True
             genehealthy()
@@ -204,7 +206,7 @@ def click_and_crop(event, x, y, flags, param):
         if not labelfound:
             print 'add point',pattern
             if len(pattern)>0:
-                xnew=int((x+x0new)/fxs)
+                xnew=int((x+x0new-dimtabmenu)/fxs)
                 ynew=int((y+y0new)/fxs)
 #                print x,y,xnew,ynew
                 numeropoly=tabroinumber[pattern][scannumber]
@@ -217,7 +219,7 @@ def click_and_crop(event, x, y, flags, param):
                               (tabroi[pattern][scannumber][numeropoly][l+1][0],tabroi[pattern][scannumber][numeropoly][l+1][1]), classifc[pattern], 1)
                     l+=1
             else:
-                cv2.rectangle(menus, (212,0), (340,12), black, -1)
+                cv2.rectangle(menus, (212,0), (511,12), black, -1)
                 cv2.putText(menus,'No pattern selected',(215,10),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
 
 def closepolygon():
@@ -231,7 +233,7 @@ def closepolygon():
             tabroi[pattern][scannumber][numeropoly]=[]
         else:
             'wait for new point'
-        cv2.rectangle(menus, (150,12), (370,52), black, -1)
+        cv2.rectangle(menus, (150,12), (511,52), black, -1)
         cv2.putText(menus,'polygone closed',(215,20),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
 
 def suppress():
@@ -246,35 +248,36 @@ def suppress():
             cv2.line(images[scannumber], (tabroi[pattern][scannumber][numeropoly][l][0],tabroi[pattern][scannumber][numeropoly][l][1]),
                      (tabroi[pattern][scannumber][numeropoly][l+1][0],tabroi[pattern][scannumber][numeropoly][l+1][1]), classifc[pattern], 1)
             l+=1
-    cv2.rectangle(menus, (150,12), (370,52), black, -1)
+    cv2.rectangle(menus, (150,12), (511,52), black, -1)
     cv2.putText(menus,'delete last entry',(215,20),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
-
-#def colorimage(image,color):
-##    im=image.copy()
-##    im = cv2.cvtColor(image,cv2.COLOR_GRAY2BGR)
-#    np.putmask(im,im>0,color)
-#    return im
 
 def genehealthy():
     global pattern,tabroifinal,volumeroi,path_data_writefile,path_data_write
     pattern='healthy'
-    cv2.rectangle(menus, (212,0), (340,12), black, -1)
+    cv2.rectangle(menus, (212,0), (511,12), black, -1)
     cv2.rectangle(menus, (200,0), (210,10), classifc[pattern], -1)
     cv2.putText(menus,pattern,(215,10),cv2.FONT_HERSHEY_PLAIN,0.7,classifc[pattern],1 )
-    lungm=tabroifinal['lung'][scannumber]
-    mgray=cv2.cvtColor(lungm,cv2.COLOR_BGR2GRAY)
-    imagemax= cv2.countNonZero(mgray)
+    try:
+        lungm=tabroifinal['lung'][scannumber]
+        mgray=cv2.cvtColor(lungm,cv2.COLOR_BGR2GRAY)
+        imagemax= cv2.countNonZero(mgray)
+    except:
+        imagemax=0
     if imagemax==0:          
-        cv2.rectangle(menus, (150,12), (370,52), black, -1)                        
+
+        cv2.rectangle(menus, (150,12), (511,52), black, -1)                        
         cv2.putText(menus,'No healthy created since no lung mask',(150,30),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
+
     else:
         clungm=np.copy(lungm)
     #    cv2.imshow("clungm", clungm)
         for key in usedclassif :
             if key not in ['healthy','lung','erase']:
     #            print key
-                patim=tabroifinal[key][scannumber]
-                
+                try:
+                    patim=tabroifinal[key][scannumber]
+                except:
+                    patim=np.zeros((dimtabx,dimtaby,3),np.uint8)
                 mgray=cv2.cvtColor(patim,cv2.COLOR_BGR2GRAY)
                 imagemax= cv2.countNonZero(mgray)           
                 if imagemax>0:  
@@ -285,10 +288,11 @@ def genehealthy():
                     clungm=cv2.bitwise_and(clungm,clungm,mask=nthresh)
     #    clungm=colorimage(clungm,classifc['healthy'])
         np.putmask(clungm,clungm>0,classifc['healthy'])
-    #    cv2.imshow("clungmf", clungm)        
+    #    cv2.imshow("clungmf", clungm)         
+    
         tabroifinal['healthy'][scannumber]=clungm
-        pickle.dump(tabroifinal, open(os.path.join(path_data_write,'tabroifinal'), "wb" ),protocol=-1)
-        cv2.rectangle(menus, (150,12), (370,52), black, -1) 
+        pickle.dump(tabroifinal, open(os.path.join(path_data_write,'tabroifinalr'), "wb" ),protocol=-1)
+        cv2.rectangle(menus, (150,12), (511,52), black, -1) 
         mgray=cv2.cvtColor(clungm,cv2.COLOR_BGR2GRAY)
         imagemax= cv2.countNonZero(mgray)
         if imagemax>0:                                  
@@ -324,32 +328,6 @@ def genehealthy():
         else:
             cv2.putText(menus,'No healthy created since no ROI'+' slice:'+str(scannumber),(150,30),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )             
 
-#def writesroi(img,key,scannumber):
-#     tabgrey=cv2.cvtColor(tabgrey,cv2.COLOR_GRAY2BGR)
-#    #                np.putmask(tabgrey,tabgrey>0,classifc[key])
-#    #                cv2.imwrite(img,tabgrey)
-#    sroiname=os.path.join(pathroi,roibmpfile)
-##                print sroiname
-#    imageview=cv2.cvtColor(imageroi,cv2.COLOR_RGB2BGR)  
-#      
-#    tabgrey=cv2.cvtColor(imageview,cv2.COLOR_BGR2GRAY)
-#    np.putmask(tabgrey,tabgrey>0,1)
-#    area= tabgrey.sum()*pixelSpacing*pixelSpacing/100
-#    volumeroi[slicenumber][key]=area   
-##                    pickle.dump(volumeroi, open(path_data_writefile, "wb" ),protocol=-1)
-#    tabroifinal[key][slicenumber]=imageview   
-#
-#    np.putmask(tabgrey, tabgrey >0, 100)
-#    ctkey=drawcontours2(tabgrey,key,dimtabx,dimtaby)
-#    anoted_image=cv2.imread(sroiname,1)
-##                    plt.imshow(anoted_image)
-##                    plt.imshow(ctkey)
-##                    plt.show()
-##                
-#    anoted_image=cv2.add(anoted_image,ctkey)
-#    cv2.imwrite(sroiname,anoted_image)
-    
-    
 def completed(imagename,dirpath_patient,dirroit):
     global scannumber,pixelSpacing,volumeroi,patternerase,tabroifinal,path_data_writefile,path_data_write
 
@@ -371,99 +349,102 @@ def completed(imagename,dirpath_patient,dirroit):
         for key in usedclassif :
 
                 numeropoly=tabroinumber[key][scannumber]
-
+#                print '0'
                 for n in range (0,numeropoly+1):
                     if len(tabroi[key][scannumber][n])>0:
                         for l in range(0,len(tabroi[key][scannumber][n])-1):
                                 cv2.line(images[scannumber], (tabroi[key][scannumber][n][l][0],tabroi[key][scannumber][n][l][1]),
                                               (tabroi[key][scannumber][n][l+1][0],tabroi[key][scannumber][n][l+1][1]), black, 1)
-
+#                        print '0'
                         ctc=contour3(tabroi[key][scannumber][n],key)
 #                        print key,scannumber
+                        try:
+                            tabroifinal[key][scannumber]=contour5(tabroifinal[key][scannumber],ctc,key)
+                        except:
+                            tabroifinal[key][scannumber]=np.zeros((dimtabx,dimtaby,3),np.uint8)
+                            tabroifinal[key][scannumber]=contour5(tabroifinal[key][scannumber],ctc,key)
+                               
+                        pickle.dump(tabroifinal, open(os.path.join(path_data_write,'tabroifinalr'), "wb" ),protocol=-1) 
 
-                        tabroifinal[key][scannumber]=contour5(tabroifinal[key][scannumber],ctc,key)
-
-                        pickle.dump(tabroifinal, open(os.path.join(path_data_write,'tabroifinal'), "wb" ),protocol=-1) 
-
-#                        writesroi(tabroifinal[key][scannumber],key,scannumber)
                         images[scannumber]=cv2.addWeighted(images[scannumber],1,tabroifinal[key][scannumber],0.5,0)
                         tabroi[key][scannumber][n]=[]
 
                 tabroinumber[key][scannumber]=0
 
-                imgray = cv2.cvtColor(tabroifinal[key][scannumber],cv2.COLOR_BGR2GRAY)
-                imagemax= cv2.countNonZero(imgray)
-
-                if imagemax>0:  
-
-                    posext=imagename.find('.'+typei1)
-                    imgcoreScans=imagename[0:posext]+'.'+typei1
-#                    imgcoreRois=imagename[0:posext]+'.'+typei
-                    dirroi=os.path.join(dirpath_patient,key)                
-                    if key in classifcontour:        
-                        dirroi=os.path.join(dirpath_patient,lung_maskf)
+                try:
+                    imgray = cv2.cvtColor(tabroifinal[key][scannumber],cv2.COLOR_BGR2GRAY)
+                    imagemax= cv2.countNonZero(imgray)
+    
+                    if imagemax>0:  
+    
+                        posext=imagename.find('.'+typei1)
+                        imgcoreScans=imagename[0:posext]+'.'+typei1
+    #                    imgcoreRois=imagename[0:posext]+'.'+typei
+                        dirroi=os.path.join(dirpath_patient,key)                
+                        if key in classifcontour:        
+                            dirroi=os.path.join(dirpath_patient,lung_maskf)
+                            if not os.path.exists(dirroi):
+                                os.mkdir(dirroi)
+                            dirroi=os.path.join(dirroi,lung_mask_bmpf)
                         if not os.path.exists(dirroi):
                             os.mkdir(dirroi)
-                        dirroi=os.path.join(dirroi,lung_mask_bmpf)
-                    if not os.path.exists(dirroi):
-                        os.mkdir(dirroi)
-#                    print dirroi
-                    imgcoreScan=os.path.join(dirroi,imgcoreScans)
-                    imgcoreRoi=os.path.join(dirroit,imgcoreScans)         
-                    tabtowrite=cv2.cvtColor(tabroifinal[key][scannumber],cv2.COLOR_BGR2RGB)
-        
-                    cv2.rectangle(menus, (150,12), (370,52), black, -1) 
-                                     
-                    if os.path.exists(imgcoreScan):
-                        cv2.putText(menus,'ROI '+' slice:'+str(scannumber)+' overwritten',(150,30),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
-
-                    ldrroi=os.listdir(dirroi)
-
-                    for i in ldrroi:
-                        if rsliceNum(i,'_','.'+typei)==scannumber:
-                            os.remove(os.path.join(dirroi,i))
-                        if rsliceNum(i,'_','.'+typei1)==scannumber:
-                            os.remove(os.path.join(dirroi,i))
-                        if rsliceNum(i,'_','.'+typei2)==scannumber:
-                            os.remove(os.path.join(dirroi,i))
-                    cv2.imwrite(imgcoreScan,tabtowrite)  
-
-                    tabgrey=cv2.cvtColor(tabtowrite,cv2.COLOR_BGR2GRAY)
-                    np.putmask(tabgrey,tabgrey>0,1)
-                    area= tabgrey.sum()*pixelSpacing*pixelSpacing/100 #in cm2
-#                    print area, 'pixelSpacing',pixelSpacing
-
-                    if area>0:
-
-                        volumeroi[scannumber][key]=area  
-
-                        pickle.dump(volumeroi, open(path_data_writefile, "wb" ),protocol=-1)
-
-                    cv2.putText(menus,'Slice ROI stored',(215,20),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
-
-                    mroi=cv2.imread(imgcoreRoi,1)
-
-                    ctkey=drawcontours(tabtowrite,key)
-                    mroiaroi=cv2.add(mroi,ctkey)
-
-                    ldrroi=os.listdir(dirroit)
-                    for i in ldrroi:
-                        if rsliceNum(i,'_','.'+typei)==scannumber:
-                            os.remove(os.path.join(dirroit,i))
-                        if rsliceNum(i,'_','.'+typei1)==scannumber:
-                            os.remove(os.path.join(dirroit,i))
-                        if rsliceNum(i,'_','.'+typei2)==scannumber:
-                            os.remove(os.path.join(dirroit,i))                   
-
-                    cv2.imwrite(imgcoreRoi,mroiaroi)
+    #                    print dirroi
+                        imgcoreScan=os.path.join(dirroi,imgcoreScans)
+                        imgcoreRoi=os.path.join(dirroit,imgcoreScans)         
+                        tabtowrite=cv2.cvtColor(tabroifinal[key][scannumber],cv2.COLOR_BGR2RGB)
+            
+                        cv2.rectangle(menus, (150,12), (511,52), black, -1) 
+                                         
+                        if os.path.exists(imgcoreScan):
+                            cv2.putText(menus,'ROI '+' slice:'+str(scannumber)+' overwritten',(150,30),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
+    
+                        ldrroi=os.listdir(dirroi)
+    
+                        for i in ldrroi:
+                            if rsliceNum(i,'_','.'+typei)==scannumber:
+                                os.remove(os.path.join(dirroi,i))
+                            if rsliceNum(i,'_','.'+typei1)==scannumber:
+                                os.remove(os.path.join(dirroi,i))
+                            if rsliceNum(i,'_','.'+typei2)==scannumber:
+                                os.remove(os.path.join(dirroi,i))
+                        cv2.imwrite(imgcoreScan,tabtowrite)  
+    
+                        tabgrey=cv2.cvtColor(tabtowrite,cv2.COLOR_BGR2GRAY)
+                        np.putmask(tabgrey,tabgrey>0,1)
+                        area= tabgrey.sum()*pixelSpacing*pixelSpacing/100 #in cm2
+    #                    print area, 'pixelSpacing',pixelSpacing
+    
+                        if area>0:
+    
+                            volumeroi[scannumber][key]=area  
+    
+                            pickle.dump(volumeroi, open(path_data_writefile, "wb" ),protocol=-1)
+    
+                        cv2.putText(menus,'Slice ROI stored',(215,20),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
+    
+                        mroi=cv2.imread(imgcoreRoi,1)
+    
+                        ctkey=drawcontours(tabtowrite,key)
+                        mroiaroi=cv2.add(mroi,ctkey)
+    
+                        ldrroi=os.listdir(dirroit)
+                        for i in ldrroi:
+                            if rsliceNum(i,'_','.'+typei)==scannumber:
+                                os.remove(os.path.join(dirroit,i))
+                            if rsliceNum(i,'_','.'+typei1)==scannumber:
+                                os.remove(os.path.join(dirroit,i))
+                            if rsliceNum(i,'_','.'+typei2)==scannumber:
+                                os.remove(os.path.join(dirroit,i))                   
+    
+                        cv2.imwrite(imgcoreRoi,mroiaroi)
+                except:
+                            continue
 
         
         images[scannumber]=np.zeros((dimtabx,dimtaby,3), np.uint8)
     else:
         print 'this is erase'        
         key = 'erase'
-#        erasearea()
-#        modifp=[]
         numeropoly=tabroinumber[key][scannumber]
 #        print key,numeropoly,scannumber
         for n in range (0,numeropoly+1):
@@ -477,8 +458,15 @@ def completed(imagename,dirpath_patient,dirroit):
 #                ctco=np.copy(ctc)
                 np.putmask(ctc,ctc>0,255)
                 ctcm=np.bitwise_not(ctc)        
-                tabroifinal[patternerase][scannumber]=np.bitwise_and(tabroifinal[patternerase][scannumber],ctcm)
-                pickle.dump(tabroifinal, open(os.path.join(path_data_write,'tabroifinal'), "wb" ),protocol=-1)
+                
+                try:
+                            tabroifinal[patternerase][scannumber]=np.bitwise_and(tabroifinal[patternerase][scannumber],ctcm)
+                except:
+                            tabroifinal[key][scannumber]=np.zeros((dimtabx,dimtaby,3),np.uint8)
+                            tabroifinal[patternerase][scannumber]=np.bitwise_and(tabroifinal[patternerase][scannumber],ctcm)
+                
+               
+                pickle.dump(tabroifinal, open(os.path.join(path_data_write,'tabroifinalr'), "wb" ),protocol=-1)
                                             
         tabroinumber[key][scannumber]=0
                     
@@ -495,7 +483,7 @@ def completed(imagename,dirpath_patient,dirroit):
         imgcoreRoi=os.path.join(dirroit,imgcoreScans)         
         tabtowrite=cv2.cvtColor(tabroifinal[patternerase][scannumber],cv2.COLOR_BGR2RGB)    
 #            tabtowritec=np.copy(tabtowrite)
-        cv2.rectangle(menus, (150,12), (370,52), black, -1) 
+        cv2.rectangle(menus, (150,12), (511,52), black, -1) 
                          
         if os.path.exists(imgcoreScan):
             cv2.putText(menus,'ROI '+' slice:'+str(scannumber)+' overwritten',(150,30),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
@@ -548,7 +536,7 @@ def visua():
                         ctc=ctc.astype(np.uint8)
                         images[scannumber]=contour5(images[scannumber],ctc,key)
 #                    images[scannumber]=cv2.addWeighted(images[scannumber],1,ctc,0.5,0)
-    cv2.rectangle(menus, (150,12), (370,52), black, -1)
+    cv2.rectangle(menus, (150,12), (511,52), black, -1)
     cv2.putText(menus,' Visualization ROI',(150,30),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
 
 def eraseroi(imagename,dirpath_patient,dirroit):
@@ -558,7 +546,7 @@ def eraseroi(imagename,dirpath_patient,dirroit):
         closepolygon()
         delall()
         tabroifinal[pattern][scannumber]=np.zeros((dimtabx,dimtaby,3), np.uint8)
-        pickle.dump(tabroifinal, open(os.path.join(path_data_write,'tabroifinal'), "wb" ),protocol=-1)
+        pickle.dump(tabroifinal, open(os.path.join(path_data_write,'tabroifinalr'), "wb" ),protocol=-1)
         dirroi=os.path.join(dirpath_patient,pattern)
         if pattern in classifcontour:       
             dirroi=os.path.join(dirpath_patient,lung_maskf)
@@ -567,12 +555,12 @@ def eraseroi(imagename,dirpath_patient,dirroit):
         if os.path.exists(imgcoreScan):
             os.remove(imgcoreScan)
             completed(imagename,dirpath_patient,dirroit)   
-            cv2.rectangle(menus, (150,12), (370,52), black, -1)             
+            cv2.rectangle(menus, (150,12), (511,52), black, -1)             
             cv2.putText(menus,'ROI '+pattern+' slice:'+str(scannumber)+' erased',(150,30),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
             volumeroi[scannumber][pattern]=0
             pickle.dump(volumeroi, open(path_data_writefile, "wb" ),protocol=-1)
         else:
-            cv2.rectangle(menus, (150,12), (370,52), black, -1)
+            cv2.rectangle(menus, (150,12), (511,52), black, -1)
             cv2.putText(menus,'ROI '+pattern+' slice:'+str(scannumber)+' not exist',(150,30),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
     else:
         cv2.putText(menus,' no pattern defined',(150,30),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
@@ -598,7 +586,7 @@ def reseted():
                                       (tabroi[key][scannumber][n][l+1][0],tabroi[key][scannumber][n][l+1][1]), black, 1)
                     tabroi[key][scannumber][n]=[]
     images[scannumber]=np.zeros((dimtabx,dimtaby,3), np.uint8)
-    cv2.rectangle(menus, (150,12), (370,52), black, -1)
+    cv2.rectangle(menus, (150,12), (511,52), black, -1)
     cv2.putText(menus,' Delete all drawings',(150,30),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
     
 def dellast():
@@ -625,7 +613,7 @@ def dellast():
         tabroi[pattern][scannumber][numeropoly]=[]
     else:
         print'length null'
-    cv2.rectangle(menus, (150,12), (370,52), black, -1)
+    cv2.rectangle(menus, (150,12), (511,52), black, -1)
     cv2.putText(menus,' Delete last polygon',(150,30),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
 
 def delall():
@@ -640,7 +628,7 @@ def delall():
             images[scannumber]=contour4(images[scannumber],tabroi[pattern][scannumber][n])
         tabroi[pattern][scannumber][n]=[]
     tabroinumber[pattern][scannumber]=0
-    cv2.rectangle(menus, (150,12), (370,52), black, -1)
+    cv2.rectangle(menus, (150,12), (511,52), black, -1)
     cv2.putText(menus,' Delete all polygons',(150,30),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
 
 def writeslice(num):
@@ -736,11 +724,12 @@ def loop(slnt,pdirk,dirpath_patient,dirroi):
 
     nbdig=0
     numberentered={}
-    while True:              
+    while True:         
+
         key = cv2.waitKey(1000)
 #        key = cv2.waitKey(1000) & 0xFF
-#        if key != -1:
-#            print key
+        if key != -1:
+            print key
         if key >47 and key<58:
             numberfinal=0
             knum=key-48
@@ -867,12 +856,18 @@ def loop(slnt,pdirk,dirpath_patient,dirroi):
             imglumi=lumi(image,l)
             image=contrasti(imglumi,c)
             imageview=cv2.add(image,imagesview)
-            imageview=cv2.add(imageview,menus)
+            imageview=cv2.add(menus,imageview)
+            
             for key1 in usedclassif:
                 if viewasked[key1]:
-                    if tabroifinal[key1][scannumber].max()>0:                        
-                        tabroifinalview=zoomfunction(tabroifinal[key1][scannumber],z,px,py)
-                        imageview=cv2.addWeighted(imageview,1,tabroifinalview,0.5,0)
+                    try:
+                        if tabroifinal[key1][scannumber].max()>0:                        
+                            tabroifinalview=zoomfunction(tabroifinal[key1][scannumber],z,px,py)
+                            imageview=cv2.addWeighted(imageview,1,tabroifinalview,0.8,0)
+                    except:
+                      continue
+            imageview=np.concatenate((imageview,menuright),axis=1)
+            imageview=np.concatenate((menuleft,imageview),axis=1)
             imageview=cv2.cvtColor(imageview,cv2.COLOR_BGR2RGB)
             cv2.imshow("imageRoi", imageview)
         else:
@@ -905,24 +900,27 @@ def largest_label_volume(im, bg=-1):
         return vals[np.argmax(counts)]
     else:
         return None
+
 def segment_lung_mask(image, slnt ,fill_lung_structures=True):
     print 'start generation'
 
     # not actually binary, but 1 and 2.
     # 0 is treated as background, which we do not want
-    print 'initial 237'
-    plt.imshow(image[slnt/2])
-    plt.show()
-    binary_image = np.array(image > -320, dtype=np.int8)+1
-    print 'after treshold 237'
-    plt.imshow(binary_image[slnt/2])
-    plt.show()
+#    print 'initial 237'
+#    plt.imshow(image[slnt/2])
+#    plt.show()
+#    print image.min(), image.max()
+    binary_image = np.array(image > -350, dtype=np.int8)+1 # initial 320
+#    print binary_image.min(), binary_image.max()
+#    print 'after treshold 237'
+#    plt.imshow(binary_image[slnt/2])
+#    plt.show()
 #    binary_image = clear_border(binary_image)
     labels = measure.label(binary_image)
-    print labels.min(),labels.max()
-    print 'label'
-    plt.imshow(labels[slnt/2])
-    plt.show()
+#    print labels.min(),labels.max()
+#    print 'label'
+#    plt.imshow(labels[slnt/2])
+#    plt.show()
 
     # Pick the pixel in the very corner to determine which label is air.
     #   Improvement: Pick multiple background labels from around the patient
@@ -935,10 +933,10 @@ def segment_lung_mask(image, slnt ,fill_lung_structures=True):
     ls0=labels.shape[0]-1
     ls1=labels.shape[1]-1
     ls2=labels.shape[2]-1
-    for i in range (0,8):
+    for i in range (0,8):#8
 #        print  'i:',i
 #        print (i/4)%2, (i/2)%2, i%2
-        for j in range (1,4):
+        for j in range (1,3):#3
 
             background_label=labels[(i/4)%2*ls0,(i/2)%2*ls1,i%2*ls2/j]
             binary_image[background_label == labels] = 2
@@ -946,9 +944,9 @@ def segment_lung_mask(image, slnt ,fill_lung_structures=True):
             binary_image[background_label == labels] = 2
             background_label=labels[(i/4)%2*ls0/j,(i/2)%2*ls1,i%2*ls2]
             binary_image[background_label == labels] = 2  
-    print 'after label applied'
-    plt.imshow(binary_image[slnt/2])
-    plt.show()
+#    print 'after label applied'
+#    plt.imshow(binary_image[slnt/2])
+#    plt.show()
     #Fill the air around the person
 #    binary_image[background_label == labels] = 2
 
@@ -965,21 +963,21 @@ def segment_lung_mask(image, slnt ,fill_lung_structures=True):
             if l_max is not None: #This slice contains some lung
                 binary_image[i][labeling != l_max] = 1
 
-    print 'fill_lung_structures'
-    plt.imshow(binary_image[slnt/2])
-    plt.show()
+#    print 'fill_lung_structures'
+#    plt.imshow(binary_image[slnt/2])
+#    plt.show()
     binary_image -= 1 #Make the image actual binary
     binary_image = 1-binary_image # Invert it, lungs are now 1
 
     # Remove other air pockets insided body
-#    labels = measure.label(binary_image, background=0)
-#    l_max = largest_label_volume(labels, bg=0)
-#    if l_max is not None: # There are air pockets
-#        binary_image[labels != l_max] = 0
+    labels = measure.label(binary_image, background=0)
+    l_max = largest_label_volume(labels, bg=0)
+    if l_max is not None: # There are air pockets
+        binary_image[labels != l_max] = 0
         
-    print 'remove air pocket'
-    plt.imshow(binary_image[slnt/2])
-    plt.show()
+#    print 'remove air pocket'
+#    plt.imshow(binary_image[slnt/2])
+#    plt.show()
     return binary_image
 
 def morph(imgt,k):
@@ -1139,8 +1137,9 @@ def genebmp(fn,nosource,dirroit,centerHU,limitHU):
     slnt=slnt+1
     tabscan = np.zeros((slnt,dimtabx,dimtaby),np.int16)
     tabscanName = {}
-    lbHU=centerHU-limitHU
-    lhHU=centerHU+limitHU
+    lbHU=centerHU-limitHU/2
+    lhHU=centerHU+limitHU/2
+#    print lbHU,lhHU
     ll=len(listdcm)
     printProgressBar(0,ll , prefix = 'Progress:', suffix = 'Complete', length = 50)
     i=0
@@ -1168,10 +1167,13 @@ def genebmp(fn,nosource,dirroit,centerHU,limitHU):
         endnumslice=l.find('.dcm')
         imgcoreScan=l[0:endnumslice]+'_'+str(slicenumber)+'.'+typei1
 #        imgcoreRoi=l[0:endnumslice]+'_'+str(slicenumber)+'.'+typei
-        tabscan[slicenumber]=dsr 
+#        tabscan[slicenumber]=dsr 
         tabscanName[slicenumber]=imgcoreScan
+#        print dsr.min(),dsr.max()
         np.putmask(dsr,dsr<lbHU,lbHU)
         np.putmask(dsr,dsr>lhHU,lhHU)
+#        print dsr.min(),dsr.max()
+        tabscan[slicenumber]=dsr
         dsrnormi=normi(dsr)
         dsrnormi=cv2.cvtColor(dsrnormi,cv2.COLOR_GRAY2RGB)
 
@@ -1185,7 +1187,7 @@ def genebmp(fn,nosource,dirroit,centerHU,limitHU):
 
         t4=time.asctime()
         t5='CenterHU: '+str(int(centerHU))
-        t6='LimitHU: +/-' +str(int(limitHU))
+        t6='LimitHU: +/-' +str(int(limitHU/2))
         anoted_image=tagviews(dsrnormi,t0,dimtabx-300,dimtaby-10,t1,0,dimtaby-20,t2,dimtabx-350,dimtaby-10,
                      t3,0,dimtaby-30,t4,0,dimtaby-10,t5,0,dimtaby-40,t6,0,dimtaby-50)
         anoted_image=cv2.cvtColor(anoted_image,cv2.COLOR_BGR2RGB)
@@ -1199,11 +1201,12 @@ def nothing(x):
     pass
 
 def menudraw(slnt):
-    global refPt, cropping,pattern,x0,y0,quitl,tabroi,tabroifinal,menus,images
+    global refPt, cropping,pattern,x0,y0,quitl,tabroi,tabroifinal,menuleft,menuright,images
     global posxdel,posydel,posxquit,posyquit,posxdellast,posydellast,posxdelall,posydelall
     global posxcomp,posycomp,posxreset,posyreset,posxvisua,posyvisua
     global posxeraseroi,posyeraseroi,posxlastp,posylastp,posxgeneh,posygeneh
 #    posrc=0
+    corectx=dimtabx+dimtabmenu
     for key1,value1 in classif.items():
         tabroi[key1]={}
 #        tabroifinal[key1]={}
@@ -1215,63 +1218,75 @@ def menudraw(slnt):
 #            tabroifinal[key1][sln]= np.zeros((dimtabx,dimtaby,3), np.uint8)
             if key1 in usedclassif:
                 xr=5
-                yr=15*value1
-                xrn=xr+10
-                yrn=yr+10
-                cv2.rectangle(menus, (xr, yr),(xrn,yrn), classifc[key1], -1)
-                cv2.putText(menus,key1,(xr+15,yr+10),cv2.FONT_HERSHEY_PLAIN,0.7,classifc[key1],1 )
+                yr=25*value1
+                xrn=xr+20
+                yrn=yr+20
+                cv2.rectangle(menuleft, (xr, yr),(xrn,yrn), classifc[key1], -1)
+                cv2.putText(menuleft,key1,(xr+25,yr+15),cv2.FONT_HERSHEY_PLAIN,0.8,classifc[key1],1 )
 #        posrc+=1
     
-    posxdel=dimtabx-20
+    posxinit=120
+    
+    posxdel=posxinit
     posydel=15
-    cv2.rectangle(menus, (posxdel,posydel),(posxdel+10,posydel+10), white, -1)
-    cv2.putText(menus,'(d) del',(posxdel-40, posydel+10),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
+    cv2.rectangle(menuright, (posxdel,posydel),(posxdel+20,posydel+20), white, -1)
+    cv2.putText(menuright,'(d) del',(posxdel-60, posydel+20),cv2.FONT_HERSHEY_PLAIN,0.8,white,1 )
+    posxdel+=corectx
+        
+    posxdellast=posxinit
+    posydellast=40
+    cv2.rectangle(menuright, (posxdellast,posydellast),(posxdellast+20,posydellast+20), white, -1)
+    cv2.putText(menuright,'(l) del last',(posxdellast-88, posydellast+20),cv2.FONT_HERSHEY_PLAIN,0.8,white,1 )
+    posxdellast+=corectx
 
-    posxquit=dimtabx-20
-    posyquit=dimtaby-50
-    cv2.rectangle(menus, (posxquit,posyquit),(posxquit+10,posyquit+10), red, -1)
-    cv2.putText(menus,'(q) quit',(posxquit-45, posyquit+10),cv2.FONT_HERSHEY_PLAIN,0.7,red,1 )
+    posxdelall=posxinit
+    posydelall=65
+    cv2.rectangle(menuright, (posxdelall,posydelall),(posxdelall+20,posydelall+20), white, -1)
+    cv2.putText(menuright,'(e) del all',(posxdelall-77, posydelall+20),cv2.FONT_HERSHEY_PLAIN,0.8,white,1 )
+    posxdelall+=corectx
     
+    posxlastp=posxinit
+    posylastp=90
+    cv2.rectangle(menuright, (posxlastp,posylastp),(posxlastp+20,posylastp+20), white, -1)
+    cv2.putText(menuright,'(f) last p',(posxlastp-95, posylastp+20),cv2.FONT_HERSHEY_PLAIN,0.8,white,1 )
+    posxlastp+=corectx
 
-    posxdellast=dimtabx-20
-    posydellast=30
-    cv2.rectangle(menus, (posxdellast,posydellast),(posxdellast+10,posydellast+10), white, -1)
-    cv2.putText(menus,'(l) del last',(posxdellast-68, posydellast+10),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
+    posxcomp=posxinit
+    posycomp=115
+    cv2.rectangle(menuright, (posxcomp,posycomp),(posxcomp+20,posycomp+20), white, -1)
+    cv2.putText(menuright,'(c) completed',(posxcomp-105, posycomp+20),cv2.FONT_HERSHEY_PLAIN,0.8,white,1 )
+    posxcomp+=corectx
 
-    posxdelall=dimtabx-20
-    posydelall=45
-    cv2.rectangle(menus, (posxdelall,posydelall),(posxdelall+10,posydelall+10), white, -1)
-    cv2.putText(menus,'(e) del all',(posxdelall-57, posydelall+10),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
+    posxreset=posxinit
+    posyreset=140
+    cv2.rectangle(menuright, (posxreset,posyreset),(posxreset+20,posyreset+20), white, -1)
+    cv2.putText(menuright,'(r) reset',(posxreset-75, posyreset+20),cv2.FONT_HERSHEY_PLAIN,0.8,white,1 )
+    posxreset+=corectx
 
-    posxcomp=dimtabx-20
-    posycomp=75
-    cv2.rectangle(menus, (posxcomp,posycomp),(posxcomp+10,posycomp+10), white, -1)
-    cv2.putText(menus,'(c) completed',(posxcomp-85, posycomp+10),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
+    posxvisua=posxinit
+    posyvisua=165
+    cv2.rectangle(menuright, (posxvisua,posyvisua),(posxvisua+20,posyvisua+20), white, -1)
+    cv2.putText(menuright,'(v) visua',(posxvisua-75, posyvisua+20),cv2.FONT_HERSHEY_PLAIN,0.8,white,1 )
+    posxvisua+=corectx
 
-    posxreset=dimtabx-20
-    posyreset=90
-    cv2.rectangle(menus, (posxreset,posyreset),(posxreset+10,posyreset+10), white, -1)
-    cv2.putText(menus,'(r) reset',(posxreset-55, posyreset+10),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
-
-    posxvisua=dimtabx-20
-    posyvisua=60
-    cv2.rectangle(menus, (posxvisua,posyvisua),(posxvisua+10,posyvisua+10), white, -1)
-    cv2.putText(menus,'(v) visua',(posxvisua-55, posyvisua+10),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
-
-    posxeraseroi=dimtabx-20
-    posyeraseroi=105
-    cv2.rectangle(menus, (posxeraseroi,posyeraseroi),(posxeraseroi+10,posyeraseroi+10), white, -1)
-    cv2.putText(menus,'(e) eraseroi',(posxeraseroi-75, posyeraseroi+10),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
-
-    posxlastp=dimtabx-20
-    posylastp=120
-    cv2.rectangle(menus, (posxlastp,posylastp),(posxlastp+10,posylastp+10), white, -1)
-    cv2.putText(menus,'(f) last p',(posxlastp-75, posylastp+10),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
+    posxeraseroi=posxinit
+    posyeraseroi=190
+    cv2.rectangle(menuright, (posxeraseroi,posyeraseroi),(posxeraseroi+20,posyeraseroi+20), white, -1)
+    cv2.putText(menuright,'(e) eraseroi',(posxeraseroi-95, posyeraseroi+20),cv2.FONT_HERSHEY_PLAIN,0.8,white,1 )
+    posxeraseroi+=corectx
+   
+    posxgeneh=posxinit
+    posygeneh=215
+    cv2.rectangle(menuright, (posxgeneh,posygeneh),(posxgeneh+20,posygeneh+20), white, -1)
+    cv2.putText(menuright,'(h) gene Healthy',(posxgeneh-110, posygeneh+20),cv2.FONT_HERSHEY_PLAIN,0.8,white,1 )
+    posxgeneh+=corectx
     
-    posxgeneh=dimtabx-20
-    posygeneh=135
-    cv2.rectangle(menus, (posxgeneh,posygeneh),(posxgeneh+10,posygeneh+10), white, -1)
-    cv2.putText(menus,'(h) gene Hea',(posxgeneh-75, posygeneh+10),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
+    posxquit=posxinit
+    posyquit=450
+    cv2.rectangle(menuright, (posxquit,posyquit),(posxquit+20,posyquit+20), red, -1)
+    cv2.putText(menuright,'(q) quit',(posxquit-65, posyquit+20),cv2.FONT_HERSHEY_PLAIN,0.8,red,1 )
+    posxquit+=corectx
+    
     
 def drawcontours2(im,pat,dimtabx,dimtaby):
 #    print 'contour',pat
@@ -1285,7 +1300,7 @@ def drawcontours2(im,pat,dimtabx,dimtaby):
 
 #
 def populate(pp,lissln,slnt,pixelSpacing):
-#    print 'populate'
+    print 'start populate'
     pathroi=os.path.join(pp,roi_name)
     volumeroi={}
     tabroifinal={}
@@ -1297,32 +1312,29 @@ def populate(pp,lissln,slnt,pixelSpacing):
     for key in usedclassif:
         
         dirroi=os.path.join(pp,key)
-        tabroifinal[key]=np.zeros((slnt,dimtabx,dimtaby,3), np.uint8)
+        tabroifinal[key]={}
 
         if key in classifcontour:        
 #            dirroi=os.path.join(dirroi,lung_mask_bmp) 
             dirroil=os.path.join(dirpath_patient,lung_mask)
-#            print '1',dirroil
+
             if not os.path.exists(dirroil):
                 dirroil=os.path.join(dirpath_patient,lung_mask1)
-#                print '2',dirroil
+
             if  os.path.exists(dirroil):               
                 dirroi=os.path.join(dirroil,lung_mask_bmp)
-#                print '3',dirroi
+
                 if not os.path.exists(dirroi):
                     dirroi=os.path.join(dirroil,lung_mask_bmp1)
-#                    print '4',dirroi
+
             else:
                 dirroi=''
                     
-#            print 'lung',dirroi
-            
-#        print key,dirroi
         if os.path.exists(dirroi):
 #            print 'exist', dirroi
             listroi =[name for name in  os.listdir(dirroi) if name.lower().find('.'+typei1)>0 ]
             for roiimage in listroi:
-
+                
                 img=os.path.join(dirroi,roiimage)
                 imageroi= cv2.imread(img,1)              
                 imageroi=cv2.resize(imageroi,(dimtabx,dimtaby),interpolation=cv2.INTER_LINEAR)  
@@ -1331,6 +1343,7 @@ def populate(pp,lissln,slnt,pixelSpacing):
                 extensionimage='.'+typei1
                 slicenumber=rsliceNum(roiimage,cdelimter,extensionimage)
                 if imageroi.max() >0:
+#                    tabroifinal[key]=np.zeros((slnt,dimtabx,dimtaby,3), np.uint8)
                     tabroifinal[key][slicenumber]=imageroi
                     
                     pose=roiimage.find('.'+typei1)
@@ -1355,23 +1368,31 @@ def populate(pp,lissln,slnt,pixelSpacing):
     return tabroifinal,volumeroi
 
 def initmenus(slnt,dirpath_patient):
-    global menus,imageview,zoneverticalgauche,zoneverticaldroite,zonehorizontal
+    global menuright,menuleft,imageview,zoneverticalgauche,zoneverticaldroite,images,menus
 
+    menuright=np.zeros((dimtaby,dimtabmenu,3), np.uint8)
+    menuleft=np.zeros((dimtaby,dimtabmenu,3), np.uint8)
     menus=np.zeros((dimtabx,dimtaby,3), np.uint8)
+    menuright[:,0:2]=yellow
+    menuleft[:,147:149]=yellow
+ 
+
     for i in range(1,slnt):
         images[i]=np.zeros((dimtabx,dimtaby,3), np.uint8)
     imageview=np.zeros((dimtabx,dimtaby,3), np.uint8)
+
     menudraw(slnt)
 
-    zoneverticalgauche=((0,0),(25,dimtaby-50))
-    zonehorizontal=((0,0),(dimtabx,20))
-    zoneverticaldroite=((dimtabx-25,0),(dimtabx,dimtaby))
+    zoneverticalgauche=((0,0),(dimtabmenu,dimtaby))
+#    zonehorizontal=((0,0),(dimtabx,20))
+    zoneverticaldroite=((dimtabx+dimtabmenu,0),(dimtabx+(2*dimtabmenu),dimtaby))
 
 
 
 def openfichierroi(patient,patient_path_complet,centerHU,limitHU,lungask):
     global dirpath_patient,dirroit,path_data_write,volumeroi,path_data_writefile,pixelSpacing
     global tabroifinal
+    print 'load ',patient
     imwait=np.zeros((200,200,3),np.uint8)
     cv2.putText(imwait,'In Progress',(50, 50),cv2.FONT_HERSHEY_PLAIN,1,white,1 )
     cv2.imshow('wait',imwait)
@@ -1393,32 +1414,34 @@ def openfichierroi(patient,patient_path_complet,centerHU,limitHU,lungask):
 
     centerHU1=0
     limitHU1=0
-    if os.path.exists(os.path.join(path_data_write,'centerHU')):
-        centerHU1=pickle.load( open(os.path.join(path_data_write,'centerHU'), "rb" ))
-    if os.path.exists(os.path.join(path_data_write,'limitHU')):
-        limitHU1=pickle.load( open(os.path.join(path_data_write,'limitHU'), "rb" ))
+    if os.path.exists(os.path.join(path_data_write,'centerHUr')):
+        centerHU1=pickle.load( open(os.path.join(path_data_write,'centerHUr'), "rb" ))
+    if os.path.exists(os.path.join(path_data_write,'limitHUr')):
+        limitHU1=pickle.load( open(os.path.join(path_data_write,'limitHUr'), "rb" ))
         
     if centerHU1==centerHU and limitHU1==limitHU:
         print 'no need to regenerate'
-        slnt=pickle.load( open(os.path.join(path_data_write,'slnt'), "rb" ))
-        tabscanScan=pickle.load( open(os.path.join(path_data_write,'tabscanScan'), "rb" ))
-        tabscanName=pickle.load( open(os.path.join(path_data_write,'tabscanName'), "rb" ))
-        listsln=pickle.load( open(os.path.join(path_data_write,'listsln'), "rb" ))
-        tabroifinal=pickle.load( open(os.path.join(path_data_write,'tabroifinal'), "rb" ))
-        pixelSpacing=pickle.load( open(os.path.join(path_data_write,'pixelSpacing'), "rb" ))
-        volumeroi=pickle.load( open(os.path.join(path_data_write,'volumeroi'), "rb" ))
+        slnt=pickle.load( open(os.path.join(path_data_write,'slntr'), "rb" ))
+        tabscanScan=pickle.load( open(os.path.join(path_data_write,'tabscanScanr'), "rb" ))
+        tabscanName=pickle.load( open(os.path.join(path_data_write,'tabscanNamer'), "rb" ))
+        listsln=pickle.load( open(os.path.join(path_data_write,'listslnr'), "rb" ))
+        tabroifinal=pickle.load( open(os.path.join(path_data_write,'tabroifinalr'), "rb" ))
+        pixelSpacing=pickle.load( open(os.path.join(path_data_write,'pixelSpacingr'), "rb" ))
+        volumeroi=pickle.load( open(os.path.join(path_data_write,'volumeroir'), "rb" ))
+        print 'end load'
     else:
+        print 'generate'
         slnt,tabscanScan,listsln,pixelSpacing,tabscanName=genebmp(dirsource,nosource,dirroit,centerHU,limitHU)  
         tabroifinal,volumeroi=populate(dirpath_patient,listsln,slnt,pixelSpacing)
-        pickle.dump(centerHU, open(os.path.join(path_data_write,'centerHU'), "wb" ),protocol=-1) 
-        pickle.dump(limitHU, open(os.path.join(path_data_write,'limitHU'), "wb" ),protocol=-1) 
-        pickle.dump(slnt, open(os.path.join(path_data_write,'slnt'), "wb" ),protocol=-1) 
-        pickle.dump(tabscanScan, open(os.path.join(path_data_write,'tabscanScan'), "wb" ),protocol=-1) 
-        pickle.dump(tabscanName, open(os.path.join(path_data_write,'tabscanName'), "wb" ),protocol=-1) 
-        pickle.dump(listsln, open(os.path.join(path_data_write,'listsln'), "wb" ),protocol=-1) 
-        pickle.dump(tabroifinal, open(os.path.join(path_data_write,'tabroifinal'), "wb" ),protocol=-1) 
-        pickle.dump(pixelSpacing, open(os.path.join(path_data_write,'pixelSpacing'), "wb" ),protocol=-1)
-        pickle.dump(volumeroi, open(os.path.join(path_data_write,'volumeroi'), "wb" ),protocol=-1)
+        pickle.dump(centerHU, open(os.path.join(path_data_write,'centerHUr'), "wb" ),protocol=-1) 
+        pickle.dump(limitHU, open(os.path.join(path_data_write,'limitHUr'), "wb" ),protocol=-1) 
+        pickle.dump(slnt, open(os.path.join(path_data_write,'slntr'), "wb" ),protocol=-1) 
+        pickle.dump(tabscanScan, open(os.path.join(path_data_write,'tabscanScanr'), "wb" ),protocol=-1) 
+        pickle.dump(tabscanName, open(os.path.join(path_data_write,'tabscanNamer'), "wb" ),protocol=-1) 
+        pickle.dump(listsln, open(os.path.join(path_data_write,'listslnr'), "wb" ),protocol=-1) 
+        pickle.dump(tabroifinal, open(os.path.join(path_data_write,'tabroifinalr'), "wb" ),protocol=-1) 
+        pickle.dump(pixelSpacing, open(os.path.join(path_data_write,'pixelSpacingr'), "wb" ),protocol=-1)
+        pickle.dump(volumeroi, open(os.path.join(path_data_write,'volumeroir'), "wb" ),protocol=-1)
         
     dirsourcescan=os.path.join(dirsource,scan_bmp)
     if lungask:
