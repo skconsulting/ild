@@ -4,8 +4,8 @@ V1.0 Created on Sun Apr 05 09:52:27 2017
 
 @author: sylvain Kritter 
 
-
-version 1.4 24 August 2017
+version 1.5
+06 Sep 2017
 """
 #from param_pix_p import *
 #from tdGenePredictGui import predictrun
@@ -71,7 +71,6 @@ if os.path.exists(paramsaveDirf):
         lisdir= paramdict['path_patient']
         thrpatch= paramdict['thrpatch']
         thrproba= paramdict['thrproba']
-        thrprobaMerge= paramdict['thrprobaMerge']
         thrprobaUIP= paramdict['thrprobaUIP']
         picklein_file= paramdict['picklein_file']
         picklein_file_front= paramdict['picklein_file_front']
@@ -80,8 +79,8 @@ if os.path.exists(paramsaveDirf):
         centerHU=paramdict['centerHU']
     except:
         paramdict=paramdictold          
-        limitHU=800
-        centerHU=-600
+        limitHU=1700
+        centerHU=-662
         paramdict['centerHU']=centerHU
         paramdict['limitHU']=limitHU
         pickle.dump(paramdict,open( paramsaveDirf, "wb" )) 
@@ -89,16 +88,14 @@ else:
     lisdir=os.environ['USERPROFILE']
     thrpatch= 0.90
     thrproba=0.7
-    thrprobaMerge=0.7
     thrprobaUIP= 0.7
     picklein_file= "set0_c08"
     picklein_file_front= "set0_f08"
     subErosion = 15  # erosion factor for subpleura in mm
-    limitHU=800
-    centerHU=-600
+    limitHU=1700
+    centerHU=-662
     paramdict['thrpatch']=thrpatch
     paramdict['thrproba']=thrproba
-    paramdict['thrprobaMerge']= thrprobaMerge
     paramdict['thrprobaUIP']=thrprobaUIP
     paramdict['picklein_file']=picklein_file
     paramdict['subErosion in mm']=subErosion
@@ -117,7 +114,6 @@ def predict(btn):
 #    print(app.getEntry("Percentage of pad Overlapp"))
     indata['thrpatch']=app.getEntry("Percentage of pad Overlapp")
     indata['thrproba']=app.getEntry("Threshold proba for predicted image generation")
-    indata['thrprobaMerge']=app.getEntry("Threshold proba for merge cross and front view")
     indata['thrprobaUIP']=app.getEntry("Threshold proba for volume calculation")
     indata['threedpredictrequest']=app.getRadioButton("predict_style")
     indata['picklein_file']=app.getEntry("cross view weight")
@@ -129,7 +125,6 @@ def predict(btn):
     indata['limitHU']=app.getEntry("limitHU")
     paramdict['thrpatch']=indata['thrpatch']
     paramdict['thrproba']=indata['thrproba']
-    paramdict['thrprobaMerge']= indata['thrprobaMerge']
     paramdict['thrprobaUIP']=indata['thrprobaUIP']
     paramdict['picklein_file']=indata['picklein_file']
     paramdict['subErosion in mm']=indata['subErosion']
@@ -322,7 +317,6 @@ def initDraw():
     paramdict=pickle.load(open( paramsaveDirf, "rb" ))
     thrpatch= paramdict['thrpatch']
     thrproba= paramdict['thrproba']
-    thrprobaMerge= paramdict['thrprobaMerge']
     thrprobaUIP= paramdict['thrprobaUIP']
     picklein_file= paramdict['picklein_file']
     picklein_file_front= paramdict['picklein_file_front']
@@ -391,17 +385,16 @@ def initDraw():
         app.addLabelNumericEntry("Threshold proba for volume calculation",row,0)
         app.setEntry("Threshold proba for volume calculation",thrprobaUIP)
 
-        app.addLabelNumericEntry("Threshold proba for merge cross and front view",row,1)
-        app.setEntry("Threshold proba for merge cross and front view", thrprobaMerge)
+        app.addLabelNumericEntry("centerHU",row,1)
+        app.setEntry("centerHU", centerHU)
+
         row = app.getRow()
 
         app.addLabelNumericEntry("subErosion in mm",row,0)
         app.setEntry("subErosion in mm", subErosion)
 #        row = app.getRow()
-        app.addLabelNumericEntry("centerHU",row,1)
-        app.setEntry("centerHU", centerHU)
-            
-        row = app.getRow()
+         
+#        row = app.getRow()
         app.addLabelNumericEntry("limitHU",row,1)
         app.setEntry("limitHU", limitHU)
        
@@ -528,7 +521,7 @@ def visuDraw():
                 app.addRadioButton("planar","from cross predict",row,1)
                 row = app.getRow() # get current row
                 app.addRadioButton("planar","volume view from cross",row,0)
-                app.addRadioButton("planar","report")
+                app.addRadioButton("planar","reportCross")
             else:
                 row = app.getRow() # get current row
                 app.addLabel("l1", "Type of planar view,select one",row,0)
@@ -554,7 +547,14 @@ def visuDraw():
                
                 app.addRadioButton("planar","front projected view")
                 app.addRadioButton("planar","merge view")
-                app.addRadioButton("planar","report")
+                app.addLabel("Report", "Report Selection")
+                app.setLabelBg("Report","blue")
+                app.setLabelFg("Report","yellow")
+                row = app.getRow() 
+                app.addRadioButton("planar","reportCross",row,0)
+                app.addRadioButton("planar","reportFront",row,1)
+                app.addRadioButton("planar","reportMerge",row,2)
+
                 
                
             app.addHorizontalSeparator( colour="red")

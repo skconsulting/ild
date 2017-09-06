@@ -4,8 +4,8 @@ V1.0 Created on Sun Apr 05 09:52:27 2017
 
 @author: sylvain Kritter 
 
-
-version 1.4 24 August 2017
+version 1.5
+6 September 2017
 """
 #from param_pix_p import *
 #from tdGenePredictGui import predictrun
@@ -466,7 +466,7 @@ def selectPatientDirB(btn):
 
 
 def presshelp(btn):
-    filehelp=os.path.join(pathPredictDoc,'doc_predict.pdf')
+    filehelp=os.path.join(pathPredictDoc,'doc_score.pdf')
 #    print filehelp
 #    webbrowser.open_new(r'file://C:\Users\sylvain\Documents\boulot\startup\radiology\roittool\modulepython\doc.pdf')
     webbrowser.open_new(r'file://'+filehelp)

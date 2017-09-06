@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon Mar 20 17:21:22 2017
+@author: sylvain Kritter 
+Version 1.5 
 
-@author: sylvain
-version 1.1
-28 july 2017
+06 September 2017
 """
 #from param_pix_r import *
 from param_pix_r import classifcontour,lung_mask_bmp,lung_mask1,usedclassif,reportalldir

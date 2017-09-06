@@ -2,9 +2,10 @@
 """
 Created on Mon Mar 20 17:21:22 2017
 
-@author: sylvain
-version 1.2
-17 august 2017
+@author: sylvain Kritter 
+
+version 1.5
+6 September 2017
 """
 #from param_pix_p import *
 from param_pix_s import path_data,datafrontn,datacrossn,dimpavx,dimpavy,reportalldir
@@ -26,6 +27,7 @@ import os
 import cv2
 import numpy as np
 import datetime
+import time
 
 
 def lisdirprocess(d):
@@ -793,6 +795,11 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,tabroi,
                 cv2.setTrackbarPos('Flip','Sliderfi' ,fld)
             else:
                 print 'number not in set'
+#                cv2.rectangle(initimg, (5,60), (150,50), black, -1)
+                cv2.rectangle(initimg, (5,60), (150,50), red, -1)
+                cv2.putText(initimg,'NO ROI slice '+str(numberfinal)+'!',(5,60),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
+#                cv2.putText(initimg, 'NO ROI on this slice',(5,60),cv2.FONT_HERSHEY_PLAIN,5,red,2,cv2.LINE_AA)
+#                time.sleep(5)
 #                fl=numberfinal
                 
             numberfinal=0

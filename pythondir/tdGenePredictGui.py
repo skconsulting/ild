@@ -1,8 +1,8 @@
 # coding: utf-8
 #sylvain Kritter 04-Apr-2017
 '''predict on lung scan front view and cross view
-version 1.1
-28 july 2017
+version 1.5
+06 Sep 2017
 '''
 #from param_pix_p import *
 from param_pix_p import scan_bmp,avgPixelSpacing,dimpavx,dimpavy,volumeroifilep,dirpickleArch,modelArch,surfelemp

@@ -2,9 +2,10 @@
 """
 Created on Tue May 02 15:04:39 2017
 
-@author: sylvain
-version 1.1
-27 july 2017
+@author: sylvain Kritter 
+Version 1.5 
+
+06 September 2017
 """
 
 import numpy as np

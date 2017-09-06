@@ -3,11 +3,11 @@
 Created on Mon Mar 20 17:21:22 2017
 
 @author: sylvain
-version 1.2
-17 august 2017
+version 1.5
+06 Sep 2017
 """
 #from param_pix_p import *
-from param_pix_p import path_data,datafrontn,datacrossn,dimpavx,dimpavy,surfelem
+from param_pix_p import path_data,datafrontn,datacrossn,dimpavx,dimpavy
 from param_pix_p import surfelemp,volelem,volumeroifilep,avgPixelSpacing
 
 from param_pix_p import white,red,yellow,grey,black
@@ -1053,9 +1053,9 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
 
     return ''
 
-def cfma(f,referencepat,predictpat,num_class, namep,thrprobaUIP,cnnweigh):
+def cfma(f,referencepat,predictpat,num_class, namep,thrprobaUIP,cnnweigh,thrpatch,tp):
         f.write('confusion matrix for '+namep+'\n')
-        f.write('Cross View , threshold: '+str(thrprobaUIP)+ ' CNN param: '+cnnweigh+'\n\n')
+        f.write(tp+' View , threshold: '+str(thrprobaUIP)+ ' CNN param: '+cnnweigh+' thr_patch: '+str(thrpatch)+'\n\n')
 
         
         cm=evaluatef(referencepat,predictpat,num_class)
@@ -1137,7 +1137,7 @@ def cfma(f,referencepat,predictpat,num_class, namep,thrprobaUIP,cnnweigh):
 
 def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
                       lungSegment,tabMed,thrprobaUIP,patch_list_cross_slice_sub,
-                      slicepitch,tabroi,datacross,slnroi,tabscanLung,cnnweigh):
+                      slicepitch,tabroi,datacross,slnroi,tabscanLung,cnnweigh,thrpatch,tp):
     global  quitl,dimtabx,dimtaby,patchi,ix,iy
     print 'openfichiervolume start',path_patient
     volelems=volelem*slicepitch # in mml
@@ -1155,14 +1155,14 @@ def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
     if not os.path.exists(dirfreport):
         os.mkdir(dirfreport)
     t = datetime.datetime.now()
-    today = '_weight_'+str(cnnweigh)+'_th'+str(thrprobaUIP)+'_m'+str(t.month)+'-d'+str(t.day)+'-y'+str(t.year)+'_'+str(t.hour)+'h_'+str(t.minute)+'m'
+    today = tp+'_weight_'+str(cnnweigh)+'_th'+str(thrprobaUIP)+'_m'+str(t.month)+'-d'+str(t.day)+'-y'+str(t.year)+'_'+str(t.hour)+'h_'+str(t.minute)+'m'
     repf=os.path.join(dirfreport,reportfile+str(today)+'.txt')
 
     f=open(repf,'w')
     
     f.write('report for patient :'+listHug+
             ' - date : m'+str(t.month)+'-d'+str(t.day)+'-y'+str(t.year)+' at '+str(t.hour)+'h '+str(t.minute)+'mn\n')
-    f.write('Cross View , threshold: '+str(thrprobaUIP)+ ' CNN param: '+cnnweigh+'\n\n')
+    f.write(tp+' View , threshold: '+str(thrprobaUIP)+ ' CNN param: '+cnnweigh+ 'thr_patch:'+str(thrpatch)+'\n\n')
     
 #    f.write('report for patient :'+listHug+'\n')
 #    f.write('Cross View\n')
@@ -1360,7 +1360,7 @@ def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
         f.write('-----------------------\n')
         referencepat= referencepatu.flatten()
         predictpat=  predictpatu.flatten()       
-        cfma(f,referencepat,predictpat,num_class,listHug,thrprobaUIP,cnnweigh)
+        cfma(f,referencepat,predictpat,num_class,listHug,thrprobaUIP,cnnweigh,thrpatch,tp)
         
 #        precisiont,recallt= evaluatefull(referencepat,predictpat,num_class)
 #        if precisiont+recallt>0:
@@ -1933,7 +1933,7 @@ def visuarun(indata,path_patient):
 #            tabfromfront= pickle.load( open( os.path.join(path_data_dir,"tabfromfront"), "rb" ))
 #            messageout=openfichierfrpr(path_patient,tabfromfront,thrprobaUIP)
     
-    elif viewstyle=='report':
+    elif viewstyle=='reportCross':
         datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "rb" ))
         slnroi= pickle.load( open( os.path.join(path_data_dir,"slnroi"), "rb" ))
         slicepitch=datarep[3]
@@ -1945,11 +1945,57 @@ def visuarun(indata,path_patient):
         thrprobaUIP=float(indata['thrprobaUIP'])
         tabroi= pickle.load( open( os.path.join(path_data_dir,"tabroi"), "rb" ))
         tabscanLung= pickle.load( open( os.path.join(path_data_dir,"tabscanLung"), "rb" ))
-
+        try:
+            thrpatch= pickle.load( open( os.path.join(path_data_dir,"thrpatch"), "rb" ))
+        except:
+            thrpatch='?'
                   
         messageout = openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
                       lungSegment,tabMed,thrprobaUIP,
-                      patch_list_cross_slice_sub,slicepitch,tabroi,datarep,slnroi,tabscanLung,cnnweigh)
+                      patch_list_cross_slice_sub,slicepitch,tabroi,datarep,slnroi,tabscanLung,cnnweigh,thrpatch,'Cross')
+    
+    elif viewstyle=='reportFront':
+        datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "rb" ))
+        slnroi= pickle.load( open( os.path.join(path_data_dir,"slnroi"), "rb" ))
+        slicepitch=datarep[3]
+        cnnweigh=indata['picklein_file']
+        patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice_from_front"), "rb" ))
+        patch_list_cross_slice_sub= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice_sub_from_front"), "rb" ))
+        lungSegment= pickle.load( open( os.path.join(path_data_dir,"lungSegment"), "rb" ))
+        tabMed= pickle.load( open( os.path.join(path_data_dir,"tabMed"), "rb" ))
+        thrprobaUIP=float(indata['thrprobaUIP'])
+        tabroi= pickle.load( open( os.path.join(path_data_dir,"tabroi"), "rb" ))
+        tabscanLung= pickle.load( open( os.path.join(path_data_dir,"tabscanLung"), "rb" ))
+        try:
+            thrpatch= pickle.load( open( os.path.join(path_data_dir,"thrpatch"), "rb" ))
+        except:
+            thrpatch='?'
+                  
+        messageout = openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
+                      lungSegment,tabMed,thrprobaUIP,
+                      patch_list_cross_slice_sub,slicepitch,tabroi,datarep,slnroi,tabscanLung,cnnweigh,thrpatch,'Front')
+    
+    
+    elif viewstyle=='reportMerge':
+        datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "rb" ))
+        slnroi= pickle.load( open( os.path.join(path_data_dir,"slnroi"), "rb" ))
+        slicepitch=datarep[3]
+        cnnweigh=indata['picklein_file']
+        patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_merge_slice"), "rb" ))
+        patch_list_cross_slice_sub= pickle.load( open( os.path.join(path_data_dir,"patch_list_merge_slice_sub"), "rb" ))
+        lungSegment= pickle.load( open( os.path.join(path_data_dir,"lungSegment"), "rb" ))
+        tabMed= pickle.load( open( os.path.join(path_data_dir,"tabMed"), "rb" ))
+        thrprobaUIP=float(indata['thrprobaUIP'])
+        tabroi= pickle.load( open( os.path.join(path_data_dir,"tabroi"), "rb" ))
+        tabscanLung= pickle.load( open( os.path.join(path_data_dir,"tabscanLung"), "rb" ))
+        try:
+            thrpatch= pickle.load( open( os.path.join(path_data_dir,"thrpatch"), "rb" ))
+        except:
+            thrpatch='?'
+                  
+        messageout = openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
+                      lungSegment,tabMed,thrprobaUIP,
+                      patch_list_cross_slice_sub,slicepitch,tabroi,datarep,slnroi,tabscanLung,cnnweigh,thrpatch,'Merge')
     
     else:
             messageout='error: unrecognize view style'

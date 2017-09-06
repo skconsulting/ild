@@ -3,11 +3,9 @@
 V1.0 Created on Sun Apr 05 09:52:27 2017
 
 @author: sylvain Kritter 
+Version 1.5 
 
-Version 1.1 15-June-2017
-bug fixed:
-    1
-28 july 2017
+06 September 2017
 """
 #from param_pix_r import *
 #from moduleroigui import *

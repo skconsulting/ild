@@ -3,8 +3,8 @@
 Created on Tue May 02 15:04:39 2017
 
 @author: sylvain
-19 august 2017
-version 1.3
+version 1.5
+06 Sep 2017
 
 """
 
