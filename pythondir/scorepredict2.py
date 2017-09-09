@@ -7,25 +7,26 @@ version 1.5
 6 September 2017
 '''
 #from param_pix_p import *
-from param_pix_s import scan_bmp,avgPixelSpacing,dimpavx,dimpavy,volumeroifilep,dirpickleArch,modelArch,surfelemp
-from param_pix_s import typei,typei1,typei2
-from param_pix_s import white,yellow
+from param_pix_s2 import scan_bmp,avgPixelSpacing,dimpavx,dimpavy,volumeroifilep,dirpickleArch,modelArch,surfelemp
+from param_pix_s2 import typei,typei1,typei2
+from param_pix_s2 import white,yellow
 
-from param_pix_s import lung_namebmp,jpegpath,lungmask,lungmask1
-from param_pix_s import datacrossn,fidclass,pxy
+from param_pix_s2 import lung_namebmp,jpegpath,lungmask,lungmask1
+from param_pix_s2 import datacrossn,fidclass,pxy
 #from param_pix_p import classifc,classif,excluvisu,usedclassif
-from param_pix_s import classifc
+from param_pix_s2 import classifc
 
 
-from param_pix_s import  source
-from param_pix_s import  transbmp
-from param_pix_s import sroi
-from param_pix_s import jpegpath3d
-from param_pix_s import jpegpadirm,source_name,datafrontn,path_data,dirpickle,cwdtop
+from param_pix_s2 import  source, dimtabx,dimtaby
+from param_pix_s2 import  transbmp
+from param_pix_s2 import sroi
+from param_pix_s2 import jpegpath3d
+from param_pix_s2 import jpegpadirm,source_name,datafrontn,path_data,dirpickle,cwdtop
 
-from param_pix_s import remove_folder,normi,rsliceNum,norm,maxproba
-from param_pix_s import classifdict,usedclassifdict,oldFormat
+from param_pix_s2 import remove_folder,normi,rsliceNum,norm,maxproba
+from param_pix_s2 import classifdict,usedclassifdict,oldFormat
 
+from param_pix2 import get_model
 
 import time
 from time import time as mytime
@@ -37,10 +38,12 @@ import dicom
 
 from skimage import measure
 import cPickle as pickle
-
+import matplotlib.pyplot as plt
 #import keras
 from keras.models import load_model
 from keras.models import model_from_json
+#from keras import backend as K
+#K.set_image_dim_ordering('tf')
 #from keras.optimizers import Adam
 
 
@@ -62,7 +65,7 @@ def reshapeScanl(tabscan):
     tabres=np.moveaxis(tabscan,0,1)
     return tabres
 
-def genebmp(fn,sou,nosource,centerHU, limitHU, tabscanName,tabscanroi):
+def genebmp(fn,sou,nosource,centerHU, limitHU, tabscanName,tabscanroi,dimtabx,dimtaby):
     """generate patches from dicom files"""
     global picklein_file
     (top,tail) =os.path.split(fn)
@@ -97,11 +100,9 @@ def genebmp(fn,sou,nosource,centerHU, limitHU, tabscanName,tabscanroi):
     lhHU=centerHU+limitHU/2
     dsr= RefDs.pixel_array
     dsr = dsr.astype('int16')
-    fxs=float(RefDs.PixelSpacing[0])/avgPixelSpacing
+#    fxs=float(RefDs.PixelSpacing[0])/avgPixelSpacing
 
-    imgresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
-    dimtabx=imgresize.shape[0]
-    dimtaby=imgresize.shape[1]
+    imgresize=cv2.resize(dsr,(dimtabx,dimtaby),interpolation=cv2.INTER_LINEAR)
 #    print dimtabx, dimtaby
     slnt=0
     for l in listdcm:
@@ -115,7 +116,7 @@ def genebmp(fn,sou,nosource,centerHU, limitHU, tabscanName,tabscanroi):
 
     print 'number of slices', slnt
     slnt=slnt+1
-    tabscan = np.zeros((slnt,dimtabx,dimtaby),np.int16)
+    tabscan = np.zeros((slnt,dimtaby,dimtabx),np.int16)
 #    for i in range(slnt):
 #        tabscan[i] = []
 #    tabscan = np.zeros((slnt,dimtabx,dimtaby), np.int16)
@@ -137,14 +138,16 @@ def genebmp(fn,sou,nosource,centerHU, limitHU, tabscanName,tabscanroi):
         dsr += np.int16(intercept)
         dsr = dsr.astype('int16')
         
-        imgresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
-        np.putmask(imgresize,imgresize<lbHU,lbHU)
-        np.putmask(imgresize,imgresize>lhHU,lhHU)
+        imgresize=cv2.resize(dsr,(dimtabx,dimtaby),interpolation=cv2.INTER_LINEAR)
+        
         
         endnumslice=l.find('.dcm')
         imgcoreScan=l[0:endnumslice]+'_'+str(slicenumber)+'.'+typei1  
         
         tabscan[slicenumber]=imgresize
+
+        np.putmask(imgresize,imgresize<lbHU,lbHU)
+        np.putmask(imgresize,imgresize>lhHU,lhHU)
         
         imtowrite=normi(imgresize)
         imtowrite = cv2.cvtColor(imtowrite, cv2.COLOR_GRAY2RGB)
@@ -165,7 +168,7 @@ def genebmp(fn,sou,nosource,centerHU, limitHU, tabscanName,tabscanroi):
                      t3,0,dimtaby-30,t4,0,dimtaby-10,t5,0,dimtaby-40,t6,0,dimtaby-50)        
         tabscanroi[slicenumber]=anoted_image
 
-    return tabscan,slnt,dimtabx,slicepitch,lislnn,tabscanroi,tabscanName
+    return tabscan,slnt,slicepitch,lislnn,tabscanroi,tabscanName
 
 def largest_label_volume(im, bg=-1):
     vals, counts = np.unique(im, return_counts=True)
@@ -276,16 +279,13 @@ def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan,listsln,tabscanName
 
     listdcm=[name for name in  os.listdir(fmbmp) if name.lower().find('.dcm')>0]
     listbmp= os.listdir(fmbmpbmp) 
-    tabscan = np.zeros((slnt,dimtabx,dimtaby), np.uint8)
+    tabscan = np.zeros((slnt,dimtaby,dimtabx), np.uint8)
     if len(listbmp)>0:
         print 'lung scan exists in bmp'
         for img in listbmp:
-            slicenumber= rsliceNum(img,'_','.'+typei)
-            if slicenumber<0:
-                slicenumber= rsliceNum(img,'_','.'+typei1)
-                if slicenumber<0:
-                     slicenumber= rsliceNum(img,'_','.'+typei2)
-        
+
+            slicenumber= rsliceNum(img,'_','.'+typei1)
+
             imr=cv2.imread(os.path.join(fmbmpbmp,img),0) 
             imr=cv2.resize(imr,(dimtabx,dimtaby),interpolation=cv2.INTER_LINEAR)  
             tabscan[slicenumber]=imr
@@ -300,8 +300,8 @@ def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan,listsln,tabscanName
             dsr= RefDs.pixel_array
             dsr=normi(dsr)
     
-            fxs=float(RefDs.PixelSpacing[0])/avgPixelSpacing
-            imgresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
+#            fxs=float(RefDs.PixelSpacing[0])/avgPixelSpacing
+            imgresize=cv2.resize(dsr,(dimtabx,dimtaby),interpolation=cv2.INTER_LINEAR)
     
             slicenumber=int(RefDs.InstanceNumber)
 
@@ -312,7 +312,7 @@ def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan,listsln,tabscanName
                 tabscan[slicenumber]=imgresize
     else:
             print 'no lung scan in dcm'
-            tabscan1 = np.zeros((slnt,dimtabx,dimtaby), np.int16)
+            tabscan1 = np.zeros((slnt,dimtaby,dimtabx), np.int16)
 #            tabscanlung = np.zeros((slnt,dimtabx,dimtaby), np.uint8)
 #            print tabscanScan.shape
             segmented_lungs_fill = segment_lung_mask(tabscanScan, True)
@@ -486,23 +486,20 @@ def pavgenefront(dirf,dimtabx,dimtaby,tabscanScan,tabscanLung,slnt,jpegpath):
         return patch_list
 
 
-def ILDCNNpredict(patch_list,model):
+def ILDCNNpredict(X_predict,model):
     print ('Predict started ....')
-    dataset_list=[]
-    for fil in patch_list:
-              dataset_list.append(fil[3])
-    X0=len(dataset_list)
-    # adding a singleton dimension and rescale to [0,1]
-    pa = np.asarray(np.expand_dims(dataset_list, 1))
-    # look if the predict source is empty
-    # predict and store  classification and probabilities if not empty
+    
+    
+    X0=X_predict.shape[0]
+    # adding a singleton dimension and rescale to [0,1
     if X0 > 0:
-        proba = model.predict_proba(pa, batch_size=500,verbose=1)
+#        proba = model.predict_proba(pa, batch_size=500,verbose=1)
+        proba = model.predict(X_predict, verbose=1,batch_size=1)
 
     else:
-        print (' no patch in selected slice')
-        proba = ()
-    print 'number of patches', len(pa)
+        print (' no data in selected slice')
+        proba = []
+    print 'number of  predicted', proba.shape[0]
 
     return proba
 
@@ -1004,34 +1001,42 @@ def genepatchlistslice(patch_list_cross,proba_cross,lissln,dimtabx,dimtaby):
 def generoi(dirf,tabroi,dimtabx,dimtaby,slnroi,tabscanName,dirroit,tabscanroi,tabscanLung):
     (top,tail)=os.path.split(dirf)
     for pat in usedclassif:
+        if pat !='back_ground':
 #        print pat
-        pathroi=os.path.join(dirf,pat)
-        if os.path.exists(pathroi):
-    
-            lroi=[name for name in os.listdir(pathroi) if name.find('.'+typei)>0 or name.find('.'+typei1)>0 or name.find('.'+typei2)>0]            
-            for s in lroi:
-                numslice=rsliceNum(s,'_','.'+typei)
-                if numslice <0:
+            pathroi=os.path.join(dirf,pat)
+            if os.path.exists(pathroi):
+        
+                lroi=[name for name in os.listdir(pathroi) if name.find('.'+typei1)>0 ]            
+                for s in lroi:
                     numslice=rsliceNum(s,'_','.'+typei1)
-                    if numslice <0:
-                        numslice=rsliceNum(s,'_','.'+typei2)
-                    
-                img=cv2.imread(os.path.join(pathroi,s),0)
-#                print os.path.join(pathroi,s)
-#                print img.shape
-                img=cv2.resize(img,(dimtabx,dimtabx),interpolation=cv2.INTER_LINEAR)
-                np.putmask(tabroi[numslice], img > 0, 0)
-                if classif[pat]>0:
+              
+                    img=cv2.imread(os.path.join(pathroi,s),0)
+    #                print os.path.join(pathroi,s)
+    #                print img.shape
+                    img=cv2.resize(img,(dimtabx,dimtaby),interpolation=cv2.INTER_LINEAR)
+                    np.putmask(tabroi[numslice], img > 0, 0)
+    #                if classif[pat]>0:
                     np.putmask(img, img > 0, classif[pat])
-                else:
-                    np.putmask(img, img > 0, classif['lung'])
-                tablung=np.copy(tabscanLung[numslice])
-                np.putmask(tablung,tablung>0,255)                      
-                img=np.bitwise_and(tablung, img)  
-                tabroi[numslice]+=img
-               
-                if numslice not in slnroi:
-                    slnroi.append(numslice)  
+    #                else:
+    #                    np.putmask(img, img > 0, classif['lung'])
+                    tablung=np.copy(tabscanLung[numslice])
+                    np.putmask(tablung,tablung>0,255)                      
+                    img=np.bitwise_and(tablung, img)  
+                    tabroi[numslice]+=img
+                    np.putmask(tablung,tablung>0,classif['healthy']) 
+                    tabroii=np.copy(tabroi[numslice])
+                    np.putmask(tabroii,tabroii>0,255) 
+                    mask=np.bitwise_not(tabroii)
+                    img=np.bitwise_and(tablung, mask)
+                    tabroi[numslice]=np.bitwise_or(img,tabroi[numslice])
+                    
+#                    
+#                    
+#                    cv2.imshow(str(numslice)+pat,normi(tabroi[numslice]))
+#                    cv2.waitKey(0)
+#                    cv2.destroyAllWindows()
+                    if numslice not in slnroi:
+                        slnroi.append(numslice)  
     slnroi.sort()
     volumeroi={}
     for numslice in slnroi:
@@ -1048,14 +1053,16 @@ def generoi(dirf,tabroi,dimtabx,dimtaby,slnroi,tabscanName,dirroit,tabscanroi,ta
                         np.putmask(img, img !=classif[pat], 0)
                         np.putmask(img, img ==classif[pat], 1)
                     else:
-                        np.putmask(img, img !=classif['lung'], 0)
-                        np.putmask(img, img == classif['lung'],1)
+                        np.putmask(img, img !=0, 2)
+                        np.putmask(img, img ==0, 1)
+                        np.putmask(img, img ==2, 0)
     #                if  numslice==225:
     #                    cv2.imshow(pat+'143',normi(img))
                     
                     area= img.sum()* surfelemp /100
                     volumeroi[numslice][pat]=area  
                     if area>0:
+#                        print 'write'+pat+roibmpfile
                         np.putmask(img, img >0, 100)
                         ctkey=drawcontours2(img,pat,dimtabx,dimtaby)    
                         anoted_image=cv2.add(anoted_image,ctkey)
@@ -1065,27 +1072,78 @@ def generoi(dirf,tabroi,dimtabx,dimtaby,slnroi,tabscanName,dirroit,tabscanroi,ta
                     volumeroi[numslice][pat]=0                    
                       
     return tabroi,volumeroi,slnroi
+
+def preparscan(tabscan,tabslung,numsliceok):
+#    (top,tail)=os.path.split(namedirtopcf)
+    xtrains={}
+    scan_list=[]
+    i=-1
+    for num in numsliceok:
+        i+=1
+        tabl=tabslung[num].copy()
+        scan=tabscan[num].copy()
+
+#        print scan.min(),scan.max()
+        np.putmask(tabl,tabl>0,255)
+        taba=cv2.bitwise_and(scan,scan,mask=tabl)
+        np.putmask(tabl,tabl>0,1)
+        tablc=tabl.astype(np.int16)
+                
+        taba=cv2.bitwise_and(scan,scan,mask=tabl)
+
+        np.putmask(tablc,tablc==0,-1000)
+        np.putmask(tablc,tablc==1,0)
+        taba=cv2.bitwise_and(scan,scan,mask=tabl)
+        tablc=tabl.astype(np.int16)
+        np.putmask(tabl,tabl>0,1)
+
+        np.putmask(tablc,tablc==0,-1000)
+        np.putmask(tablc,tablc==1,0)
         
+        tabab=cv2.bitwise_or(taba,tablc) 
+        tababn=norm(tabab)
+#        if num==12:
+#            print type(taba[0][0]),taba.min(),taba.max()
+#            print type(tablc[0][0]),tablc.min(),tablc.max()
+#            cv2.imwrite('scan.bmp',normi(scan))
+#            cv2.imwrite('tabl.bmp',normi(tabl))
+#            cv2.imwrite('taba.bmp',normi(taba))
+#            cv2.imwrite('tablc.bmp',normi(tablc))
+#            cv2.imwrite('tabab.bmp',normi(tabab))
+#            cv2.imwrite('tababn.bmp',normi(tababn))
+#            ooo
+        
+#        cv2.imshow('tababn',normi(tababn))
+###            cv2.imshow('tabroif',f)
+###            cv2.imwrite('a.bmp',o)
+###            cv2.imwrite('b.bmp',roif)
+#        cv2.waitKey(0)
+#        cv2.destroyAllWindows()
+        xtrains[num]=i
+        scan_list.append(tababn)
+        
+#        print tabab.min(),tabab.max()
+
+    X_train = np.asarray(np.expand_dims(scan_list,3))
+#    print len(scan_list)
+    return X_train,xtrains
+
+
 
 def predictrun(indata,path_patient):
-        global thrpatch,thrproba,thrprobaUIP,subErosion
+        global thrproba,thrprobaUIP,subErosion
         global  picklein_file,picklein_file_front,classif,usedclassif
         td=False
-#        time.sleep(10)
-#        return 'rrr'
-#        print path_patient
-#        print indata
-#        ooo
+
         print '-------------------'
         if indata['threedpredictrequest']=='Cross Only':
-           td=False
-           
+           td=False           
            print 'CROSS PREDICT'
         else:
             td=True
             print 'CROSS +FRONT PREDICT'
         thrproba=float(indata['thrproba'])
-        thrpatch=float(indata['thrpatch'])
+ 
         picklein_filet=indata['picklein_file']
         centerHU=indata['centerHU']
         limitHU=indata['limitHU']
@@ -1095,9 +1153,10 @@ def predictrun(indata,path_patient):
         if oldFormat==False:
             posund=picklein_filet.find('_')
             setref=picklein_filet[0:posund]
+        
         else:
             setref='set0'
-            
+
         picklein_file_front=indata['picklein_file_front']
         if oldFormat==False:
             posund=picklein_file_front.find('_')
@@ -1107,8 +1166,7 @@ def predictrun(indata,path_patient):
         if setref!=setref2:
             print 'ERROR NOT SAME PATTERN SET  FOR CROSS AND FRONT'
             return 'ERROR NOT SAME PATTERN SET  FOR CROSS AND FRONT'
-            
-            
+
         classif=classifdict[setref]
         usedclassif=usedclassifdict[setref]
 
@@ -1137,10 +1195,20 @@ def predictrun(indata,path_patient):
         picklein_file_front =  os.path.join(dirpickle,picklein_file_frontt)
 
         dirHUG=os.path.join(cwdtop,path_patient)
-
+#        model=loadmodel()
+        modelcross=modelCompilation('cross',picklein_file,picklein_file_front,setref)
+#        weights=[]
+#        modelcross = get_model(11,1,512,512,False,weights)
+#        lismodel=os.listdir(picklein_file)        
+#        modelpath = os.path.join(picklein_file, lismodel[0])
+#        modelcross.load_weights(modelpath) 
+#        print modelpath
+        if indata['threedpredictrequest']!='Cross Only':
+            modelfront=modelCompilation('front',picklein_file,picklein_file_front,setref)
+            
         for f in listHug:
             print '------------------'
-            print 'work on patient',f,' set:',setref,'thrproba',thrproba,'thrpatch',thrpatch
+            print 'work on patient',f,' set:',setref,'thrproba',thrproba
             patch_list_cross_slice={}
             
 #            listelabelfinal={}
@@ -1189,7 +1257,6 @@ def predictrun(indata,path_patient):
             dirroi=os.path.join(dirf,sroi)
             if not os.path.exists(dirroi):
                 os.mkdir(dirroi)
-            
             print '------------------'
             print 'START PREDICT CROSS'
             print '------------------'
@@ -1213,10 +1280,9 @@ def predictrun(indata,path_patient):
                 print 'no need to regenerate'
                 datacross=pickle.load(open( os.path.join(path_data_write,datacrossn), "rb" ))
                 slnt= datacross[0]
-                dimtabx=datacross[1]
 #                dimtaby=datacross[2]
-                slicepitch=datacross[3]
-                lissln=datacross[4]
+                slicepitch=datacross[1]
+                lissln=datacross[2]
                 
                 tabscanScan=pickle.load( open(os.path.join(path_data_write,'tabscanScan'), "rb" ))
                 tabscanName=pickle.load( open(os.path.join(path_data_write,'tabscanName'), "rb" ))
@@ -1231,12 +1297,12 @@ def predictrun(indata,path_patient):
             else:
                 print 'generate'
                 
-                tabscanScan,slnt,dimtabx,slicepitch,lissln,tabscanroi,tabscanName=genebmp(dirf,
-                        source,nosource, centerHU, limitHU,tabscanName,tabscanroi)
+                tabscanScan,slnt,slicepitch,lissln,tabscanroi,tabscanName=genebmp(dirf,
+                        source,nosource, centerHU, limitHU,tabscanName,tabscanroi,dimtabx,dimtaby)
                 tabscanLung,tabrange=genebmplung(dirf,lungmaski,slnt,dimtabx,dimtabx,tabscanScan,lissln,tabscanName)
 
                 slnroi=[]
-                tabroi=np.zeros((slnt,dimtabx,dimtabx), np.uint8) 
+                tabroi=np.zeros((slnt,dimtaby,dimtabx), np.uint8) 
                 tabroi,volumeroi,slnroi=generoi(dirf,tabroi,dimtabx,dimtabx,slnroi,
                                             tabscanName,dirroi,tabscanroi,tabscanLung)
                 
@@ -1257,7 +1323,8 @@ def predictrun(indata,path_patient):
                 pickle.dump(slnroi, open( os.path.join(path_data_write,"slnroi"), "wb" ),protocol=-1)
 
             
-            datacross=(slnt,dimtabx,dimtabx,slicepitch,lissln,setref, thrproba, thrpatch)
+#            return ' '
+            datacross=(slnt,slicepitch,lissln,setref, thrproba)
             pickle.dump(datacross, open( os.path.join(path_data_write,datacrossn), "wb" ),protocol=-1)
 #            pickle.dump(lungSegment, open( os.path.join(path_data_write,"lungSegment"), "wb" ),protocol=-1)
             """
@@ -1266,13 +1333,11 @@ def predictrun(indata,path_patient):
             lungSegment= pickle.load( open( os.path.join(path_data_write,"lungSegment"), "rb" ))
         
             slnt=datacross[0]
-            dimtabx=datacross[1]
-            dimtaby=datacross[2]
-            slicepitch=datacross[3]
-            lissln=datacross[4]
-            setref=datacross[5]
-            thrproba=datacross[6]
-            thrpatch=datacross[7]
+            slicepitch=datacross[1]
+            lissln=datacross[2]
+            setref=datacross[3]
+            thrproba=datacross[4]
+
             
 #            """
 #
@@ -1284,31 +1349,59 @@ def predictrun(indata,path_patient):
             subpleurmask= pickle.load( open( os.path.join(path_data_write,"subpleurmask"), "rb" ))
             """
             regene=True
-            if os.path.exists(os.path.join(path_data_write,"thrpatch")):
-                    thrpatch1= pickle.load( open( os.path.join(path_data_write,"thrpatch"), "rb" ))
-                    if thrpatch == thrpatch1:
-                        if os.path.exists(os.path.join(path_data_write,"patch_list_cross")):
-                            regene=False                            
-                            patch_list_cross= pickle.load( open( os.path.join(path_data_write,"patch_list_cross"), "rb" ))
-                  
+            if os.path.exists(os.path.join(path_data_write,"X_predict")):
+#                    X_predict= pickle.load( open( os.path.join(path_data_write,"X_predict"), "rb" ))
+                    regene=False                            
+            
+
             if regene or ForceGenerate:
                 print 'regenerate patch list'
-                patch_list_cross=pavgene(dirf,dimtabx,dimtabx,tabscanScan,tabscanLung,slnt,jpegpath,slnroi)
-                pickle.dump(patch_list_cross, open( os.path.join(path_data_write,"patch_list_cross"), "wb" ),protocol=-1)
-                pickle.dump(thrpatch, open( os.path.join(path_data_write,"thrpatch"), "wb" ),protocol=-1)
+                X_predict,xtrains=preparscan(tabscanScan,tabscanLung,slnroi)
+                proba_cross=ILDCNNpredict(X_predict,modelcross)
+#                patch_list_cross=pavgene(dirf,dimtabx,dimtabx,tabscanScan,tabscanLung,slnt,jpegpath,slnroi)
+                pickle.dump(X_predict, open( os.path.join(path_data_write,"X_predict"), "wb" ),protocol=-1)
+                pickle.dump(proba_cross, open( os.path.join(path_data_write,"proba_cross"), "wb" ),protocol=-1)
+                pickle.dump(xtrains, open( os.path.join(path_data_write,"xtrains"), "wb" ),protocol=-1)
+
             else:
-                print 'no need to regenerate patch list'
+                print 'no need to regenerate scan data'
+                proba_cross=pickle.load(open( os.path.join(path_data_write,"proba_cross"), "rb" ))
+                X_predict=pickle.load(open( os.path.join(path_data_write,"X_predict"), "rb" ))
+                xtrains=pickle.load(open( os.path.join(path_data_write,"xtrains"), "rb" ))
                 
+            print 'slist of slices with ROI:',slnroi
+            cv2.imwrite('a.bmp',normi(X_predict[7]))
+            print 'corresponding :',xtrains
+            print 'Xpredict :', X_predict.shape
+            print 'Xpredict min max :', X_predict.min(),X_predict.max()
+            
+            print 'proba_cross shape', proba_cross.shape
+            print 'proba_cross min max',proba_cross.min(), proba_cross.max()
+            print 'proba_cross[12][100][100]',proba_cross[7][100][100]
+            print 'X_predict[12][100][100]',X_predict[7][100][100]
+            print 'proba_cross[12][0][200]',proba_cross[7][0][200]
+            imgpre= np.argmax(proba_cross[7], axis=2).astype(np.uint8)   
+            print imgpre.min(),imgpre.max()
+            imgpr= np.amax(proba_cross[7], axis=2)   
+            print imgpr.min(),imgpr.max()
 
             
-            modelcross=modelCompilation('cross',picklein_file,picklein_file_front,setref)
-            proba_cross=ILDCNNpredict(patch_list_cross,modelcross)
-            patch_list_cross_slice=genepatchlistslice(patch_list_cross,
-                                                            proba_cross,lissln,dimtabx,dimtabx)
+            plt.figure(figsize = (10, 7))
+            plt.subplot(1,3,1)
+            plt.title('source')
+            plt.imshow(imgpre)
+#            
+            plt.subplot(1,3,2)
+            plt.title('predict')
+            plt.imshow(imgpr)
+
+#            plt.imshow( np.argmax(proba_cross[13], axis=2).astype(np.uint8) )
+#            patch_list_cross_slice=genepatchlistslice(patch_list_cross,
+#                                                            proba_cross,lissln,dimtabx,dimtabx)
 #            tabMed = calcMed(tabscanLung,lissln)
 
 #            pickle.dump(proba_cross, open( os.path.join(path_data_write,"proba_cross"), "wb" ),protocol=-1)
-            pickle.dump(patch_list_cross_slice, open( os.path.join(path_data_write,"patch_list_cross_slice"), "wb" ),protocol=-1)
+            pickle.dump(proba_cross, open( os.path.join(path_data_write,"proba_cross"), "wb" ),protocol=-1)
 #            pickle.dump(patch_list_cross_slice_sub, open( os.path.join(path_data_write,"patch_list_cross_slice_sub"), "wb" ),protocol=-1)
 #            pickle.dump(tabscanLung, open( os.path.join(path_data_write,"tabscanLung"), "wb" ),protocol=-1)
 #            pickle.dump(patch_list_cross, open( os.path.join(path_data_write,"patch_list_cross"), "wb" ),protocol=-1)
@@ -1331,6 +1424,7 @@ def predictrun(indata,path_patient):
 #                """
                 print 'START PREDICT FRONT'
                 print '------------------'
+                return ' '
                 frontcompleted=False
                 pickle.dump(frontcompleted, open( os.path.join(path_data_write,"frontcompleted"), "wb" ),protocol=-1)
                 tabresScan=reshapeScanl(tabscanScan)
@@ -1362,6 +1456,7 @@ def predictrun(indata,path_patient):
                             patch_list_front= pickle.load( open( os.path.join(path_data_write,"patch_list_front"), "rb" ))
                 if regene or ForceGenerate:
                     print 'regenerate patch list'
+
                     patch_list_front=pavgenefront(dirf,dimtabxn,dimtabx,tabScan3d,tabLung3d,dimtabyn,jpegpath3d)
                     pickle.dump(patch_list_front, open( os.path.join(path_data_write,"patch_list_front"), "wb" ),protocol=-1)
                 else:
@@ -1451,7 +1546,7 @@ def predictrun(indata,path_patient):
             errorfile.write('completed :'+f)
             errorfile.close()
             
-            print 'PREDICT  COMPLETED  for ',f,' set ',setref,'thrproba',thrproba,'thrpatch',thrpatch
+            print 'PREDICT  COMPLETED  for ',f,' set ',setref,'thrproba',thrproba,'thrpatch'
             print '------------------'
         return''
 
