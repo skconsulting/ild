@@ -19,10 +19,10 @@ import webbrowser
 
 import cPickle as pickle
 
-print os.environ['USERPROFILE']
-print os.environ['LOCALAPPDATA']
+#print os.environ['USERPROFILE']
+#print os.environ['LOCALAPPDATA']
 #print os.environ['APPDATA']
-print os.environ['PROGRAMDATA']
+#print os.environ['PROGRAMDATA']
 
 instdirPredict='Score2'
 instdirMedikey='MedikEye'
@@ -40,11 +40,11 @@ pathPredictDoc=os.path.join(pathPredict,moduledoc)
 pathMedikEyelocal=os.path.join(os.environ['LOCALAPPDATA'],instdirMedikeyLocal)
 pathPredictlocal=os.path.join(pathMedikEyelocal,instdirpredictLocal)
 #
-print 'pathMedikEye',pathMedikEye
-print 'pathPredict',pathPredict
-
-print 'pathMedikEyelocal',pathMedikEyelocal
-print 'pathPredictlocal',pathPredictlocal
+#print 'pathMedikEye',pathMedikEye
+#print 'pathPredict',pathPredict
+#
+#print 'pathMedikEyelocal',pathMedikEyelocal
+#print 'pathPredictlocal',pathPredictlocal
 
 
 if not os.path.exists(pathMedikEyelocal):

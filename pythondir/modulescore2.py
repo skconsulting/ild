@@ -8,7 +8,7 @@ version 1.5
 6 September 2017
 """
 #from param_pix_p import *
-from param_pix_s2 import path_data,datafrontn,datacrossn,dimpavx,dimpavy,reportalldir
+from param_pix_s2 import path_data,reportalldir
 from param_pix_s2 import surfelemp,volumeroifilep
 
 from param_pix_s2 import white,red,yellow,black
@@ -16,9 +16,9 @@ from param_pix_s2 import source_name,sroi,sroi3d,scan_bmp,transbmp
 from param_pix_s2 import typei1,dimtabx,dimtaby
 from param_pix_s2 import reportdir,reportfile
 
-from param_pix_s2 import classifc,classifdict,usedclassifdict,oldFormat,writeFile,volumeweb
+from param_pix_s2 import classifc,classifdict,usedclassifdict,oldFormat
 
-from param_pix_s2 import maxproba,excluvisu,fidclass,rsliceNum,evaluate,evaluatef,evaluatefull,normi
+from param_pix_s2 import excluvisu,fidclass,rsliceNum,evaluate,evaluatef,evaluatefull,normi
 
 from scorepredict2 import predictrun
 
@@ -27,7 +27,7 @@ import os
 import cv2
 import numpy as np
 import datetime
-import time
+#import time
 
 
 def lisdirprocess(d):
@@ -40,17 +40,19 @@ def lisdirprocess(d):
     stsdir={}
     setrefdict={}
     for dd in a:
+
             stpred={}
             ddd=os.path.join(d,dd)
             datadir=os.path.join(ddd,path_data)
-            pathcross=os.path.join(datadir,datacrossn)
+            pathcross=os.path.join(datadir,'datacrosss')
             
-            pathfront=os.path.join(datadir,datafrontn)
+            pathfront=os.path.join(datadir,'datafrontns')
             setrefdict[dd]='no'
             if os.path.exists(pathcross):
-                datarep= pickle.load( open( os.path.join(datadir,"datacross"), "rb" ))
+                datacross= pickle.load( open( os.path.join(datadir,"datacrosss"), "rb" ))
+#                print datacross
                 try:
-                    setrefdict[dd]=datarep[3]
+                    setrefdict[dd]=datacross[3]
                 except:
                     setrefdict[dd]='oldset0'
             if os.path.exists(pathcross):
@@ -74,17 +76,13 @@ def lisdirprocess(d):
                     
             if os.path.exists(frontcompletedf):
                 frontcompleted= pickle.load( open(frontcompletedf , "rb") )
-
                 if frontcompleted:
-
                     stpred['front']=True
                 else:
-                    stpred['front']=False
-
-                    
+                    stpred['front']=False                    
 
             stsdir[dd]=stpred
-
+#    print setrefdict
     return a,stsdir,setrefdict
 
 def predictmodule(indata,path_patient):
@@ -212,15 +210,14 @@ def tagvcm(fig,cm):
     gro=0.7
     deltaxm=110 
     deltaxt=110
-    lcl=len(classif)-1
     for pat in classif:
         cp=classif[pat]
-        if cp==lcl:
-            dy=0
-        elif cp==0:
-            dy=lcl
-        else:
-            dy=cp
+#        if cp==lcl:
+#            dy=0
+#        elif cp==0:
+#            dy=lcl
+#        else:
+        dy=cp
         col=classifc[pat]
 
         cv2.putText(fig,'%15s'%pat,(deltax, deltay+(12*dy)),cv2.FONT_HERSHEY_PLAIN,gro,col,1)
@@ -241,7 +238,7 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,
 
     imgn = np.zeros((dy,dx,3), np.uint8)
     datav = np.zeros((500,900,3), np.uint8)
-    patchdict=np.zeros((slnt,dx,dy), np.uint8)  
+#    patchdict=np.zeros((slnt,dx,dy), np.uint8)  
 #    np.putmask(patchdict,patchdict==0,classif['lung'])
 #    imgpatch=np.zeros((dx,dy), np.uint8)  
     predictpatu=np.zeros((dx,dy), np.uint8) 
@@ -273,7 +270,7 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,
     imi=  patch_list_cross_slice[xtrains[slicenumber]]
 #    print imi.shape
     imclass0=np.argmax(imi, axis=2).astype(np.uint8)
-    cv2.imwrite('a.bmp',normi(imclass0))
+#    cv2.imwrite('a.bmp',normi(imclass0))
 #    print imclass0.shape,imclass0.min(),imclass0.max()
     imamax=np.amax(imi, axis=2)
 
@@ -302,7 +299,11 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,
 
             np.putmask(imgnp,imgnp==bl,blc)
             imgn=cv2.add(imgn,imgnp)
+            imgngray = cv2.cvtColor(imgnp,cv2.COLOR_BGR2GRAY)
+            np.putmask(imgngray,imgngray>0,1)
+#            area= imgngray.sum()* surfelemp /100
 #            print key, imgn.min(),imgn.max()
+            volpat[key]=imgngray
             if imgn.max()>0:
                 patlist.append(key)
 
@@ -313,7 +314,10 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,
     np.putmask(tablung,tablung>0,255)
         
     for ll1 in usedclassif:     
-        volpat[ll1]=np.bitwise_and(tablung, volpat[ll1])          
+        volpat[ll1]=np.bitwise_and(tablung, volpat[ll1])   
+#        if ll1 =='ground_glass':
+#            cv2.imshow('ground_glass',normi(volpat[ll1]))
+            
         if ll1 in listlabel:            
             tl=True
         else:
@@ -348,27 +352,27 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,
         
         referencepat= referencepatu.flatten()            
         predictpat=  predictpatu.flatten()   
-        pc=np.copy(predictpatu)
-        print 'slicenumber',slicenumber
-        print'pred', pc[318][359]
-        print 'ref',tabroi[slicenumber][318][359]
-        print 'predict',pc.min(),pc.max()
-        np.putmask(pc,pc!=2,0)
-        np.putmask(pc,pc==2,200)
-
-#        pcc=np.copy(pc)
-#        np.putmask(pcc,pcc==0,50)
-        cv2.imshow('predictpat',pc)
-        
-        pc1=np.copy(referencepatu)
-        print 'ref',pc1.min(),pc1.max()
-        np.putmask(pc1,pc1!=2,0)
-        np.putmask(pc1,pc1==2,200)
-
-        print 'refm',pc1.min(),pc1.max()
-#        pcc=np.copy(pc)
-#        np.putmask(pcc,pcc==0,50)
-        cv2.imshow('refpat',pc1)
+#        pc=np.copy(predictpatu)
+#        print 'slicenumber',slicenumber
+#        print'pred', pc[318][359]
+#        print 'ref',tabroi[slicenumber][318][359]
+#        print 'predict',pc.min(),pc.max()
+#        np.putmask(pc,pc!=2,0)
+#        np.putmask(pc,pc==2,200)
+#
+##        pcc=np.copy(pc)
+##        np.putmask(pcc,pcc==0,50)
+#        cv2.imshow('predictpat',pc)
+#        
+#        pc1=np.copy(referencepatu)
+#        print 'ref',pc1.min(),pc1.max()
+#        np.putmask(pc1,pc1!=2,0)
+#        np.putmask(pc1,pc1==2,200)
+#
+#        print 'refm',pc1.min(),pc1.max()
+##        pcc=np.copy(pc)
+##        np.putmask(pcc,pcc==0,50)
+#        cv2.imshow('refpat',pc1)
        
         precision={}
         recall={}
@@ -427,7 +431,7 @@ def retrievepatch(x,y,slicenumber,patch_list_cross_slice,xtrains):
     return tabtext
 
 
-def openfichiervolumetxtall(listHug,path_patient,indata,thrprobaUIP,cnnweigh,f,thrpatch,tp):
+def openfichiervolumetxtall(listHug,path_patient,indata,thrprobaUIP,cnnweigh,f,tp,xtrains):
 
     num_class=len(classif)
 
@@ -440,9 +444,9 @@ def openfichiervolumetxtall(listHug,path_patient,indata,thrprobaUIP,cnnweigh,f,t
 
         patient_path_complet=os.path.join(path_patient,patient)
         path_data_dir=os.path.join(patient_path_complet,path_data)
-        datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "rb" ))
+        datarep= pickle.load( open( os.path.join(path_data_dir,"datacrosss"), "rb" ))
 #        slicepitch=datarep[3]
-        slnroi= pickle.load( open( os.path.join(path_data_dir,"slnroi"), "rb" ))
+        slnroi= pickle.load( open( os.path.join(path_data_dir,"slnrois"), "rb" ))
         if tp=='Cross':
             filepatch="patch_list_cross_slice"
         if tp=='FrontProjected':
@@ -454,11 +458,11 @@ def openfichiervolumetxtall(listHug,path_patient,indata,thrprobaUIP,cnnweigh,f,t
 #        patch_list_cross_slice_sub= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice_sub"), "rb" ))
 #        lungSegment= pickle.load( open( os.path.join(path_data_dir,"lungSegment"), "rb" ))
 #        tabMed= pickle.load( open( os.path.join(path_data_dir,"tabMed"), "rb" ))
-        tabscanLung= pickle.load( open( os.path.join(path_data_dir,"tabscanLung"), "rb" ))
-        tabroi= pickle.load( open( os.path.join(path_data_dir,"tabroi"), "rb" ))
+        tabscanLung= pickle.load( open( os.path.join(path_data_dir,"tabscanLungs"), "rb" ))
+        tabroi= pickle.load( open( os.path.join(path_data_dir,"tabrois"), "rb" ))
                   
         ref,pred,messageout = openfichiervolumetxt(patient,path_patient,patch_list_cross_slice,
-                      thrprobaUIP,tabroi,datarep,slnroi,tabscanLung,f,cnnweigh,thrpatch,tp)
+                      thrprobaUIP,tabroi,datarep,slnroi,tabscanLung,f,cnnweigh,tp)
 
         if pf:
 
@@ -471,69 +475,59 @@ def openfichiervolumetxtall(listHug,path_patient,indata,thrprobaUIP,cnnweigh,f,t
             predictpat= np.concatenate((predictpat,pred),axis=0)
 
         
-    cfma(f,referencepat,predictpat,num_class,'all set',thrprobaUIP,cnnweigh,tp,thrpatch)
+    cfma(f,referencepat,predictpat,num_class,'all set',thrprobaUIP,cnnweigh,tp)
     f.close()
 
-def cfma(f,referencepat,predictpat,num_class, namep,thrprobaUIP,cnnweigh,tp,thrpatch):
+def cfma(f,referencepat,predictpat,num_class, namep,thrprobaUIP,cnnweigh,tp):
         f.write('confusion matrix for '+namep+'\n')
-        f.write(tp+' View , threshold: '+str(thrprobaUIP)+ ' CNN param: '+cnnweigh+' th_patch'+str(thrpatch)+'\n\n')
+        f.write(tp+' View , threshold: '+str(thrprobaUIP)+ ' CNN param: '+cnnweigh+'\n\n')
         
         cm=evaluatef(referencepat,predictpat,num_class)
         n= cm.shape[0]
-        newclassif=[]
-        newclassif.append(fidclass(len(classif)-1,classif))
-        for pat in usedclassif:
-            cp=classif[pat]
-            if cp>0:
-                newclassif.append(pat)
-        newclassif.append(fidclass(0,classif))
+
         presip={}
         recallp={}
         fscorep={}
-        for pat in newclassif:
+        usedclassifwobg=list(usedclassif)
+        usedclassifwobg.remove('back_ground')
+        for pat in usedclassif:
             presip[pat]=0
             recallp[pat]=0
             fscorep[pat]=0
             numpat=classif[pat]
-            if numpat == 0:
-                numpat=classif['lung']
-#            print numpat
+
             presip[pat], recallp[pat]=evaluate(referencepat,predictpat,num_class,(numpat,))
-#            print pat,presip[pat],recallp[pat]
-        presip['lung'], recallp['lung']=evaluate(referencepat,predictpat,num_class,(0,))
-#        print 'lung',presip['lung'],recallp['lung']
-        for pat in newclassif:             
+
+        for pat in usedclassif:             
          if presip[pat]+recallp[pat]>0:
             fscorep[pat]=2*presip[pat]*recallp[pat]/(presip[pat]+recallp[pat])
         else:
             fscorep[pat]=0    
         f.write(15*' ')
-        for pat in newclassif:
+        for pat in usedclassif:
             f.write('%8s'%pat[0:6])
     #    print newclassif
         f.write('  recall \n')
-            
         for i in range (0,n):
-            pat=newclassif[i]
+            pat=usedclassif[i]
             f.write('%15s'%pat)
             for j in range (0,n):
                 f.write('%8s'%str(cm[i][j]))
             f.write( '%8s'%(str(int(round(100*recallp[pat],0)))+'%')+'\n')        
         f.write('----------------------\n')
         f.write('      precision')
-        for pat in newclassif:
+        for pat in usedclassif:
             f.write('%8s'%(str(int(round(100*presip[pat],0)))+'%'))
     #    print newclassif
         f.write('\n')
         f.write('         Fscore')
-        for pat in newclassif:
+        for pat in usedclassif:
             f.write('%8s'%(str(int(round(100*fscorep[pat],0)))+'%'))
     #    print newclassif
         f.write('\n--------------------\n')
         f.write('score per pattern:\n\n')
-        for pat in newclassif:
-            
-            if pat !='lung' and fscorep[pat]>0:
+        for pat in usedclassifwobg:            
+            if  fscorep[pat]>0:
                 f.write('%17s'%pat+
                         '  precision:'+'%5s'%(str(int(round(100*presip[pat],0)))+'%')+
                         ' recall: '+'%5s'%(str(int(round(100*recallp[pat],0)))+'%')+
@@ -549,79 +543,53 @@ def cfma(f,referencepat,predictpat,num_class, namep,thrprobaUIP,cnnweigh,tp,thrp
         fscorei=str(int(round(fscore*100,0)))+'%'
     #                    print (slicenumber,pat,precisioni,recalli,fscorei)
         f.write('----------------------\n')
-        f.write('Global scores for patient '+namep+' (without lung):\n')
+        f.write('Global scores for patient '+namep+' (without back_ground):\n')
         f.write('precision: '+precisioni+' recall: '+recalli+' Fscore: '+fscorei+'\n')
         f.write('----------------------\n')
 
 def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
-                      thrprobaUIP,tabroi,datacross,slnroi,tabscanLung,f,cnnweigh,thrpatch,tp):
+                      thrprobaUIP,tabroi,datacross,slnroi,tabscanLung,f,cnnweigh,tp,xtrains):
     global  quitl,patchi,ix,iy
     print 'openfichiervolume txt start in',path_patient,' for', listHug, 'predict type ',tp
     slnt=datacross[0]
-    dx=datacross[1]
-    dy=datacross[2]
+#    dx=datacross[1]
+#    dy=datacross[2]
 
     t = datetime.datetime.now()
  
     f.write('report for patient :'+listHug+
             ' - date : m'+str(t.month)+'-d'+str(t.day)+'-y'+str(t.year)+' at '+str(t.hour)+'h '+str(t.minute)+'mn\n')
-    f.write(tp +' View , threshold: '+str(thrprobaUIP)+ ' CNN_param: '+cnnweigh+' th_patch: '+str(thrpatch) +'\n\n')
+    f.write(tp +' View , threshold: '+str(thrprobaUIP)+ ' CNN_param: '+cnnweigh +'\n\n')
  
     slntroi=len(slnroi)
 
     print 'start Fscore'
-    patchdict=np.zeros((slnt,dx,dy), np.uint8)
-    predictpatu=np.zeros((slntroi,dx,dy), np.uint8)
-    referencepatu=np.zeros((slntroi,dx,dy), np.uint8)
+    patchdict=np.zeros((slnt,dimtaby,dimtabx), np.uint8)
+    predictpatu=np.zeros((slntroi,dimtaby,dimtabx), np.uint8)
+    referencepatu=np.zeros((slntroi,dimtaby,dimtabx), np.uint8)
     num_class=len(classif)
     th=thrprobaUIP
     for slroi in range(0,slntroi):
 #    for slicenumber in (143,144):
         slicenumber=slnroi[slroi]
         if tabroi[slicenumber].max()>0:
-            imgpatch=np.zeros((dx,dy), np.uint8)
-            for ll in patch_list_cross_slice[slicenumber]:
-                    xpat=ll[0][0]
-                    ypat=ll[0][1]
-                #we find max proba from prediction
-                    proba=ll[1]
-        
-                    prec, mprobai = maxproba(proba)
-        
-                    classlabel=fidclass(prec,classif)
-        
-                    if mprobai >th and classlabel not in excluvisu:
+            imi=  patch_list_cross_slice[xtrains[slicenumber]]
+#    print imi.shape
+            imclass0=np.argmax(imi, axis=2).astype(np.uint8)
+            imamax=np.amax(imi, axis=2)
 
-        
-        #                imgn= addpatchn(classcolor,classlabel,xpat,ypat,imgn)
-                        if classif[classlabel]>0:
-                            cv2.rectangle(imgpatch,(xpat,ypat),(xpat+dimpavx,ypat+dimpavy),classif[classlabel],-1)
-                        else:
-                            cv2.rectangle(imgpatch,(xpat,ypat),(xpat+dimpavx,ypat+dimpavy),classif['lung'],-1)
-        
-                        imgray=np.copy(imgpatch)
-                        np.putmask(imgray,imgray>0,255)
-                        mask=np.bitwise_not(imgray)
-                        patchdict[slicenumber]=cv2.bitwise_and(patchdict[slicenumber],patchdict[slicenumber],mask=mask)
-                        patchdict[slicenumber]=cv2.bitwise_or(imgpatch,patchdict[slicenumber])
+            np.putmask(imamax,imamax>=th,255)
+            np.putmask(imamax,imamax<th,0)
+            imamax=imamax.astype(np.uint8)
 
-
+            patchdict[slicenumber]=np.bitwise_and(imamax,imclass0)
 
             tablung=np.copy(tabscanLung[slicenumber])
             np.putmask(tablung,tablung>0,255)
               
             predictpatu[slroi]=np.bitwise_and(tablung, patchdict[slicenumber])  
-#            referencepatu[slroi]=np.bitwise_and(tablung, tabroi[slicenumber])  
             referencepatu[slroi]=np.copy(tabroi[slicenumber])
-
-#                cv2.imshow('bpred',normi(patchdict[slicenumber]))
-#                cv2.imshow('apred',normi(predictpatu[slicenumber]))
-#                cv2.imshow('broi',normi(tabroi[slicenumber]))
-#                cv2.imshow('aroi',normi(referencepatu[slicenumber]))
-#                cv2.waitKey(0)
-#                cv2.destroyAllWindows()
-            
-            
+           
             referencepat= referencepatu[slroi].flatten()
             predictpat=  predictpatu[slroi].flatten()   
             
@@ -632,22 +600,21 @@ def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
             f.write('    pattern   precision  recall  Fscore\n')
 
             for pat in usedclassif:
-                numpat=classif[pat]
-                fscore[pat]=0
-                if numpat == 0:
-                    numpat=classif['lung']
-                precision[pat],recall[pat] = evaluate(referencepat,predictpat,num_class,(numpat,))
-                if (precision[pat]+recall[pat])>0:
-                    fscore[pat]=2*precision[pat]*recall[pat]/(precision[pat]+recall[pat])
-                    precisioni=str(round(precision[pat]*100,0))+'%'
-                    recalli=str(round(recall[pat]*100,))+'%'
-                    fscorei=str(round(fscore[pat]*100,0))+'%'
-#                    print (slicenumber,pat,precisioni,recalli,fscorei)
-                    f.write('%14s'%pat+'%7s'%precisioni+'%9s'%recalli+'%9s'%fscorei+'\n')
-            f.write('\n')
+                if pat !='back_ground':
+                    numpat=classif[pat]
+                    fscore[pat]=0
+                    precision[pat],recall[pat] = evaluate(referencepat,predictpat,num_class,(numpat,))
+                    if (precision[pat]+recall[pat])>0:
+                        fscore[pat]=2*precision[pat]*recall[pat]/(precision[pat]+recall[pat])
+                        precisioni=str(round(precision[pat]*100,0))+'%'
+                        recalli=str(round(recall[pat]*100,))+'%'
+                        fscorei=str(round(fscore[pat]*100,0))+'%'
+    #                    print (slicenumber,pat,precisioni,recalli,fscorei)
+                        f.write('%14s'%pat+'%7s'%precisioni+'%9s'%recalli+'%9s'%fscorei+'\n')
+                f.write('\n')
     referencepat= referencepatu.flatten()
     predictpat=  predictpatu.flatten() 
-    cfma(f,referencepat,predictpat,num_class,listHug,thrprobaUIP,cnnweigh,tp,thrpatch)
+    cfma(f,referencepat,predictpat,num_class,listHug,thrprobaUIP,cnnweigh,tp)
     f.write('----------------------\n')
 
     return referencepat,predictpat,''
@@ -934,7 +901,7 @@ def visuarun(indata,path_patient):
     if oldFormat:
         setref='set0'
     else:
-        datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "rb" ))
+        datarep= pickle.load( open( os.path.join(path_data_dir,"datacrosss"), "rb" ))
         setref=datarep[3]
 #        print setref
     classif=classifdict[setref]
@@ -945,14 +912,14 @@ def visuarun(indata,path_patient):
 #    pathhtml=os.path.join(patient_path_complet,htmldir)
     
     if viewstyle=='cross view':
-            datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "rb" ))
-            tabroi= pickle.load( open( os.path.join(path_data_dir,"tabroi"), "rb" ))
-            slnroi= pickle.load( open( os.path.join(path_data_dir,"slnroi"), "rb" ))
-            xtrains  = pickle.load( open( os.path.join(path_data_dir,"xtrains"), "rb" ))
+            datarep= pickle.load( open( os.path.join(path_data_dir,"datacrosss"), "rb" ))
+            tabroi= pickle.load( open( os.path.join(path_data_dir,"tabrois"), "rb" ))
+            slnroi= pickle.load( open( os.path.join(path_data_dir,"slnrois"), "rb" ))
+            xtrains  = pickle.load( open( os.path.join(path_data_dir,"xtrainss"), "rb" ))
 
 
-            tabscanLung= pickle.load( open( os.path.join(path_data_dir,"tabscanLung"), "rb" ))
-            proba_cross= pickle.load( open( os.path.join(path_data_dir,"proba_cross"), "rb" ))
+            tabscanLung= pickle.load( open( os.path.join(path_data_dir,"tabscanLungs"), "rb" ))
+            proba_cross= pickle.load( open( os.path.join(path_data_dir,"proba_crosss"), "rb" ))
             thrproba=float(indata['thrproba'])
             cnnweigh=indata['picklein_file']
 #            print cnnweigh
@@ -1007,33 +974,32 @@ def visuarun(indata,path_patient):
 #            messageout=openfichierfrpr(path_patient,tabfromfront,thrprobaUIP)
     
     elif viewstyle=='reportCross':
-        datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "rb" ))
+        datarep= pickle.load( open( os.path.join(path_data_dir,"datacrosss"), "rb" ))
 #        slicepitch=datarep[3]
-        slnroi= pickle.load( open( os.path.join(path_data_dir,"slnroi"), "rb" ))
+        slnroi= pickle.load( open( os.path.join(path_data_dir,"slnrois"), "rb" ))
         cnnweigh=indata['picklein_file']
 
         tp='Cross'
-        
-        patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,'patch_list_cross_slice'), "rb" ))
+        proba_cross= pickle.load( open( os.path.join(path_data_dir,"proba_crosss"), "rb" ))
+#        patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,'patch_list_cross_slices'), "rb" ))
 #        patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice"), "rb" ))
 #        patch_list_cross_slice_sub= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice_sub"), "rb" ))
 #        lungSegment= pickle.load( open( os.path.join(path_data_dir,"lungSegment"), "rb" ))
 #        tabMed= pickle.load( open( os.path.join(path_data_dir,"tabMed"), "rb" ))
         thrproba=float(indata['thrproba'])
-        thrpatch=pickle.load( open( os.path.join(path_data_dir,"thrpatch"), "rb" ))
-        tabscanLung= pickle.load( open( os.path.join(path_data_dir,"tabscanLung"), "rb" ))
-        tabroi= pickle.load( open( os.path.join(path_data_dir,"tabroi"), "rb" ))
+        tabscanLung= pickle.load( open( os.path.join(path_data_dir,"tabscanLungs"), "rb" ))
+        tabroi= pickle.load( open( os.path.join(path_data_dir,"tabrois"), "rb" ))
+        xtrains  = pickle.load( open( os.path.join(path_data_dir,"xtrainss"), "rb" ))
         dirf=os.path.join(path_patient,listHug)
         dirfreport=os.path.join(dirf,reportdir)   
         if not os.path.exists(dirfreport):
             os.mkdir(dirfreport)
         t = datetime.datetime.now()
-        today =tp+'_weight_'+cnnweigh+ '_th'+str(thrproba)+'_tpat'+str(thrpatch)+'_m'+str(t.month)+'-d'+str(t.day)+'-y'+str(t.year)+'_'+str(t.hour)+'h_'+str(t.minute)+'m'
+        today =tp+'_weight_'+cnnweigh+ '_th'+str(thrproba)+'_tpat'+'_m'+str(t.month)+'-d'+str(t.day)+'-y'+str(t.year)+'_'+str(t.hour)+'h_'+str(t.minute)+'m'
         repf=os.path.join(dirfreport,reportfile+str(today)+'.txt')
         f=open(repf,'w')
-        x,x,messageout = openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
-                      thrproba,
-                      tabroi,datarep,slnroi,tabscanLung,f,cnnweigh,thrpatch,tp)
+        x,x,messageout = openfichiervolumetxt(listHug,path_patient,proba_cross,thrproba,
+                      tabroi,datarep,slnroi,tabscanLung,f,cnnweigh,tp,xtrains)
         f.close()
         os.startfile(repf)
         
@@ -1102,14 +1068,15 @@ def visuarun(indata,path_patient):
         tp=indata['viewstylet']
         print 'report All for', tp
         thrproba=float(indata['thrproba'])
-        thrpatch=pickle.load( open( os.path.join(path_data_dir,"thrpatch"), "rb" ))
+
+        xtrains  = pickle.load( open( os.path.join(path_data_dir,"xtrainss"), "rb" ))
 
         cnnweigh=indata['picklein_file']
         pathreport=os.path.join(path_patient,reportalldir)
         if not os.path.exists(pathreport):
             os.mkdir(pathreport)
         t = datetime.datetime.now()
-        today =tp+'_'+'_weight_'+cnnweigh+ '_th'+str(thrproba)+'_tpat'+str(thrpatch)+'_m'+str(t.month)+'-d'+str(t.day)+'-y'+str(t.year)+'_'+str(t.hour)+'h_'+str(t.minute)+'m'
+        today =tp+'_'+'_weight_'+cnnweigh+ '_th'+str(thrproba)+'_tpat'+'_m'+str(t.month)+'-d'+str(t.day)+'-y'+str(t.year)+'_'+str(t.hour)+'h_'+str(t.minute)+'m'
         repf=os.path.join(pathreport,reportfile+str(today)+'.txt')
         f=open(repf,'w')
 #        remove_folder(pathreport)
@@ -1121,7 +1088,7 @@ def visuarun(indata,path_patient):
 
         if not os.path.exists(pathreport):
             os.mkdir(pathreport)
-        messageout = openfichiervolumetxtall(listHug,path_patient,indata,thrproba,cnnweigh,f,thrpatch,tp)
+        messageout = openfichiervolumetxtall(listHug,path_patient,indata,thrproba,cnnweigh,f,tp,xtrains)
         os.startfile(repf)
         
     else:
