@@ -1191,12 +1191,7 @@ def predictrun(indata,path_patient):
         dirHUG=os.path.join(cwdtop,path_patient)
 #        model=loadmodel()
         modelcross=modelCompilation('cross',picklein_file,picklein_file_front,setref)
-#        weights=[]
-#        modelcross = get_model(11,1,512,512,False,weights)
-#        lismodel=os.listdir(picklein_file)        
-#        modelpath = os.path.join(picklein_file, lismodel[0])
-#        modelcross.load_weights(modelpath) 
-#        print modelpath
+
         if indata['threedpredictrequest']!='Cross Only':
             modelfront=modelCompilation('front',picklein_file,picklein_file_front,setref)
             
@@ -1363,21 +1358,21 @@ def predictrun(indata,path_patient):
                 X_predict=pickle.load(open( os.path.join(path_data_write,"X_predicts"), "rb" ))
                 xtrains=pickle.load(open( os.path.join(path_data_write,"xtrainss"), "rb" ))
                 
-            print 'slist of slices with ROI:',slnroi
+#            print 'slist of slices with ROI:',slnroi
 #            cv2.imwrite('scan7.bmp',normi(X_predict[7]))
-            print 'corresponding :',xtrains
-            print 'Xpredict :', X_predict.shape
-            print 'Xpredict min max :', X_predict.min(),X_predict.max()
-            
-            print 'proba_cross shape', proba_cross.shape
-            print 'proba_cross min max',proba_cross.min(), proba_cross.max()
-            print 'proba_cross[12][100][100]',proba_cross[7][100][100]
-            print 'X_predict[12][100][100]',X_predict[7][100][100]
-            print 'proba_cross[12][0][200]',proba_cross[7][0][200]
-            imgpre= np.argmax(proba_cross[7], axis=2).astype(np.uint8)   
-            print imgpre.min(),imgpre.max()
-            imgpr= np.amax(proba_cross[7], axis=2)   
-            print imgpr.min(),imgpr.max()
+#            print 'corresponding :',xtrains
+#            print 'Xpredict :', X_predict.shape
+#            print 'Xpredict min max :', X_predict.min(),X_predict.max()
+#            
+#            print 'proba_cross shape', proba_cross.shape
+#            print 'proba_cross min max',proba_cross.min(), proba_cross.max()
+#            print 'proba_cross[12][100][100]',proba_cross[7][100][100]
+#            print 'X_predict[12][100][100]',X_predict[7][100][100]
+#            print 'proba_cross[12][0][200]',proba_cross[7][0][200]
+#            imgpre= np.argmax(proba_cross[7], axis=2).astype(np.uint8)   
+#            print imgpre.min(),imgpre.max()
+#            imgpr= np.amax(proba_cross[7], axis=2)   
+#            print imgpr.min(),imgpr.max()
 #
 #            
 #            plt.figure(figsize = (10, 7))
