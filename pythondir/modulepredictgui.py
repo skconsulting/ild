@@ -217,9 +217,9 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,slnt,tabro
 
     imgn = np.zeros((dx,dy,3), np.uint8)
     datav = np.zeros((500,900,3), np.uint8)
-    patchdict=np.zeros((slnt,dx,dy), np.uint8)  
-    predictpatu=np.zeros((slnt,dx,dy), np.uint8) 
-    referencepatu=np.zeros((slnt,dx,dy), np.uint8) 
+    patchdict=np.zeros((dx,dy), np.uint8)  
+    predictpatu=np.zeros((dx,dy), np.uint8) 
+
 #    np.putmask(patchdict,patchdict==0,classif['lung'])
     imgpatch=np.zeros((dx,dy), np.uint8)  
    
@@ -235,7 +235,7 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,slnt,tabro
     for pat in usedclassif:
         volpat[pat]=np.zeros((dx,dy), np.uint8)
     
-    
+   
     lvexist=False
     if len (volumeroi)>0:
 #        print 'volumeroi exists'
@@ -275,8 +275,8 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,slnt,tabro
                     imgray=np.copy(imgpatch)
                     np.putmask(imgray,imgray>0,255)
                     mask=np.bitwise_not(imgray)
-                    patchdict[slicenumber]=cv2.bitwise_and(patchdict[slicenumber],patchdict[slicenumber],mask=mask)
-                    patchdict[slicenumber]=cv2.bitwise_or(imgpatch,patchdict[slicenumber])
+                    patchdict=cv2.bitwise_and(patchdict,patchdict ,mask=mask)
+                    patchdict=cv2.bitwise_or(imgpatch,patchdict)
 
     delx=120
     surftotpat=0
@@ -314,11 +314,11 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,slnt,tabro
         
         tablung=np.copy(tabscanLung[slicenumber])
         np.putmask(tablung,tablung>0,255)                 
-        predictpatu[slicenumber]=np.bitwise_and(tablung, patchdict[slicenumber])  
+        predictpatu=np.bitwise_and(tablung, patchdict)  
 #        referencepatu[slicenumber]=np.bitwise_and(tablung, tabroi[slicenumber])  
         
         referencepat= tabroi[slicenumber].flatten()                    
-        predictpat=  predictpatu[slicenumber].flatten()   
+        predictpat=  predictpatu.flatten()   
               
         precision={}
         recall={}
