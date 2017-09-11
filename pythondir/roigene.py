@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 """
 Created on Tue Mar 28 16:48:43 2017
+@author: sylvain Kritter 
+Version 1.5 
 
-@author: sylvain
-tool for roi generation
-version 1.2
-10 aout 2017
+06 September 2017
 """
 #from param_pix_r import *
 from param_pix_r import path_data,dimtabx,dimtaby,dimtabmenu
@@ -1419,6 +1418,8 @@ def openfichierroi(patient,patient_path_complet,centerHU,limitHU,lungask,ForceGe
     if len(listdcm)>0:
         nosource=False 
     path_data_write=os.path.join(dirpath_patient,path_data)
+    if not os.path.exists(path_data_write):
+        os.mkdir(path_data_write)
     path_data_writefile=os.path.join(path_data_write,volumeroifile)
 
     centerHU1=0
