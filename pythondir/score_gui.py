@@ -491,7 +491,7 @@ def initDraw():
     centerHU=paramdict['centerHU']
     limitHU=paramdict['limitHU']
     
-    app = gui("Predict form","1000x700")
+    app = gui("Score form","1000x700")
     app.setResizable(canResize=True)
     app.setBg("lightBlue")
     app.setFont(10)
@@ -607,7 +607,7 @@ def visuDraw():
 #    print "visudraw"
     paramdict=pickle.load(open( paramsaveDirf, "rb" ))
 
-    app = gui("Visualization form","1000x600")
+    app = gui("Visualization Score form","1000x600")
     app.setResizable(canResize=True)
 
     app.setBg("lightBlue")

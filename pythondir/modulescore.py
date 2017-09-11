@@ -341,6 +341,27 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,slnt,tabro
                   
         predictpatu=np.bitwise_and(tablung, patchdict)  
         referencepatu= np.copy(tabroi[slicenumber]) 
+#        pc=np.copy(tabroi[slicenumber])
+#
+#        np.putmask(pc,pc!=5 ,0)
+#        np.putmask(pc,pc==5,200)
+###        pcc=np.copy(pc)
+###        np.putmask(pcc,pcc==0,50)
+#        cv2.imshow('tabroi5',pc)
+#        pc=np.copy(tabroi[slicenumber])
+#
+#        np.putmask(pc,pc!=3 ,0)
+#        np.putmask(pc,pc==3,200)
+###        pcc=np.copy(pc)
+###        np.putmask(pcc,pcc==0,50)
+#        cv2.imshow('health',pc)
+#        pc=np.copy(tabroi[slicenumber])
+#
+#        np.putmask(pc,pc!=4 ,0)
+#        np.putmask(pc,pc==4,200)
+###        pcc=np.copy(pc)
+###        np.putmask(pcc,pcc==0,50)
+#        cv2.imshow('ret',pc)
         
         referencepat= referencepatu.flatten()            
         predictpat=  predictpatu.flatten()   
@@ -360,6 +381,7 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,slnt,tabro
             fscore[pat]=0
             if numpat == 0:
                 numpat=classif['lung']
+
             precision[pat],recall[pat] = evaluate(referencepat,predictpat,num_class,(numpat,))
             if (precision[pat]+recall[pat])>0:
                 fscore[pat]=2*precision[pat]*recall[pat]/(precision[pat]+recall[pat])
@@ -698,7 +720,7 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,tabroi,
     cdelimter='_'
     extensionimage='.'+typei1
     limage=[name for name in os.listdir(pdirk) if name.find('.'+typei1,1)>0 ]
-    lenlimage=len(limage)
+    lenlimage=len(slnroi)
 
 #    print len(limage), sln
 
@@ -934,7 +956,7 @@ def visuarun(indata,path_patient):
     else:
         datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "rb" ))
         setref=datarep[5]
-#        print setref
+
     classif=classifdict[setref]
     usedclassif=usedclassifdict[setref]
 #    print usedclassif
