@@ -245,7 +245,7 @@ def segment_lung_mask(image, fill_lung_structures=True):
 def morph(imgt,k):
 
     img=imgt.astype('uint8')
-    img[img>0]=200
+    img[img>0]=classif['lung']+1
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(k,k))
 #    kernel = cv2.getStructuringElement(cv2.MORPH_RECT,(k,k))
     img = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel)
@@ -280,14 +280,11 @@ def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan,listsln):
     if len(listbmp)>0:
         print 'lung scan exists in bmp'
         for img in listbmp:
-            slicenumber= rsliceNum(img,'_','.'+typei)
-            if slicenumber<0:
-                slicenumber= rsliceNum(img,'_','.'+typei1)
-                if slicenumber<0:
-                     slicenumber= rsliceNum(img,'_','.'+typei2)
-        
+            slicenumber= rsliceNum(img,'_','.'+typei1)
+       
             imr=cv2.imread(os.path.join(fmbmpbmp,img),0) 
             imr=cv2.resize(imr,(dimtabx,dimtaby),interpolation=cv2.INTER_LINEAR)  
+            np.putmask(imr,imr>0,classif['lung']+1)
             tabscan[slicenumber]=imr
     
     if len(listdcm)>0:  
@@ -302,14 +299,17 @@ def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan,listsln):
     
             fxs=float(RefDs.PixelSpacing[0])/avgPixelSpacing
             imgresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
+            np.putmask(imgresize,imgresize>0,classif['lung']+1)
     
             slicenumber=int(RefDs.InstanceNumber)
 
             imgcoreScan=tabscanScan[slicenumber][0]
             bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
             if tabscan[slicenumber].max()==0:
-                cv2.imwrite(bmpfile,imgresize)    
                 tabscan[slicenumber]=imgresize
+                colorlung=colorimage(imgresize,classifc['lung'])
+                cv2.imwrite(bmpfile,colorlung)    
+
     else:
             print 'no lung scan in dcm'
             tabscan1 = np.zeros((slnt,dimtabx,dimtaby), np.int16)
@@ -326,7 +326,8 @@ def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan,listsln):
                 bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
                 if tabscan[i].max()==0:
                     tabscan[i]=tabscan1[i]
-                    cv2.imwrite(bmpfile,tabscan[i])
+                    colorlung=colorimage(tabscan[i],classifc['lung'])
+                    cv2.imwrite(bmpfile,colorlung)
     for sli in listsln:
         cpt=np.copy(tabscan[sli])
         np.putmask(cpt,cpt>0,1)
@@ -643,6 +644,13 @@ def tagviewn(tab,label,pro,nbr,x,y):
     gro=0.3
     viseg=cv2.putText(tab,str(nbr)+' '+label+' '+pro,(x+deltax, y+deltay+10), font,gro,col,1)
     return viseg
+
+def colorimage(image,color):
+#    im=image.copy()
+    im = cv2.cvtColor(image,cv2.COLOR_GRAY2BGR)
+    np.putmask(im,im>0,color)
+    return im
+
 
 def  visua(listelabelfinal,dirf,patch_list,dimtabx,dimtaby,
            slnt,predictout,sroi,scan_bmp,sou,dcmf,dct,errorfile,nosource,typevi):
@@ -1538,26 +1546,26 @@ def generoi(dirf,tabroi,dimtabx,lissln,tabscanLung,slnroi):
 #                print img.shape
                 img=cv2.resize(img,(dimtabx,dimtabx),interpolation=cv2.INTER_LINEAR)
                 np.putmask(tabroi[numslice], img > 0, 0)
-                if classif[pat]>0:
-                    np.putmask(img, img > 0, classif[pat])
-                else:
-                    np.putmask(img, img > 0, classif['lung'])
+                np.putmask(img, img > 0, classif[pat]+1)
                 tablung=np.copy(tabscanLung[numslice])
                 np.putmask(tablung,tablung>0,255)                      
                 img=np.bitwise_and(tablung, img) 
                 tabroi[numslice]+=img
                 if numslice not in slnroi:
                     slnroi.append(numslice)  
+    for numslice in slnroi:
+        tablung=np.copy(tabscanLung[numslice])        
+        mask=tabroi[numslice].copy()
+        tabxorig=tabroi[numslice].copy()
+        np.putmask(mask,mask>0,255)
+        tabxn=np.bitwise_not(mask)
+        
+        tablung=np.bitwise_and(tablung, tabxn)
+        
+        tabroi[numslice]=np.bitwise_or(tabxorig,tablung)
+    
+    
     slnroi.sort()
-#                if  numslice==225:
-##                    print pat, tabroi[143].max()
-#                    cv2.imshow(pat+'143',normi(tabroi[225]))
-#                    cv2.imwrite('a.bmp',normi(img))
-#                    print img.shape
-#                    print area
-#                    print surfelemp
-#                    cv2.waitKey(0)
-#                    cv2.destroyAllWindows()
                 
     volumeroi={}
     for numslice in lissln:
@@ -1566,20 +1574,13 @@ def generoi(dirf,tabroi,dimtabx,lissln,tabscanLung,slnroi):
                 img=np.copy(tabroi[numslice])
                 if img.max()>0:                    
                     if classif[pat]>0:
-                        np.putmask(img, img !=classif[pat], 0)
-                        np.putmask(img, img ==classif[pat], 1)
-                    else:
-                        np.putmask(img, img !=classif['lung'], 0)
-                        np.putmask(img, img == classif['lung'],1)
-    #                if  numslice==225:
-    #                    cv2.imshow(pat+'143',normi(img))
-                    area= img.sum()* surfelemp /100
-                    volumeroi[numslice][pat]=area  
+                        np.putmask(img, img !=classif[pat]+1, 0)
+                        np.putmask(img, img ==classif[pat]+1, 1)
+                        area= img.sum()* surfelemp /100
+                        volumeroi[numslice][pat]=area  
                 else:
                     volumeroi[numslice][pat]=0
-#    print    volumeroi[225]['ground_glass']   
-
-#    cv2.imshow('gg',normi(tabroi[225]))                   
+               
     return tabroi,volumeroi,slnroi
         
 
