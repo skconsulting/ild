@@ -245,7 +245,7 @@ def segment_lung_mask(image, fill_lung_structures=True):
 def morph(imgt,k):
 
     img=imgt.astype('uint8')
-    img[img>0]=200
+    img[img>0]=classif['lung']+1
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(k,k))
 #    kernel = cv2.getStructuringElement(cv2.MORPH_RECT,(k,k))
     img = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel)
@@ -280,15 +280,13 @@ def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan,listsln,tabscanName
     if len(listbmp)>0:
         print 'lung scan exists in bmp'
         for img in listbmp:
-            slicenumber= rsliceNum(img,'_','.'+typei)
-            if slicenumber<0:
-                slicenumber= rsliceNum(img,'_','.'+typei1)
-                if slicenumber<0:
-                     slicenumber= rsliceNum(img,'_','.'+typei2)
+            slicenumber= rsliceNum(img,'_','.'+typei1)
+            if slicenumber>0:
         
-            imr=cv2.imread(os.path.join(fmbmpbmp,img),0) 
-            imr=cv2.resize(imr,(dimtabx,dimtaby),interpolation=cv2.INTER_LINEAR)  
-            tabscan[slicenumber]=imr
+                    imr=cv2.imread(os.path.join(fmbmpbmp,img),0) 
+                    imr=cv2.resize(imr,(dimtabx,dimtaby),interpolation=cv2.INTER_LINEAR)  
+                    np.putmask(imr,imr>0,classif['lung']+1)
+                    tabscan[slicenumber]=imr
     
     if len(listdcm)>0:  
         print 'lung scan exists in dcm'
@@ -302,6 +300,7 @@ def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan,listsln,tabscanName
     
             fxs=float(RefDs.PixelSpacing[0])/avgPixelSpacing
             imgresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
+            np.putmask(imgresize,imgresize>0,classif['lung']+1)
     
             slicenumber=int(RefDs.InstanceNumber)
 
@@ -1004,7 +1003,6 @@ def genepatchlistslice(patch_list_cross,proba_cross,lissln,dimtabx,dimtaby):
 def generoi(dirf,tabroi,dimtabx,dimtaby,slnroi,tabscanName,dirroit,tabscanroi,tabscanLung):
     (top,tail)=os.path.split(dirf)
     for pat in usedclassif:
-#        print pat
         pathroi=os.path.join(dirf,pat)
         if os.path.exists(pathroi):
     
@@ -1017,14 +1015,10 @@ def generoi(dirf,tabroi,dimtabx,dimtaby,slnroi,tabscanName,dirroit,tabscanroi,ta
                         numslice=rsliceNum(s,'_','.'+typei2)
                     
                 img=cv2.imread(os.path.join(pathroi,s),0)
-#                print os.path.join(pathroi,s)
-#                print img.shape
+
                 img=cv2.resize(img,(dimtabx,dimtabx),interpolation=cv2.INTER_LINEAR)
                 np.putmask(tabroi[numslice], img > 0, 0)
-                if classif[pat]>0:
-                    np.putmask(img, img > 0, classif[pat])
-                else:
-                    np.putmask(img, img > 0, classif['lung'])
+                np.putmask(img, img > 0, classif[pat]+1)
                 tablung=np.copy(tabscanLung[numslice])
                 np.putmask(tablung,tablung>0,255)                      
                 img=np.bitwise_and(tablung, img)  
@@ -1032,6 +1026,41 @@ def generoi(dirf,tabroi,dimtabx,dimtaby,slnroi,tabscanName,dirroit,tabscanroi,ta
                
                 if numslice not in slnroi:
                     slnroi.append(numslice)  
+    for numslice in slnroi:
+        tablung=np.copy(tabscanLung[numslice])
+        
+        mask=tabroi[numslice].copy()
+        tabxorig=tabroi[numslice].copy()
+        np.putmask(mask,mask>0,255)
+        tabxn=np.bitwise_not(mask)
+        
+        tablung=np.bitwise_and(tablung, tabxn)
+        
+        tabroi[numslice]=np.bitwise_or(tabxorig,tablung)
+        
+        
+#    pc=np.copy(tabroi[3])
+#
+#    np.putmask(pc,pc!=4 ,0)
+#    np.putmask(pc,pc==4,200)
+##        pcc=np.copy(pc)
+##        np.putmask(pcc,pcc==0,50)
+#    cv2.imshow('ret',10*pc)
+#    cv2.imwrite('a.bmp',10*pc)
+#    pc=np.copy(tabroi[184])
+#    np.putmask(pc,pc!=3 ,0)
+#    np.putmask(pc,pc==3,200)
+##        pcc=np.copy(pc)
+##        np.putmask(pcc,pcc==0,50)
+#    cv2.imshow('heat',pc)
+#    pc=np.copy(tabroi[184])
+#    np.putmask(pc,pc==3 ,0)
+#    np.putmask(pc,pc==4 ,0)
+#    print pc.min(),pc.max
+#    np.putmask(pc,pc>0,200)
+#    cv2.imshow('other',pc)
+
+
     slnroi.sort()
     volumeroi={}
     for numslice in slnroi:
@@ -1044,12 +1073,12 @@ def generoi(dirf,tabroi,dimtabx,dimtaby,slnroi,tabscanName,dirroit,tabscanroi,ta
             for pat in classif:
                 img=np.copy(tabroi[numslice])
                 if img.max()>0:                    
-                    if classif[pat]>0:
-                        np.putmask(img, img !=classif[pat], 0)
-                        np.putmask(img, img ==classif[pat], 1)
-                    else:
-                        np.putmask(img, img !=classif['lung'], 0)
-                        np.putmask(img, img == classif['lung'],1)
+#                    if classif[pat]>0:
+                    np.putmask(img, img !=classif[pat]+1, 0)
+                    np.putmask(img, img ==classif[pat]+1, 1)
+#                    else:
+#                        np.putmask(img, img !=classif['lung'], 0)
+#                        np.putmask(img, img == classif['lung'],1)
     #                if  numslice==225:
     #                    cv2.imshow(pat+'143',normi(img))
                     
@@ -1071,11 +1100,7 @@ def predictrun(indata,path_patient):
         global thrpatch,thrproba,thrprobaUIP,subErosion
         global  picklein_file,picklein_file_front,classif,usedclassif
         td=False
-#        time.sleep(10)
-#        return 'rrr'
-#        print path_patient
-#        print indata
-#        ooo
+
         print '-------------------'
         if indata['threedpredictrequest']=='Cross Only':
            td=False
@@ -1143,7 +1168,6 @@ def predictrun(indata,path_patient):
             print 'work on patient',f,' set:',setref,'thrproba',thrproba,'thrpatch',thrpatch
             patch_list_cross_slice={}
             
-#            listelabelfinal={}
             dirf=os.path.join(dirHUG,f)
             wridirsource=os.path.join(dirf,source)
 
@@ -1153,13 +1177,9 @@ def predictrun(indata,path_patient):
                 nosource=True
                 if not os.path.exists(wridirsource):
                     os.mkdir(wridirsource)
-           
-#            tabMed = {}  # dictionary with position of median between lung
-    
-#            """
+
             path_data_write=os.path.join(dirf,path_data)
-            
-#            remove_folder(path_data_write)
+
             if not os.path.exists(path_data_write):
                 os.mkdir(path_data_write)
             wridir=os.path.join(wridirsource,transbmp)
@@ -1172,10 +1192,7 @@ def predictrun(indata,path_patient):
             jpegpathdir=os.path.join(dirf,jpegpadirm)
             remove_folder(jpegpathdir)
             os.mkdir(jpegpathdir)
-#            """
-
-#            path_data_writefile=os.path.join(path_data_write,volumeroifilep)
-                       
+                      
             fmbmp=os.path.join(dirf,lungmask1)
             if os.path.exists(fmbmp):
                 lungmaski=lungmask1
@@ -1239,8 +1256,7 @@ def predictrun(indata,path_patient):
                 tabroi=np.zeros((slnt,dimtabx,dimtabx), np.uint8) 
                 tabroi,volumeroi,slnroi=generoi(dirf,tabroi,dimtabx,dimtabx,slnroi,
                                             tabscanName,dirroi,tabscanroi,tabscanLung)
-                
-                
+#                return ' '
                 pickle.dump(centerHU, open(os.path.join(path_data_write,'centerHU'), "wb" ),protocol=-1) 
                 pickle.dump(limitHU, open(os.path.join(path_data_write,'limitHU'), "wb" ),protocol=-1) 
                 
