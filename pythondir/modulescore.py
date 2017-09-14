@@ -182,14 +182,12 @@ def tagviewn(fig,label,surface,surftot,roi,tl,precision,recall,fscore,spc,npv):
         pcroi='0'
     if tl:
         cv2.rectangle(fig,(deltax-10, deltay-6),(deltax-5, deltay-1),col,1)
-#    print label,roi
+
     if roi>0:
-#        print label,'>0'
         cv2.putText(fig,'%16s'%label+'%8s'%(str(surface))+
                     '%5s'%(pc+'%')+'%8s'%(str(roi))+'%5s'%(pcroi+'%'),
                 (deltax, deltay),cv2.FONT_HERSHEY_PLAIN,gro,col,1)
     else:
-#        print label,'0'
         cv2.putText(fig,'%16s'%label+'%8s'%(str(surface))+'%5s'%(pc+'%'),
                 (deltax, deltay),cv2.FONT_HERSHEY_PLAIN,gro,col,1)
     deltax=350
@@ -222,16 +220,10 @@ def tagvcm(fig,cm):
     gro=0.7
     deltaxm=110 
     deltaxt=110
-#    lcl=len(classif)-1
-#    cv2.putText(fig,'%15s'%'back_ground',(deltax, deltay),cv2.FONT_HERSHEY_PLAIN,gro,red,1)
-#    cv2.putText(fig,'back_ground'[0:7],(deltaxt, deltay-15),cv2.FONT_HERSHEY_PLAIN,gro,red,1)
+
     for pat in classif:
         cp=classif[pat]
-#        if cp==lcl:
-#            dy=0
-#        elif cp==0:
-#            dy=lcl
-#        else:
+
         dy=cp
         col=classifc[pat]
 
@@ -287,8 +279,8 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,slnt,tabro
 #    referencepatu=np.zeros((dx,dy), np.uint8) 
    
     th=t/100.0
-    numl=0
-    listlabel={}
+
+    listlabel=[]
 
     surftot=np.count_nonzero(tabscanLung[slicenumber])
 
@@ -315,13 +307,10 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,slnt,tabro
             classcolor=classifc[classlabel]
 
             if mprobai >th and classlabel not in excluvisu:
-#                volpat[classlabel][ypat:ypat+dimpavy,xpat:xpat+dimpavx]=1
-                if classlabel in listlabel:
-                    numl=listlabel[classlabel]
-                    listlabel[classlabel]=numl+1
-                else:
-                    listlabel[classlabel]=1            
 
+                if classlabel not in listlabel:
+                    listlabel.append(listlabel)
+         
                 cv2.rectangle(imgpatch,(xpat,ypat),(xpat+dimpavx-1,ypat+dimpavy-1),classif[classlabel]+1,-1)
 
                 if va[classlabel]==True:
@@ -417,12 +406,12 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,slnt,tabro
         suroi=round((volroi[pat])*surfelemp/100,1)
         
         tagviewn(datav,pat,sul,surftotf,suroi,tl,precisioni,recalli,fscorei,spci,npvi)
-
-    precisionAverage/=numberp
-    recallAverage/=numberp
-    fscoreAverage/=numberp
-    spcAverage/=numberp
-    npvAverage/=numberp
+    if numberp>0:
+        precisionAverage/=numberp
+        recallAverage/=numberp
+        fscoreAverage/=numberp
+        spcAverage/=numberp
+        npvAverage/=numberp
     if referencepatu.max()>0:
         cv2.putText(datav,'%10s'%('Precision %')+
                     '%11s'%('Recall%')+ 
@@ -647,11 +636,12 @@ def wrresu(f,cm,obj,refmax):
                         '%9s'%recalli+'%9s'%fscorei+
                         '%9s'%spci+'%9s'%npvi+'\n')
     f.write('\n')
-    precisionAverage/=numberp
-    recallAverage/=numberp
-    fscoreAverage/=numberp
-    spcAverage/=numberp
-    npvAverage/=numberp
+    if numberp>0:
+        precisionAverage/=numberp
+        recallAverage/=numberp
+        fscoreAverage/=numberp
+        spcAverage/=numberp
+        npvAverage/=numberp
     if refmax>0:
 
         f.write('%10s'%('Precision %')+

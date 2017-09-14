@@ -258,6 +258,11 @@ def morph(imgt,k):
     img = cv2.morphologyEx(img, cv2.MORPH_ERODE, kernel)
     return img
 
+def colorimage(image,color):
+#    im=image.copy()
+    im = cv2.cvtColor(image,cv2.COLOR_GRAY2BGR)
+    np.putmask(im,im>0,color)
+    return im
 
 def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan,listsln,tabscanName):
     """generate patches from dicom files"""
@@ -307,8 +312,11 @@ def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan,listsln,tabscanName
             imgcoreScan=tabscanName[slicenumber]
             bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
             if tabscan[slicenumber].max()==0:
-                cv2.imwrite(bmpfile,imgresize)    
                 tabscan[slicenumber]=imgresize
+                colorlung=colorimage(imgresize,classifc['lung'])
+                cv2.imwrite(bmpfile,colorlung)  
+                
+                
     else:
             print 'no lung scan in dcm'
             tabscan1 = np.zeros((slnt,dimtabx,dimtaby), np.int16)
@@ -324,6 +332,7 @@ def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan,listsln,tabscanName
                 bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
                 if tabscan[i].max()==0:
                     tabscan[i]=tabscan1[i]
+                    colorlung=colorimage(tabscan[i],classifc['lung'])
                     cv2.imwrite(bmpfile,tabscan[i])
     for sli in listsln:
         cpt=np.copy(tabscan[sli])
@@ -1038,28 +1047,7 @@ def generoi(dirf,tabroi,dimtabx,dimtaby,slnroi,tabscanName,dirroit,tabscanroi,ta
         
         tabroi[numslice]=np.bitwise_or(tabxorig,tablung)
         
-        
-#    pc=np.copy(tabroi[3])
-#
-#    np.putmask(pc,pc!=4 ,0)
-#    np.putmask(pc,pc==4,200)
-##        pcc=np.copy(pc)
-##        np.putmask(pcc,pcc==0,50)
-#    cv2.imshow('ret',10*pc)
-#    cv2.imwrite('a.bmp',10*pc)
-#    pc=np.copy(tabroi[184])
-#    np.putmask(pc,pc!=3 ,0)
-#    np.putmask(pc,pc==3,200)
-##        pcc=np.copy(pc)
-##        np.putmask(pcc,pcc==0,50)
-#    cv2.imshow('heat',pc)
-#    pc=np.copy(tabroi[184])
-#    np.putmask(pc,pc==3 ,0)
-#    np.putmask(pc,pc==4 ,0)
-#    print pc.min(),pc.max
-#    np.putmask(pc,pc>0,200)
-#    cv2.imshow('other',pc)
-
+ 
 
     slnroi.sort()
     volumeroi={}
@@ -1073,14 +1061,9 @@ def generoi(dirf,tabroi,dimtabx,dimtaby,slnroi,tabscanName,dirroit,tabscanroi,ta
             for pat in classif:
                 img=np.copy(tabroi[numslice])
                 if img.max()>0:                    
-#                    if classif[pat]>0:
+
                     np.putmask(img, img !=classif[pat]+1, 0)
                     np.putmask(img, img ==classif[pat]+1, 1)
-#                    else:
-#                        np.putmask(img, img !=classif['lung'], 0)
-#                        np.putmask(img, img == classif['lung'],1)
-    #                if  numslice==225:
-    #                    cv2.imshow(pat+'143',normi(img))
                     
                     area= img.sum()* surfelemp /100
                     volumeroi[numslice][pat]=area  
