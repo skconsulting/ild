@@ -1558,10 +1558,9 @@ def generoi(dirf,tabroi,dimtabx,lissln,tabscanLung,slnroi):
         mask=tabroi[numslice].copy()
         tabxorig=tabroi[numslice].copy()
         np.putmask(mask,mask>0,255)
-        tabxn=np.bitwise_not(mask)
-        
+        tabxn=np.bitwise_not(mask)        
         tablung=np.bitwise_and(tablung, tabxn)
-        
+        np.putmask(tablung,tablung>0,classif['healthy']+1)
         tabroi[numslice]=np.bitwise_or(tabxorig,tablung)
     
     

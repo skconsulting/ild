@@ -199,7 +199,7 @@ def tagvcm(fig,cm):
     deltaxm=110 
     deltaxt=110
 
-    for pat in classif:
+    for pat in usedclassif:
         cp=classif[pat]
 
         dy=cp
@@ -253,7 +253,7 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,slnt,tabro
     patchdict=np.zeros((dx,dy), np.uint8)  
     predictpatu=np.zeros((dx,dy), np.uint8) 
 
-#    np.putmask(patchdict,patchdict==0,classif['lung'])
+
     imgpatch=np.zeros((dx,dy), np.uint8)  
    
     th=t/100.0
@@ -328,7 +328,8 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,slnt,tabro
     tabxn=np.bitwise_not(mask)   
     tablung=np.copy(tabscanLung[slicenumber])       
     tablung=np.bitwise_and(tablung, tabxn)
-    volpat['lung']=np.copy(tablung)
+    np.putmask(tablung,tablung>0,classif['healthy']+1)
+    volpat['healthy']=np.copy(tablung)
          
     if lvexist:
         predictpatu=np.bitwise_or(tabxorig,tablung)
@@ -361,7 +362,7 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,slnt,tabro
         spcAverage=0
         npvAverage=0
         numberp=0
-        for pat in classif:           
+        for pat in usedclassif:           
             precision[pat],recall[pat],fscore[pat], spc[pat],npv[pat],volpat[pat],volroi[pat]=cals(cm,pat)
     
             if pat in listlabel:            
@@ -372,7 +373,7 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,slnt,tabro
             precisioni=int(round(precision[pat]*100,0))
             recalli=int(round(recall[pat]*100,0))
             fscorei=int(round(fscore[pat]*100,0))
-            if fscorei>0 and pat !='lung':
+            if fscorei>0 :
                 precisionAverage+=precision[pat]
                 recallAverage+=recall[pat]
                 fscoreAverage+=fscore[pat]
@@ -416,17 +417,15 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,slnt,tabro
                     (20, 10),cv2.FONT_HERSHEY_PLAIN,0.8,yellow,1)
         cv2.putText(datav,'%24s'%('cm2'),
                     (20, 20),cv2.FONT_HERSHEY_PLAIN,0.8,yellow,1)
-        for pat in classif:    
+        for pat in usedclassif:    
             numpat=classif[pat]+1
             if pat in listlabel:            
                 tl=True
             else:
                 tl=False
-            if pat !='lung':
-                imgpat=np.copy(patchdict)
-            else:
-                imgpat=np.copy(volpat['lung'])
-                print numpat
+
+            imgpat=np.copy(patchdict)
+            
                 
             np.putmask(imgpat,imgpat!=numpat,0)
             np.putmask(imgpat,imgpat==numpat,1)
@@ -1228,12 +1227,12 @@ def wrresu(f,cm,obj,refmax):
     spcAverage=0
     npvAverage=0
     numberp=0
-    for pat in classif:           
+    for pat in usedclassif:           
             precision[pat],recall[pat],fscore[pat], spc[pat],npv[pat],volpat[pat],volroi[pat]=cals(cm,pat)
             precisioni=int(round(precision[pat]*100,0))
             recalli=int(round(recall[pat]*100,0))
             fscorei=int(round(fscore[pat]*100,0))
-            if fscorei>0 and pat !='lung':
+            if fscorei>0 :
                 precisionAverage+=precision[pat]
                 recallAverage+=recall[pat]
                 fscoreAverage+=fscore[pat]
@@ -1469,9 +1468,10 @@ def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
             tabxorig=patchdict[slicenumber].copy()
             np.putmask(mask,mask>0,255)
             tabxn=np.bitwise_not(mask)   
-            tablung=np.copy(tabscanLung[slicenumber])       
+            tablung=np.copy(tabscanLung[slicenumber]) 
+            np.putmask(tablung,tablung>0,classif['healthy']+1)
             tablung=np.bitwise_and(tablung, tabxn)
-#            volpat['lung']=np.copy(tablung)
+
      
             predictpatu[slroi]=np.bitwise_or(tabxorig,tablung)
             referencepatu[slroi]=np.copy(tabroi[slicenumber])          
