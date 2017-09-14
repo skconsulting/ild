@@ -221,7 +221,7 @@ def tagvcm(fig,cm):
     deltaxm=110 
     deltaxt=110
 
-    for pat in classif:
+    for pat in usedclassif:
         cp=classif[pat]
 
         dy=cp
@@ -273,17 +273,15 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,slnt,tabro
     imgn = np.zeros((dx,dy,3), np.uint8)
     datav = np.zeros((500,900,3), np.uint8)
     patchdict=np.zeros((dx,dy), np.uint8)  
-#    np.putmask(patchdict,patchdict==0,classif['lung'])
+
     imgpatch=np.zeros((dx,dy), np.uint8)  
     predictpatu=np.zeros((dx,dy), np.uint8) 
-#    referencepatu=np.zeros((dx,dy), np.uint8) 
    
     th=t/100.0
 
     listlabel=[]
 
     surftot=np.count_nonzero(tabscanLung[slicenumber])
-
     surftotf= surftot*surfelemp/100
     surftot='surface totale :'+str(int(round(surftotf,0)))+'cm2'
    
@@ -330,7 +328,7 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,slnt,tabro
     fscore={}
     spc={}
     npv={}
-    for pat in classif:
+    for pat in usedclassif:
         volroi[pat]=0
         volpat[pat]=0
         precision[pat]=0
@@ -349,9 +347,10 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,slnt,tabro
     tabxn=np.bitwise_not(mask)   
     tablung=np.copy(tabscanLung[slicenumber])       
     tablung=np.bitwise_and(tablung, tabxn)
-    volpat['lung']=np.copy(tablung)
+    np.putmask(tablung,tablung>0,classif['healthy']+1)
+    
+    volpat['healthy']=np.copy(tablung)
      
-
     predictpatu=np.bitwise_or(tabxorig,tablung)
     referencepatu= np.copy(tabroi[slicenumber])
 
@@ -382,7 +381,7 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,slnt,tabro
     spcAverage=0
     npvAverage=0
     numberp=0
-    for pat in classif:           
+    for pat in usedclassif:           
         precision[pat],recall[pat],fscore[pat], spc[pat],npv[pat],volpat[pat],volroi[pat]=cals(cm,pat)
 
         if pat in listlabel:            
@@ -393,7 +392,7 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,slnt,tabro
         precisioni=int(round(precision[pat]*100,0))
         recalli=int(round(recall[pat]*100,0))
         fscorei=int(round(fscore[pat]*100,0))
-        if fscorei>0 and pat !='lung':
+        if fscorei>0 :
             precisionAverage+=precision[pat]
             recallAverage+=recall[pat]
             fscoreAverage+=fscore[pat]
@@ -545,7 +544,7 @@ def cfma(f,referencepat,predictpat,num_class, namep,thrprobaUIP,cnnweigh,tp,thrp
         presip={}
         recallp={}
         fscorep={}
-        for pat in classif:
+        for pat in usedclassif:
             presip[pat]=0
             recallp[pat]=0
             fscorep[pat]=0
@@ -554,9 +553,8 @@ def cfma(f,referencepat,predictpat,num_class, namep,thrprobaUIP,cnnweigh,tp,thrp
 #            print numpat
             presip[pat], recallp[pat]=evaluate(referencepat,predictpat,num_class,(numpat,))
 #            print pat,presip[pat],recallp[pat]
-#        presip['lung'], recallp['lung']=evaluate(referencepat,predictpat,num_class,(0,))
-#        print 'lung',presip['lung'],recallp['lung']
-        for pat in classif:             
+
+        for pat in usedclassif:             
          if presip[pat]+recallp[pat]>0:
             fscorep[pat]=2*presip[pat]*recallp[pat]/(presip[pat]+recallp[pat])
         else:
@@ -617,12 +615,12 @@ def wrresu(f,cm,obj,refmax):
     spcAverage=0
     npvAverage=0
     numberp=0
-    for pat in classif:           
+    for pat in usedclassif:           
             precision[pat],recall[pat],fscore[pat], spc[pat],npv[pat],volpat[pat],volroi[pat]=cals(cm,pat)
             precisioni=int(round(precision[pat]*100,0))
             recalli=int(round(recall[pat]*100,0))
             fscorei=int(round(fscore[pat]*100,0))
-            if fscorei>0 and pat !='lung':
+            if fscorei>0 :
                 precisionAverage+=precision[pat]
                 recallAverage+=recall[pat]
                 fscoreAverage+=fscore[pat]
@@ -721,7 +719,7 @@ def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
             tabxn=np.bitwise_not(mask)   
             tablung=np.copy(tabscanLung[slicenumber])       
             tablung=np.bitwise_and(tablung, tabxn)
-#            volpat['lung']=np.copy(tablung)
+            np.putmask(tablung,tablung>0,classif['healthy']+1)
      
             predictpatu[slroi]=np.bitwise_or(tabxorig,tablung)
             referencepatu[slroi]=np.copy(tabroi[slicenumber])          

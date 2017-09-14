@@ -1012,6 +1012,7 @@ def genepatchlistslice(patch_list_cross,proba_cross,lissln,dimtabx,dimtaby):
 def generoi(dirf,tabroi,dimtabx,dimtaby,slnroi,tabscanName,dirroit,tabscanroi,tabscanLung):
     (top,tail)=os.path.split(dirf)
     for pat in usedclassif:
+
         pathroi=os.path.join(dirf,pat)
         if os.path.exists(pathroi):
     
@@ -1036,18 +1037,15 @@ def generoi(dirf,tabroi,dimtabx,dimtaby,slnroi,tabscanName,dirroit,tabscanroi,ta
                 if numslice not in slnroi:
                     slnroi.append(numslice)  
     for numslice in slnroi:
-        tablung=np.copy(tabscanLung[numslice])
-        
+        tablung=np.copy(tabscanLung[numslice])        
         mask=tabroi[numslice].copy()
-        tabxorig=tabroi[numslice].copy()
+        tabxorig=tabroi[numslice].copy()        
         np.putmask(mask,mask>0,255)
-        tabxn=np.bitwise_not(mask)
-        
+        tabxn=np.bitwise_not(mask)       
         tablung=np.bitwise_and(tablung, tabxn)
-        
+        np.putmask(tablung,tablung>0,classif['healthy']+1)        
         tabroi[numslice]=np.bitwise_or(tabxorig,tablung)
         
- 
 
     slnroi.sort()
     volumeroi={}
