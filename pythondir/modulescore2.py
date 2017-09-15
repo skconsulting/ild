@@ -9,16 +9,17 @@ version 1.5
 """
 #from param_pix_p import *
 from param_pix_s2 import path_data,reportalldir
-from param_pix_s2 import surfelemp,volumeroifilep
+#from param_pix_s2 import surfelemp,volumeroifilep
 
 from param_pix_s2 import white,red,yellow,black
 from param_pix_s2 import source_name,sroi,sroi3d,scan_bmp,transbmp
 from param_pix_s2 import typei1,dimtabx,dimtaby
-from param_pix_s2 import reportdir,reportfile
+from param_pix_s2 import reportdir,reportfile,volumeroifilep
 
 from param_pix_s2 import classifc,classifdict,usedclassifdict,oldFormat
 
-from param_pix_s2 import excluvisu,fidclass,rsliceNum,evaluate,evaluatef,evaluatefull,normi
+from param_pix_s2 import excluvisu,fidclass,rsliceNum,evaluate,evaluatef
+#from param_pix_s2 import normi
 
 from scorepredict2 import predictrun
 
@@ -161,16 +162,18 @@ def lumi(tabi,r):
     return tabi3
 
 
-def tagviewn(fig,label,surface,surftot,roi,tl):
+def tagviewn(fig,label,surface,surftot,roi,tl,precision,recall,fscore,spc,npv):
     """write text in image according to label and color"""
-
+    
     col=classifc[label]
     labnow=classif[label]
     
-    deltax=110
-    deltay=10+(11*labnow)
+    deltax=20
+    deltay=30+(11*labnow)
 
     gro=0.8
+    
+    
     if surftot>0:
         pc=str(int(round(100.*surface/surftot,0)))
         pcroi=str(int(round(100.*roi/surftot,0)))
@@ -179,16 +182,22 @@ def tagviewn(fig,label,surface,surftot,roi,tl):
         pcroi='0'
     if tl:
         cv2.rectangle(fig,(deltax-10, deltay-6),(deltax-5, deltay-1),col,1)
-#    print label,roi
+
     if roi>0:
-        cv2.putText(fig,'%15s'%label+'%10s'%(str(surface)+'cm2')+
-                    '%5s'%(pc+'%')+' roi: '+'%10s'%(str(roi)+'cm2')+'%5s'%(pcroi+'%'),
+        cv2.putText(fig,'%16s'%label+'%8s'%(str(surface))+
+                    '%5s'%(pc+'%')+'%8s'%(str(roi))+'%5s'%(pcroi+'%'),
                 (deltax, deltay),cv2.FONT_HERSHEY_PLAIN,gro,col,1)
     else:
-        cv2.putText(fig,'%15s'%label+'%10s'%(str(surface)+'cm2')+'%5s'%(pc+'%'),
+        cv2.putText(fig,'%16s'%label+'%8s'%(str(surface))+'%5s'%(pc+'%'),
                 (deltax, deltay),cv2.FONT_HERSHEY_PLAIN,gro,col,1)
-            
-
+    deltax=350
+    if fscore>0:
+        
+        cv2.putText(fig,'%10s'%(str(precision)+'%')+
+                '%10s'%(str(recall)+'%')+'%10s'%(str(fscore)+'%')+
+                '%10s'%(str(spc)+'%')+'%10s'%(str(npv)+'%'),
+                (deltax, deltay),cv2.FONT_HERSHEY_PLAIN,gro,col,1)
+        
 def tagvaccuracy(fig,label,precision,recall,fscore):
     """write text in image according to label and color"""
 
@@ -210,8 +219,8 @@ def tagvcm(fig,cm):
     gro=0.7
     deltaxm=110 
     deltaxt=110
-    for pat in classif:
-        cp=classif[pat]
+    for pat in usedclassif:
+        cp=classif[pat]-1
 #        if cp==lcl:
 #            dy=0
 #        elif cp==0:
@@ -230,6 +239,34 @@ def tagvcm(fig,cm):
             dy=deltay+12*i
             cv2.putText(fig,'%5s'%str(cm[i][j]),(dx, dy),cv2.FONT_HERSHEY_PLAIN,gro,white,1)
 
+def cals(cm,pat):
+    numpat=classif[pat]-1
+    tp=cm[numpat][numpat]
+    fp=cm[:,numpat].sum()-tp
+    fn=cm[numpat].sum()-tp
+    tn=cm.sum()-fp-fn  
+    if tp+fp>0:
+        prec=1.0*tp/(tp+fp)
+    else:
+        prec=0
+    if tp+fn>0:
+            recall=1.0*tp/(tp+fn)
+    else:
+            recall=0
+    if tn+fp>0:
+        spc=1.0*tn/(tn+fp)
+    else:
+        spc=0
+    if tn+fn>0:
+        npv=1.0*tn/(tn+fn)
+    else:
+        npv=0
+    if prec+recall>0:
+        fsc=2*(prec*recall)/(prec+recall)
+    else:
+        fsc=0
+#    return tp,fp,fn,tn,prec,recall,fsc,spc,npv
+    return prec,recall,fsc, spc,npv ,tp+fp,tp+fn
 
 
 
@@ -250,22 +287,13 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,
 
     surftot=np.count_nonzero(tabscanLung[slicenumber])
 
-    surftotf= surftot*surfelemp/100
+
+    surftotf= surftot*surfelem
     surftot='surface totale :'+str(int(round(surftotf,0)))+'cm2'
     volpat={}
     for pat in usedclassif:
         volpat[pat]=np.zeros((dy,dx), np.uint8)
-    
-    
-    lvexist=False
-    if len (volumeroi)>0:
-#        print 'volumeroi exists'
-        lv=volumeroi[slicenumber]
-        for pat,value in lv.items():
-#            print pat,value
-            if value>0:
-                lvexist=True
-                break
+
 
     imi=  patch_list_cross_slice[xtrains[slicenumber]]
 #    print imi.shape
@@ -286,116 +314,144 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,
     patlist=[]
     
     for key,value in classif.items():       
-        if key not in excluvisu and va[key]:
-            imgnp=imclassc.copy()            
-            bl=(value,value,value)
-            blc=[]
-            zz=classifc[key]
-#                print zz
-            for z in range(3):
-                blc.append(int(zz[z]*0.3))
+        if key not in excluvisu :
+            if va[key]:
+                imgnp=imclassc.copy()            
+                bl=(value,value,value)
+                blc=[]
+                zz=classifc[key]
+    #                print zz
+                for z in range(3):
+                    blc.append(int(zz[z]*0.3))
+    
+                np.putmask(imgnp,imgnp!=bl,black)
+    
+                np.putmask(imgnp,imgnp==bl,blc)
+                imgn=cv2.add(imgn,imgnp)
+                imgngray = cv2.cvtColor(imgnp,cv2.COLOR_BGR2GRAY)
+                np.putmask(imgngray,imgngray>0,1)
+    #            area= imgngray.sum()* surfelemp /100
+    #            print key, imgn.min(),imgn.max()
+                volpat[key]=imgngray
+                if imgn.max()>0:
+                    patlist.append(key)
 
-            np.putmask(imgnp,imgnp!=bl,black)
+    volroi={}
+    volpat={}
+    precision={}
+    recall={}
+    fscore={}
+    spc={}
+    npv={}
+    for pat in usedclassif:
+        volroi[pat]=0
+        volpat[pat]=0
+        precision[pat]=0
+        recall[pat]=0
+        fscore[pat]=0
+        spc[pat]=0
+        npv[pat]=0       
+    
+    tablung1=np.copy(tabscanLung[slicenumber])
+    np.putmask(tablung1,tablung1>0,255)
+    patchdict=imclass
+    patchdict=np.bitwise_and(tablung1, patchdict) 
+    
+    mask=patchdict.copy()
+    tabxorig=patchdict.copy()
+    np.putmask(mask,mask>0,255)
+    tabxn=np.bitwise_not(mask)   
+    tablung=np.copy(tabscanLung[slicenumber])       
+    tablung=np.bitwise_and(tablung, tabxn)
+    np.putmask(tablung,tablung>0,classif['healthy'])
+    
+    volpat['healthy']=np.copy(tablung)
+     
+    predictpatu=np.bitwise_or(tabxorig,tablung)
+    referencepatu= np.copy(tabroi[slicenumber])
 
-            np.putmask(imgnp,imgnp==bl,blc)
-            imgn=cv2.add(imgn,imgnp)
-            imgngray = cv2.cvtColor(imgnp,cv2.COLOR_BGR2GRAY)
-            np.putmask(imgngray,imgngray>0,1)
-#            area= imgngray.sum()* surfelemp /100
-#            print key, imgn.min(),imgn.max()
-            volpat[key]=imgngray
-            if imgn.max()>0:
-                patlist.append(key)
-
-
-    delx=120
-    surftotpat=0
-    tablung=np.copy(tabscanLung[slicenumber])
-    np.putmask(tablung,tablung>0,255)
-        
-    for ll1 in usedclassif:     
-        volpat[ll1]=np.bitwise_and(tablung, volpat[ll1])   
-#        if ll1 =='ground_glass':
-#            cv2.imshow('ground_glass',normi(volpat[ll1]))
+    referencepat= referencepatu.flatten() 
             
-        if ll1 in listlabel:            
+    predictpat=  predictpatu.flatten() 
+    cm=evaluatef(referencepat,predictpat,num_class-1)
+
+    tagvcm(datav,cm)
+    
+    cv2.putText(datav,'%16s'%('pattern')+
+                    '%8s'%('surface')+ 
+                    '%4s'%('%')+
+                    '%9s'%('roi')+
+                    '%5s'%('%'),
+                (20, 10),cv2.FONT_HERSHEY_PLAIN,0.8,yellow,1)
+    cv2.putText(datav,'%24s'%('cm2')+ '%13s'%('cm2'),
+                (20, 20),cv2.FONT_HERSHEY_PLAIN,0.8,yellow,1)
+    if referencepatu.max()>0:
+        cv2.putText(datav,'%10s'%('Precision')+
+                    '%11s'%('Recall')+ 
+                    '%11s'%('Fscore')+
+                    '%10s'%('SPC')+
+                    '%10s'%('NPV'),
+                (350, 10),cv2.FONT_HERSHEY_PLAIN,0.8,yellow,1)
+    
+    precisionAverage=0
+    recallAverage=0
+    fscoreAverage=0
+    spcAverage=0
+    npvAverage=0
+    numberp=0
+    for pat in usedclassif:           
+        precision[pat],recall[pat],fscore[pat], spc[pat],npv[pat],volpat[pat],volroi[pat]=cals(cm,pat)
+
+        if pat in listlabel:            
             tl=True
         else:
             tl=False
-        sul=round(np.count_nonzero(volpat[ll1])*surfelemp/100,1)
-        if lvexist:
-            suroi=round(lv[ll1],1)
-        else:
-            suroi=0
-        surftotpat=surftotpat+sul
-        tagviewn(datav,ll1,sul,surftotf,suroi,tl)
+
+        precisioni=int(round(precision[pat]*100,0))
+        recalli=int(round(recall[pat]*100,0))
+        fscorei=int(round(fscore[pat]*100,0))
+        if fscorei>0 :
+            precisionAverage+=precision[pat]
+            recallAverage+=recall[pat]
+            fscoreAverage+=fscore[pat]
+            spcAverage+=spc[pat]
+            npvAverage+=npv[pat]
+            numberp+=1            
+        spci=int(round(spc[pat]*100,0))
+        npvi=int(round(npv[pat]*100,0))
+        sul=round((volpat[pat])*surfelem,1)
+        suroi=round((volroi[pat])*surfelem,1)
+        
+        tagviewn(datav,pat,sul,surftotf,suroi,tl,precisioni,recalli,fscorei,spci,npvi)
+    if numberp>0:
+        precisionAverage/=numberp
+        recallAverage/=numberp
+        fscoreAverage/=numberp
+        spcAverage/=numberp
+        npvAverage/=numberp
+    if referencepatu.max()>0:
+        cv2.putText(datav,'%10s'%('Precision %')+
+                    '%11s'%('Recall%')+ 
+                    '%11s'%('Fscores')+
+                    '%10s'%('SPC %')+
+                    '%10s'%('NPV %'),
+                (10, 450),cv2.FONT_HERSHEY_PLAIN,0.8,yellow,1)
+    precisionAverage=int(round(precisionAverage*100,0))
+    recallAverage=int(round(recallAverage*100,0))
+    fscoreAverage=int(round(fscoreAverage*100,0))
+    spcAverage=int(round(spcAverage*100,0))
+    npvAverage=int(round(npvAverage*100,0))
+    cv2.putText(datav,'%10s'%(precisionAverage)+
+                    '%11s'%(recallAverage)+ 
+                    '%11s'%(fscoreAverage)+
+                    '%10s'%(spcAverage)+
+                    '%10s'%(npvAverage),
+                    (10, 460),cv2.FONT_HERSHEY_PLAIN,0.8,yellow,1)
+    delx=120
     ts='Threshold:'+str(t)
-    surfunkn=surftotf-surftotpat
-    if surftotf>0:
-        surfp=str(abs(round(100-(100.0*surftotpat/surftotf),1)))
-    else:
-        surfp='NA'
-    if surfunkn>0:
-        sulunk='surface unknow :'+str(abs(round(surfunkn,1)))+'cm2 ='+surfp+'%'
-    else:
-        sulunk=''
-    cv2.putText(datav,ts,(0,140),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
-    cv2.putText(datav,surftot,(delx,140),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
-    cv2.putText(datav,sulunk,(delx,150),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
     
-    if lvexist:
-        tablung=np.copy(tabscanLung[slicenumber])
-        np.putmask(tablung,tablung>0,255)
-                  
-        predictpatu=np.bitwise_and(tablung, imclass0)  
-        referencepatu= np.copy(tabroi[slicenumber]) 
-        
-        referencepat= referencepatu.flatten()            
-        predictpat=  predictpatu.flatten()   
-#        pc=np.copy(predictpatu)
-#        print 'slicenumber',slicenumber
-#        print'pred', pc[318][359]
-#        print 'ref',tabroi[slicenumber][318][359]
-#        print 'predict',pc.min(),pc.max()
-#        np.putmask(pc,pc!=2,0)
-#        np.putmask(pc,pc==2,200)
-#
-##        pcc=np.copy(pc)
-##        np.putmask(pcc,pcc==0,50)
-#        cv2.imshow('predictpat',pc)
-#        
-#        pc1=np.copy(referencepatu)
-#        print 'ref',pc1.min(),pc1.max()
-#        np.putmask(pc1,pc1!=2,0)
-#        np.putmask(pc1,pc1==2,200)
-#
-#        print 'refm',pc1.min(),pc1.max()
-##        pcc=np.copy(pc)
-##        np.putmask(pcc,pcc==0,50)
-#        cv2.imshow('refpat',pc1)
-       
-        precision={}
-        recall={}
-        fscore={}
-        cf=False
-        for pat in usedclassif:
-            numpat=classif[pat]
-            fscore[pat]=0
-#            if numpat == 0:
-#                numpat=classif['lung']
-            precision[pat],recall[pat] = evaluate(referencepat,predictpat,num_class,(numpat,))
-            if (precision[pat]+recall[pat])>0:
-                fscore[pat]=2*precision[pat]*recall[pat]/(precision[pat]+recall[pat])
-                precisioni=int(round(precision[pat]*100,0))
-                recalli=int(round(recall[pat]*100,0))
-                fscorei=int(round(fscore[pat]*100,0))
-                tagvaccuracy(datav,pat,precisioni,recalli,fscorei)
-                cf=True       
-        
-        if cf:
-#            print 'num_class',num_class
-            cm=evaluatef(referencepat,predictpat,num_class)
-            tagvcm(datav,cm)
+    cv2.putText(datav,ts,(10,170),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
+    cv2.putText(datav,surftot,(delx,170),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
     datav=cv2.cvtColor(datav,cv2.COLOR_BGR2RGB)
 #    cv2.imwrite('b.bmp',imgn)
     return imgn,datav
@@ -448,7 +504,7 @@ def openfichiervolumetxtall(listHug,path_patient,indata,thrprobaUIP,cnnweigh,f,t
         datarep= pickle.load( open( os.path.join(path_data_dir,"datacrosss"), "rb" ))
 #        slicepitch=datarep[3]
         slnroi= pickle.load( open( os.path.join(path_data_dir,"slnrois"), "rb" ))
-        print 'slnroi,patient',slnroi,patient
+#        print 'slnroi,patient',slnroi,patient
         if tp=='Cross':
             filepatch="proba_crosss"
         if tp=='FrontProjected':
@@ -484,21 +540,21 @@ def cfma(f,referencepat,predictpat,num_class, namep,thrprobaUIP,cnnweigh,tp):
         f.write('confusion matrix for '+namep+'\n')
         f.write(tp+' View , threshold: '+str(thrprobaUIP)+ ' CNN param: '+cnnweigh+'\n\n')
         
-        cm=evaluatef(referencepat,predictpat,num_class)
+        cm=evaluatef(referencepat,predictpat,num_class-1)
         n= cm.shape[0]
-
+    
         presip={}
         recallp={}
         fscorep={}
-        usedclassifwobg=list(usedclassif)
-        usedclassifwobg.remove('back_ground')
         for pat in usedclassif:
             presip[pat]=0
             recallp[pat]=0
             fscorep[pat]=0
             numpat=classif[pat]
 
+#            print numpat
             presip[pat], recallp[pat]=evaluate(referencepat,predictpat,num_class,(numpat,))
+#            print pat,presip[pat],recallp[pat]
 
         for pat in usedclassif:             
          if presip[pat]+recallp[pat]>0:
@@ -506,48 +562,103 @@ def cfma(f,referencepat,predictpat,num_class, namep,thrprobaUIP,cnnweigh,tp):
         else:
             fscorep[pat]=0    
         f.write(15*' ')
-        for pat in usedclassif:
-            f.write('%8s'%pat[0:6])
+        for i in range (0,n):
+            pat=fidclass(i+1,classif)
+            f.write('%8s'%pat[0:7])
     #    print newclassif
         f.write('  recall \n')
-        for i in range (0,n):
-            pat=usedclassif[i]
+            
+        for i in range (0,n):            
+            pat=fidclass(i+1,classif)
             f.write('%15s'%pat)
             for j in range (0,n):
                 f.write('%8s'%str(cm[i][j]))
             f.write( '%8s'%(str(int(round(100*recallp[pat],0)))+'%')+'\n')        
         f.write('----------------------\n')
         f.write('      precision')
-        for pat in usedclassif:
+        for i in range (0,n):
+            pat=fidclass(i+1,classif)
             f.write('%8s'%(str(int(round(100*presip[pat],0)))+'%'))
     #    print newclassif
         f.write('\n')
         f.write('         Fscore')
-        for pat in usedclassif:
+        for i in range (0,n):
+            pat=fidclass(i+1,classif)
             f.write('%8s'%(str(int(round(100*fscorep[pat],0)))+'%'))
     #    print newclassif
         f.write('\n--------------------\n')
-        f.write('score per pattern:\n\n')
-        for pat in usedclassifwobg:            
-            if  fscorep[pat]>0:
-                f.write('%17s'%pat+
-                        '  precision:'+'%5s'%(str(int(round(100*presip[pat],0)))+'%')+
-                        ' recall: '+'%5s'%(str(int(round(100*recallp[pat],0)))+'%')+
-                        ' fscore:'+'%5s'%(str(int(round(100*fscorep[pat],0)))+'%')+'\n')
-                  
-        precisiont,recallt= evaluatefull(referencepat,predictpat,num_class)
-        if precisiont+recallt>0:
-            fscore=2*precisiont*recallt/(precisiont+recallt)
-        else:
-            fscore=0
-        precisioni=str(int(round(precisiont*100,0)))+'%'
-        recalli=str(int(round(recallt*100,0)))+'%'
-        fscorei=str(int(round(fscore*100,0)))+'%'
-    #                    print (slicenumber,pat,precisioni,recalli,fscorei)
+
+        wrresu(f,cm,'Report for full Patient',1)
+
         f.write('----------------------\n')
-        f.write('Global scores for patient '+namep+' (without back_ground):\n')
-        f.write('precision: '+precisioni+' recall: '+recalli+' Fscore: '+fscorei+'\n')
-        f.write('----------------------\n')
+
+def wrresu(f,cm,obj,refmax):
+    volroi={}
+    volpat={}
+    precision={}
+    recall={}
+    fscore={}
+    spc={}
+    npv={}
+    for pat in classif:
+        volroi[pat]=0
+        volpat[pat]=0
+        precision[pat]=0
+        recall[pat]=0
+        fscore[pat]=0
+        spc[pat]=0
+        npv[pat]=0       
+    f.write(str(obj)+'\n')
+    f.write('    pattern   precision%  recall%  Fscore%   SPC%     NPV%\n')
+    precisionAverage=0
+    recallAverage=0
+    fscoreAverage=0
+    spcAverage=0
+    npvAverage=0
+    numberp=0
+    for pat in usedclassif:           
+            precision[pat],recall[pat],fscore[pat], spc[pat],npv[pat],volpat[pat],volroi[pat]=cals(cm,pat)
+            precisioni=int(round(precision[pat]*100,0))
+            recalli=int(round(recall[pat]*100,0))
+            fscorei=int(round(fscore[pat]*100,0))
+            if fscorei>0 :
+                precisionAverage+=precision[pat]
+                recallAverage+=recall[pat]
+                fscoreAverage+=fscore[pat]
+                spcAverage+=spc[pat]
+                npvAverage+=npv[pat]
+                numberp+=1            
+                spci=int(round(spc[pat]*100,0))
+                npvi=int(round(npv[pat]*100,0))     
+        
+                f.write('%14s'%pat+'%7s'%precisioni+
+                        '%9s'%recalli+'%9s'%fscorei+
+                        '%9s'%spci+'%9s'%npvi+'\n')
+    f.write('\n')
+    if numberp>0:
+        precisionAverage/=numberp
+        recallAverage/=numberp
+        fscoreAverage/=numberp
+        spcAverage/=numberp
+        npvAverage/=numberp
+    if refmax>0:
+
+        f.write('%10s'%('Precision %')+
+                    '%11s'%('Recall%')+ 
+                    '%11s'%('Fscores')+
+                    '%10s'%('SPC%')+
+                    '%10s'%('NPV%')+'\n')
+    precisionAverage=int(round(precisionAverage*100,0))
+    recallAverage=int(round(recallAverage*100,0))
+    fscoreAverage=int(round(fscoreAverage*100,0))
+    spcAverage=int(round(spcAverage*100,0))
+    npvAverage=int(round(npvAverage*100,0))
+    f.write('%10s'%(precisionAverage)+
+                    '%11s'%(recallAverage)+ 
+                    '%11s'%(fscoreAverage)+
+                    '%10s'%(spcAverage)+
+                    '%10s'%(npvAverage)+'\n')
+
 
 def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
                       thrprobaUIP,tabroi,datacross,slnroi,tabscanLung,f,cnnweigh,tp,xtrains):
@@ -590,34 +701,25 @@ def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
 
             patchdict[slicenumber]=np.bitwise_and(imamax,imclass0)
 
-            tablung=np.copy(tabscanLung[slicenumber])
-            np.putmask(tablung,tablung>0,255)
-              
-            predictpatu[slroi]=np.bitwise_and(tablung, patchdict[slicenumber])  
-            referencepatu[slroi]=np.copy(tabroi[slicenumber])
-           
-            referencepat= referencepatu[slroi].flatten()
-            predictpat=  predictpatu[slroi].flatten()   
+            tablung1=np.copy(tabscanLung[slicenumber])
+            np.putmask(tablung1,tablung1>0,255)
+            patchdict[slicenumber]=np.bitwise_and(tablung1, patchdict[slicenumber]) 
             
-            precision={}
-            recall={}
-            fscore={}
-            f.write('Slice :'+str(slicenumber)+'\n')
-            f.write('    pattern   precision  recall  Fscore\n')
-
-            for pat in usedclassif:
-                if pat !='back_ground':
-                    numpat=classif[pat]
-                    fscore[pat]=0
-                    precision[pat],recall[pat] = evaluate(referencepat,predictpat,num_class,(numpat,))
-                    if (precision[pat]+recall[pat])>0:
-                        fscore[pat]=2*precision[pat]*recall[pat]/(precision[pat]+recall[pat])
-                        precisioni=str(round(precision[pat]*100,0))+'%'
-                        recalli=str(round(recall[pat]*100,))+'%'
-                        fscorei=str(round(fscore[pat]*100,0))+'%'
-    #                    print (slicenumber,pat,precisioni,recalli,fscorei)
-                        f.write('%14s'%pat+'%7s'%precisioni+'%9s'%recalli+'%9s'%fscorei+'\n')
-            f.write('\n')
+            mask=patchdict[slicenumber].copy()
+            tabxorig=patchdict[slicenumber].copy()
+            np.putmask(mask,mask>0,255)
+            tabxn=np.bitwise_not(mask)   
+            tablung=np.copy(tabscanLung[slicenumber])       
+            tablung=np.bitwise_and(tablung, tabxn)
+            np.putmask(tablung,tablung>0,classif['healthy'])
+     
+            predictpatu[slroi]=np.bitwise_or(tabxorig,tablung)
+            referencepatu[slroi]=np.copy(tabroi[slicenumber])          
+            
+            referencepat= referencepatu[slroi].flatten()
+            predictpat=  predictpatu[slroi].flatten() 
+            cm=evaluatef(referencepat,predictpat,num_class)
+            wrresu(f,cm,'Slice: '+str(slicenumber),referencepatu[slroi].max())
     referencepat= referencepatu.flatten()
     predictpat=  predictpatu.flatten() 
     cfma(f,referencepat,predictpat,num_class,listHug,thrprobaUIP,cnnweigh,tp)
@@ -836,9 +938,9 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,tabroi,
             imgn,datav= drawpatch(tl,dimtabx,dimtaby,slicenumber,viewasked,patch_list_cross_slice,
                                             volumeroilocal,slnt,tabroi,num_class,tabscanLung,xtrains)
                            
-            cv2.putText(datav,'slice number :'+str(slicenumber),(10,180),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
-            cv2.putText(datav,'patient Name :'+tail,(10,190),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
-            cv2.putText(datav,'CNN weight: '+cnnweigh,(10,170),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
+            cv2.putText(datav,'slice number :'+str(slicenumber),(10,210),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
+            cv2.putText(datav,'patient Name :'+tail,(10,220),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
+            cv2.putText(datav,'CNN weight: '+cnnweigh,(10,230),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
             cv2.putText(datav,viewstyle,(10,200),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
 
             cv2.destroyWindow("wip")
@@ -883,7 +985,7 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,tabroi,
 
 
 def visuarun(indata,path_patient):
-    global classif,usedclassif
+    global classif,usedclassif,surfelem
     print 'visuarun start'
 
     messageout=""
@@ -898,16 +1000,18 @@ def visuarun(indata,path_patient):
     patient_path_complet=os.path.join(path_patient,listHug)
     path_data_dir=os.path.join(patient_path_complet,path_data)
 
-    crosscompleted = pickle.load(open( os.path.join(path_data_dir,"crosscompleted"), "rb" ))
+    crosscompleted = pickle.load(open( os.path.join(path_data_dir,"crosscompleteds"), "rb" ))
   
     if not crosscompleted:
         messageout="no predict!for "+listHug
         return messageout
-
+    datarep= pickle.load( open( os.path.join(path_data_dir,"datacrosss"), "rb" ))
+    PixelSpacing=datarep[5]
+    surfelemp=PixelSpacing*PixelSpacing # for 1 pixel in mm2
+    surfelem= surfelemp/100 
     if oldFormat:
         setref='set0'
-    else:
-        datarep= pickle.load( open( os.path.join(path_data_dir,"datacrosss"), "rb" ))
+    else:        
         setref=datarep[3]
 #        print setref
     classif=classifdict[setref]

@@ -282,6 +282,7 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,slnt,tabro
     listlabel=[]
 
     surftot=np.count_nonzero(tabscanLung[slicenumber])
+
     surftotf= surftot*surfelemp/100
     surftot='surface totale :'+str(int(round(surftotf,0)))+'cm2'
    

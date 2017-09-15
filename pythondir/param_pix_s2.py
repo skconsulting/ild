@@ -43,13 +43,13 @@ dimtaby=512
 
 pxy=float(dimpavx*dimpavy) #surface in pixel
 
-avgPixelSpacing=0.734   # average pixel spacing in mm
+#avgPixelSpacing=0.734   # average pixel spacing in mm
 
-surfelemp=avgPixelSpacing*avgPixelSpacing # for 1 pixel in mm2
-surfelem= surfelemp*pxy/100 #surface of 1 patch in cm2
-
-volelemp=avgPixelSpacing*avgPixelSpacing*avgPixelSpacing # for 1 pixel
-volelem= volelemp*pxy/1000 #in ml, to multiply by slicepitch in mm
+#surfelemp=avgPixelSpacing*avgPixelSpacing # for 1 pixel in mm2
+#surfelem= surfelemp*pxy/100 #surface of 1 patch in cm2
+#
+#volelemp=avgPixelSpacing*avgPixelSpacing*avgPixelSpacing # for 1 pixel
+#volelem= volelemp*pxy/1000 #in ml, to multiply by slicepitch in mm
 
 modelname='ILD_CNN_model.h5'
 pathjs='../static'
@@ -71,7 +71,7 @@ dicompadirm='predict_dicom'
 dicomcross='cross'
 dicomfront='front'
 dicomcross_merge='merge'
-reportfile='report'
+reportfile='reportv2'
 reportdir='report'
 
 source_name='source'
@@ -106,7 +106,7 @@ volumeroifile='volumeroi'
 volumeroifilep='volumeroip'
 
 #excluvisu=['healthy']
-excluvisu=['']
+excluvisu=['back_ground','lung']
 
 bmpname='scan_bmp'
 
@@ -182,10 +182,10 @@ classifdict['set0'] ={
          'consolidation':7,
         'micronodules':8,
         'air_trapping':9,
-        'GGpret':10
+        'GGpret':10,
+        'lung':11
         }
 usedclassifdict['set0'] = [
-        'back_ground',
         'healthy',   
         'ground_glass',
         'HC',
@@ -217,7 +217,8 @@ classifdict['set1'] ={
         'bronchiectasis':5,
          'consolidation':6,
         'air_trapping':7,
-        'GGpret':8
+        'GGpret':8,
+        'lung':9
         }
 
 usedclassifdict['set1'] = [
@@ -250,7 +251,8 @@ classifdict['set2'] ={
         'cysts':6,
          'consolidation':7,
         'air_trapping':8,
-        'GGpret':9
+        'GGpret':9,
+        'lung':10
         }
 
 usedclassifdict['set2'] = [
@@ -424,7 +426,7 @@ def evaluatef(actual,pred,num_class):
 #    pres = metrics.precision_score(actual, pred,labels=label,average='weighted')
 #    recall = metrics.recall_score(actual, pred,labels=label,average='weighted')
     labl=[]
-    for i in range(num_class):
+    for i in range(1,num_class):
              labl.append(i)
     cm = metrics.confusion_matrix(actual,pred,labels=labl)
     return cm
