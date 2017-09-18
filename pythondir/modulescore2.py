@@ -244,7 +244,7 @@ def cals(cm,pat):
     tp=cm[numpat][numpat]
     fp=cm[:,numpat].sum()-tp
     fn=cm[numpat].sum()-tp
-    tn=cm.sum()-fp-fn  
+    tn=cm.sum()-fp-fn-tp 
     if tp+fp>0:
         prec=1.0*tp/(tp+fp)
     else:
