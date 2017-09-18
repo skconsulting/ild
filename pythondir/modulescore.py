@@ -18,9 +18,9 @@ from param_pix_s import reportdir,reportfile
 
 from param_pix_s import classifc,classifdict,usedclassifdict,oldFormat
 
-from param_pix_s import maxproba,excluvisu,fidclass,rsliceNum,evaluate,evaluatef,evaluatefull
+from param_pix_s import maxproba,excluvisu,fidclass,rsliceNum,evaluate,evaluatef
 
-from param_pix_s import normi
+#from param_pix_s import normi
 from scorepredict import predictrun
 
 import cPickle as pickle
@@ -243,7 +243,7 @@ def cals(cm,pat):
     tp=cm[numpat][numpat]
     fp=cm[:,numpat].sum()-tp
     fn=cm[numpat].sum()-tp
-    tn=cm.sum()-fp-fn  
+    tn=cm.sum()-fp-fn-tp
     if tp+fp>0:
         prec=1.0*tp/(tp+fp)
     else:
@@ -265,6 +265,8 @@ def cals(cm,pat):
     else:
         fsc=0
 #    return tp,fp,fn,tn,prec,recall,fsc,spc,npv
+#    print cm
+#    print pat,'tp:',tp,'tn:',tn,'fp:',fp,'fn:',fn,'spc:',spc,'npv:',npv
     return prec,recall,fsc, spc,npv ,tp+fp,tp+fn
 
 
@@ -616,6 +618,7 @@ def wrresu(f,cm,obj,refmax):
     spcAverage=0
     npvAverage=0
     numberp=0
+#    print 'global score'
     for pat in usedclassif:           
             precision[pat],recall[pat],fscore[pat], spc[pat],npv[pat],volpat[pat],volroi[pat]=cals(cm,pat)
             precisioni=int(round(precision[pat]*100,0))
@@ -730,7 +733,7 @@ def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
             cm=evaluatef(referencepat,predictpat,num_class)
             wrresu(f,cm,'Slice: '+str(slicenumber),referencepatu[slroi].max())
 
-            
+#    print 'global matrix'
     referencepat= referencepatu.flatten()
     predictpat=  predictpatu.flatten() 
     cfma(f,referencepat,predictpat,num_class,listHug,thrprobaUIP,cnnweigh,tp,thrpatch)
