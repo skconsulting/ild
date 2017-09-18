@@ -37,7 +37,7 @@ subHUG='ILD_TXT'
 toppatch= 'TOPPATCH'
 #extension for output dir
 extendir='all'
-extendir1=''
+extendir1='2'
 
 
 #labelEnh=('consolidation','reticulation,air_trapping','bronchiectasis','cysts')

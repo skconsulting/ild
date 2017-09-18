@@ -28,17 +28,17 @@ import random
 topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 toppatch= 'TOPPATCH'
 extendir='all'
-extendir0='1'
+extendir0='2'
 extendir1=''
 
 #define the directory to store data
 pickel_dirsource_root='pickle'
 pickel_dirsource_e='train' #path for data fort training
 pickel_dirsourcenum=setdata #extensioon for path for data for training
-extendir2='1'
+extendir2='2'
 extendir3=extendir1
 
-augf=3#augmentation factor
+augf=3#augmentation factor default 3
 
 ########################################################################
 ######################  end ############################################
@@ -52,7 +52,7 @@ if len (extendir1)>0:
     extendir1='_'+extendir1
 
 pickel_dirsource='th'+str(thrpatch)+'_'+pickel_dirsource_root+'_'+pickel_dirsource_e+'_'+pickel_dirsourcenum+'_'+extendir2+extendir3
-print pickel_dirsource
+print 'path to directory to store patches:',pickel_dirsource
 
 patch_dir=os.path.join(topdir,pickel_dirsource)
 
@@ -60,7 +60,7 @@ print ('classification used:')
 for f in usedclassif:
     print (f, classif[f])
 
-print 'path to write data for training',patch_dir
+
 
 #define the name of directory for patches
 patchesdirnametop = 'th'+str(round(thrpatch,1))+'_'+toppatch+'_'+extendir+'_'+extendir0+extendir1
@@ -73,10 +73,12 @@ patch_dirsource=os.path.join(topdir,patchesdirnametop)
 patch_dirsource=os.path.join(patch_dirsource,patch_dirsource)
 patch_dirsource=os.path.join(patch_dirsource,picklepath)
 print 'path for pickle inputs',patch_dirsource
+print 'path to write data for training',patch_dir
 if not os.path.isdir(patch_dirsource):
     print 'directory ',patch_dirsource,' does not exist'
     sys.exit()
 print '--------------------------------'
+
 ###############################################################
 remove_folder(patch_dir)
 os.mkdir(patch_dir)
@@ -310,6 +312,7 @@ print '-----------FINAL----------------'
 print ('Xtrain :',X_train.shape)
 print ('Xtest : ',X_test.shape)
 print ('ytrain : ',y_train.shape)
+print 'ytrain min max', y_train.min(),y_train.max()
 print ('ytest : ',y_test.shape)
 errorfile.write('Xtrain : '+' '+str(X_train.shape)+'\n')
 errorfile.write('Xtest : '+' '+str(X_test.shape)+'\n') 

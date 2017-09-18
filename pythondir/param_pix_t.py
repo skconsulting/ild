@@ -25,7 +25,7 @@ print keras.__version__
 print theano.__version__
 print ' keras.backend.image_data_format :',keras.backend.image_data_format()
 ######################################################################
-setdata='set0'
+setdata='set2'
 thrpatch = 0.8 #patch overlapp tolerance
 ######################################################
 
@@ -52,22 +52,8 @@ volelem= volelemp*pxy/1000 #in ml, to multiply by slicepitch in mm
 modelname='CNN.h5'
 
 
-#datafrontn='datafront'
-#path_data='data'
-#path_pickle='CNNparameters'
-#
-#reportfile='report'
-#reportdir='report'
-
-
 jpegpath='jpegpath'
-#jpegpath3d='jpegpath3d'
-#jpegpadirm='jpegpadirm'
 
-#lung_name='lung'
-#lung_namebmp='bmp'
-#lung_name_gen='lung'
-#directory with lung mask dicom
 lungmask='lung'
 lungmask1='lung_mask'
 #directory to put  lung mask bmp
