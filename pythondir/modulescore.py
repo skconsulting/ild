@@ -8,8 +8,8 @@ version 1.5
 6 September 2017
 """
 #from param_pix_p import *
-from param_pix_s import path_data,datafrontn,datacrossn,dimpavx,dimpavy,reportalldir
-from param_pix_s import surfelemp,volumeroifilep
+from param_pix_s import path_data,dimpavx,dimpavy,reportalldir
+from param_pix_s import surfelemp
 
 from param_pix_s import white,red,yellow,black
 from param_pix_s import source_name,sroi,sroi3d,scan_bmp,transbmp
@@ -44,12 +44,12 @@ def lisdirprocess(d):
             stpred={}
             ddd=os.path.join(d,dd)
             datadir=os.path.join(ddd,path_data)
-            pathcross=os.path.join(datadir,datacrossn)
+            pathcross=os.path.join(datadir,'datacrosss')
             
-            pathfront=os.path.join(datadir,datafrontn)
+            pathfront=os.path.join(datadir,'datafronts')
             setrefdict[dd]='no'
             if os.path.exists(pathcross):
-                datarep= pickle.load( open( os.path.join(datadir,"datacross"), "rb" ))
+                datarep= pickle.load( open( os.path.join(datadir,"datacrosss"), "rb" ))
                 try:
                     setrefdict[dd]=datarep[5]
                 except:
@@ -64,8 +64,8 @@ def lisdirprocess(d):
             else:
                 stpred['front']=False
                       
-            crosscompletedf=os.path.join(datadir,'crosscompleted')
-            frontcompletedf=os.path.join(datadir,'frontcompleted')
+            crosscompletedf=os.path.join(datadir,'crosscompleteds')
+            frontcompletedf=os.path.join(datadir,'frontcompleteds')
             if os.path.exists(crosscompletedf):
                 crosscompleted= pickle.load( open(crosscompletedf, "rb") )
                 if crosscompleted:
@@ -493,7 +493,7 @@ def retrievepatch(x,y,sln,dx,dy,patch_list_cross_slice):
 def openfichiervolumetxtall(listHug,path_patient,indata,thrprobaUIP,cnnweigh,f,thrpatch,tp):
 
     num_class=len(classif)
-
+    print 'Score for list of patients:'
     f.write('Score for list of patients:\n')
     for patient in listHug:
         f.write(str(patient)+' ')
@@ -503,22 +503,22 @@ def openfichiervolumetxtall(listHug,path_patient,indata,thrprobaUIP,cnnweigh,f,t
 
         patient_path_complet=os.path.join(path_patient,patient)
         path_data_dir=os.path.join(patient_path_complet,path_data)
-        datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "rb" ))
+        datarep= pickle.load( open( os.path.join(path_data_dir,"datacrosss"), "rb" ))
 #        slicepitch=datarep[3]
-        slnroi= pickle.load( open( os.path.join(path_data_dir,"slnroi"), "rb" ))
+        slnroi= pickle.load( open( os.path.join(path_data_dir,"slnrois"), "rb" ))
         if tp=='Cross':
-            filepatch="patch_list_cross_slice"
+            filepatch="patch_list_cross_slices"
         if tp=='FrontProjected':
-            filepatch="patch_list_cross_slice_from_front"
+            filepatch="patch_list_cross_slice_from_fronts"
         if tp=='Merge':
-            filepatch="patch_list_merge_slice"
+            filepatch="patch_list_merge_slices"
             
         patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,filepatch), "rb" ))
 #        patch_list_cross_slice_sub= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice_sub"), "rb" ))
 #        lungSegment= pickle.load( open( os.path.join(path_data_dir,"lungSegment"), "rb" ))
 #        tabMed= pickle.load( open( os.path.join(path_data_dir,"tabMed"), "rb" ))
-        tabscanLung= pickle.load( open( os.path.join(path_data_dir,"tabscanLung"), "rb" ))
-        tabroi= pickle.load( open( os.path.join(path_data_dir,"tabroi"), "rb" ))
+        tabscanLung= pickle.load( open( os.path.join(path_data_dir,"tabscanLungs"), "rb" ))
+        tabroi= pickle.load( open( os.path.join(path_data_dir,"tabrois"), "rb" ))
                   
         ref,pred,messageout = openfichiervolumetxt(patient,path_patient,patch_list_cross_slice,
                       thrprobaUIP,tabroi,datarep,slnroi,tabscanLung,f,cnnweigh,thrpatch,tp)
@@ -540,7 +540,11 @@ def openfichiervolumetxtall(listHug,path_patient,indata,thrprobaUIP,cnnweigh,f,t
 def cfma(f,referencepat,predictpat,num_class, namep,thrprobaUIP,cnnweigh,tp,thrpatch):
         f.write('confusion matrix for '+namep+'\n')
         f.write(tp+' View , threshold: '+str(thrprobaUIP)+ ' CNN param: '+cnnweigh+' th_patch'+str(thrpatch)+'\n\n')
-        
+
+        if referencepat.shape[0]==0:
+            print 'predict file empty'
+            f.write( 'predict file empty\n')
+            return
         cm=evaluatef(referencepat,predictpat,num_class)
         n= cm.shape[0]
     
@@ -770,7 +774,7 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,tabroi,
         if os.path.exists(pdirkroicross):
             pdirk = pdirkroicross
             path_data_write=os.path.join(path_img,path_data)
-            path_data_writefile=os.path.join(path_data_write,volumeroifilep)
+            path_data_writefile=os.path.join(path_data_write,'volumerois')
             if os.path.exists(path_data_writefile):
                 volumeroilocal=pickle.load(open(path_data_writefile, "rb" ))    
 #                print volumeroilocal
@@ -1015,7 +1019,7 @@ def visuarun(indata,path_patient):
     patient_path_complet=os.path.join(path_patient,listHug)
     path_data_dir=os.path.join(patient_path_complet,path_data)
 
-    crosscompleted = pickle.load(open( os.path.join(path_data_dir,"crosscompleted"), "rb" ))
+    crosscompleted = pickle.load(open( os.path.join(path_data_dir,"crosscompleteds"), "rb" ))
   
     if not crosscompleted:
         messageout="no predict!for "+listHug
@@ -1024,7 +1028,7 @@ def visuarun(indata,path_patient):
     if oldFormat:
         setref='set0'
     else:
-        datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "rb" ))
+        datarep= pickle.load( open( os.path.join(path_data_dir,"datacrosss"), "rb" ))
         setref=datarep[5]
 
     classif=classifdict[setref]
@@ -1035,12 +1039,12 @@ def visuarun(indata,path_patient):
 #    pathhtml=os.path.join(patient_path_complet,htmldir)
     
     if viewstyle=='cross view':
-            datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "rb" ))
-            tabroi= pickle.load( open( os.path.join(path_data_dir,"tabroi"), "rb" ))
-            slnroi= pickle.load( open( os.path.join(path_data_dir,"slnroi"), "rb" ))
+            datarep= pickle.load( open( os.path.join(path_data_dir,"datacrosss"), "rb" ))
+            tabroi= pickle.load( open( os.path.join(path_data_dir,"tabrois"), "rb" ))
+            slnroi= pickle.load( open( os.path.join(path_data_dir,"slnrois"), "rb" ))
 
-            tabscanLung= pickle.load( open( os.path.join(path_data_dir,"tabscanLung"), "rb" ))
-            patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice"), "rb" ))
+            tabscanLung= pickle.load( open( os.path.join(path_data_dir,"tabscanLungs"), "rb" ))
+            patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slices"), "rb" ))
             thrproba=float(indata['thrproba'])
             cnnweigh=indata['picklein_file']
 #            print cnnweigh
@@ -1049,15 +1053,15 @@ def visuarun(indata,path_patient):
             
     elif viewstyle=='front view':
             return 'not implemented'
-            datarep= pickle.load( open( os.path.join(path_data_dir,"datafront"), "rb" ))
+            datarep= pickle.load( open( os.path.join(path_data_dir,"datafronts"), "rb" ))
 #            tabroif= pickle.load( open( os.path.join(path_data_dir,"tabroif"), "rb" ))
             slnt=datarep[0]
             dimtabx=datarep[1]
             dimtaby=datarep[2]
             
-            tabLung3d= pickle.load( open( os.path.join(path_data_dir,"tabLung3d"), "rb" ))
+            tabLung3d= pickle.load( open( os.path.join(path_data_dir,"tabLung3ds"), "rb" ))
             tabroi=np.zeros((slnt,dimtabx,dimtaby), np.uint8)
-            patch_list_front_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_front_slice"), "rb" ))
+            patch_list_front_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_front_slices"), "rb" ))
             thrprobaUIP=float(indata['thrproba'])
             cnnweigh=indata['picklein_file_front']
             messageout=openfichier(viewstyle,datarep,patient_path_complet,thrprobaUIP,
@@ -1067,28 +1071,28 @@ def visuarun(indata,path_patient):
     elif viewstyle=='merge view':
 
             thrprobaUIP=float(indata['thrproba'])
-            datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "rb" ))
-            tabroi= pickle.load( open( os.path.join(path_data_dir,"tabroi"), "rb" ))
-            tabscanLung= pickle.load( open( os.path.join(path_data_dir,"tabscanLung"), "rb" ))
-            slnroi= pickle.load( open( os.path.join(path_data_dir,"slnroi"), "rb" ))
+            datarep= pickle.load( open( os.path.join(path_data_dir,"datacrosss"), "rb" ))
+            tabroi= pickle.load( open( os.path.join(path_data_dir,"tabrois"), "rb" ))
+            tabscanLung= pickle.load( open( os.path.join(path_data_dir,"tabscanLungs"), "rb" ))
+            slnroi= pickle.load( open( os.path.join(path_data_dir,"slnrois"), "rb" ))
 
 #            patch_list_merge= pickle.load( open( os.path.join(path_data_dir,"patch_list_merge"), "rb" ))
 #            proba_merge= pickle.load( open( os.path.join(path_data_dir,"proba_merge"), "rb" ))
-            patch_list_merge_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_merge_slice"), "rb" ))
+            patch_list_merge_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_merge_slices"), "rb" ))
 #            patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice"), "rb" ))
             cnnweigh=indata['picklein_file']
             messageout=openfichier(viewstyle,datarep,patient_path_complet,thrprobaUIP,
                                    patch_list_merge_slice,tabroi,cnnweigh,tabscanLung,viewstyle,slnroi)
     
     elif viewstyle=='front projected view':
-            datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "rb" ))
-            tabroi= pickle.load( open( os.path.join(path_data_dir,"tabroi"), "rb" ))
-            slnroi= pickle.load( open( os.path.join(path_data_dir,"slnroi"), "rb" ))
+            datarep= pickle.load( open( os.path.join(path_data_dir,"datacrosss"), "rb" ))
+            tabroi= pickle.load( open( os.path.join(path_data_dir,"tabrois"), "rb" ))
+            slnroi= pickle.load( open( os.path.join(path_data_dir,"slnrois"), "rb" ))
 
-            patch_list_cross_slice_from_front= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice_from_front"), "rb" ))
+            patch_list_cross_slice_from_front= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice_from_fronts"), "rb" ))
             thrprobaUIP=float(indata['thrproba']) 
             cnnweigh=indata['picklein_file_front']
-            tabscanLung= pickle.load( open( os.path.join(path_data_dir,"tabscanLung"), "rb" ))
+            tabscanLung= pickle.load( open( os.path.join(path_data_dir,"tabscanLungs"), "rb" ))
             messageout=openfichier(viewstyle,datarep,patient_path_complet,thrprobaUIP,
                                    patch_list_cross_slice_from_front,tabroi,cnnweigh,tabscanLung,viewstyle,slnroi)
 #            thrprobaUIP=float(indata['thrprobaUIP'])
@@ -1096,22 +1100,22 @@ def visuarun(indata,path_patient):
 #            messageout=openfichierfrpr(path_patient,tabfromfront,thrprobaUIP)
     
     elif viewstyle=='reportCross':
-        datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "rb" ))
+        datarep= pickle.load( open( os.path.join(path_data_dir,"datacrosss"), "rb" ))
 #        slicepitch=datarep[3]
-        slnroi= pickle.load( open( os.path.join(path_data_dir,"slnroi"), "rb" ))
+        slnroi= pickle.load( open( os.path.join(path_data_dir,"slnrois"), "rb" ))
         cnnweigh=indata['picklein_file']
 
         tp='Cross'
         
-        patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,'patch_list_cross_slice'), "rb" ))
+        patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,'patch_list_cross_slices'), "rb" ))
 #        patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice"), "rb" ))
 #        patch_list_cross_slice_sub= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice_sub"), "rb" ))
 #        lungSegment= pickle.load( open( os.path.join(path_data_dir,"lungSegment"), "rb" ))
 #        tabMed= pickle.load( open( os.path.join(path_data_dir,"tabMed"), "rb" ))
         thrproba=float(indata['thrproba'])
-        thrpatch=pickle.load( open( os.path.join(path_data_dir,"thrpatch"), "rb" ))
-        tabscanLung= pickle.load( open( os.path.join(path_data_dir,"tabscanLung"), "rb" ))
-        tabroi= pickle.load( open( os.path.join(path_data_dir,"tabroi"), "rb" ))
+        thrpatch=pickle.load( open( os.path.join(path_data_dir,"thrpatchs"), "rb" ))
+        tabscanLung= pickle.load( open( os.path.join(path_data_dir,"tabscanLungs"), "rb" ))
+        tabroi= pickle.load( open( os.path.join(path_data_dir,"tabrois"), "rb" ))
         dirf=os.path.join(path_patient,listHug)
         dirfreport=os.path.join(dirf,reportdir)   
         if not os.path.exists(dirfreport):
@@ -1127,22 +1131,22 @@ def visuarun(indata,path_patient):
         os.startfile(repf)
         
     elif viewstyle=='reportFront':
-        datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "rb" ))
+        datarep= pickle.load( open( os.path.join(path_data_dir,"datacrosss"), "rb" ))
 #        slicepitch=datarep[3]
-        slnroi= pickle.load( open( os.path.join(path_data_dir,"slnroi"), "rb" ))
+        slnroi= pickle.load( open( os.path.join(path_data_dir,"slnrois"), "rb" ))
         cnnweigh=indata['picklein_file']
 
         tp='FrontProjected'
             
-        patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,'patch_list_cross_slice_from_front'), "rb" ))
+        patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,'patch_list_cross_slice_from_fronts'), "rb" ))
 #        patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice"), "rb" ))
 #        patch_list_cross_slice_sub= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice_sub"), "rb" ))
 #        lungSegment= pickle.load( open( os.path.join(path_data_dir,"lungSegment"), "rb" ))
 #        tabMed= pickle.load( open( os.path.join(path_data_dir,"tabMed"), "rb" ))
         thrproba=float(indata['thrproba'])
-        thrpatch=pickle.load( open( os.path.join(path_data_dir,"thrpatch"), "rb" ))
-        tabscanLung= pickle.load( open( os.path.join(path_data_dir,"tabscanLung"), "rb" ))
-        tabroi= pickle.load( open( os.path.join(path_data_dir,"tabroi"), "rb" ))
+        thrpatch=pickle.load( open( os.path.join(path_data_dir,"thrpatchs"), "rb" ))
+        tabscanLung= pickle.load( open( os.path.join(path_data_dir,"tabscanLungs"), "rb" ))
+        tabroi= pickle.load( open( os.path.join(path_data_dir,"tabrois"), "rb" ))
         dirf=os.path.join(path_patient,listHug)
         dirfreport=os.path.join(dirf,reportdir)   
         if not os.path.exists(dirfreport):
@@ -1157,22 +1161,22 @@ def visuarun(indata,path_patient):
         f.close()
         os.startfile(repf)
     elif viewstyle=='reportMerge':
-        datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "rb" ))
+        datarep= pickle.load( open( os.path.join(path_data_dir,"datacrosss"), "rb" ))
 #        slicepitch=datarep[3]
-        slnroi= pickle.load( open( os.path.join(path_data_dir,"slnroi"), "rb" ))
+        slnroi= pickle.load( open( os.path.join(path_data_dir,"slnrois"), "rb" ))
         cnnweigh=indata['picklein_file']
 
         tp='Merge'
             
-        patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,'patch_list_merge_slice'), "rb" ))
+        patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,'patch_list_merge_slices'), "rb" ))
 #        patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice"), "rb" ))
 #        patch_list_cross_slice_sub= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice_sub"), "rb" ))
 #        lungSegment= pickle.load( open( os.path.join(path_data_dir,"lungSegment"), "rb" ))
 #        tabMed= pickle.load( open( os.path.join(path_data_dir,"tabMed"), "rb" ))
         thrproba=float(indata['thrproba'])
-        thrpatch=pickle.load( open( os.path.join(path_data_dir,"thrpatch"), "rb" ))
-        tabscanLung= pickle.load( open( os.path.join(path_data_dir,"tabscanLung"), "rb" ))
-        tabroi= pickle.load( open( os.path.join(path_data_dir,"tabroi"), "rb" ))
+        thrpatch=pickle.load( open( os.path.join(path_data_dir,"thrpatchs"), "rb" ))
+        tabscanLung= pickle.load( open( os.path.join(path_data_dir,"tabscanLungs"), "rb" ))
+        tabroi= pickle.load( open( os.path.join(path_data_dir,"tabrois"), "rb" ))
         dirf=os.path.join(path_patient,listHug)
         dirfreport=os.path.join(dirf,reportdir)   
         if not os.path.exists(dirfreport):
@@ -1191,7 +1195,7 @@ def visuarun(indata,path_patient):
         tp=indata['viewstylet']
         print 'report All for', tp
         thrproba=float(indata['thrproba'])
-        thrpatch=pickle.load( open( os.path.join(path_data_dir,"thrpatch"), "rb" ))
+        thrpatch=pickle.load( open( os.path.join(path_data_dir,"thrpatchs"), "rb" ))
 
         cnnweigh=indata['picklein_file']
         pathreport=os.path.join(path_patient,reportalldir)

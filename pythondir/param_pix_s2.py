@@ -54,8 +54,8 @@ pxy=float(dimpavx*dimpavy) #surface in pixel
 modelname='ILD_CNN_model.h5'
 pathjs='../static'
 
-datacrossn='datacross'
-datafrontn='datafront'
+#datacrossn='datacross'
+#datafrontn='datafront'
 path_data='data'
 path_pickle='CNNparameters'
 path_pickleArch='modelArch'

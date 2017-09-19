@@ -322,7 +322,8 @@ def boutonStop(btn):
 def gscore(indata):
     global app,continuevisu
 #    print(app.getListItems("list"))
-    
+    indata['picklein_file']=app.getEntry("cross view weight")
+    indata['picklein_file_front']= app.getEntry("front view weight")
     indata['viewstyle']='reportAll'
     indata['thrproba']=app.getEntry("Threshold proba")
 #    indata['viewstyle']='reportAll'
@@ -353,7 +354,7 @@ def gscore(indata):
                 
     if goodp:
 
-        indata['picklein_file']=vold
+#        indata['picklein_file']=vold
     
         paramdict['thrproba']=indata['thrproba']
 #        paramdict['thrpatch']=indata['thrpatch']

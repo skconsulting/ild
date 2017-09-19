@@ -51,8 +51,8 @@ volelem= volelemp*pxy/1000 #in ml, to multiply by slicepitch in mm
 modelname='ILD_CNN_model.h5'
 pathjs='../static'
 
-datacrossn='datacross'
-datafrontn='datafront'
+#datacrossn='datacross'
+#datafrontn='datafront'
 path_data='data'
 path_pickle='CNNparameters'
 path_pickleArch='modelArch'
@@ -99,8 +99,8 @@ typei='jpg'
 typei1='bmp'
 typei2='png' 
 
-volumeroifile='volumeroi'
-volumeroifilep='volumeroip'
+#volumeroifile='volumeroi'
+#volumeroifilep='volumeroip'
 
 #excluvisu=['healthy']
 excluvisu=['']
@@ -516,5 +516,6 @@ def evaluatef(actual,pred,num_class):
     labl=[]
     for i in range(1,num_class):
              labl.append(i)
+
     cm = metrics.confusion_matrix(actual,pred,labels=labl)
     return cm

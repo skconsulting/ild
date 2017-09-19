@@ -7,7 +7,7 @@ version 1.5
 6 September 2017
 '''
 #from param_pix_p import *
-from param_pix_s2 import scan_bmp,dimpavx,dimpavy,volumeroifilep,dirpickleArch,modelArch
+from param_pix_s2 import scan_bmp,dimpavx,dimpavy,dirpickleArch,modelArch
 from param_pix_s2 import typei,typei1
 from param_pix_s2 import white,yellow
 
@@ -21,7 +21,7 @@ from param_pix_s2 import  source, dimtabx,dimtaby
 from param_pix_s2 import  transbmp
 from param_pix_s2 import sroi
 from param_pix_s2 import jpegpath3d
-from param_pix_s2 import jpegpadirm,source_name,datafrontn,path_data,dirpickle,cwdtop
+from param_pix_s2 import jpegpadirm,source_name,path_data,dirpickle,cwdtop
 
 from param_pix_s2 import remove_folder,normi,rsliceNum,norm,maxproba
 from param_pix_s2 import classifdict,usedclassifdict,oldFormat
@@ -518,7 +518,7 @@ def wtebres(wridir,dirf,tab,dimtabx,slicepitch,lungm,ty,centerHU,limitHU):
     os.mkdir(bgdirf)
 #    print slicepitch
 #    print avgPixelSpacing
-    fxs=float(slicepitch/avgPixelSpacing )
+    fxs=float(slicepitch/PixelSpacing )
     lislnn=[]
 
     ntd=int(round(fxs*tab[0].shape[0],0))
@@ -907,7 +907,7 @@ def subpleural(dirf,tabscanLung,lissln,subErosion,crfr):
         np.putmask(imgngray, imgngray > 0, 1)
     # subErosion=  in mm
     #avgPixelSpacing=0.734 in mm/ pixel
-        subErosionPixel = int(round(2 * subErosion / avgPixelSpacing))
+        subErosionPixel = int(round(2 * subErosion / PixelSpacing))
         kernele=np.ones((subErosionPixel,subErosionPixel),np.uint8)
         erosion = cv2.erode(imgngray,kernele,iterations = 1)
 
@@ -1138,7 +1138,7 @@ def preparscan(tabscan,tabslung,numsliceok):
 
 
 def predictrun(indata,path_patient):
-        global thrproba,thrprobaUIP,subErosion
+        global thrproba,thrprobaUIP,subErosion,PixelSpacing
         global  picklein_file,picklein_file_front,classif,usedclassif
         td=False
 
@@ -1263,9 +1263,9 @@ def predictrun(indata,path_patient):
             print 'START PREDICT CROSS'
             print '------------------'
             crosscompleted=False
-            pickle.dump(crosscompleted, open( os.path.join(path_data_write,"crosscompleteds"), "wb" ),protocol=-1)
+            pickle.dump(crosscompleted, open( os.path.join(path_data_write,"crosscompleteds2"), "wb" ),protocol=-1)
             frontcompleted=False
-            pickle.dump(frontcompleted, open( os.path.join(path_data_write,"frontcompleteds"), "wb" ),protocol=-1)
+            pickle.dump(frontcompleted, open( os.path.join(path_data_write,"frontcompleteds2"), "wb" ),protocol=-1)
             print 'source',source
 #            return ''
             tabscanName={}
@@ -1273,28 +1273,28 @@ def predictrun(indata,path_patient):
 
             centerHU1=0
             limitHU1=0
-            if os.path.exists(os.path.join(path_data_write,'centerHUs')):
-                centerHU1=pickle.load( open(os.path.join(path_data_write,'centerHUs'), "rb" ))
-            if os.path.exists(os.path.join(path_data_write,'limitHUs')):
-                limitHU1=pickle.load( open(os.path.join(path_data_write,'limitHUs'), "rb" ))
+            if os.path.exists(os.path.join(path_data_write,'centerHUs2')):
+                centerHU1=pickle.load( open(os.path.join(path_data_write,'centerHUs2'), "rb" ))
+            if os.path.exists(os.path.join(path_data_write,'limitHUs2')):
+                limitHU1=pickle.load( open(os.path.join(path_data_write,'limitHUs2'), "rb" ))
         
             if centerHU1==centerHU and limitHU1==limitHU and not(ForceGenerate):
                 print 'no need to regenerate'
-                datacross=pickle.load(open( os.path.join(path_data_write,'datacrosss'), "rb" ))
+                datacross=pickle.load(open( os.path.join(path_data_write,'datacrosss2'), "rb" ))
                 slnt= datacross[0]
 #                dimtaby=datacross[2]
                 slicepitch=datacross[1]
                 lissln=datacross[2]
                 PixelSpacing=datacross[5]
                 
-                tabscanScan=pickle.load( open(os.path.join(path_data_write,'tabscanScans'), "rb" ))
-                tabscanName=pickle.load( open(os.path.join(path_data_write,'tabscanNames'), "rb" ))
-                volumeroi=pickle.load( open(os.path.join(path_data_write,'volumerois'), "rb" ))
-                tabscanroi=pickle.load( open(os.path.join(path_data_write,'tabscanrois'), "rb" ))
-                tabscanLung=pickle.load( open(os.path.join(path_data_write,'tabscanLungs'), "rb" ))
-                tabrange=pickle.load( open(os.path.join(path_data_write,'tabranges'), "rb" ))
-                tabroi=pickle.load( open(os.path.join(path_data_write,'tabrois'), "rb" ))
-                slnroi=pickle.load( open(os.path.join(path_data_write,'slnrois'), "rb" ))
+                tabscanScan=pickle.load( open(os.path.join(path_data_write,'tabscanScans2'), "rb" ))
+                tabscanName=pickle.load( open(os.path.join(path_data_write,'tabscanNames2'), "rb" ))
+                volumeroi=pickle.load( open(os.path.join(path_data_write,'volumerois2'), "rb" ))
+                tabscanroi=pickle.load( open(os.path.join(path_data_write,'tabscanrois2'), "rb" ))
+                tabscanLung=pickle.load( open(os.path.join(path_data_write,'tabscanLungs2'), "rb" ))
+                tabrange=pickle.load( open(os.path.join(path_data_write,'tabranges2'), "rb" ))
+                tabroi=pickle.load( open(os.path.join(path_data_write,'tabrois2'), "rb" ))
+                slnroi=pickle.load( open(os.path.join(path_data_write,'slnrois2'), "rb" ))
                 print 'end load'
                 
             else:
@@ -1311,26 +1311,22 @@ def predictrun(indata,path_patient):
 
                 
                 datacross=(slnt,slicepitch,lissln,setref, thrproba,PixelSpacing)
-                pickle.dump(centerHU, open(os.path.join(path_data_write,'centerHUs'), "wb" ),protocol=-1)
-                pickle.dump(limitHU, open(os.path.join(path_data_write,'limitHUs'), "wb" ),protocol=-1) 
+                pickle.dump(centerHU, open(os.path.join(path_data_write,'centerHUs2'), "wb" ),protocol=-1)
+                pickle.dump(limitHU, open(os.path.join(path_data_write,'limitHUs2'), "wb" ),protocol=-1) 
                 
-                pickle.dump(tabscanScan, open(os.path.join(path_data_write,'tabscanScans'), "wb" ),protocol=-1) 
-                pickle.dump(tabscanroi, open(os.path.join(path_data_write,'tabscanrois'), "wb" ),protocol=-1) 
-                pickle.dump(tabscanName, open(os.path.join(path_data_write,'tabscanNames'), "wb" ),protocol=-1) 
-                pickle.dump(volumeroi, open(os.path.join(path_data_write,'volumerois'), "wb" ),protocol=-1)
-                pickle.dump(tabscanLung, open( os.path.join(path_data_write,"tabscanLungs"), "wb" ),protocol=-1)
-                pickle.dump(tabrange, open( os.path.join(path_data_write,"tabranges"), "wb" ),protocol=-1)
+                pickle.dump(tabscanScan, open(os.path.join(path_data_write,'tabscanScans2'), "wb" ),protocol=-1) 
+                pickle.dump(tabscanroi, open(os.path.join(path_data_write,'tabscanrois2'), "wb" ),protocol=-1) 
+                pickle.dump(tabscanName, open(os.path.join(path_data_write,'tabscanNames2'), "wb" ),protocol=-1) 
+                pickle.dump(volumeroi, open(os.path.join(path_data_write,'volumerois2'), "wb" ),protocol=-1)
+                pickle.dump(tabscanLung, open( os.path.join(path_data_write,"tabscanLungs2"), "wb" ),protocol=-1)
+                pickle.dump(tabrange, open( os.path.join(path_data_write,"tabranges2"), "wb" ),protocol=-1)
 
-            
-                pickle.dump(volumeroi, open(os.path.join(path_data_write,volumeroifilep), "wb" ),protocol=-1)
-                pickle.dump(tabroi, open( os.path.join(path_data_write,"tabrois"), "wb" ),protocol=-1)
-                pickle.dump(slnroi, open( os.path.join(path_data_write,"slnrois"), "wb" ),protocol=-1)
-                pickle.dump(datacross, open( os.path.join(path_data_write,'datacrosss'), "wb" ),protocol=-1)
+                pickle.dump(tabroi, open( os.path.join(path_data_write,"tabrois2"), "wb" ),protocol=-1)
+                pickle.dump(slnroi, open( os.path.join(path_data_write,"slnrois2"), "wb" ),protocol=-1)
+                pickle.dump(datacross, open( os.path.join(path_data_write,'datacrosss2'), "wb" ),protocol=-1)
 
-#            print type(PixelSpacing)
             regene=True
-            if os.path.exists(os.path.join(path_data_write,"X_predicts")):
-#                    X_predict= pickle.load( open( os.path.join(path_data_write,"X_predict"), "rb" ))
+            if os.path.exists(os.path.join(path_data_write,"X_predicts2")):
                     regene=False                            
             
 
@@ -1338,35 +1334,20 @@ def predictrun(indata,path_patient):
                 print 'regenerate patch list'
                 X_predict,xtrains=preparscan(tabscanScan,tabscanLung,slnroi)
                 proba_cross=ILDCNNpredict(X_predict,modelcross)
-#                patch_list_cross=pavgene(dirf,dimtabx,dimtabx,tabscanScan,tabscanLung,slnt,jpegpath,slnroi)
-                pickle.dump(X_predict, open( os.path.join(path_data_write,"X_predicts"), "wb" ),protocol=-1)
-                pickle.dump(proba_cross, open( os.path.join(path_data_write,"proba_crosss"), "wb" ),protocol=-1)
-                pickle.dump(xtrains, open( os.path.join(path_data_write,"xtrainss"), "wb" ),protocol=-1)
+                pickle.dump(X_predict, open( os.path.join(path_data_write,"X_predicts2"), "wb" ),protocol=-1)
+                pickle.dump(proba_cross, open( os.path.join(path_data_write,"proba_crosss2"), "wb" ),protocol=-1)
+                pickle.dump(xtrains, open( os.path.join(path_data_write,"xtrainss2"), "wb" ),protocol=-1)
 
             else:
                 print 'no need to regenerate scan data'
-                proba_cross=pickle.load(open( os.path.join(path_data_write,"proba_crosss"), "rb" ))
-                X_predict=pickle.load(open( os.path.join(path_data_write,"X_predicts"), "rb" ))
-                xtrains=pickle.load(open( os.path.join(path_data_write,"xtrainss"), "rb" ))
+                proba_cross=pickle.load(open( os.path.join(path_data_write,"proba_crosss2"), "rb" ))
+                X_predict=pickle.load(open( os.path.join(path_data_write,"X_predicts2"), "rb" ))
+                xtrains=pickle.load(open( os.path.join(path_data_write,"xtrainss2"), "rb" ))
                 
-
-            pickle.dump(proba_cross, open( os.path.join(path_data_write,"proba_crosss"), "wb" ),protocol=-1)
-#            pickle.dump(patch_list_cross_slice_sub, open( os.path.join(path_data_write,"patch_list_cross_slice_sub"), "wb" ),protocol=-1)
-#            pickle.dump(tabscanLung, open( os.path.join(path_data_write,"tabscanLung"), "wb" ),protocol=-1)
-#            pickle.dump(patch_list_cross, open( os.path.join(path_data_write,"patch_list_cross"), "wb" ),protocol=-1)
-#            pickle.dump(tabMed, open( os.path.join(path_data_write,"tabMed"), "wb" ),protocol=-1)
-            """
-            proba_cross= pickle.load( open( os.path.join(path_data_write,"proba_cross"),"rb" ))
-            patch_list_cross_slice= pickle.load( open( os.path.join(path_data_write,"patch_list_cross_slice"), "rb" ))
-            patch_list_cross_slice_sub= pickle.load( open( os.path.join(path_data_write,"patch_list_cross_slice_sub"), "rb" ))
-            tabscanLung= pickle.load( open( os.path.join(path_data_write,"tabscanLung"), "rb" ))
-            patch_list_cross= pickle.load( open( os.path.join(path_data_write,"patch_list_cross"), "rb" ))
-            tabMed= pickle.load( open( os.path.join(path_data_write,"tabMed"), "rb" ))
-            """
-#            print 'patch_list_cross_slice[1]',patch_list_cross_slice[1]
+            pickle.dump(proba_cross, open( os.path.join(path_data_write,"proba_crosss2"), "wb" ),protocol=-1)
  
             crosscompleted=True
-            pickle.dump(crosscompleted, open( os.path.join(path_data_write,"crosscompleteds"), "wb" ),protocol=-1)
+            pickle.dump(crosscompleted, open( os.path.join(path_data_write,"crosscompleteds2"), "wb" ),protocol=-1)
 #            """
     ###       cross
             if td:
@@ -1375,7 +1356,7 @@ def predictrun(indata,path_patient):
                 print '------------------'
                 return ' '
                 frontcompleted=False
-                pickle.dump(frontcompleted, open( os.path.join(path_data_write,"frontcompleted"), "wb" ),protocol=-1)
+                pickle.dump(frontcompleted, open( os.path.join(path_data_write,"frontcompleteds2"), "wb" ),protocol=-1)
                 tabresScan=reshapeScanl(tabscanScan)
                 dimtabxn,dimtabyn,tabScan3d,lisslnfront=wtebres(wridir,dirf,tabresScan,
                                                                 dimtabx,slicepitch,lungmaski,'scan',centerHU,limitHU)
@@ -1385,8 +1366,8 @@ def predictrun(indata,path_patient):
 
                 datafront=(dimtabx,dimtabxn,dimtabyn,slicepitch,lisslnfront)
                 
-                pickle.dump(datafront, open( os.path.join(path_data_write,datafrontn), "wb" ),protocol=-1)
-                pickle.dump(tabLung3d, open( os.path.join(path_data_write,"tabLung3d"), "wb" ),protocol=-1)
+                pickle.dump(datafront, open( os.path.join(path_data_write,'datafronts2'), "wb" ),protocol=-1)
+                pickle.dump(tabLung3d, open( os.path.join(path_data_write,"tabLung3ds2"), "wb" ),protocol=-1)
                 """
                 datafront= pickle.load( open( os.path.join(path_data_write,"datafront"), "rb" ))               
                 dimtabx=datafront[0]                
@@ -1397,17 +1378,17 @@ def predictrun(indata,path_patient):
                 """
                 regene=True
                 if os.path.exists(os.path.join(path_data_write,"thrpatch")):
-                    thrpatch1= pickle.load( open( os.path.join(path_data_write,"thrpatch"), "rb" ))
+                    thrpatch1= pickle.load( open( os.path.join(path_data_write,"thrpatchs2"), "rb" ))
                     if thrpatch == thrpatch1:
-                        if os.path.exists(os.path.join(path_data_write,"patch_list_front")):
+                        if os.path.exists(os.path.join(path_data_write,"patch_list_fronts2")):
                             regene=False
 
-                            patch_list_front= pickle.load( open( os.path.join(path_data_write,"patch_list_front"), "rb" ))
+                            patch_list_front= pickle.load( open( os.path.join(path_data_write,"patch_list_fronts2"), "rb" ))
                 if regene or ForceGenerate:
                     print 'regenerate patch list'
 
                     patch_list_front=pavgenefront(dirf,dimtabxn,dimtabx,tabScan3d,tabLung3d,dimtabyn,jpegpath3d)
-                    pickle.dump(patch_list_front, open( os.path.join(path_data_write,"patch_list_front"), "wb" ),protocol=-1)
+                    pickle.dump(patch_list_front, open( os.path.join(path_data_write,"patch_list_fronts2"), "wb" ),protocol=-1)
                 else:
                     print 'no need to regenerate patch list'
                 
@@ -1415,83 +1396,25 @@ def predictrun(indata,path_patient):
 
                 proba_front=ILDCNNpredict(patch_list_front,modelfront)
                 
-#                pickle.dump(proba_front, open( os.path.join(path_data_write,"proba_front"), "wb" ),protocol=-1)
-#                pickle.dump(patch_list_front, open( os.path.join(path_data_write,"patch_list_front"), "wb" ),protocol=-1)
-                """
-                proba_front=pickle.load(open( os.path.join(path_data_write,"proba_front"), "rb" ))
-                patch_list_front=pickle.load(open( os.path.join(path_data_write,"patch_list_front"), "rb" ))
-                proba_cross=pickle.load(open( os.path.join(path_data_write,"proba_cross"), "rb" ))
-                patch_list_cross=pickle.load(open( os.path.join(path_data_write,"patch_list_cross"), "rb" ))
-                proba_front=pickle.load(open( os.path.join(path_data_write,"proba_front"), "rb" ))
-                patch_list_front=pickle.load(open( os.path.join(path_data_write,"patch_list_front"), "rb" ))
-                """
-#                lungSegmentfront=selectposition(lisslnfront)
-#                subpleurmaskfront=subpleural(dirf,tabLung3d,lisslnfront,subErosion,'front')
                 patch_list_front_slice=genepatchlistslice(patch_list_front,
                                                             proba_front,lisslnfront,dimtabxn,dimtabyn)
-
-#                tabMedfront = calcMed(tabLung3d,lisslnfront)
-                
-#                pickle.dump(tabMedfront, open( os.path.join(path_data_write,"tabMedfront"), "wb" ),protocol=-1)
-                pickle.dump(patch_list_front_slice, open( os.path.join(path_data_write,"patch_list_front_slice"), "wb" ),protocol=-1)
-#                pickle.dump(patch_list_front_slice_sub, open( os.path.join(path_data_write,"patch_list_front_slice_sub"), "wb" ),protocol=-1)
-#                pickle.dump(lungSegmentfront, open( os.path.join(path_data_write,"lungSegmentfront"), "wb" ),protocol=-1)
-                """
-                tabMedfront=pickle.load(open( os.path.join(path_data_write,"tabMedfront"), "rb" ))
-                patch_list_front_slice=pickle.load(open( os.path.join(path_data_write,"patch_list_front_slice"), "rb" ))
-                patch_list_front_slice_sub=pickle.load(open( os.path.join(path_data_write,"patch_list_front_slice_sub"), "rb" ))
-                lungSegmentfront=pickle.load(open( os.path.join(path_data_write,"lungSegmentfront"), "rb" ))
-                """
-#                genethreef(dirf,patch_list_front,proba_front,avgPixelSpacing,dimtabxn,dimtabyn,dimpavx,dimtabx,'front')
-#                tabpx=genecross(proba_cross,proba_front,patch_list_front,dimtabxn,dimtabyn)
-                
+                pickle.dump(patch_list_front_slice, open( os.path.join(path_data_write,"patch_list_front_slices2"), "wb" ),protocol=-1)                
                 
                 proba_cross_from_front,patch_list_cross_from_front= genecrossfromfront(proba_front,patch_list_front,
-                                                                   dimtabx,lissln,dimtabxn,slnt)
-                
+                                                                   dimtabx,lissln,dimtabxn,slnt)               
                 patch_list_cross_slice_from_front=genepatchlistslice(patch_list_cross_from_front,
                                                             proba_cross_from_front,lissln,dimtabx,dimtabx)
                 
-                pickle.dump(patch_list_cross_slice_from_front, open( os.path.join(path_data_write,"patch_list_cross_slice_from_front"), "wb" ),protocol=-1)
-#                pickle.dump(patch_list_cross_slice_sub_from_front, open( os.path.join(path_data_write,"patch_list_cross_slice_sub_from_front"), "wb" ),protocol=-1)
+                pickle.dump(patch_list_cross_slice_from_front, open( os.path.join(path_data_write,"patch_list_cross_slice_from_fronts2"), "wb" ),protocol=-1)
 
-                
-                
-                """
-        #        pickle.dump(tabpx, open( os.path.join(path_data_write,"tabpx"), "wb" ),protocol=-1)
-        #        tabpx=pickle.load(open( os.path.join(path_data_write,"tabpx"), "rb" ),protocol=-1)
-                tabx,tabfromfront=reshapepatern(dirf,tabpx,dimtabxn,dimtabx,slnt,slicepitch,predictout3d1,source,dicompathdirfront)
-#                pickle.dump(tabfromfront, open( os.path.join(path_data_write,"tabfromfront"), "wb" ),protocol=-1)
-        #        tabx=pickle.load(open( os.path.join(path_data_write,"tabx"), "rb" ),protocol=-1)
-#                    print 'before merge proba'
-                """
-#                print '0',patch_list_cross_slice
-#                print 'len',len(patch_list_cross_slice)
                 proba_merge,patch_list_merge=mergeproba(patch_list_cross_slice,
                                                         patch_list_cross_slice_from_front,slnt,dimtabx,dimtabx)
                 patch_list_merge_slice=genepatchlistslice(patch_list_merge,
                                                             proba_merge,lissln,dimtabx,dimtabx)
-                
-                
-#                pickle.dump(proba_merge, open( os.path.join(path_data_write,"proba_merge"), "wb" ),protocol=-1)
-#                pickle.dump(patch_list_merge, open( os.path.join(path_data_write,"patch_list_merge"), "wb" ),protocol=-1)
-                pickle.dump(patch_list_merge_slice, open( os.path.join(path_data_write,"patch_list_merge_slice"), "wb" ),protocol=-1)
-#                pickle.dump(patch_list_merge_slice_sub, open( os.path.join(path_data_write,"patch_list_merge_slice_sub"), "wb" ),protocol=-1)
-            
-                """
-                proba_merge=pickle.load(open( os.path.join(path_data_write,"proba_merge"), "rb" ))
-                patch_list_merge=pickle.load(open( os.path.join(path_data_write,"patch_list_merge"), "rb" ))
-                patch_list_merge_slice=pickle.load(open( os.path.join(path_data_write,"patch_list_merge_slice"), "rb" ))
-                patch_list_merge_slice_sub=pickle.load(open( os.path.join(path_data_write,"patch_list_merge_slice_sub"), "rb" ))
-                """                                              
-                """
-                if not wvisu:
-                    visua(listelabelfinal,dirf,patch_list_merge_slice,dimtabx,dimtabx
-                      ,slnt,predictoutmerge,sroi,scan_bmp,source,dicompathdirmerge,True,errorfile,nosource,'merge')
-                genethreef(dirf,patch_list_merge,proba_merge,slicepitch,dimtabx,dimtabx,dimpavx,slnt,'merge')
-                """
+                pickle.dump(patch_list_merge_slice, open( os.path.join(path_data_write,"patch_list_merge_slices2"), "wb" ),protocol=-1)
+
                 frontcompleted=True
-                pickle.dump(frontcompleted, open( os.path.join(path_data_write,"frontcompleted"), "wb" ),protocol=-1)
+                pickle.dump(frontcompleted, open( os.path.join(path_data_write,"frontcompleteds2"), "wb" ),protocol=-1)
             errorfile.write('completed :'+f)
             errorfile.close()
             
