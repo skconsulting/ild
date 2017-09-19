@@ -52,6 +52,11 @@ def lisdirprocess(d):
                 datarep= pickle.load( open( os.path.join(datadir,"datacrosss"), "rb" ))
                 try:
                     setrefdict[dd]=datarep[5]
+#                    print type(setrefdict[dd])
+                    if type(setrefdict[dd])==float:
+#                        print 'this is float'
+                        setrefdict[dd]='oldset0'
+                        
                 except:
                     setrefdict[dd]='oldset0'
             if os.path.exists(pathcross):
@@ -83,7 +88,7 @@ def lisdirprocess(d):
                     stpred['front']=False
                     
             stsdir[dd]=stpred
-
+#    print setrefdict
     return a,stsdir,setrefdict
 
 def predictmodule(indata,path_patient):
