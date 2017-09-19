@@ -151,9 +151,9 @@ def genebmp(fn,sou,nosource,centerHU, limitHU, tabscanName,tabscanroi):
 
 #        bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
         tabscanName[slicenumber]=imgcoreScan
-        (topw,tailw)=os.path.split(picklein_file)
+#        (topw,tailw)=os.path.split(picklein_file)
         t2='Prototype '
-        t1='param :'+tailw
+        t1=''
         t0='CONFIDENTIAL'
         t3='Scan: '+str(slicenumber)
 
@@ -416,7 +416,6 @@ def pavgene(dirf,dimtabx,dimtaby,tabscanScan,tabscanLung,slnt,jpegpath,listsln):
     #                        ooo
                             imgray = tabf[j:j+dimpavy,i:i+dimpavx]
 
-#                            imagemax= cv2.countNonZero(imgray)
                             min_val, max_val, min_loc,max_loc = cv2.minMaxLoc(imgray)
 
                             if  min_val != max_val:
@@ -1018,21 +1017,39 @@ def generoi(dirf,tabroi,dimtabx,dimtaby,slnroi,tabscanName,dirroit,tabscanroi,ta
     
             lroi=[name for name in os.listdir(pathroi) if name.find('.'+typei)>0 or name.find('.'+typei1)>0 or name.find('.'+typei2)>0]            
             for s in lroi:
-                numslice=rsliceNum(s,'_','.'+typei)
-                if numslice <0:
-                    numslice=rsliceNum(s,'_','.'+typei1)
-                    if numslice <0:
-                        numslice=rsliceNum(s,'_','.'+typei2)
+
+                numslice=rsliceNum(s,'_','.'+typei1)
+
                     
                 img=cv2.imread(os.path.join(pathroi,s),0)
-
                 img=cv2.resize(img,(dimtabx,dimtabx),interpolation=cv2.INTER_LINEAR)
+#                tabrcb=tabroi[numslice].copy()
+                
+                
                 np.putmask(tabroi[numslice], img > 0, 0)
+#                tabrca=tabroi[numslice].copy()
+#                if numslice==125 and pat=='reticulation':
+#                    cv2.imwrite('b.bmp',normi(tabrca))
+#                    cv2.imwrite('c.bmp',img)
+#                    cv2.imwrite('a.bmp',normi(tabrcb))
+#                    cv2.imwrite('d.bmp',normi(20*tabrca+img))
                 np.putmask(img, img > 0, classif[pat]+1)
                 tablung=np.copy(tabscanLung[numslice])
                 np.putmask(tablung,tablung>0,255)                      
                 img=np.bitwise_and(tablung, img)  
                 tabroi[numslice]+=img
+#                if numslice==125 and pat=='reticulation':
+#                    print img.max()
+#                    print classif[pat]
+#                    tabrc=tabroi[numslice].copy()
+#                    np.putmask(tabrc,tabrc!=5,0)
+#                    np.putmask(tabrc,tabrc==5,100)
+#                    
+#                    cv2.imshow(pat+'tabrcb',normi(tabrcb))
+#                    cv2.imshow(pat+'tabrca',normi(tabrca))
+#                    cv2.imshow(pat+'img',normi(img))
+#                    cv2.imshow(pat+'tab',normi(tabroi[numslice]))
+#                    cv2.imshow(pat+'tabrc',normi(tabrc))
                
                 if numslice not in slnroi:
                     slnroi.append(numslice)  
@@ -1045,6 +1062,13 @@ def generoi(dirf,tabroi,dimtabx,dimtaby,slnroi,tabscanName,dirroit,tabscanroi,ta
         tablung=np.bitwise_and(tablung, tabxn)
         np.putmask(tablung,tablung>0,classif['healthy']+1)        
         tabroi[numslice]=np.bitwise_or(tabxorig,tablung)
+#        if numslice==125:
+#            tabrc=tabroi[numslice].copy()
+#            np.putmask(tabrc,tabrc!=6,0)
+#            np.putmask(tabrc,tabrc==6,100)
+#            
+#            cv2.imshow('tab',normi(tabroi[numslice]))
+#            cv2.imshow('tab7',tabrc)
         
 
     slnroi.sort()
@@ -1209,22 +1233,18 @@ def predictrun(indata,path_patient):
         
             if centerHU1==centerHU and limitHU1==limitHU and not(ForceGenerate):
                 print 'no need to regenerate'
-                datacross=pickle.load(open( os.path.join(path_data_write,'datacrosss'), "rb" ))
-                slnt= datacross[0]
-                dimtabx=datacross[1]
-#                dimtaby=datacross[2]
-                slicepitch=datacross[3]
-                lissln=datacross[4]
-                
                 tabscanScan=pickle.load( open(os.path.join(path_data_write,'tabscanScans'), "rb" ))
                 tabscanName=pickle.load( open(os.path.join(path_data_write,'tabscanNames'), "rb" ))
-                volumeroi=pickle.load( open(os.path.join(path_data_write,'volumerois'), "rb" ))
                 tabscanroi=pickle.load( open(os.path.join(path_data_write,'tabscanrois'), "rb" ))
                 tabscanLung=pickle.load( open(os.path.join(path_data_write,'tabscanLungs'), "rb" ))
                 tabrange=pickle.load( open(os.path.join(path_data_write,'tabranges'), "rb" ))
-                tabroi=pickle.load( open(os.path.join(path_data_write,'tabrois'), "rb" ))
-                slnroi=pickle.load( open(os.path.join(path_data_write,'slnrois'), "rb" ))
- 
+                datacross=pickle.load( open(os.path.join(path_data_write,'datacrosss'), "rb" ))
+
+                slnt=datacross[0]
+                dimtabx=datacross[1]
+                lissln=datacross[4]
+                slicepitch=datacross[3]
+
                 print 'end load'
             else:
                 print 'generate'
@@ -1232,33 +1252,33 @@ def predictrun(indata,path_patient):
                 tabscanScan,slnt,dimtabx,slicepitch,lissln,tabscanroi,tabscanName=genebmp(dirf,
                         source,nosource, centerHU, limitHU,tabscanName,tabscanroi)
                 tabscanLung,tabrange=genebmplung(dirf,lungmaski,slnt,dimtabx,dimtabx,tabscanScan,lissln,tabscanName)
-
-                slnroi=[]
-                tabroi=np.zeros((slnt,dimtabx,dimtabx), np.uint8) 
-                tabroi,volumeroi,slnroi=generoi(dirf,tabroi,dimtabx,dimtabx,slnroi,
-                                            tabscanName,dirroi,tabscanroi,tabscanLung)
-#                return ' '
-                pickle.dump(centerHU, open(os.path.join(path_data_write,'centerHUs'), "wb" ),protocol=-1) 
-                pickle.dump(limitHU, open(os.path.join(path_data_write,'limitHUs'), "wb" ),protocol=-1) 
+                datacross=(slnt,dimtabx,dimtabx,slicepitch,lissln,setref, thrproba, thrpatch)
                 
+                pickle.dump(centerHU, open(os.path.join(path_data_write,'centerHUs'), "wb" ),protocol=-1) 
+                pickle.dump(limitHU, open(os.path.join(path_data_write,'limitHUs'), "wb" ),protocol=-1)                 
                 pickle.dump(tabscanScan, open(os.path.join(path_data_write,'tabscanScans'), "wb" ),protocol=-1) 
                 pickle.dump(tabscanroi, open(os.path.join(path_data_write,'tabscanrois'), "wb" ),protocol=-1) 
-                pickle.dump(tabscanName, open(os.path.join(path_data_write,'tabscanNames'), "wb" ),protocol=-1) 
-                pickle.dump(volumeroi, open(os.path.join(path_data_write,'volumerois'), "wb" ),protocol=-1)
+                pickle.dump(tabscanName, open(os.path.join(path_data_write,'tabscanNames'), "wb" ),protocol=-1)                
                 pickle.dump(tabscanLung, open( os.path.join(path_data_write,"tabscanLungs"), "wb" ),protocol=-1)
                 pickle.dump(tabrange, open( os.path.join(path_data_write,"tabranges"), "wb" ),protocol=-1)
-
-                pickle.dump(tabroi, open( os.path.join(path_data_write,"tabrois"), "wb" ),protocol=-1)
-                pickle.dump(slnroi, open( os.path.join(path_data_write,"slnrois"), "wb" ),protocol=-1)
-
-            
+                pickle.dump(datacross, open( os.path.join(path_data_write,'datacrosss'), "wb" ),protocol=-1)
+#            print datacross
             datacross=(slnt,dimtabx,dimtabx,slicepitch,lissln,setref, thrproba, thrpatch)
             pickle.dump(datacross, open( os.path.join(path_data_write,'datacrosss'), "wb" ),protocol=-1)
-#            pickle.dump(lungSegment, open( os.path.join(path_data_write,"lungSegment"), "wb" ),protocol=-1)
+
+            slnroi=[]
+            tabroi=np.zeros((slnt,dimtabx,dimtabx), np.uint8) 
+            tabroi,volumeroi,slnroi=generoi(dirf,tabroi,dimtabx,dimtabx,slnroi,     
+                    tabscanName,dirroi,tabscanroi,tabscanLung)
+
+#            datacross=(slnt,dimtabx,dimtabx,slicepitch,lissln,setref, thrproba, thrpatch)
+            
+            pickle.dump(volumeroi, open(os.path.join(path_data_write,'volumerois'), "wb" ),protocol=-1)
+            
+            pickle.dump(tabroi, open( os.path.join(path_data_write,"tabrois"), "wb" ),protocol=-1)
+            pickle.dump(slnroi, open( os.path.join(path_data_write,"slnrois"), "wb" ),protocol=-1)
+
             """
-            datacross= pickle.load( open( os.path.join(path_data_write,"datacross"), "rb" ))
-            tabscanScan= pickle.load( open( os.path.join(path_data_write,"tabscanScan"), "rb" ))
-            lungSegment= pickle.load( open( os.path.join(path_data_write,"lungSegment"), "rb" ))
         
             slnt=datacross[0]
             dimtabx=datacross[1]
@@ -1268,23 +1288,21 @@ def predictrun(indata,path_patient):
             setref=datacross[5]
             thrproba=datacross[6]
             thrpatch=datacross[7]
-            
-#            """
-#
-#            tabscanLung=genebmplung(dirf,lungmaski,slnt,dimtabx,dimtabx,tabscanScan,lissln)
-            
-#            subpleurmask=subpleural(dirf,tabscanLung,lissln,subErosion,'cross')
-#            pickle.dump(subpleurmask, open( os.path.join(path_data_write,"subpleurmask"), "wb" ),protocol=-1)
-            """
-            subpleurmask= pickle.load( open( os.path.join(path_data_write,"subpleurmask"), "rb" ))
+
+
             """
             regene=True
             if os.path.exists(os.path.join(path_data_write,"thrpatchs")):
                     thrpatch1= pickle.load( open( os.path.join(path_data_write,"thrpatchs"), "rb" ))
                     if thrpatch == thrpatch1:
                         if os.path.exists(os.path.join(path_data_write,"patch_list_crosss")):
-                            regene=False                            
-                            patch_list_cross= pickle.load( open( os.path.join(path_data_write,"patch_list_crosss"), "rb" ))
+                            regene=False   
+            if os.path.exists(os.path.join(path_data_write,"slnrois")):
+                    slnroi1= pickle.load( open( os.path.join(path_data_write,"slnrois"), "rb" ))
+                    if slnroi1 == slnroi:
+                        if os.path.exists(os.path.join(path_data_write,"patch_list_crosss")):
+                            regene=False   
+                            
                   
             if regene or ForceGenerate:
                 print 'regenerate patch list'
@@ -1293,6 +1311,7 @@ def predictrun(indata,path_patient):
                 pickle.dump(thrpatch, open( os.path.join(path_data_write,"thrpatchs"), "wb" ),protocol=-1)
             else:
                 print 'no need to regenerate patch list'
+                patch_list_cross= pickle.load( open( os.path.join(path_data_write,"patch_list_crosss"), "rb" ))
                 
 
             
@@ -1300,24 +1319,9 @@ def predictrun(indata,path_patient):
             proba_cross=ILDCNNpredict(patch_list_cross,modelcross)
             patch_list_cross_slice=genepatchlistslice(patch_list_cross,
                                                             proba_cross,lissln,dimtabx,dimtabx)
-#            tabMed = calcMed(tabscanLung,lissln)
 
-#            pickle.dump(proba_cross, open( os.path.join(path_data_write,"proba_cross"), "wb" ),protocol=-1)
             pickle.dump(patch_list_cross_slice, open( os.path.join(path_data_write,"patch_list_cross_slices"), "wb" ),protocol=-1)
-#            pickle.dump(patch_list_cross_slice_sub, open( os.path.join(path_data_write,"patch_list_cross_slice_sub"), "wb" ),protocol=-1)
-#            pickle.dump(tabscanLung, open( os.path.join(path_data_write,"tabscanLung"), "wb" ),protocol=-1)
-#            pickle.dump(patch_list_cross, open( os.path.join(path_data_write,"patch_list_cross"), "wb" ),protocol=-1)
-#            pickle.dump(tabMed, open( os.path.join(path_data_write,"tabMed"), "wb" ),protocol=-1)
-            """
-            proba_cross= pickle.load( open( os.path.join(path_data_write,"proba_cross"),"rb" ))
-            patch_list_cross_slice= pickle.load( open( os.path.join(path_data_write,"patch_list_cross_slice"), "rb" ))
-            patch_list_cross_slice_sub= pickle.load( open( os.path.join(path_data_write,"patch_list_cross_slice_sub"), "rb" ))
-            tabscanLung= pickle.load( open( os.path.join(path_data_write,"tabscanLung"), "rb" ))
-            patch_list_cross= pickle.load( open( os.path.join(path_data_write,"patch_list_cross"), "rb" ))
-            tabMed= pickle.load( open( os.path.join(path_data_write,"tabMed"), "rb" ))
-            """
-#            print 'patch_list_cross_slice[1]',patch_list_cross_slice[1]
- 
+
             crosscompleted=True
             pickle.dump(crosscompleted, open( os.path.join(path_data_write,"crosscompleteds"), "wb" ),protocol=-1)
 #            """

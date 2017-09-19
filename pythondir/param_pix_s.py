@@ -51,8 +51,6 @@ volelem= volelemp*pxy/1000 #in ml, to multiply by slicepitch in mm
 modelname='ILD_CNN_model.h5'
 pathjs='../static'
 
-#datacrossn='datacross'
-#datafrontn='datafront'
 path_data='data'
 path_pickle='CNNparameters'
 path_pickleArch='modelArch'

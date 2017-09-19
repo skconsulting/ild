@@ -20,7 +20,7 @@ from param_pix_s import classifc,classifdict,usedclassifdict,oldFormat
 
 from param_pix_s import maxproba,excluvisu,fidclass,rsliceNum,evaluate,evaluatef
 
-#from param_pix_s import normi
+from param_pix_s import normi
 from scorepredict import predictrun
 
 import cPickle as pickle
@@ -336,6 +336,7 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,slnt,tabro
     fscore={}
     spc={}
     npv={}
+    print usedclassif
     for pat in usedclassif:
         volroi[pat]=0
         volpat[pat]=0
@@ -362,10 +363,26 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,slnt,tabro
     predictpatu=np.bitwise_or(tabxorig,tablung)
     referencepatu= np.copy(tabroi[slicenumber])
 
-    referencepat= referencepatu.flatten() 
-            
+#    if slicenumber==125:
+#                
+#                tabrc=tabroi[slicenumber].copy()
+#                print tabrc.max()
+#                print np.unique(tabrc)
+#                np.putmask(tabrc,tabrc!=6,0)
+#                np.putmask(tabrc,tabrc==6,100)
+#                
+#                cv2.imshow('tab',normi(tabroi[slicenumber]))
+#                cv2.imwrite('a.bmp',normi(tabroi[slicenumber]))
+#                cv2.imshow('tab6',tabrc)
+
+    referencepat= referencepatu.flatten()             
     predictpat=  predictpatu.flatten() 
+#    print 'ref',np.unique(referencepat)
+#    print 'pred',np.unique(predictpat)
     cm=evaluatef(referencepat,predictpat,num_class)
+#    if slicenumber==125:
+#        print cm
+
     tagvcm(datav,cm)
     cv2.putText(datav,'%16s'%('pattern')+
                     '%8s'%('surface')+ 
@@ -698,6 +715,7 @@ def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
     for slroi in range(0,slntroi):
 #    for slicenumber in (143,144):
         slicenumber=slnroi[slroi]
+
         if tabroi[slicenumber].max()>0:
             imgpatch=np.zeros((dx,dy), np.uint8)
             for ll in patch_list_cross_slice[slicenumber]:
@@ -735,7 +753,9 @@ def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
             np.putmask(tablung,tablung>0,classif['healthy']+1)
      
             predictpatu[slroi]=np.bitwise_or(tabxorig,tablung)
-            referencepatu[slroi]=np.copy(tabroi[slicenumber])          
+            referencepatu[slroi]=np.copy(tabroi[slicenumber])
+           
+        
             
             referencepat= referencepatu[slroi].flatten()
             predictpat=  predictpatu[slroi].flatten() 
@@ -812,11 +832,7 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,tabroi,
     image0=os.path.join(pdirk,list_image[slnroi[0]])
     img = cv2.imread(image0,1)
     img=cv2.resize(img,(dimtaby,dimtabx),interpolation=cv2.INTER_LINEAR)
-#        cv2.imshow('cont',img)
-#        cv2.waitKey(0)
-#        cv2.destroyAllWindows()
-    
-    
+ 
     cv2.namedWindow('imagepredict',cv2.WINDOW_NORMAL)
     cv2.namedWindow("Sliderfi",cv2.WINDOW_NORMAL)
     cv2.namedWindow("datavisu",cv2.WINDOW_AUTOSIZE)
@@ -1035,10 +1051,11 @@ def visuarun(indata,path_patient):
     else:
         datarep= pickle.load( open( os.path.join(path_data_dir,"datacrosss"), "rb" ))
         setref=datarep[5]
+#        print setref
 
     classif=classifdict[setref]
     usedclassif=usedclassifdict[setref]
-#    print usedclassif
+#    print usedclassif,setref
     viewstyle=indata['viewstyle']
 
 #    pathhtml=os.path.join(patient_path_complet,htmldir)
