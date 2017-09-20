@@ -315,7 +315,7 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,slnt,tabro
             if mprobai >th and classlabel not in excluvisu:
 
                 if classlabel not in listlabel:
-                    listlabel.append(listlabel)
+                    listlabel.append(classlabel)
          
                 cv2.rectangle(imgpatch,(xpat,ypat),(xpat+dimpavx-1,ypat+dimpavy-1),classif[classlabel]+1,-1)
 

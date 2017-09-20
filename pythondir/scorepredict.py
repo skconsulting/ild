@@ -1018,39 +1018,16 @@ def generoi(dirf,tabroi,dimtabx,dimtaby,slnroi,tabscanName,dirroit,tabscanroi,ta
             lroi=[name for name in os.listdir(pathroi) if name.find('.'+typei)>0 or name.find('.'+typei1)>0 or name.find('.'+typei2)>0]            
             for s in lroi:
 
-                numslice=rsliceNum(s,'_','.'+typei1)
-
-                    
+                numslice=rsliceNum(s,'_','.'+typei1)                    
                 img=cv2.imread(os.path.join(pathroi,s),0)
-                img=cv2.resize(img,(dimtabx,dimtabx),interpolation=cv2.INTER_LINEAR)
-#                tabrcb=tabroi[numslice].copy()
-                
-                
+                img=cv2.resize(img,(dimtabx,dimtabx),interpolation=cv2.INTER_LINEAR)                
                 np.putmask(tabroi[numslice], img > 0, 0)
-#                tabrca=tabroi[numslice].copy()
-#                if numslice==125 and pat=='reticulation':
-#                    cv2.imwrite('b.bmp',normi(tabrca))
-#                    cv2.imwrite('c.bmp',img)
-#                    cv2.imwrite('a.bmp',normi(tabrcb))
-#                    cv2.imwrite('d.bmp',normi(20*tabrca+img))
                 np.putmask(img, img > 0, classif[pat]+1)
                 tablung=np.copy(tabscanLung[numslice])
                 np.putmask(tablung,tablung>0,255)                      
                 img=np.bitwise_and(tablung, img)  
                 tabroi[numslice]+=img
-#                if numslice==125 and pat=='reticulation':
-#                    print img.max()
-#                    print classif[pat]
-#                    tabrc=tabroi[numslice].copy()
-#                    np.putmask(tabrc,tabrc!=5,0)
-#                    np.putmask(tabrc,tabrc==5,100)
-#                    
-#                    cv2.imshow(pat+'tabrcb',normi(tabrcb))
-#                    cv2.imshow(pat+'tabrca',normi(tabrca))
-#                    cv2.imshow(pat+'img',normi(img))
-#                    cv2.imshow(pat+'tab',normi(tabroi[numslice]))
-#                    cv2.imshow(pat+'tabrc',normi(tabrc))
-               
+              
                 if numslice not in slnroi:
                     slnroi.append(numslice)  
     for numslice in slnroi:
@@ -1061,15 +1038,7 @@ def generoi(dirf,tabroi,dimtabx,dimtaby,slnroi,tabscanName,dirroit,tabscanroi,ta
         tabxn=np.bitwise_not(mask)       
         tablung=np.bitwise_and(tablung, tabxn)
         np.putmask(tablung,tablung>0,classif['healthy']+1)        
-        tabroi[numslice]=np.bitwise_or(tabxorig,tablung)
-#        if numslice==125:
-#            tabrc=tabroi[numslice].copy()
-#            np.putmask(tabrc,tabrc!=6,0)
-#            np.putmask(tabrc,tabrc==6,100)
-#            
-#            cv2.imshow('tab',normi(tabroi[numslice]))
-#            cv2.imshow('tab7',tabrc)
-        
+        tabroi[numslice]=np.bitwise_or(tabxorig,tablung)        
 
     slnroi.sort()
     volumeroi={}
@@ -1097,7 +1066,7 @@ def generoi(dirf,tabroi,dimtabx,dimtaby,slnroi,tabscanName,dirroit,tabscanroi,ta
                                        
                 else:
                     volumeroi[numslice][pat]=0                    
-                      
+#    print volumeroi[12]                   
     return tabroi,volumeroi,slnroi
         
 
@@ -1141,6 +1110,7 @@ def predictrun(indata,path_patient):
             
         classif=classifdict[setref]
         usedclassif=usedclassifdict[setref]
+
 
         picklein_file_frontt=indata['picklein_file_front']
 #        subErosion=indata['subErosion']

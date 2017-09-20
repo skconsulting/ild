@@ -162,6 +162,34 @@ classifdict={}
 usedclassifdict={}
 derivedpatdict={}
 
+##CHU
+classifdict['CHU'] ={       
+        'consolidation':0,
+        'HC':1,
+        'ground_glass':2,
+        'healthy':3,
+        'reticulation':4,
+        'bronchiectasis':5,
+        'lung':6
+        
+        }
+usedclassifdict['CHU'] = [
+        'consolidation',
+        'HC',
+        'ground_glass',
+        'healthy',
+        'reticulation',
+        'bronchiectasis'
+        ]
+derivedpatdict['CHU']=[
+        'HCpret',
+        'HCpbro',
+        'GGpbro',
+        'GGpret',
+        'bropret'
+        ]
+
+
 ##set0
 classifdict['set0'] ={
         'consolidation':0,
