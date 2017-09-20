@@ -145,6 +145,7 @@ def tagviewn(fig,label,surface,surftot,roi,tl,precision,recall,fscore,spc,npv):
     
     col=classifc[label]
     labnow=classif[label]
+
     
     deltax=20
     deltay=30+(11*labnow)
@@ -221,7 +222,7 @@ def cals(cm,pat):
     tp=cm[numpat][numpat]
     fp=cm[:,numpat].sum()-tp
     fn=cm[numpat].sum()-tp
-    tn=cm.sum()-fp-fn  
+    tn=cm.sum()-fp-fn-tp
     if tp+fp>0:
         prec=1.0*tp/(tp+fp)
     else:
@@ -288,7 +289,7 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,slnt,tabro
 
             if mprobai >th and classlabel not in excluvisu:
                 if classlabel not in listlabel:
-                    listlabel.append(listlabel)
+                    listlabel.append(classlabel)
                 
                 cv2.rectangle(imgpatch,(xpat,ypat),(xpat+dimpavx-1,ypat+dimpavy-1),classif[classlabel]+1,-1)
                 if va[classlabel]==True:
@@ -362,14 +363,15 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,slnt,tabro
         spcAverage=0
         npvAverage=0
         numberp=0
+
         for pat in usedclassif:           
             precision[pat],recall[pat],fscore[pat], spc[pat],npv[pat],volpat[pat],volroi[pat]=cals(cm,pat)
-    
+            
             if pat in listlabel:            
                 tl=True
             else:
                 tl=False
-    
+
             precisioni=int(round(precision[pat]*100,0))
             recalli=int(round(recall[pat]*100,0))
             fscorei=int(round(fscore[pat]*100,0))
@@ -1547,7 +1549,8 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,tabroi,
          limage=[name for name in os.listdir(pdirk) if name.find('.'+typei2,1)>0 ]
          extensionimage='.'+typei2
 #    print len(limage), slnt
-    if ((ti =="cross view" or ti =="merge view"  or ti =='front projected view' ) and len(limage)+1==slnt) or ti =="front view":
+    if ((ti =="cross view" or ti =="merge view"  or ti =='front projected view' ) and 
+             len(limage)+1==slnt) or ti =="front view":
 
         for iimage in limage:
 
@@ -1739,7 +1742,6 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,tabroi,
         cv2.destroyWindow("imagepredict")
         cv2.destroyWindow("Sliderfi")
         cv2.destroyWindow("datavisu")
-
         return ''
     else:
         print 'error in the number of scan images compared to dicom numbering'
