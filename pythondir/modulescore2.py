@@ -283,16 +283,16 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,
    
     th=t/100.0
 #    numl=0
-    listlabel={}
+    listlabel=[]
 
     surftot=np.count_nonzero(tabscanLung[slicenumber])
 
 
     surftotf= surftot*surfelem
     surftot='surface totale :'+str(int(round(surftotf,0)))+'cm2'
-    volpat={}
-    for pat in usedclassif:
-        volpat[pat]=np.zeros((dy,dx), np.uint8)
+
+#    for pat in usedclassif:
+#        volpat[pat]=np.zeros((dy,dx), np.uint8)
 
 
     imi=  patch_list_cross_slice[xtrains[slicenumber]]
@@ -311,7 +311,7 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,
     imclassc = np.expand_dims(imclass,2)
 
     imclassc=np.repeat(imclassc,3,axis=2) 
-    patlist=[]
+
     
     for key,value in classif.items():       
         if key not in excluvisu :
@@ -327,14 +327,16 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,
                 np.putmask(imgnp,imgnp!=bl,black)
     
                 np.putmask(imgnp,imgnp==bl,blc)
-                imgn=cv2.add(imgn,imgnp)
-                imgngray = cv2.cvtColor(imgnp,cv2.COLOR_BGR2GRAY)
-                np.putmask(imgngray,imgngray>0,1)
+                if imgnp.max()>0:
+                    imgn=cv2.add(imgn,imgnp)
+                    if key not in listlabel:
+                        listlabel.append(key)
+                    imgngray = cv2.cvtColor(imgnp,cv2.COLOR_BGR2GRAY)
+                    np.putmask(imgngray,imgngray>0,1)
     #            area= imgngray.sum()* surfelemp /100
     #            print key, imgn.min(),imgn.max()
-                volpat[key]=imgngray
-                if imgn.max()>0:
-                    patlist.append(key)
+#                    volpat[key]=imgngray
+
 
     volroi={}
     volpat={}
@@ -365,7 +367,7 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,
     tablung=np.bitwise_and(tablung, tabxn)
     np.putmask(tablung,tablung>0,classif['healthy'])
     
-    volpat['healthy']=np.copy(tablung)
+#    volpat['healthy']=np.count_nonzero(tablung)
      
     predictpatu=np.bitwise_or(tabxorig,tablung)
     referencepatu= np.copy(tabroi[slicenumber])

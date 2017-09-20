@@ -1324,7 +1324,8 @@ def predictrun(indata,path_patient):
                 pickle.dump(tabroi, open( os.path.join(path_data_write,"tabrois2"), "wb" ),protocol=-1)
                 pickle.dump(slnroi, open( os.path.join(path_data_write,"slnrois2"), "wb" ),protocol=-1)
                 pickle.dump(datacross, open( os.path.join(path_data_write,'datacrosss2'), "wb" ),protocol=-1)
-
+            datacross=(slnt,slicepitch,lissln,setref, thrproba,PixelSpacing)
+            pickle.dump(datacross, open( os.path.join(path_data_write,'datacrosss2'), "wb" ),protocol=-1)
             regene=True
             if os.path.exists(os.path.join(path_data_write,"X_predicts2")):
                     regene=False                            
