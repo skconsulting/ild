@@ -141,11 +141,12 @@ def genebmp(fn,sou,nosource,centerHU, limitHU,tabscanroi):
         
         endnumslice=l.find('.dcm')
         imgcoreScan=l[0:endnumslice]+'_'+str(slicenumber)+'.'+typei1
-        np.putmask(imgresize,imgresize<lbHU,lbHU)
-        np.putmask(imgresize,imgresize>lhHU,lhHU)
+        
         tt=(imgcoreScan,imgresize)
         
         tabscan[slicenumber]=tt
+        np.putmask(imgresize,imgresize<lbHU,lbHU)
+        np.putmask(imgresize,imgresize>lhHU,lhHU)
 #        np.putmask(imgresize,imgresize<lbHU,lbHU)
 #        np.putmask(imgresize,imgresize>lhHU,lhHU)
         imtowrite=normi(imgresize)

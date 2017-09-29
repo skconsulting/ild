@@ -296,11 +296,17 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,
 
 
     imi=  patch_list_cross_slice[xtrains[slicenumber]]
-#    print imi.shape
     imclass0=np.argmax(imi, axis=2).astype(np.uint8)
 #    cv2.imwrite('a.bmp',normi(imclass0))
 #    print imclass0.shape,imclass0.min(),imclass0.max()
     imamax=np.amax(imi, axis=2)
+#    print imamax.shape
+    tablung1=np.copy(tabscanLung[slicenumber])
+#    print tablung1.shape
+    
+    np.putmask(tablung1,tablung1>0,255)
+#
+    imclass0=np.bitwise_and(tablung1, imclass0) 
 
     np.putmask(imamax,imamax>=th,255)
     np.putmask(imamax,imamax<th,0)

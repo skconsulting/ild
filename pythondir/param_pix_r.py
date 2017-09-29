@@ -26,7 +26,7 @@ setdata='set0'
 imageDepth=255
 dimtabx=512
 dimtaby=512
-dimtabmenu=150
+dimtabmenu=190
 
 source_name='source'
 roi_name='sroi'

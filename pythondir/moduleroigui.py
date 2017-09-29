@@ -64,23 +64,7 @@ def roirun(indata,path_patient,lungask):
     messageout=openfichierroi(listHug,path_patient,centerHU,limitHU,lungask,ForceGenerate)
     return messageout
 
-#def roirunlung(indata,path_patient):
-#    listHug=indata['ll']
-#    centerHU=indata['centerHU'] 
-#    limitHU=indata['limitHU'] 
 #
-#    pos=str(listHug).find(' ROI!:')
-#    if pos >0:
-#        listHug=str(listHug)[3:pos]
-#    else:
-#        pos=str(listHug).find(' noROI!')
-#        listHug=str(listHug)[3:pos]
-##    print 'listhug',listHug
-##    print 'indata',indata
-##    print 'path_patient',path_patient
-#    messageout=openfichierroilung(listHug,path_patient,centerHU,limitHU)
-#    return messageout
-
 def checkvolumegene(indata,path_patient):
     listHug=indata['ll']
 #    centerHU=indata['centerHU'] 

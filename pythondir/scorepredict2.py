@@ -186,7 +186,7 @@ def segment_lung_mask(image, fill_lung_structures=True):
 
     # not actually binary, but 1 and 2.
     # 0 is treated as background, which we do not want
-    binary_image = np.array(image > -350, dtype=np.int8)+1#init 320
+    binary_image = np.array(image > -350, dtype=np.int8)+1#init 320, or 350
 #    binary_image = clear_border(binary_image)
     labels = measure.label(binary_image)
 
@@ -291,9 +291,11 @@ def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan,listsln,tabscanName
         for img in listbmp:
             slicenumber= rsliceNum(img,'_','.'+typei1)
             imr=cv2.imread(os.path.join(fmbmpbmp,img),0) 
-            imr=cv2.resize(imr,(dimtabx,dimtaby),interpolation=cv2.INTER_LINEAR)
-            np.putmask(imr,imr>0,classif['lung']+1)
-            tabscan[slicenumber]=imr
+            if imr.max()>0: 
+                imr=cv2.resize(imr,(dimtabx,dimtaby),interpolation=cv2.INTER_LINEAR)
+                np.putmask(imr,imr>0,classif['lung']+1)
+           
+                tabscan[slicenumber]=imr
     
     if len(listdcm)>0:  
         print 'lung scan exists in dcm'           
@@ -321,8 +323,10 @@ def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan,listsln,tabscanName
             segmented_lungs_fill = segment_lung_mask(tabscanScan, True)
 #            print segmented_lungs_fill.shape
             for i in listsln:
-
+                
                 tabscan1[i]=morph(segmented_lungs_fill[i],13)
+#                if i ==200:
+#                    cv2.imshow(str(i),normi(tabscan1[i]))
 
                 imgcoreScan=tabscanName[i]
                 bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
@@ -1210,7 +1214,7 @@ def predictrun(indata,path_patient):
             
         for f in listHug:
             print '------------------'
-            print 'work on patient',f,' set:',setref,'thrproba',thrproba
+            print 'work on patient',f,' set:',setref,picklein_filet,'thrproba:',thrproba
             patch_list_cross_slice={}
             
 #            listelabelfinal={}
@@ -1224,9 +1228,6 @@ def predictrun(indata,path_patient):
                 if not os.path.exists(wridirsource):
                     os.mkdir(wridirsource)
            
-#            tabMed = {}  # dictionary with position of median between lung
-    
-#            """
             path_data_write=os.path.join(dirf,path_data)
             
 #            remove_folder(path_data_write)
@@ -1242,10 +1243,7 @@ def predictrun(indata,path_patient):
             jpegpathdir=os.path.join(dirf,jpegpadirm)
             remove_folder(jpegpathdir)
             os.mkdir(jpegpathdir)
-#            """
-
-#            path_data_writefile=os.path.join(path_data_write,volumeroifilep)
-                       
+#            """                     
             fmbmp=os.path.join(dirf,lungmask1)
             if os.path.exists(fmbmp):
                 lungmaski=lungmask1
@@ -1298,18 +1296,14 @@ def predictrun(indata,path_patient):
                 print 'end load'
                 
             else:
-                print 'generate'
-                
+                print 'generate'               
                 tabscanScan,slnt,slicepitch,lissln,tabscanroi,tabscanName,PixelSpacing=genebmp(dirf,
                         source,nosource, centerHU, limitHU,tabscanName,tabscanroi,dimtabx,dimtaby)
                 tabscanLung,tabrange=genebmplung(dirf,lungmaski,slnt,dimtabx,dimtabx,tabscanScan,lissln,tabscanName)
-
                 slnroi=[]
                 tabroi=np.zeros((slnt,dimtaby,dimtabx), np.uint8) 
                 tabroi,volumeroi,slnroi=generoi(dirf,tabroi,dimtabx,dimtabx,slnroi,
-                                            tabscanName,dirroi,tabscanroi,tabscanLung,PixelSpacing)
-
-                
+                                            tabscanName,dirroi,tabscanroi,tabscanLung,PixelSpacing)                
                 datacross=(slnt,slicepitch,lissln,setref, thrproba,PixelSpacing)
                 pickle.dump(centerHU, open(os.path.join(path_data_write,'centerHUs2'), "wb" ),protocol=-1)
                 pickle.dump(limitHU, open(os.path.join(path_data_write,'limitHUs2'), "wb" ),protocol=-1) 
@@ -1326,18 +1320,29 @@ def predictrun(indata,path_patient):
                 pickle.dump(datacross, open( os.path.join(path_data_write,'datacrosss2'), "wb" ),protocol=-1)
             datacross=(slnt,slicepitch,lissln,setref, thrproba,PixelSpacing)
             pickle.dump(datacross, open( os.path.join(path_data_write,'datacrosss2'), "wb" ),protocol=-1)
+            
             regene=True
             if os.path.exists(os.path.join(path_data_write,"X_predicts2")):
-                    regene=False                            
-            
+                try:
+                    picklein_filet2=pickle.load(open( os.path.join(path_data_write,"picklein_filets2"), "rb" ))
+                    if   picklein_filet2==picklein_filet:                    
+                        regene=False 
+                    else:
+                        regene=True 
+                except:
+                    regene=True
+                
+                                      
 
             if regene or ForceGenerate:
                 print 'regenerate patch list'
+                
                 X_predict,xtrains=preparscan(tabscanScan,tabscanLung,slnroi)
                 proba_cross=ILDCNNpredict(X_predict,modelcross)
                 pickle.dump(X_predict, open( os.path.join(path_data_write,"X_predicts2"), "wb" ),protocol=-1)
                 pickle.dump(proba_cross, open( os.path.join(path_data_write,"proba_crosss2"), "wb" ),protocol=-1)
                 pickle.dump(xtrains, open( os.path.join(path_data_write,"xtrainss2"), "wb" ),protocol=-1)
+                pickle.dump(picklein_filet, open( os.path.join(path_data_write,'picklein_filets2'), "wb" ),protocol=-1)
 
             else:
                 print 'no need to regenerate scan data'
@@ -1345,7 +1350,7 @@ def predictrun(indata,path_patient):
                 X_predict=pickle.load(open( os.path.join(path_data_write,"X_predicts2"), "rb" ))
                 xtrains=pickle.load(open( os.path.join(path_data_write,"xtrainss2"), "rb" ))
                 
-            pickle.dump(proba_cross, open( os.path.join(path_data_write,"proba_crosss2"), "wb" ),protocol=-1)
+#                pickle.dump(proba_cross, open( os.path.join(path_data_write,"proba_crosss2"), "wb" ),protocol=-1)
  
             crosscompleted=True
             pickle.dump(crosscompleted, open( os.path.join(path_data_write,"crosscompleteds2"), "wb" ),protocol=-1)
@@ -1393,7 +1398,6 @@ def predictrun(indata,path_patient):
                 else:
                     print 'no need to regenerate patch list'
                 
-                modelfront=modelCompilation('front',picklein_file,picklein_file_front,setref)
 
                 proba_front=ILDCNNpredict(patch_list_front,modelfront)
                 

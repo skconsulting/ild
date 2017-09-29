@@ -51,7 +51,6 @@ pxy=float(dimpavx*dimpavy) #surface in pixel
 #volelemp=avgPixelSpacing*avgPixelSpacing*avgPixelSpacing # for 1 pixel
 #volelem= volelemp*pxy/1000 #in ml, to multiply by slicepitch in mm
 
-modelname='ILD_CNN_model.h5'
 pathjs='../static'
 
 #datacrossn='datacross'
@@ -198,6 +197,41 @@ usedclassifdict['set0'] = [
         'GGpret'
         
         ]
+derivedpatdict['sk0']=[
+        'HCpret',
+        'HCpbro',
+        'GGpbro',
+        'GGpret',
+        'bropret'
+        ]
+
+classifdict['sk0'] ={        
+        'back_ground':0,
+        'healthy':1,    
+        'ground_glass':2,
+        'HC':3,
+        'reticulation':4,
+        'bronchiectasis':5,
+        'cysts':6,
+         'consolidation':7,
+        'micronodules':8,
+        'air_trapping':9,
+        'GGpret':10,
+        'lung':11
+        }
+usedclassifdict['sk0'] = [
+        'healthy',   
+        'ground_glass',
+        'HC',
+        'reticulation',
+        'bronchiectasis',
+        'cysts',
+        'consolidation',
+        'micronodules',
+        'air_trapping',
+        'GGpret'
+        
+        ]
 derivedpatdict['set0']=[
         'HCpret',
         'HCpbro',
@@ -205,6 +239,8 @@ derivedpatdict['set0']=[
         'GGpret',
         'bropret'
         ]
+
+##set1
 
 ##set1
 
