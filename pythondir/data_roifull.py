@@ -14,7 +14,7 @@ include generation per pattern
 from param_pix import cwdtop,bmpname,lungmask,lungmask1,lungmaskbmp,image_rows,image_cols,typei,typei1
 from param_pix import sroi,sourcedcm
 from param_pix import white
-from param_pix import remove_folder,normi,rsliceNum
+from param_pix import remove_folder,normi,rsliceNum,norm
 from param_pix import classifc,classif,usedclassif
 
 import cPickle as pickle
@@ -23,24 +23,33 @@ import dicom
 import numpy as np
 import os
 import datetime
+import sys
+from skimage import measure
 
-
-
+#path for images source
+nametop='SOURCE_IMAGE'
 nameHug='HUG'
-#nameHug='CHU'
+#nameHug='CHU2'
+#nameHug='REFVAL'
 subHUG='ILD6'
 #subHUG='ILD_TXT'
-#subHUG='UIP0'
+#subHUG='ILDS14740'
+
+#subHUG='UIP6'
 #subHUG='UIP'
 
-#path for image dir
+#path for image dir for CNN
+
 imagedir='IMAGEDIR'
 toppatch= 'TOPROI'
-extendir='essai'
+extendir='1'
+#extendir='3'
 
 ###############################################################
 
-path_HUG=os.path.join(cwdtop,nameHug)
+path_TOP=os.path.join(cwdtop,nametop)
+path_HUG=os.path.join(path_TOP,nameHug)
+
 path_IMAGE=os.path.join(cwdtop,imagedir)
 if not os.path.exists(path_IMAGE):
     os.mkdir(path_IMAGE)
@@ -68,25 +77,122 @@ if not os.path.isdir(roipicklepathdir):
 
 def genepara(fileList,namedir):
     print 'gene parametres'
+    listsln=[]
     fileList =[name for name in  os.listdir(namedir) if ".dcm" in name.lower()]
     slnt=0
     for filename in fileList:
         FilesDCM =(os.path.join(namedir,filename))
-        RefDs = dicom.read_file(FilesDCM)
+        RefDs = dicom.read_file(FilesDCM,force=True)
         scanNumber=int(RefDs.InstanceNumber)
+        listsln.append(scanNumber)
         if scanNumber>slnt:
             slnt=scanNumber
     print 'number of slices', slnt
     slnt=slnt+1
-    return slnt
+    return slnt,listsln
 
 def tagviews(tab,text,x,y):
     """write simple text in image """
     font = cv2.FONT_HERSHEY_SIMPLEX
     viseg=cv2.putText(tab,text,(x, y), font,0.3,white,1)
     return viseg
+
+def largest_label_volume(im, bg=-1):
+    vals, counts = np.unique(im, return_counts=True)
+
+    counts = counts[vals != bg]
+    vals = vals[vals != bg]
+
+    if len(counts) > 0:
+        return vals[np.argmax(counts)]
+    else:
+        return None
+
+
+
+def segment_lung_mask(image, fill_lung_structures=True):
+
+    # not actually binary, but 1 and 2.
+    # 0 is treated as background, which we do not want
+    binary_image = np.array(image > -350, dtype=np.int8)+1#init 320
+#    binary_image = clear_border(binary_image)
+    labels = measure.label(binary_image)
+
+    # Pick the pixel in the very corner to determine which label is air.
+    #   Improvement: Pick multiple background labels from around the patient
+    #   More resistant to "trays" on which the patient lays cutting the air
+    #   around the person in half
+#    print labels.shape[0],labels.shape[1],labels.shape[2]
+#    background_label = labels[0,0,0]
+#    bg={} 
+    ls0=labels.shape[0]-1
+    ls1=labels.shape[1]-1
+    ls2=labels.shape[2]-1
+    for i in range (0,8):
+#        print  'i:',i
+#        print (i/4)%2, (i/2)%2, i%2
+        for j in range (1,3):
+#            print 'j:',j
+#            print labels[(i/4)%2*ls0,(i/2)%2*ls1,i%2*ls2/j]
+#            print (i/4)%2*ls0,(i/2)%2*ls1,i%2*ls2/j
+#            print (i/4)%2*ls0,(i/2)%2*ls1/j,i%2*ls2
+#            print (i/4)%2*ls0/j,(i/2)%2*ls1,i%2*ls2
+            background_label=labels[(i/4)%2*ls0,(i/2)%2*ls1,i%2*ls2/j]
+            binary_image[background_label == labels] = 2
+            background_label=labels[(i/4)%2*ls0,(i/2)%2*ls1/j,i%2*ls2]
+            binary_image[background_label == labels] = 2
+            background_label=labels[(i/4)%2*ls0/j,(i/2)%2*ls1,i%2*ls2]
+            binary_image[background_label == labels] = 2  
+#    for i in range (0,8):
+#        binary_image[background_label == labels] = 2
+#        background_label = labels[labels.shape[0]-1,labels.shape[1]-1,labels.shape[2]-1]
+
+    #Fill the air around the person
+#    binary_image[background_label == labels] = 2
+
+
+    # Method of filling the lung structures (that is superior to something like
+    # morphological closing)
+    if fill_lung_structures:
+        # For every slice we determine the largest solid structure
+        for i, axial_slice in enumerate(binary_image):
+            axial_slice = axial_slice - 1
+            labeling = measure.label(axial_slice)
+            l_max = largest_label_volume(labeling, bg=0)
+
+            if l_max is not None: #This slice contains some lung
+                binary_image[i][labeling != l_max] = 1
+
+
+    binary_image -= 1 #Make the image actual binary
+    binary_image = 1-binary_image # Invert it, lungs are now 1
+
+    # Remove other air pockets insided body
+    labels = measure.label(binary_image, background=0)
+    l_max = largest_label_volume(labels, bg=0)
+    if l_max is not None: # There are air pockets
+        binary_image[labels != l_max] = 0
+    return binary_image
+
+def morph(imgt,k):
+
+    img=imgt.astype('uint8')
+    img[img>0]=100
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(k,k))
+#    kernel = cv2.getStructuringElement(cv2.MORPH_RECT,(k,k))
+    img = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel)
+    img = cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel)  # <- to remove speckles...
+    img = cv2.morphologyEx(img, cv2.MORPH_DILATE, kernel)
+    img = cv2.morphologyEx(img, cv2.MORPH_DILATE, kernel)
+#    img = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel)
+    img = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel)
+    img = cv2.morphologyEx(img, cv2.MORPH_ERODE, kernel)
+    img = cv2.morphologyEx(img, cv2.MORPH_ERODE, kernel)
+    return img
+
+
  
-def genebmp(dirName,fileList,slnt,hug):
+def genebmp(dirName,fileList,slnt,hug,tabscanName):
     """generate patches from dicom files and sroi"""
     print ('generate  bmp files from dicom files in :',f)
     (top,tail)=os.path.split(dirName)
@@ -94,13 +200,9 @@ def genebmp(dirName,fileList,slnt,hug):
     remove_folder(remdir)
     remdir = os.path.join(dirName, 'bmp')
     remove_folder(remdir)
-#    global constPixelSpacing, dimtabx,dimtaby
-    #directory for patches
-    
+
     if hug:
-        lung_dir = os.path.join(dirName, lungmask1)
-        if not os.path.exists(lung_dir):
-            lung_dir = os.path.join(dirName, lungmask)
+
         bmp_dir = os.path.join(dirName, sourcedcm)
         if not os.path.exists(bmp_dir):
             os.mkdir(bmp_dir)        
@@ -110,9 +212,6 @@ def genebmp(dirName,fileList,slnt,hug):
         
     else:
         (top,tail)=os.path.split(dirName)
-        lung_dir = os.path.join(top, lungmask1)
-        if not os.path.exists(lung_dir):
-            lung_dir = os.path.join(top, lungmask)
         bmp_dir = os.path.join(top, sourcedcm)
         if not os.path.exists(bmp_dir):
             os.mkdir(bmp_dir)        
@@ -120,32 +219,22 @@ def genebmp(dirName,fileList,slnt,hug):
         remove_folder(bmp_dir)
         os.mkdir(bmp_dir)
         
-    lung_bmp_dir = os.path.join(lung_dir,lungmaskbmp)
-    remove_folder(lung_bmp_dir)
-    os.mkdir(lung_bmp_dir)
-    lung_bmp_dirbmp = os.path.join(lung_dir,bmpname)
-    remove_folder(lung_bmp_dirbmp)
-    
-    lunglist = [name for name in os.listdir(lung_dir) if ".dcm" in name.lower()]
-
     tabscan=np.zeros((slnt,image_rows,image_cols),np.int16)
-    tabslung=np.zeros((slnt,image_rows,image_cols),np.uint8)
+
     tabsroi=np.zeros((slnt,image_rows,image_cols,3),np.uint8)
-#    os.listdir(lung_dir)
     for filename in fileList:
-#            print(filename)
+
             FilesDCM =(os.path.join(dirName,filename))
-            RefDs = dicom.read_file(FilesDCM)
+            RefDs = dicom.read_file(FilesDCM,force=True)
             dsr= RefDs.pixel_array
             dsr=dsr.astype('int16')
 
             scanNumber=int(RefDs.InstanceNumber)
             endnumslice=filename.find('.dcm')
             imgcoredeb=filename[0:endnumslice]+'_'+str(scanNumber)+'.'
-#            bmpfile=os.path.join(dirFilePbmp,imgcore)
             dsr[dsr == -2000] = 0
             intercept = RefDs.RescaleIntercept
-#            print intercept
+
             slope = RefDs.RescaleSlope
             if slope != 1:
                 dsr = slope * dsr.astype(np.float64)
@@ -157,13 +246,15 @@ def genebmp(dirName,fileList,slnt,hug):
             dsr=cv2.resize(dsr,(image_cols, image_rows),interpolation=cv2.INTER_LINEAR)
 
             dsrforimage=normi(dsr)
-
             tabscan[scanNumber]=dsr
 
             imgcored=imgcoredeb+typei
+            imgcoredbmp=imgcoredeb+typei1
+#            print filename, scanNumber
+            tabscanName[scanNumber]=imgcoredbmp
             bmpfiled=os.path.join(bmp_dir,imgcored)
-            imgcoresroi='sroi_'+str(scanNumber)+'.'+typei
-            bmpfileroi=os.path.join(sroidir,imgcoresroi)
+#            imgcoresroi='sroi_'+str(scanNumber)+'.'+typei
+            bmpfileroi=os.path.join(sroidir,imgcoredbmp)
 #            print imgcoresroi,bmpfileroi
             textw='n: '+tail+' scan: '+str(scanNumber)
 
@@ -174,29 +265,84 @@ def genebmp(dirName,fileList,slnt,hug):
             tabsroi[scanNumber]=dsrforimage
 
 
-    for lungfile in lunglist:
+
+    return tabscan,tabsroi,tabscanName
+ 
+def genebmplung(dirName,slnt,hug,tabscanName,tabscanScan,listsln):
+    """generate patches from dicom files and sroi"""
+    print ('generate lung files from dicom files in :',f)
+    (top,tail)=os.path.split(dirName)
+    
+    if hug:
+        lung_dir = os.path.join(dirName, lungmask1)
+        if not os.path.exists(lung_dir):
+            lung_dir = os.path.join(dirName, lungmask)        
+    else:
+        (top,tail)=os.path.split(dirName)
+        lung_dir = os.path.join(top, lungmask1)
+        if not os.path.exists(lung_dir):
+            lung_dir = os.path.join(top, lungmask)
+    if not os.path.exists(lung_dir):
+        os.mkdir(lung_dir)   
+    lung_bmp_dir = os.path.join(lung_dir,lungmaskbmp)   
+    if not os.path.exists(lung_bmp_dir):
+        os.mkdir(lung_bmp_dir)
+        
+    lung_bmp_dirbmp = os.path.join(lung_dir,bmpname)
+    remove_folder(lung_bmp_dirbmp)
+    
+    lunglist = [name for name in os.listdir(lung_dir) if ".dcm" in name.lower()]
+
+    tabslung=np.zeros((slnt,image_rows,image_cols),np.uint8)
+
+    listbmp= os.listdir(lung_bmp_dir) 
+
+    if len(listbmp)>0:
+        print 'lung scan exists in bmp'
+        for img in listbmp:
+            slicenumber= rsliceNum(img,'_','.'+typei1)
+            if slicenumber>0:
+        
+                    imr=cv2.imread(os.path.join(lung_bmp_dir,img),0) 
+                    imr=cv2.resize(imr,(image_rows,image_cols),interpolation=cv2.INTER_LINEAR)  
+                    np.putmask(imr,imr>0,1)
+                    tabslung[slicenumber]=imr
+
+
+    if len(lunglist)>0:
+        for lungfile in lunglist:
 #             print(lungfile)
 #             if ".dcm" in lungfile.lower():  # check whether the file's DICOM
                 FilesDCM =(os.path.join(lung_dir,lungfile))
-                RefDs = dicom.read_file(FilesDCM)
+                RefDs = dicom.read_file(FilesDCM,force=True)
                 dsr= RefDs.pixel_array
                 dsr=dsr.astype('int16')
 #                fxs=float(RefDs.PixelSpacing[0])/avgPixelSpacing
 #                print 'fxs',fxs
                 scanNumber=int(RefDs.InstanceNumber)
-                endnumslice=filename.find('.dcm')
-                imgcoredeb=filename[0:endnumslice]+'_'+str(scanNumber)+'.'
-                imgcore=imgcoredeb+typei
-                bmpfile=os.path.join(lung_bmp_dir,imgcore)
-                dsr=normi(dsr)
-                dsrresize=cv2.resize(dsr,(image_cols, image_rows),interpolation=cv2.INTER_LINEAR)
-
-                cv2.imwrite (bmpfile, dsrresize)
-#                np.putmask(dsrresize,dsrresize==1,0)
-                np.putmask(dsrresize,dsrresize>0,1)
-                tabslung[scanNumber]=dsrresize
-
-    return tabscan,tabsroi,tabslung
+                if tabslung[scanNumber].max()==0 and scanNumber in listsln:
+                    bmpfile=os.path.join(lung_bmp_dir,tabscanName[scanNumber])
+                    dsr=normi(dsr)
+                    dsrresize=cv2.resize(dsr,(image_cols, image_rows),interpolation=cv2.INTER_LINEAR)
+                    if dsrresize.max()>0:
+                        cv2.imwrite (bmpfile, dsrresize)
+    #                np.putmask(dsrresize,dsrresize==1,0)
+                        np.putmask(dsrresize,dsrresize>0,1)
+                        tabslung[scanNumber]=dsrresize
+    else:
+        print 'no lung scan in dcm'
+        tabscan1 = np.zeros((slnt,image_rows,image_cols), np.int16)
+        segmented_lungs_fill = segment_lung_mask(tabscanScan, True)
+        for i in range(1,slnt):
+            if tabslung[i].max()==0 and i in listsln:
+                tabscan1[i]=morph(segmented_lungs_fill[i],13)
+                bmpfile=os.path.join(lung_bmp_dir,tabscanName[i])
+                if tabscan1[i].max()>0:
+                    cv2.imwrite (bmpfile, tabscan1[i])
+                    np.putmask(tabscan1[i],tabscan1[i]>0,1)
+                    tabslung[i]=tabscan1[i]
+                
+    return tabslung
 
 def contour2(im,l):
     col=classifc[l]
@@ -221,16 +367,26 @@ def tagview(tab,label,x,y):
     viseg=cv2.putText(tab,label,(x, y+deltay), font,0.3,col,1)
     return viseg
 
-def peparescan(numslice,tabs,tabl):
-    tablc=tabl.copy().astype(np.int16)
-    taba=cv2.bitwise_and(tabs,tabs,mask=tabl)
+def peparescan(numslice,tabs,tabl,datascan):
+    
+    tabslung=tabl.copy()
+    scan=tabs.copy()
+
+    np.putmask(tabslung,tabslung>0,255)
+    taba=cv2.bitwise_and(scan,scan,mask=tabslung)
+    np.putmask(tabslung,tabslung>0,1)
+    
+    tablc=tabslung.astype(np.int16)
     np.putmask(tablc,tablc==0,-1000)
     np.putmask(tablc,tablc==1,0)
-    tabab=cv2.bitwise_or(taba,tablc)             
-    datascan[numslice]=tabab
+        
+    tabab=cv2.bitwise_or(taba,tablc) 
+    tababn=norm(tabab)
+    datascan[numslice]=tababn
+    return datascan
+    
 
-
-def preparroi(namedirtopcf):
+def preparroi(namedirtopcf,datascan,tabroi):
     (top,tail)=os.path.split(namedirtopcf)
 
     pathpicklepat=os.path.join(picklepathdir,nameHug+' _'+tail)
@@ -238,45 +394,12 @@ def preparroi(namedirtopcf):
                 os.mkdir(pathpicklepat)
     
     for num in numsliceok:
-        scan_list=[]
-        mask_list=[]
-        scan_list.append(datascan[num] )
         patchpicklenamepatient=str(num)+'_'+patchpicklename        
-        tabl=tabslung[num].copy()
-        np.putmask(tabl,tabl>0,classif['healthy'])
-#        np.putmask(tabl,tabl==0,classif['back_ground'])
-        
+
         pathpicklepatfile=os.path.join(pathpicklepat,patchpicklenamepatient)
-        
-        maskr=tabroi[num].copy()   
-#        print 'maskr',maskr.min(),maskr.max()
-#        maskrc=maskr.copy()
-
-        np.putmask(maskr,maskr>0,255)
-        
-        maskr=np.bitwise_not(maskr)          
-        
-        roi=cv2.bitwise_and(tabl,tabl,mask=maskr)
-        
-        roif=cv2.add(roi,tabroi[num]) 
-
-        mask_list.append(roif)
-#        if num==178:
-#            o=normi(roif)
-#            n=normi(datascan[num] )
-#            x=normi(tabroi[num])
-##            f=normi(tabroif)
-#            cv2.imshow('roif',o)
-#            cv2.imshow('datascan[num] ',n)
-#            cv2.imshow('tabroix',x)
-##            cv2.imshow('tabroif',f)
-#            cv2.imwrite('a.bmp',o)
-#            cv2.imwrite('b.bmp',roif)
-#            cv2.waitKey(0)
-#            cv2.destroyAllWindows()
             
-        patpickle=(scan_list,mask_list)
-#        print len(scan_list)
+        patpickle=(datascan[num],tabroi[num])
+
         pickle.dump(patpickle, open(pathpicklepatfile, "wb"),protocol=-1)
         for pat in tabroipat[num]:
              listslicef[tail][num][pat]+=1
@@ -287,118 +410,28 @@ def preparroi(namedirtopcf):
              roipathpicklepatfile=os.path.join(roipathpicklepat,nameHug+' _'+tail+'_'+patchpicklenamepatient)
              pickle.dump(patpickle, open(roipathpicklepatfile, "wb"),protocol=-1)
 
+def drawcontours2(im,pat,dimtabx,dimtaby):
+#    print 'contour',pat
+    imgray = np.copy(im)
+    ret,thresh = cv2.threshold(imgray,10,255,0)
+    _,contours,heirarchy=cv2.findContours(thresh,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+    im2 = np.zeros((dimtabx,dimtaby,3), np.uint8)
+    cv2.drawContours(im2,contours,-1,classifc[pat],1)
+    im2=cv2.cvtColor(im2,cv2.COLOR_BGR2RGB)
+    return im2
 
-def create_test_data(namedirtopcf,pat,tabscan,tabsroi,tabslung):
+def create_test_data(namedirtopcf,pat,tabscan,tabsroi,tabslung,datascan,tabscanName):
     
     (top,tail)=os.path.split(namedirtopcf)
     print 'create test data for :', tail, 'pattern :',pat
     pathpat=os.path.join(namedirtopcf,pat)
-#    list_pos=os.listdir(pathpat)
-#    print list_pos
-#    if not front_enabled:
-#        try:
-#            list_pos.remove(transbmp)
-#        except:
-#                print 'no trans'
-#    print list_pos
+
     list_image=[name for name in os.listdir(pathpat) if name.find('.'+typei1)>0] 
     if len(list_image)==0:
         list_image=[name for name in os.listdir(pathpat) if name.find('.'+typei)>0] 
   
     if len(list_image)>0:
-#            bmp_dir = os.path.join(pathpat, bmpname)
-#            remove_folder(bmp_dir)
-##            os.mkdir(bmp_dir)
-#            for filename in list_image:
-#                FilesDCM =(os.path.join(pathpat,filename))
-#                RefDs = dicom.read_file(FilesDCM)
-#                dsr= RefDs.pixel_array
-#                dsr=dsr.astype('int16')
-#                if dsr.max()>0:
-#                    numslice=int(RefDs.InstanceNumber)
-#                    if pat not in tabroipat[numslice]:
-#                        tabroipat[numslice].append(pat) 
-#                    if numslice not in numsliceok:
-#                        numsliceok.append(numslice)
-#                        peparescan(numslice,tabscan[numslice],tabslung[numslice])
-#                        tabroi[numslice]=np.zeros((tabscan.shape[1],tabscan.shape[2]), np.uint8)
-#                    endnumslice=filename.find('.dcm')
-#                    imgcoredeb=filename[0:endnumslice]+'_'+str(numslice)+'.'
-#        #            bmpfile=os.path.join(dirFilePbmp,imgcore)
-#                    dsr[dsr == -2000] = 0
-#                    intercept = RefDs.RescaleIntercept
-#        #            print intercept
-#                    slope = RefDs.RescaleSlope
-#                    if slope != 1:
-#                        dsr = slope * dsr.astype(np.float64)
-#                        dsr = dsr.astype(np.int16)      
-#                    dsr += np.int16(intercept)
-#                    dsr = dsr.astype('int16')      
-#                    dsr=cv2.resize(dsr,(image_cols, image_rows),interpolation=cv2.INTER_LINEAR)      
-#                    dsrforimage=normi(dsr)               
-#                    imgcored=imgcoredeb+typei
-#                    bmpfiled=os.path.join(bmp_dir,imgcored)
-#        #            print imgcoresroi,bmpfileroi   
-#                    cv2.imwrite (bmpfiled, dsrforimage,[int(cv2.IMWRITE_PNG_COMPRESSION),0])
-#                    
-#                    np.putmask(dsrforimage,dsrforimage==1,0)
-#                    newroic=dsrforimage.copy()
-#                    np.putmask(newroic,newroic>0,1)            
-#
-#                    oldroi=tabroi[numslice].copy().astype(np.uint8)
-#                    tabroinum=oldroi.copy()
-#                    np.putmask(oldroi,oldroi>0,255)
-#           
-#                    oldroi=np.bitwise_not(oldroi)          
-#            
-#                    tabroix=cv2.bitwise_and(newroic,newroic,mask=oldroi)
-#            
-#                    np.putmask(dsrforimage,dsrforimage>0,classif[pat])
-#            
-#                    tabroif=cv2.bitwise_and(dsrforimage,dsrforimage,mask=tabroix)
-#                    tabroif=cv2.add(tabroif,tabroinum)
-#                    tabroi[numslice]=tabroif
-##                    if  numslice==91:
-##                        print tabroinum.min(),tabroinum.max()
-##                        o=normi(oldroi)
-##                        n=normi(tabroinum)
-##                        x=normi(tabroix)
-##                        f=normi(tabroif)
-##                        g=normi(tabroi[numslice])
-##                        cv2.imshow('oldroi',o)
-##                        cv2.imshow('tabroinum',n)
-##                        cv2.imshow('tabroix',x)
-##                        cv2.imshow('tabroif',f)
-##                        cv2.imshow('tabroi[numslice]',g)
-##                        cv2.waitKey(0)
-##                        cv2.destroyAllWindows()
-##                    o=normi(oldroi)
-##                    n=normi(dsrforimage)
-##                    x=normi(tabroix)
-##                    f=normi(tabroif)
-##                    cv2.imshow('oldroi',o)
-##                    cv2.imshow('newroi',n)
-##                    cv2.imshow('tabroix',x)
-##                    cv2.imshow('tabroif',f)
-##                    cv2.waitKey(0)
-##                    cv2.destroyAllWindows()
-###                
-##                                       
-#                    if dsrforimage.max()>0:
-#                       vis=contour2(dsrforimage,pat)
-#                       if vis.sum()>0:
-#                        _tabsroi = np.copy(tabsroi[numslice])
-#                        imn=cv2.add(vis,_tabsroi)
-#                        imn=tagview(imn,pat,0,100)
-#                        tabsroi[numslice]=imn
-#                        imn = cv2.cvtColor(imn, cv2.COLOR_BGR2RGB)
-#                        sroifile='sroi_'+str(numslice)+'.'+typei
-#                        filenamesroi=os.path.join(sroidir,sroifile)
-#                        cv2.imwrite(filenamesroi,imn)
-#            
-#                 
-# 
-#    else:
+
             for l in list_image:
                 pos=l.find('.'+typei1)      
                 ext=l[pos:len(l)]
@@ -409,14 +442,22 @@ def create_test_data(namedirtopcf,pat,tabscan,tabsroi,tabslung):
                 if numslice not in numsliceok:
                     numsliceok.append(numslice)
                     
-                    peparescan(numslice,tabscan[numslice],tabslung[numslice])
+                    datascan=peparescan(numslice,tabscan[numslice],tabslung[numslice],datascan)
                     tabroi[numslice]=np.zeros((tabscan.shape[1],tabscan.shape[2]), np.uint8)
 #                print numslice,tabroipat[numslice]
     #            tabl=tabslung[numslice].copy()
     #            np.putmask(tabl,tabl>0,1)
     
                 newroi = cv2.imread(os.path.join(pathpat, l), 0) 
-                newroi=cv2.resize(newroi,(image_cols, image_rows),interpolation=cv2.INTER_LINEAR)
+                
+                if newroi.max()==0:
+                    print pathpat,l
+                    print newroi.shape
+                    print newroi.max(),newroi.min()
+                    print 'error image empty'
+                    sys.exit()
+                img=cv2.resize(newroi,(image_cols, image_rows),interpolation=cv2.INTER_LINEAR)
+                """
                 newroic=newroi.copy()
                 np.putmask(newroic,newroic>0,1)            
     
@@ -433,34 +474,70 @@ def create_test_data(namedirtopcf,pat,tabscan,tabsroi,tabslung):
                 tabroif=cv2.bitwise_and(newroi,newroi,mask=tabroix)
                 tabroif=cv2.add(tabroif,tabroinum)
                 tabroi[numslice]=tabroif
-#                if pat=='ground_glass' and  numslice==15:
-#                    print newroi.min(),newroi.max()
-#                    o=normi(oldroi)
-#                    n=normi(newroi)
-#                    x=normi(tabroix)
+                
+                
+                """
+                
+                np.putmask(tabroi[numslice], img > 0, 0)
+    #                if classif[pat]>0:
+                np.putmask(img, img > 0, classif[pat])
+#                else:
+#                    np.putmask(img, img > 0, classif['lung'])
+                tablung=np.copy(tabslung[numslice])
+                np.putmask(tablung,tablung>0,255)                      
+                img=np.bitwise_and(tablung, img)  
+                tabroi[numslice]+=img
+                np.putmask(tablung,tablung>0,classif['healthy']) 
+                tabroii=np.copy(tabroi[numslice])
+                np.putmask(tabroii,tabroii>0,255) 
+                mask=np.bitwise_not(tabroii)
+                img=np.bitwise_and(tablung, mask)
+                tabroif=np.bitwise_or(img,tabroi[numslice])
+                tabroi[numslice]=tabroif
+                           
+#                if  numslice==275:
+#                    print tabroif.min(),tabroif.max()
+##                    o=normi(oldroi)
+##                    n=normi(newroi)
+##                    x=normi(tabroix)
 #                    f=normi(tabroif)
-#                    cv2.imshow('oldroi',o)
-#                    cv2.imshow('newroi',n)
-#                    cv2.imshow('tabroix',x)
+##                    cv2.imwrite('a.bmp',10*tabroif)
+##                    cv2.imshow('newroi',n)
+##                    cv2.imshow('tabroix',x)
 #                    cv2.imshow('tabroif',f)
 #                    cv2.waitKey(0)
 #                    cv2.destroyAllWindows()
-    #                
-    #                                       
-                if newroi.max()>0:
-                   vis=contour2(newroi,pat)
-                   if vis.sum()>0:
-                    _tabsroi = np.copy(tabsroi[numslice])
-                    imn=cv2.add(vis,_tabsroi)
-                    imn=tagview(imn,pat,0,100)
-                    tabsroi[numslice]=imn
-                    imn = cv2.cvtColor(imn, cv2.COLOR_BGR2RGB)
-                    sroifile='sroi_'+str(numslice)+'.'+typei
-                    filenamesroi=os.path.join(sroidir,sroifile)
-                    cv2.imwrite(filenamesroi,imn)
-        
-    return tabsroi
+                    
+    return tabroi,datascan
 
+def genesroi(numsliceok,tabroi,tabsroi,tabscanName):
+    for sln in numsliceok:
+        anoted_image=tabsroi[sln]
+#        print anoted_image.shape
+        anoted_image=cv2.cvtColor(anoted_image,cv2.COLOR_BGR2RGB)
+        imgcoreScan=tabscanName[sln]
+        roibmpfile=os.path.join(sroidir,imgcoreScan)
+        for pat in usedclassif:
+            newroic=tabroi[sln].copy()            
+#            newroic1=tabroi[sln].copy()
+           
+            np.putmask(newroic,newroic!=classif[pat],0)
+            np.putmask(newroic, newroic==classif[pat], 100)
+            if newroic.max()>0:
+                
+                ctkey=drawcontours2(newroic,pat,image_rows,image_cols)   
+                
+                anoted_image=cv2.add(anoted_image,ctkey)
+#        if sln==13:
+##            cv2.imshow(pat+' tabroi1',normi(newroic1))
+##            cv2.imshow(pat+' tabroi',normi(newroic))
+##            cv2.imshow(pat+' ctkey',ctkey)
+#            cv2.imshow(pat+' anoted_image',anoted_image)
+#            cv2.waitKey(0)
+#            cv2.destroyAllWindows()
+        cv2.imwrite(roibmpfile,anoted_image)
+
+##############################################################################
 listdirc= (os.listdir(namedirtopc))
 listpat=[]
 listslicetot={}
@@ -483,17 +560,21 @@ for f in listdirc:
     sroidir=os.path.join(namedirtopcf,sroi)
     if os.path.exists(sroidir):
         remove_folder(sroidir)
-
     os.mkdir(sroidir)
+    tabscanName={}
     contenudir = [name for name in os.listdir(namedirtopcf) if name.find('.dcm')>0]
     if len(contenudir)>0:
-        slnt = genepara(contenudir,namedirtopcf)
-        tabscan,tabsroi,tabslung=genebmp(namedirtopcf,contenudir,slnt,True)
+        slnt,listsln = genepara(contenudir,namedirtopcf)
+
+        tabscan,tabsroi,tabscanName=genebmp(namedirtopcf,contenudir,slnt,True,tabscanName)
+        tabslung=genebmplung(namedirtopcf,slnt,True,tabscanName,tabscan,listsln)
     else:
           namedirtopcfs=os.path.join(namedirtopcf,sourcedcm)
           contenudir = [name for name in os.listdir(namedirtopcfs) if name.find('.dcm')>0]
-          slnt = genepara(contenudir,namedirtopcfs)
-          tabscan,tabsroi,tabslung=genebmp(namedirtopcfs,contenudir,slnt,False)
+          slnt,listsln = genepara(contenudir,namedirtopcfs)
+          tabscan,tabsroi,tabscanName=genebmp(namedirtopcfs,contenudir,slnt,False,tabscanName)
+          tabslung=genebmplung(namedirtopcfs,slnt,False,tabscanName,tabscan,listsln)
+
     slntdict[f]=slnt
     for slic in range(slnt):
         listslicef[f][slic]={}
@@ -506,15 +587,31 @@ for f in listdirc:
     tabroi={}
     tabroipat={}
     listpatf[f]=contenupat
-
+    
     for i in range(slnt):
         tabroipat[i]=[]
-    for pat in contenupat:
-        print 'work on :',pat
-        if pat not in listpat:
-            listpat.append(pat)
-        tabsroi=create_test_data(namedirtopcf,pat,tabscan,tabsroi,tabslung)
-    preparroi(namedirtopcf)
+
+    for pat in usedclassif:
+        if pat in contenupat:
+            print 'work on :',pat
+            if pat not in listpat:
+                listpat.append(pat)
+            tabroi,datascan=create_test_data(namedirtopcf,pat,tabscan,tabsroi,tabslung,datascan,tabscanName)
+
+#                    print newroi.min(),newroi.max()
+##                    o=normi(oldroi)
+##                    n=normi(newroi)
+##                    x=normi(tabroix)
+#                    f=normi(tabroif)
+#                    cv2.imwrite('a.bmp',10*tabroif)
+##                    cv2.imshow('newroi',n)
+##                    cv2.imshow('tabroix',x)
+#    cv2.imshow('tabroif',normi(tabroi[13]))
+#    cv2.imshow('tabrois',normi(tabsroi[13]))
+#    cv2.waitKey(0)
+#    cv2.destroyAllWindows()
+    genesroi(numsliceok,tabroi,tabsroi,tabscanName)
+    preparroi(namedirtopcf,datascan,tabroi)
     
     listslicetot[f]=len(numsliceok)
     print 'number of different images :',len(numsliceok)
@@ -540,12 +637,6 @@ filetw.write('started ' +nameHug+' '+subHUG+' at :'+todayn)
 filetw.write('list of patterns :'+str(listpat)+'\n')       
 filetw.write( '-----------------------------\n')
 
-#for pat in classif:
-#    if totalnumperpat[pat] !=0:
-#        print 'number of images for ',pat, ' : ', totalnumperpat[pat]
-#        filetw.write('number of images for '+pat+ ' : '+ str(totalnumperpat[pat])+'\n')
-#print '-----------------------------'  
-#filetw.write( '-----------------------------\n')
 totsln=0
 npattot={}
 for pat in classif:
@@ -572,15 +663,12 @@ for f in listdirc:
       
     totsln=totsln+listslicetot[f]
     
-    
     for pat in classif:
          if npat[pat]!=0:
              print 'number of images for :', pat,' :',  npat[pat] 
-             filetw.write('number of images for :'+ pat+' :'+  str(npat[pat])+'\n')
-             
+             filetw.write('number of images for :'+ pat+' :'+  str(npat[pat])+'\n')             
     filetw.write('--------------------\n')
     print '-----------------------------'  
-    
     
 print 'number total of different images',totsln
 filetw.write('number total of different images: '+str(totsln) +'\n')
@@ -594,20 +682,6 @@ for pat in classif:
 print ' total number of images :',totimages
 filetw.write('total number of images :'+str(totimages)+'\n')
              
-#
-#pat='back_ground'
-#filetw.write(pat+' '+str(classif[pat])+ '\n')
-#pat='healthy'
-#filetw.write(pat+' '+str(classif[pat])+ '\n')
-#filetw.write('--------------------\n')
-#for pat in listpat:
-#    filetw.write(pat+' '+str(classif[pat])+ '\n')
-#for f in listdirc:
-#    filetw.write('patient :'+f+'\n')
-#    filetw.write('number of images :'+str(listslicetot[f]) +'\n')
-#    filetw.write('list of patterns :'+str(listpatf[f]) +'\n')
-#    filetw.write('--------------------\n')
-
 
 filetw.write('--------------------\n')
 filetw.close()

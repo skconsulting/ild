@@ -1,29 +1,47 @@
 # -*- coding: utf-8 -*-
 """
 Created on Tue May 02 15:04:39 2017
-training of CNN
+training of CNN using a generator
 @author: sylvain
 """
 
-from param_pix import cwdtop,num_bit,image_rows,image_cols
-from param_pix import get_model,evaluate,norm
+from param_pix import cwdtop,num_bit,image_rows,image_cols,hugeClass,usedclassif,classif
+from param_pix import get_model,evaluate
 
 import cPickle as pickle
 import datetime
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import numpy as np
 import os
 import random
 
 from keras.callbacks import ModelCheckpoint,ReduceLROnPlateau,CSVLogger,EarlyStopping
 from keras.utils import np_utils
+import keras
+print ' keras.backend.image_data_format :',keras.backend.image_data_format()
+
 ####################################################################################
 
 nameHug='IMAGEDIR'
 
 toppatch= 'TOPROI' #for scan classified ROI
-extendir='essai'  #for scan classified ROI
+extendir='2'  #for scan classified ROI
 #extendir='0'  #for scan classified ROI
+
+nametop='TRAIN_SET'
+pickel_top='pickle' #path to get input data
+pickel_ext='train_set'  #path to get input data
+pickel_ext_set='4'  #path to get input data
+
+trainSetSize=200# default 200 , number of images for each epoch
+nb_epoch=30 # default 30 number of epoch for each set
+batch_size= 2#default 2batch size (gpu ram dependant)
+turnNumber=30 #number of turn of trainset size
+numgen=-1   #to restart after crash
+calculate=True #to be put to False for actual training
+calculate=False #to be put to False for actual training
+
+#################################################################################
 
 
 roipicklepath = 'roipicklepatches'
@@ -34,20 +52,32 @@ picklepathdir =os.path.join(patchtoppath,roipicklepath)
 print ' path for data input :',picklepathdir
 
 
-maxepoch=5 # number of images for each epoch * batch_size
-nb_epoch=3 #number of epoch for each set
-batch_size=2 #batch size (gpu ram dependant)
-
-pickel_top='pickle' #path to get input data
-#pickel_ext='lu_f6'
-#pickel_ext='S3'
-#pickel_ext='ILD_TXT'
-#pickel_ext='ROI_ILD1'  #path to get input data
-#pickel_ext='ROI_ILD_TXT'  #path to get input data
-pickel_ext='train_set'  #path to get input data
-pickel_ext_set='3'  #path to get input data
-
-
+def caltime(i):
+    if i<60:
+        return str(i)+'s'
+    elif i<3600:
+        nbmin=i/60
+        nbsecond=i-(nbmin*60)
+        return str(nbmin)+'m '+str(nbsecond)+'s'
+    elif i<24*3600:
+        nbheure=i/3600
+        nbmin=(i-(nbheure*3600))/60
+        nbsecond=i-(nbheure*3600)-nbmin*60
+        return str(nbheure)+'h ' +str(nbmin)+'m '+str(nbsecond)+'s'
+    else:
+        nbdays=i/(24*3600)
+        nbheure=(i -(nbdays*24*3600))/3600
+        nbmin=(i-(nbdays*24*3600)-(nbheure*3600))/60
+        nbsecond=i-(nbdays*24*3600)-(nbheure*3600)-(nbmin*60)
+        return str(nbdays)+'d '+str(nbheure)+'h ' +str(nbmin)+'m '+str(nbsecond)+'s'
+    
+toe=2.03
+toe=0.45 #ské2
+print 'evaluation time:'
+print 'time for one image :',str(toe)+'s'
+print 'time for one set:',caltime(int(toe*trainSetSize))
+print 'time for one turn :',caltime(int(toe*trainSetSize*nb_epoch))
+print 'total time for ',turnNumber,' turns :',caltime(int(toe*trainSetSize*nb_epoch*turnNumber))
 
 ##############################################################
 validationdir='V' #validation set directory
@@ -64,11 +94,14 @@ today = 'd_'+str(t.month)+'-'+str(t.day)+'-'+str(t.year)+'_'+str(t.hour)+'_'+str
 pickel_train=pickel_dirsource
  
 
-pickle_dir=os.path.join(cwdtop,pickel_dirsource)
+pickle_dir=os.path.join(cwdtop,nametop)
+pickle_dir=os.path.join(pickle_dir,pickel_dirsource)
 pickle_store= os.path.join(pickle_dir,pickle_store_ext)
 
-print 'source of data input',pickle_dir
+print 'source of val data input',pickle_dir
 print 'directory for result',pickle_store
+
+
 if not os.path.exists(pickle_dir):
     os.mkdir(pickle_dir)
 if not os.path.exists(pickle_store):
@@ -80,15 +113,27 @@ def load_train_val(numpidir):
 
     X_test = pickle.load( open( os.path.join(numpidir,"X_test.pkl"), "rb" ))
     y_test = pickle.load( open( os.path.join(numpidir,"Y_test.pkl"), "rb" ))
-    num_class= y_test.shape[3]
+    DIM_ORDERING=keras.backend.image_data_format()
+    if DIM_ORDERING == 'channels_first':
+          num_class= y_test.shape[1]
+          img_rows=X_test.shape[2]
+          img_cols=X_test.shape[3]
+          num_images=X_test.shape[0]
+    else:
+        num_class= y_test.shape[3]
+        img_rows=X_test.shape[1]
+        img_cols=X_test.shape[2]
+        num_images=X_test.shape[0]
+
 #    num_class= 4
-    img_rows=X_test.shape[1]
-    img_cols=X_test.shape[2]
-    num_images=X_test.shape[0]
+#    img_rows=X_test.shape[2]
+#    img_cols=X_test.shape[3]
+#    num_images=X_test.shape[0]
 #    for key,value in class_weights.items():
 #        print key, value
-    print X_test.min(),X_test.max()
-    print y_test.min(),y_test.max()
+#    print X_test.min(),X_test.max()
+#    print y_test.min(),y_test.max()
+#    print 'loadtrainval',y_test.shape
     
     return X_test, y_test,num_class,img_rows,img_cols,num_images
         
@@ -96,14 +141,20 @@ def load_train_val(numpidir):
 def load_train_data(numpidir):
     X_train = pickle.load( open( os.path.join(numpidir,"X_train.pkl"), "rb" ))
     y_train = pickle.load( open( os.path.join(numpidir,"y_train.pkl"), "rb" ))
-    num_class= y_train.shape[3]
+    DIM_ORDERING=keras.backend.image_data_format()
+    if DIM_ORDERING == 'channels_first':
+        num_class= y_train.shape[1]
 #    num_class= 4
-    img_rows=X_train.shape[1]
-    img_cols=X_train.shape[2]
-    num_images=X_train.shape[0]
-#    for key,value in class_weights.items():
-#        print key, value
-    
+        img_rows=X_train.shape[2]
+        img_cols=X_train.shape[3]
+        num_images=X_train.shape[0]
+    else:
+        num_class= y_train.shape[3]
+#    num_class= 4
+        img_rows=X_train.shape[1]
+        img_cols=X_train.shape[2]
+        num_images=X_train.shape[0]
+                
     return X_train, y_train,num_class,img_rows,img_cols,num_images
 
 
@@ -113,9 +164,6 @@ def load_weight(numpidir):
 
     print 'number of classes :',num_class
   
-#    for key,value in class_weights.items():
-#        print key, value
-
     clas_weigh_l=[]
     for i in range (0,num_class):
 #            print i,class_weights[i]
@@ -124,8 +172,7 @@ def load_weight(numpidir):
     for i in range (0,num_class):
                     print i, clas_weigh_l[i]
     class_weights_r=np.array(clas_weigh_l)
-#    print class_weights_r
-#    ooo
+
     return num_class,class_weights_r,class_weights
 
 
@@ -134,7 +181,7 @@ def store_model(model,it):
     model.save_weights(name_model)
 
 def load_model_set(pickle_dir_train):
-    listmodel=[name for name in os.listdir(pickle_dir_train) if name.find('weights')==0]
+    listmodel=[name for name in os.listdir(pickle_dir_train) if name.find('1weights')==0]
     print 'load_model',pickle_dir_train
     ordlist=[]
     for name in listmodel:
@@ -203,93 +250,79 @@ def readclasses(pat,namepat,indexpat,indexaug):
     patpick=os.path.join(patpick,namepat[indexpat])
     readpkl=pickle.load(open(patpick, "rb"))
                                             
-    scanr=readpkl[0][0]
+    scanr=readpkl[0]
     scan=geneaug(scanr,indexaug)
-    maskr=readpkl[1][0]
+    maskr=readpkl[1]
     mask=geneaug(maskr,indexaug)
 #    cv2.imshow(pat+str(indexpat)+'mask',normi(mask))
 #    cv2.waitKey(0)
 #    cv2.destroyAllWindows()
-    scanm=norm(scan)
+#    scanm=norm(scan)
 
-    return scanm, mask  
+    return scan, mask  
 
 def readclasses2(num_classes,X_testi,y_testi):
-
-    X_test = np.asarray(np.expand_dims(X_testi,3))  
+#    print 'start readclasses2'
+    DIM_ORDERING=keras.backend.image_data_format()
     y_test = np.array(y_testi)
-#    print X_test.shape
-#    print y_test.shape
-    
+   
     lytest=y_test.shape[0]
     ytestr=np.zeros((lytest,image_rows, image_cols,int(num_classes)),np.uint8)
     for i in range (lytest):
         for j in range (0,image_rows):
             ytestr[i][j] = np_utils.to_categorical(y_test[i][j], num_classes)
-      
+            
+            
+    if DIM_ORDERING == 'channels_first':
+            X_test = np.asarray(np.expand_dims(X_testi,1)) 
+            ytestr=np.moveaxis(ytestr,-1,1)
+    else:
+            X_test = np.asarray(np.expand_dims(X_testi,3))  
+  
+#    print 'rdclass2',X_test.shape
+#    print 'rdclass2',ytestr.shape
     return  X_test,  ytestr  
 
 
-
-def gen_random_image(maximage,numclass,numgen,listroi,listscaninroi,indexpatc):
+def gen_random_image(numclass,listroi,listscaninroi,indexpatc):
+    global classnumber,numgen
     numgen+=1
-    numgen=numgen%(maximage*numclass)
-#    print numgen,numgen%numclass
-
+#    numgen=numgen%(maximage*numclass)
+#    print 'numgen',numgen
     pat =listroi[numgen%numclass]
-    numberscan=len(listscaninroi[pat])
-    indexpatc[pat] =  indexpatc[pat]%numberscan
-    indexpat=indexpatc[pat]
-    indexpatc[pat]=indexpatc[pat]+1
+    numberscan=classnumber[pat]
+    if  pat in hugeClass:
+        indexpat =  random.randint(0, numberscan-1)                       
+    else:                                                   
+        indexpat =  indexpatc[pat]%numberscan
+
+    indexpatc[pat]=indexpat+1
 
     indexaug = random.randint(0, 11)
-#        print numgen ,pat,indexpat,numberscan
+#    print '\n'
+#    print numgen ,pat,indexpat,numberscan
     scan,mask=readclasses(pat,listscaninroi[pat],indexpat,indexaug)  
-    return scan,mask,numgen
+    return scan,mask
     #        label_list.append(mask)
 
 
     
-def batch_generator(batch_size,maximage,numclass,num_classes,listroi,listscaninroi,indexpatc,numgen):
+def batch_generator(batch_size,numclass,num_classes,listroi,listscaninroi,indexpatc):
     while True:
         image_list = []
         mask_list = []
         for i in range(batch_size):
-            img, mask,numgen = gen_random_image(maximage,numclass,numgen,listroi,listscaninroi,indexpatc)
-            
-#            ooo
+            img, mask = gen_random_image(numclass,listroi,listscaninroi,indexpatc)
             image_list.append(img)
             mask_list.append(mask)
             
         X_test,  ytestr  =readclasses2(num_classes,image_list,mask_list)
 #        print X_test.shape
 #        print ytestr.shape
-        yield  X_test,  ytestr  
-        """Here is an example of fit_generator():
-model.fit_generator(generator(), samples_per_epoch=50, nb_epoch=10)
-Breaking it down:
-generator() generates batches of samples indefinitely
-sample_per_epoch number of samples you want to train in each epoch
-nb_epoch number of epochs
-As you can manually define sample_per_epoch and nb_epoch , you have to provide codes for generator . Here is an example:
-Assume features is an array of data with shape (100,64,64,3) and labels is an array of data with shape (100,1). We use data from features and labels to train our model.
-def generator(features, labels, batch_size):
- # Create empty arrays to contain batch of features and labels#
- batch_features = np.zeros((batch_size, 64, 64, 3))
- batch_labels = np.zeros((batch_size,1))
- while True:
-   for i in range(batch_size):
-     # choose random index in features
-     index= random.choice(len(features),1)
-     batch_features[i] = some_processing(features[index])
-     batch_labels[i] = labels[index]
-   yield batch_features, batch_labels
-With the generator above, if we define batch_size = 10 , that means it will randomly taking out 10 samples from features and labels to feed into each epoch until an epoch hits 50 sample limit. Then fit_generator() destroys the used data and move on repeating the same process in new epoch.
-One great advantage about fit_generator() besides saving memory is user 
-        """        
+        yield  X_test,  ytestr          
 
 def train():
-    
+    global classnumber,numgen
     print('-'*30)
     print('Loading train data...')
     print('-'*30)
@@ -297,15 +330,15 @@ def train():
     todayf ='f'+'_'+str(tn.month)+'_'+str(tn.day)+'_'+str(tn.year)+'_'+str(tn.hour)+'_'+str(tn.minute)+'stat.txt'
     todayf=os.path.join(pickle_store,todayf)
     filew=open (todayf,'w')
-   
+
     todayn = 'month:'+str(tn.month)+'-day:'+str(tn.day)+'-year:'+str(tn.year)+' - '+str(tn.hour)+'h'+str(tn.minute)+'m'+'\n'
     filew.write('start of training :'+todayn)
 
 #    listplickle=[name for name in os.walk(pickle_dir).next()[1] if name != validationdir]
 #    lnumpi=len(listplickle)
     
-
     num_class,weights,class_weights = load_weight(pickle_dir)
+ 
     print('Creating and compiling model...')
     print('-'*30)
 
@@ -313,61 +346,37 @@ def train():
     
     numpidirval =os.path.join(pickle_dir,validationdir)
     x_val, y_val, num_class,img_rows,img_cols,num_images = load_train_val(numpidirval)
+#    print img_rows
+#    print image_rows
+#    print img_cols
+#    print image_cols
     assert img_rows==image_rows,"dimension mismatch"
     assert img_cols==image_cols,"dimension mismatch"
     
-    listmodel=[name for name in os.listdir(pickle_dir) if name.find('weights')==0]
+    listmodel=[name for name in os.listdir(pickle_store) if name.find('1weights')==0]
     if len(listmodel)>0:
          print 'load weight found from last training'
-         namelastc=load_model_set(pickle_dir)         
+         namelastc=load_model_set(pickle_store)         
          model.load_weights(namelastc)  
     else:
          print 'first training to be run'
-
+    today = str('m'+str(t.month)+'_d'+str(t.day)+'_y'+str(t.year)+'_'+str(t.hour)+'h_'+str(t.minute)+'m')
     rese=os.path.join(pickle_store,str(today)+'_e.csv')
-#    resBest=os.path.join(pickle_store,str(today)+'_Best.csv')
-#    open(rese, 'a').write('Epoch, Val_fscore, Val_acc, Train_loss, Val_loss\n')
-#    open(resBest, 'a').write('Epoch, Val_fscore, Val_acc, Train_loss, Val_loss\n')
-    
-    print '-----------------------'
-
-    print 'x_val min max :',x_val.min(),x_val.max()
-    print 'shape x_val :',x_val.shape
-    print 'shape y_val :',y_val.shape
-    print 'number of classes:', num_class
-    print 'image number of rows :',img_rows
-    print 'image number of columns :',img_cols
-    print 'number of epoch for all subset :',maxepoch
-    print 'number of epoch per subset:',nb_epoch
-    print 'batch_size  :',batch_size
-    print 'number of images validation:', num_images
-    print 'image width:', num_bit                              
-    print('-'*30)
-    
-    filew.write ('x_val min max :'+str(x_val.min())+' '+str(x_val.max())+'\n')
-    filew.write ('shape x_val :'+str(x_val.shape)+'\n')
-    filew.write ('shape y_val :'+str(y_val.shape)+'\n')
-    filew.write ('number of classes:'+ str(num_class)+'\n')
-    filew.write ('image number of rows :'+str(img_rows)+'\n')
-    filew.write ('image number of columns :'+str(img_cols)+'\n')
-    filew.write ( 'number of epoch for all subset :'+str(maxepoch)+'\n')
-    filew.write ( 'number of epoch per subset :'+str(nb_epoch)+'\n')
-    filew.write ( 'batch_size  :'+str(batch_size)+'\n')
-    filew.write ( 'number of images validation:'+ str(num_images)+'\n')
-
-    filew.write ( 'image width:'+ str(num_bit) +'\n')    
-    filew.write('------------------------------------------\n')
-    filew.close()
-    
     listroi=[name for name in os.listdir(picklepathdir)]
 
     numclass=len(listroi)
     print '-----------'
     print'number of classes in scan:', numclass
     print '-----------'
+    print 'list of classes:'
+    for i in listroi:
+        print i
 
 #    assert numclass+2==num_class,"dimension mismatch"
     listscaninroi={}
+    classnumber={}
+    for pat in classif:
+        classnumber[pat]=0
 
     indexpatc={}
     for j in listroi:
@@ -376,99 +385,152 @@ def train():
     totalimages=0
     maximage=0
 
-    for c in listroi:
-        listscaninroi[c]=os.listdir(os.path.join(picklepathdir,c))
-        numberscan=len(listscaninroi[c])
-        if numberscan>maximage:
-            maximage=numberscan
-            ptmax=c
-    totalimages+=numberscan
+    for pat in listroi:   
+        listscaninroi[pat]=os.listdir(os.path.join(picklepathdir,pat))
+        classnumber[pat]=len(listscaninroi[pat])
+#        print pat,classnumber[pat]
+        if pat not in hugeClass:
+            if classnumber[pat]>maximage:
+                maximage=classnumber[pat]
+                ptmax=pat
+        totalimages=totalimages+classnumber[pat]
+        
+    print '-----------'    
+    for pat in usedclassif:
+        print 'number of data in:',pat, ' : ',classnumber[pat]
+    for pat in hugeClass:
+        print 'number of data in hugeClass:',pat, classnumber[pat]
+  
+    print '-----------------------'
+
+    print 'x_val min max :',x_val.min(),x_val.max()
+    print 'shape x_val :',x_val.shape
+    print 'shape y_val :',y_val.shape
+    print 'image number of rows :',img_rows
+    print 'image number of columns :',img_cols
+    print 'image width:', num_bit  
     
-    print 'number total of scan images:',totalimages
+    print 'number of validation images:', num_images
     print 'maximum data in one pat:',maximage,' in ',ptmax
-    print '-----------'
-    numgen=-1
+    print 'number of classes:', num_class
+    print 'starting number :'+str(numgen+1)
+    print( 'equivalent number of images from starting number :'+str((numgen+1)/(trainSetSize*batch_size)))
+    print 'number of turns:',  turnNumber 
+    print 'size of train set:',trainSetSize
+    print 'batch_size  :',batch_size
+    print 'total number of images for training:',turnNumber*trainSetSize 
+    print 'number total of scan images:',totalimages
+    print 'comparison with total number of images: :',1.0*(turnNumber*trainSetSize) /totalimages
+    print 'number of epoch per subset:',nb_epoch
+       
+    print('-'*30)
+    filew.write ( ' path for data input :'+picklepathdir+'\n')
+    filew.write (  'directory for result'+pickle_store+'\n')
+    filew.write ('x_val min max :'+str(x_val.min())+' '+str(x_val.max())+'\n')
+    filew.write ('shape x_val :'+str(x_val.shape)+'\n')
+    filew.write ('shape y_val :'+str(y_val.shape)+'\n')
+    filew.write ('image number of rows :'+str(img_rows)+'\n')
+    filew.write ('image number of columns :'+str(img_cols)+'\n')
+    filew.write ( 'image width:'+ str(num_bit) +'\n')
     
-    early_stopping=EarlyStopping(monitor='val_loss', patience=25, verbose=1,min_delta=0.005,mode='min')                                     
+    filew.write ( 'number of validation images:'+ str(num_images)+'\n')
+    filew.write ( 'maximum data in one pat:'+str(maximage)+' in '+ptmax+'\n')
+    filew.write ('number of classes:'+ str(num_class)+'\n')
+    filew.write ( 'starting number :'+str(numgen+1)+'\n')
+    filew.write ( 'equivalent number of images from starting number :'+str((numgen+1)/(trainSetSize*batch_size))+'\n')
+
+    filew.write ('number of turns:'+str(  turnNumber)+ '\n')
+    filew.write ( 'size of train set:'+str(trainSetSize)+'\n')
+    filew.write ( 'batch_size  :'+str(batch_size)+'\n')
+    filew.write (  'total number of images for training:'+str(turnNumber*trainSetSize)  +'\n') 
+    filew.write ( 'number total of scan images:'+str(totalimages)+'\n')
+    filew.write (  'comparison with total number of images: :'+
+                 str(1.0*(turnNumber*trainSetSize) /totalimages) +'\n') 
+    filew.write ( 'number of epoch per subset :'+str(nb_epoch)+'\n')
+
+    filew.write('------------------------------------------\n')
+    filew.close()
+    if calculate:
+        return
+    
+    
+    early_stopping=EarlyStopping(monitor='val_loss', patience=150, verbose=1,min_delta=0.005,mode='min')                                     
     reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2,
-                                              patience=5, min_lr=1e-5,verbose=1)
-    model_checkpoint = ModelCheckpoint(os.path.join(pickle_dir,'weights.{epoch:02d}-{val_loss:.2f}.hdf5'), 
-                                monitor='val_loss', save_best_only=True,save_weights_only=True)       
+                                              patience=50, min_lr=1e-5,verbose=1)#init 5
+    model_checkpoint = ModelCheckpoint(os.path.join(pickle_store,'weights_'+today+'.{epoch:02d}-{val_loss:.2f}.hdf5'), 
+                                monitor='val_loss', save_best_only=True,save_weights_only=True)        
 
     csv_logger = CSVLogger(rese,append=True)
     print('Fitting model...')          
     tn = datetime.datetime.now()
-    todayn = 'month:'+str(tn.month)+'-day:'+str(tn.day)+'-year:'+str(tn.year)+' - '+str(tn.hour)+'h'+str(tn.minute)+'m'
-    filew=open (todayf,'a')
-    filew.write('start epoch  :'+str(nb_epoch)+ ' at '+todayn+' for max epoch: '+str(maxepoch*nb_epoch)+'\n')
-    filew.write('------------------------------------------\n')
-    filew.close()
-    print('-'*30)
+   
 #    ooo
-    history = model.fit_generator(
-    generator=batch_generator(batch_size,maximage,numclass,num_class,listroi,listscaninroi,indexpatc,numgen),
-    epochs=nb_epoch,
-    steps_per_epoch=maxepoch*batch_size,
-    validation_data=(x_val,y_val),
-    verbose=1,
-    callbacks=[model_checkpoint,reduce_lr,csv_logger,early_stopping]  )
-    
-    
-    tn = datetime.datetime.now()
-    todayn = 'month:'+str(tn.month)+'-day:'+str(tn.day)+'-year:'+str(tn.year)+' - '+str(tn.hour)+'h'+str(tn.minute)+'m'
-    filew=open (todayf,'a')
-    filew.write('end epoch  :'+str(nb_epoch)+ ' at '+todayn+' for max epoch: '+str(maxepoch*nb_epoch)+'\n')
-    print('end epoch  :'+str(nb_epoch)+ ' at '+todayn+' for max epoch: '+str(maxepoch*nb_epoch)+'\n')    
+    DIM_ORDERING=keras.backend.image_data_format()
+    for i in range (0,turnNumber):
+        print 'turn:',i
+        nb_epoch_i_p=(i+1)*nb_epoch
+        init_epoch_i_p=i*nb_epoch
+        todayn = 'month:'+str(tn.month)+'-day:'+str(tn.day)+'-year:'+str(tn.year)+' - '+str(tn.hour)+'h'+str(tn.minute)+'m'
+        filew=open (todayf,'a')
+        filew.write('start epoch  :'+str(init_epoch_i_p)+ ' at '+todayn+' for max epoch: '+str(nb_epoch_i_p)+'\n')
+        filew.write('------------------------------------------\n')
+        filew.close()
+        print('-'*30)
+        history = model.fit_generator(
+        generator=batch_generator(batch_size,numclass,num_class,listroi,listscaninroi,indexpatc),
+                epochs=nb_epoch_i_p,
+                initial_epoch=init_epoch_i_p,
+                steps_per_epoch=trainSetSize/batch_size,
+#                sample_weight=class_weights,
+                validation_data=(x_val,y_val),
+                verbose=2,
+                callbacks=[model_checkpoint,reduce_lr,csv_logger,early_stopping] ,
+                max_queue_size=trainSetSize)   
 
-    print('Predict model...')
-    print('-'*30)
-    y_score = model.predict(x_val, batch_size=batch_size,verbose=1)
-#                print 'y_score.shape',y_score.shape
-    yvf= np.argmax(y_val, axis=3).flatten()
-    #            print yvf[0]
-    ysf=  np.argmax(y_score, axis=3).flatten()   
-    #            print ysf[0]     
-    #            print type(ysf[0])                
-    #            print(history.history.keys())
-                
-    #            score = model.evaluate(x_val, y_val, verbose=0)  
-    #            print 'Test score:', score[0]
-    #            print 'Test accuracy:', score[1]
+        tn = datetime.datetime.now()
+        todayn = 'month:'+str(tn.month)+'-day:'+str(tn.day)+'-year:'+str(tn.year)+' - '+str(tn.hour)+'h'+str(tn.minute)+'m'
+        filew=open (todayf,'a')
+        filew.write('end epoch  :'+str(nb_epoch_i_p)+ ' at '+todayn+' for max epoch: '+str(turnNumber*nb_epoch)+'\n')
+        filew.write('for restart  :'+str(numgen)+'\n')
+        print('end epoch  :'+str(nb_epoch_i_p)+ ' at '+todayn+' for max epoch: '+str(turnNumber*nb_epoch)+'\n')    
     
-    #            output = model.predict_proba(x_val, verbose=0)
-    #            output = output.reshape((output.shape[0], img_rows, img_cols, num_class))
-    
-    #            plot_results(output)
-    
-    fscore, acc, cm = evaluate(yvf,ysf,num_class)
-    print cm
-    print('Val F-score: '+str(fscore)+'\tVal acc: '+str(acc))         
-#            open(rese, 'a').write(str(str(it)+', '+str(fscore)+', '+str(acc)+', '+str(np.max(history.history['loss']))+', '+str(np.max(history.history['val_loss']))+'\n'))
-#                print 'fscore :',fscore
-    print '---------------'
-    tn = datetime.datetime.now()
-    todayn = str(tn.month)+'-'+str(tn.day)+'-'+str(tn.year)+' - '+str(tn.hour)+'h '+str(tn.minute)+'m'+'\n'
-    filew.write('  finished at :'+todayn)
+        print('Predict model...')
+        print('-'*30)
+        y_score = model.predict(x_val, batch_size=batch_size,verbose=1)
+        print 'y_score.shape',y_score.shape
+        if DIM_ORDERING == 'channels_first':
+            yvf= np.argmax(y_val, axis=1).flatten()
+            #            print yvf[0]
+            ysf=  np.argmax(y_score, axis=1).flatten()  
+        else:
+            yvf= np.argmax(y_val, axis=3).flatten()
+            #            print yvf[0]
+            ysf=  np.argmax(y_score, axis=3).flatten()  
+        fscore, acc, cm = evaluate(yvf,ysf,num_class)
+        print cm
+        print('Val F-score: '+str(fscore)+'\tVal acc: '+str(acc))         
 
-
-    filew.write('  f-score is : '+ str(fscore)+'\n')
-    filew.write('  accuray is : '+ str(acc)+'\n')
-    filew.write('  confusion matrix\n')
-    n= cm.shape[0]
-    for cmi in range (0,n): 
-
-                    filew.write('  ')
-                    for j in range (0,n):
-                        filew.write(str(cm[cmi][j])+' ')
-                    filew.write('\n')
-                
-    filew.write('------------------------------------------\n')
+        print '---------------'
+        tn = datetime.datetime.now()
+        todayn = str(tn.month)+'-'+str(tn.day)+'-'+str(tn.year)+' - '+str(tn.hour)+'h '+str(tn.minute)+'m'+'\n'
+        filew.write('  finished at :'+todayn)
+        
+        filew.write('  f-score is : '+ str(fscore)+'\n')
+        filew.write('  accuray is : '+ str(acc)+'\n')
+        filew.write('  confusion matrix\n')
+        n= cm.shape[0]
+        for cmi in range (0,n):     
+                        filew.write('  ')
+                        for j in range (0,n):
+                            filew.write(str(cm[cmi][j])+' ')
+                        filew.write('\n')
+                    
+        filew.write('------------------------------------------\n')
     print ('------------------------')               
     tn = datetime.datetime.now()
     todayn = str(tn.month)+'-'+str(tn.day)+'-'+str(tn.year)+' - '+str(tn.hour)+'h '+str(tn.minute)+'m'+'\n'
     filew.write('completed at :'+todayn)
     print ('completed at :'+todayn)
     filew.close()
-       
-                  
+                 
 train()

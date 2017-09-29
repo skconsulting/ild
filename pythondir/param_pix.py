@@ -4,30 +4,30 @@ Created on Tue May 02 15:04:39 2017
 
 @author: sylvain
 """
-setdata='CHU'
+setdata='set0'
+
+#modelName='fcn8s'
+modelName='unet'
+modelName='sk3'
+#modelName='alexnet'
+#modelName='vgg16
 #setdata='S2'
 
-import collections
+#import collections
 import cPickle as pickle
-import cv2
-import datetime
-import dicom
-from itertools import product
-import matplotlib.pyplot as plt
+
 import numpy as np
-from numpy import argmax,amax
+
 import os
-from PIL import Image
-import random
 import shutil
 from scipy.io import loadmat
-from scipy.misc import bytescale
+#from scipy.misc import bytescale
 import sklearn.metrics as metrics
-from skimage.io import imsave
-from sklearn.utils import class_weight
-from sklearn.model_selection import train_test_split
+
 import sys
 import time
+from itertools import product
+import functools
 
 
 import keras
@@ -50,22 +50,23 @@ K.set_image_dim_ordering('tf')
 #from __future__ import print_function
 from utils import fcn32_blank, fcn_32s_to_8s,prediction
 #from nicolovmodel import add_softmax,nicolov
-from zf_unet_224_model import *
-import cnn_model
-import ild_helpers
+from zf_unet_224_model import ZF_UNET_224
+from AlexNet_Original  import create_model
+#import cnn_model
+#import ild_helpers
 print keras.__version__
 print theano.__version__
 print ' keras.backend.image_data_format :',keras.backend.image_data_format()
 
 
-#modelName='fcn8s'
-modelName='unet'
-#modelName='vgg16'
 #modelName='zf'
 image_rows = 512
 image_cols = 512
 #image_rows = 96
 #image_cols = 96
+
+DIM_ORDERING=keras.backend.image_data_format()
+print DIM_ORDERING
 
 
 num_bit=1
@@ -115,7 +116,7 @@ lowgreen=(0,51,51)
 parme=(234,136,222)
 chatain=(139,108,66)
 
-if setdata=='CHU':
+if setdata=='set0':
 #CHU
     classif ={
         'back_ground':0,
@@ -130,6 +131,8 @@ if setdata=='CHU':
         'air_trapping':9,
         'GGpret':10
         } 
+    
+    
     usedclassif=[
         'healthy',    
         'ground_glass',
@@ -214,7 +217,7 @@ else:
 #for i,j in classif.items():
 #    print i, j
 print '---------------'
-
+hugeClass=['healthy','back_ground']
 notusedclassif=[]
 for i in classif:
     if i not in usedclassif:
@@ -355,9 +358,10 @@ def evaluate(actual,pred,num_class):
     cm = metrics.confusion_matrix(actual,pred,labels=labl)
     return fscore, acc, cm
 
-def double_conv_layerunet(x, size, dropout, batch_norm):
+def double_conv_layerunet(x, size, dropout, batch_norm,dim_org):
     kernel_size=(3,3)
-    conv = Conv2D(size,kernel_size, activation='relu',kernel_constraint=maxnorm(4.),padding='same')(x)
+    conv = Conv2D(size,kernel_size, activation='relu',
+                  data_format=dim_org,kernel_constraint=maxnorm(4.),padding='same')(x)
 #    conv = Conv2D(size,kernel_size,kernel_constraint=maxnorm(4.,axis=-1),padding='same')(x)
 
     if batch_norm == True:
@@ -367,7 +371,8 @@ def double_conv_layerunet(x, size, dropout, batch_norm):
 #    if dropout > 0:
 #        conv = Dropout(dropout)(conv)
 
-    conv = Conv2D(size, kernel_size,activation='relu',kernel_constraint=maxnorm(4.), padding='same')(conv)
+    conv = Conv2D(size, kernel_size,activation='relu',
+                  data_format=dim_org,kernel_constraint=maxnorm(4.), padding='same')(conv)
 #    conv = Conv2D(size,kernel_size,kernel_constraint=maxnorm(4.,axis=-1),padding='same')(conv)
 
     if batch_norm == True:
@@ -378,14 +383,18 @@ def double_conv_layerunet(x, size, dropout, batch_norm):
         conv = Dropout(dropout)(conv)
     return conv
 
-def get_unet(num_class,num_bit,img_rows,img_cols):
+
+def get_unet(num_class,num_bit,img_rows,img_cols,INP_SHAPE,dim_org,CONCAT_AXIS):
 #    global weights
-    print 'this is model UNET new'
-    
+    print 'this is model UNET new1'
+#    print dim_org
+#    CONCAT_AXIS=3
+#    print 'CONCAT_AXIS',CONCAT_AXIS
 #    weights=w
     coefcon={}
     coefcon[1]=16 #32 for 320
-    coefcon[1]=2 #32 for 320
+    
+#    coefcon[1]=4 #32 for 320
 
 #coefcon[1]=16 #32 for 320 #16 for gpu
     for i in range (2,6):
@@ -399,40 +408,43 @@ def get_unet(num_class,num_bit,img_rows,img_cols):
         dor[i]=min(dor[i-1]*2,0.5)
     print 'do coeff :',dor
     batch_norm=False
-    print 'barchnorm :', batch_norm
+    print 'batchnorm :', batch_norm
    
-    inputs = Input((img_rows, img_cols,num_bit))
-    conv1=double_conv_layerunet(inputs, coefcon[1], dor[1], False)
-    pool1 = MaxPooling2D(pool_size=(2, 2))(conv1)
+#    inputs = Input((img_rows, img_cols,num_bit))
+    inputs = Input(INP_SHAPE)
+#    print INP_SHAPE
 
-    conv2=double_conv_layerunet(pool1, coefcon[2], dor[2], batch_norm)
-    pool2 = MaxPooling2D(pool_size=(2, 2))(conv2)
+    conv1=double_conv_layerunet(inputs, coefcon[1], dor[1], False,dim_org)
+    pool1 = MaxPooling2D(pool_size=(2, 2),data_format=dim_org)(conv1)
 
-    conv3=double_conv_layerunet(pool2, coefcon[3], dor[3], batch_norm)
-    pool3 = MaxPooling2D(pool_size=(2, 2))(conv3)
+    conv2=double_conv_layerunet(pool1, coefcon[2], dor[2], batch_norm,dim_org)
+    pool2 = MaxPooling2D(pool_size=(2, 2),data_format=dim_org)(conv2)
 
-    conv4=double_conv_layerunet(pool3, coefcon[4],dor[4], batch_norm)
-    pool4 = MaxPooling2D(pool_size=(2, 2))(conv4)
+    conv3=double_conv_layerunet(pool2, coefcon[3], dor[3], batch_norm,dim_org)
+    pool3 = MaxPooling2D(pool_size=(2, 2),data_format=dim_org)(conv3)
 
-    conv5=double_conv_layerunet(pool4, coefcon[5], dor[5], batch_norm)
+    conv4=double_conv_layerunet(pool3, coefcon[4],dor[4], batch_norm,dim_org)
+    pool4 = MaxPooling2D(pool_size=(2, 2),data_format=dim_org)(conv4)
 
-    up6 = concatenate([UpSampling2D(size=(2, 2))(conv5), conv4],axis=3)
+    conv5=double_conv_layerunet(pool4, coefcon[5], dor[5], batch_norm,dim_org)
+
+    up6 = concatenate([UpSampling2D(size=(2, 2),data_format=dim_org)(conv5), conv4],axis=CONCAT_AXIS)
  
-    conv6=double_conv_layerunet(up6, coefcon[4], dor[4], batch_norm)
+    conv6=double_conv_layerunet(up6, coefcon[4], dor[4], batch_norm,dim_org)
 
-    up7 = concatenate([UpSampling2D(size=(2, 2))(conv6), conv3], axis=3)
+    up7 = concatenate([UpSampling2D(size=(2, 2),data_format=dim_org)(conv6), conv3], axis=CONCAT_AXIS)
     
-    conv7=double_conv_layerunet(up7, coefcon[3], dor[3], batch_norm)
+    conv7=double_conv_layerunet(up7, coefcon[3], dor[3], batch_norm,dim_org)
 
-    up8 = concatenate([UpSampling2D(size=(2, 2))(conv7), conv2], axis=3)
+    up8 = concatenate([UpSampling2D(size=(2, 2),data_format=dim_org)(conv7), conv2], axis=CONCAT_AXIS)
     
-    conv8=double_conv_layerunet(up8, coefcon[2], dor[2], batch_norm)
+    conv8=double_conv_layerunet(up8, coefcon[2], dor[2], batch_norm,dim_org)
 
-    up9 = concatenate([UpSampling2D(size=(2, 2))(conv8), conv1], axis=3)
+    up9 = concatenate([UpSampling2D(size=(2, 2),data_format=dim_org)(conv8), conv1], axis=CONCAT_AXIS)
     
-    conv9=double_conv_layerunet(up9, coefcon[1], dor[1], False)    
+    conv9=double_conv_layerunet(up9, coefcon[1], dor[1], False,dim_org)    
      
-    conv10 = Conv2D(int(num_class), (1,1), activation='softmax',padding='same')(conv9) #softmax?
+    conv10 = Conv2D(int(num_class), (1,1), activation='softmax',data_format=dim_org,padding='same')(conv9) #softmax?
     
     model = Model(inputs=[inputs], outputs=[conv10])
     print model.layers[-1].output_shape
@@ -486,7 +498,101 @@ def VGG_16(num_class,num_bit,img_rows,img_cols):
     model.load_weights(weights_path)
     '''
     return model
-   
+
+def sk1(num_class,num_bit,img_rows,img_cols,INP_SHAPE,dim_org):
+    
+    print 'sk1 with num_class :',num_class
+
+    padding='same'
+    kernel_size=(3,3)
+    model = Sequential()
+    model.add(Conv2D(16, kernel_size, input_shape=INP_SHAPE, padding='same', 
+                     activation='relu',data_format=dim_org, kernel_constraint=maxnorm(3)))
+    model.add(Dropout(0.2)) 
+    model.add(Conv2D(32, kernel_size,  padding='same', 
+                     activation='relu',data_format=dim_org, kernel_constraint=maxnorm(3)))
+#    model.add(Conv2D(32, kernel_size, activation='relu', padding=padding))
+#    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Conv2D(num_class, kernel_size, activation='softmax',data_format=dim_org, padding=padding))
+     
+    return model
+
+def sk2(num_class,num_bit,img_rows,img_cols,INP_SHAPE,dim_org):
+    print INP_SHAPE
+
+    kernel_size=(3,3)
+    
+    print 'sk2 with num_class :',num_class
+    model = Sequential() 
+    model.add(Conv2D(16, kernel_size, input_shape=INP_SHAPE, padding='same', 
+                     activation='relu',data_format=dim_org, kernel_constraint=maxnorm(3)))
+
+#    model.add(MaxPooling2D(pool_size=(2, 2),data_format=dim_org))
+    model.add(Dropout(0.2)) 
+    model.add(Conv2D(32, kernel_size,  padding='same', 
+                     activation='relu',data_format=dim_org, kernel_constraint=maxnorm(3)))
+#    model.add(MaxPooling2D(pool_size=(2, 2),data_format=dim_org))
+    model.add(Dropout(0.2)) 
+    model.add(Conv2D(64, kernel_size,  padding='same', 
+                     activation='relu',data_format=dim_org, kernel_constraint=maxnorm(3)))
+    model.add(Dropout(0.2)) 
+#    model.add(Conv2D(128, kernel_size,  padding='same', 
+#                     activation='relu',data_format=dim_org, kernel_constraint=maxnorm(3)))
+#    model.add(Dropout(0.2)) 
+#    model.add(Conv2D(64, kernel_size,  padding='same', 
+#                     activation='relu',data_format=dim_org, kernel_constraint=maxnorm(3)))
+#    model.add(Dropout(0.2)) 
+#    model.add(Conv2D(32, kernel_size,  padding='same', 
+#                     activation='relu',data_format=dim_org, kernel_constraint=maxnorm(3)))
+#    model.add(MaxPooling2D(pool_size=(2, 2),data_format=dim_org))
+#    model.add(Dropout(0.2)) 
+    model.add(Conv2DTranspose(num_class, kernel_size, activation='softmax', 
+                     data_format=dim_org,padding='same')) 
+
+ 
+    return model
+
+def sk3(num_class,num_bit,img_rows,img_cols,INP_SHAPE,dim_org):
+    print INP_SHAPE
+
+    kernel_size=(3,3)
+    
+    print 'sk3 with num_class :',num_class
+    model = Sequential() 
+    model.add(Conv2D(16, kernel_size, input_shape=INP_SHAPE, padding='same', 
+                     activation='relu',data_format=dim_org, kernel_constraint=maxnorm(3)))
+    model.add(MaxPooling2D(pool_size=(2, 2),data_format=dim_org))
+    model.add(Dropout(0.1)) 
+    model.add(Conv2D(32, kernel_size,  padding='same', 
+                     activation='relu',data_format=dim_org, kernel_constraint=maxnorm(3)))
+    model.add(MaxPooling2D(pool_size=(2, 2),data_format=dim_org))
+    model.add(Dropout(0.2)) 
+    model.add(Conv2D(64, kernel_size,  padding='same', 
+                     activation='relu',data_format=dim_org, kernel_constraint=maxnorm(3)))
+    model.add(MaxPooling2D(pool_size=(2, 2),data_format=dim_org))
+#    model.add(Dropout(0.2)) 
+#    model.add(Conv2D(128, kernel_size,  padding='same', 
+#                     activation='relu',data_format=dim_org, kernel_constraint=maxnorm(3)))
+#    model.add(MaxPooling2D(pool_size=(2, 2),data_format=dim_org))    
+    model.add(Dropout(0.3)) 
+    model.add(Conv2D(128, kernel_size,  padding='same', 
+                     activation='relu',data_format=dim_org, kernel_constraint=maxnorm(3)))
+    model.add(UpSampling2D(size=(2, 2),data_format=dim_org))    
+    model.add(Dropout(0.3))
+    model.add(Conv2DTranspose(64, kernel_size,  padding='same', 
+                     activation='relu',data_format=dim_org, kernel_constraint=maxnorm(3)))
+    model.add(UpSampling2D(size=(2, 2),data_format=dim_org))
+    model.add(Dropout(0.2)) 
+    model.add(Conv2DTranspose(32, kernel_size,  padding='same', 
+                     activation='relu',data_format=dim_org, kernel_constraint=maxnorm(3)))
+    model.add(UpSampling2D(size=(2, 2),data_format=dim_org))
+    model.add(Dropout(0.1)) 
+    model.add(Conv2DTranspose(num_class, kernel_size, activation='softmax', 
+                     data_format=dim_org,padding='same')) 
+
+    return model
+
+
 def copy_mat_to_keras(kmodel, verbose=True):   
     print 'copy mat to keras'
     kerasnames = [lr.name for lr in kmodel.layers]
@@ -532,7 +638,37 @@ def copy_mat_to_keras(kmodel, verbose=True):
         else:
             print 'not found : ', str(matname)
 
+class weighted_categorical_crossentropyold(object):
+    """
+    author: wassname
+    A weighted version of keras.objectives.categorical_crossentropy  
+    Variables:
+        weights: numpy array of shape (C,) where C is the number of classes
+    Usage:
+        loss = weighted_categorical_crossentropy(weights).loss
+        model.compile(loss=loss,optimizer='adam')
+    """  
+    def __init__(self,weights):
+        self.weights = K.variable(weights,dtype='float32')
+    def myloss(self,y_true, y_pred):        
+#         scale preds so that the class probas of each sample sum to 1
+#        print 'ypred shape',y_pred.shape
+#        y_pred = K.clip(y_pred, K.epsilon(), 10)
+#        y_pred=K.permute_dimensions(y_pred,[0,2,3,1])
+#        y_true=K.permute_dimensions(y_true,[0,2,3,1])
+        y_pred /= K.sum(y_pred,axis=-1, keepdims=True)
+#         clip
+        y_pred = K.clip(y_pred, K.epsilon(), 1)
+#         calc
+
+        loss = y_true*K.log(y_pred)*self.weights
+#        loss = y_true*K.log(y_pred)
+
+
+        loss =-K.sum(loss,-1)
+        return loss
 class weighted_categorical_crossentropy(object):
+
     """
     A weighted version of keras.objectives.categorical_crossentropy  
     Variables:
@@ -551,14 +687,85 @@ class weighted_categorical_crossentropy(object):
         # calc
         loss = y_true*K.log(y_pred)*self.weights
         loss =-K.sum(loss,-1)
-        return loss
+        return loss      
  
+
+def w_categorical_crossentropyold(y_true, y_pred, weights):
+    nb_cl = len(weights)
+    final_mask = K.zeros_like(y_pred[:, 0])
+    y_pred_max = K.max(y_pred, axis=0)
+    y_pred_max = K.reshape(y_pred_max, (K.shape(y_pred)[0], 1))
+    y_pred_max_mat = K.cast(K.equal(y_pred, y_pred_max), K.floatx())
+    for c_p, c_t in product(range(nb_cl), range(nb_cl)):
+        final_mask += (weights[c_t, c_p] * y_pred_max_mat[:, c_p] * y_true[:, c_t])
+    return K.categorical_crossentropy(y_pred, y_true) * final_mask
+
+def w_categorical_crossentropy(weights):
+    def loss(y_true, y_pred):
+#        nb_cl = len(weights)
+#        final_mask = K.zeros_like(y_pred[:, 0])
+#        y_pred_max = K.max(y_pred, axis=1, keepdims=True)
+#        y_pred_max_mat = K.equal(y_pred, y_pred_max)
+#        for c_p, c_t in product(range(nb_cl), range(nb_cl)):
+#            final_mask += (weights[c_t, c_p] * y_pred_max_mat[:, c_p] * y_true[:, c_t])
+#        return K.categorical_crossentropy(y_pred, y_true) * final_mask
+        return K.categorical_crossentropy(y_pred, y_true)
+
+    return loss
+
+
+def mean_pred(y_true, y_pred):
+    return K.mean(y_pred)
+
+def single_class_accuracy(interesting_class_id):
+    def fn(y_true, y_pred):
+        class_id_true = K.argmax(y_true, axis=-1)
+        class_id_preds = K.argmax(y_pred, axis=-1)
+        # Replace class_id_preds with class_id_true for recall here
+        accuracy_mask = K.cast(K.not_equal(class_id_preds, interesting_class_id), 'int32')
+        class_acc_tensor = K.cast(K.equal(class_id_true, class_id_preds), 'int32') * accuracy_mask
+        class_acc = K.sum(class_acc_tensor) / K.maximum(K.sum(accuracy_mask), 1)
+        return class_acc
+    return fn
+
+def squeezed_accuracy(y_true, y_pred):
+
+        class_id_true = K.argmax(K.squeeze(y_true,axis=0), axis=-1)
+        class_id_preds = K.argmax(K.squeeze(y_pred,axis=0), axis=-1)
+        # Replace class_id_preds with class_id_true for recall here
+#        accuracy_mask = K.cast(K.equal(class_id_preds, interesting_class_id), 'int32')
+#        class_acc_tensor = K.cast(K.equal(class_id_true, class_id_preds), 'int32')
+        class_acc = K.mean(K.equal(class_id_true, class_id_preds))
+        return class_acc
+
+
 def get_model(num_class,num_bit,img_rows,img_cols,mat_t_k,weights):
+    DIM_ORDERING=keras.backend.image_data_format()
+    if DIM_ORDERING == 'channels_first':
+        INP_SHAPE = (num_bit, image_rows, image_cols)  
+#        img_input = Input(shape=INP_SHAPE)
+        CONCAT_AXIS = 1
+#        dim_org='channels_first'
+    elif DIM_ORDERING == 'channels_last':
+        INP_SHAPE = (image_rows, image_cols, num_bit)  
+#        img_input = Input(shape=INP_SHAPE)
+        CONCAT_AXIS = 3
+#        dim_org='channels_last'
+        
     if modelName == 'unet':
 #    unet
-        model = get_unet(num_class,num_bit,img_rows,img_cols)
+        model = get_unet(num_class,num_bit,img_rows,img_cols,INP_SHAPE,DIM_ORDERING,CONCAT_AXIS)
         mloss = weighted_categorical_crossentropy(weights).myloss
+#        ncce = functools.partial(w_categorical_crossentropy, weights=weights)
         model.compile(optimizer=Adam(lr=learning_rate), loss=mloss, metrics=['categorical_accuracy'])
+#        model.compile(optimizer=Adam(lr=learning_rate), loss=mloss, metrics=['accuracy',single_class_accuracy(0)])
+#        model.compile(optimizer=Adam(lr=learning_rate), loss=ncce, metrics=['accuracy',single_class_accuracy(0)])
+#        model.compile(optimizer=Adam(lr=learning_rate), loss=ncce, metrics=['categorical_accuracy'])
+
+
+#        model.compile(optimizer=Adam(lr=learning_rate), loss=mloss, metrics=['accuracy',squeezed_accuracy])
+
+
 #        model.compile(optimizer=Adam(lr=learning_rate), loss='categorical_crossentropy', metrics=['categorical_accuracy'])
 #        model.compile(optimizer=Adam(lr=learning_rate), loss=dice_coef_loss, metrics=[dice_coef])
 #        model.compile(optimizer=SGD(lr=learning_rate,decay=1e-6, momentum=0.9, nesterov=True), loss=mloss, metrics=['categorical_accuracy'])
@@ -602,26 +809,82 @@ def get_model(num_class,num_bit,img_rows,img_cols,mat_t_k,weights):
         model=ZF_UNET_224(num_class,img_rows,img_cols,0.05, True)
         mloss = weighted_categorical_crossentropy(weights).myloss
         model.compile(optimizer=Adam(lr=1e-5), loss=mloss, metrics=['categorical_accuracy'])
+        
+    elif  modelName == 'alexnet':
+    #alexnet
+        DROPOUT = 0.5
+        WEIGHT_DECAY = 0.0005   # L2 regularization factor
+        USE_BN = True           # whether to use batch normalization
+# Theano - 'th' (channels, width, height)
+    # Tensorflow - 'tf' (width, height, channels)
+        DIM_ORDERING = 'tf'
+        model=create_model(num_class,num_bit,img_rows,img_cols,DIM_ORDERING,WEIGHT_DECAY,USE_BN,DROPOUT)
+        mloss = weighted_categorical_crossentropy(weights).myloss
+        model.compile(optimizer=Adam(lr=1e-5), loss=mloss, metrics=['categorical_accuracy'])
+        
+    elif  modelName == 'sk1':
+    #alexnet
+#        print weights
+#        print weights.shape
+#        mloss = w_categorical_crossentropy(np.ones((num_class, num_class)))
+
+
+        model=sk1(num_class,num_bit,img_rows,img_cols,INP_SHAPE,DIM_ORDERING)
+#        weights = np.ones(512)
+        mloss = weighted_categorical_crossentropy(weights).myloss
+        
+        model.compile(optimizer=Adam(lr=learning_rate), loss=mloss, metrics=['categorical_accuracy'])
+    elif  modelName == 'sk2':
+    #alexnet
+#        print weights
+#        print weights.shape
+        model=sk2(num_class,num_bit,img_rows,img_cols,INP_SHAPE,DIM_ORDERING)
+#        weights = np.ones(512)
+        mloss = weighted_categorical_crossentropy(weights).myloss
+        
+        model.compile(optimizer=Adam(lr=learning_rate), loss=mloss, metrics=['categorical_accuracy'])
+#        model.compile(optimizer=Adam(lr=1e-4), loss='categorical_crossentropy', metrics=['categorical_accuracy'])
+    elif  modelName == 'sk3':
+    #alexnet
+#        print weights
+#        print weights.shape
+        model=sk3(num_class,num_bit,img_rows,img_cols,INP_SHAPE,DIM_ORDERING)
+#        weights = np.ones(512)
+        mloss = weighted_categorical_crossentropy(weights).myloss
+        
+        model.compile(optimizer=Adam(lr=learning_rate), loss=mloss, metrics=['categorical_accuracy'])
 # 
 # nicolov model
 #    model = add_softmax(nicolov(num_class,img_rows,img_cols),img_rows,img_cols)
 #    model.compile(optimizer=Adam(lr=learning_rate), loss='categorical_crossentropy', metrics=['categorical_accuracy'])
     
 #    model.compile(optimizer=SGD(lr=learning_rate, momentum=0.9), loss='categorical_crossentropy', metrics=['accuracy'])
-
+    print 'las model layer',model.layers[-1].output_shape #== (None, 16, 16, 21)
     return model
 
 if __name__ == "__main__":
    weights=[]
-   image_size=96
+   image_size=512
    num_bit=1
-   num_class=3
+   num_class=11
+
    model=get_model(num_class,num_bit,image_size,image_size,False,weights)
-   imarr = np.ones((image_size,image_size,num_bit))
+   print model.layers[-1].output_shape #== (None, 16, 16, 21)
+   DIM_ORDERING=keras.backend.image_data_format()
+   if DIM_ORDERING == 'channels_first':
+        imarr = np.ones((num_bit,image_size,image_size))
+   else:
+        imarr = np.ones((image_size,image_size,num_bit))
    imarr = np.expand_dims(imarr, axis=0)
    print 'imarr.shape',imarr.shape
-#   print 'model.predict(imarr).shape ',model.predict(imarr,verbose=1).shape
+   print 'model.predict(imarr).shape ',model.predict(imarr,verbose=1).shape
    model.summary()
+   json_string = model.to_json()
+   pickle.dump(json_string,open( 'SK3CNN.h5', "wb"),protocol=-1)
+   
+   
+   
+   
 #   model_json=model.to_json()
 #   with open("model.json", "w") as json_file:
 #    json_file.write(model_json)
@@ -631,9 +894,9 @@ if __name__ == "__main__":
 #   file.close()
    
 #   
-#   orig_stdout = sys.stdout
-#   f = open('out1.txt', 'w')
-#   sys.stdout = f
-#   print(model.summary())
-#   sys.stdout = orig_stdout
-#   f.close()
+   orig_stdout = sys.stdout
+   f = open(modelName+'_model.txt', 'w')
+   sys.stdout = f
+   print(model.summary())
+   sys.stdout = orig_stdout
+   f.close()

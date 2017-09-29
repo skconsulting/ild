@@ -26,37 +26,29 @@ import random
 from sklearn.model_selection import train_test_split
 #######################################################################################################
 
-
-pklnum=20 #number of sets (to not have too big databases)
+pklnum=30 #number of sets (to not have too big databases)
+print 'number of set :',pklnum
 
 nametopdummy='DUMMY' # name of top directory for dummy images with patches
 toppatchdummy= 'TOPPATCH' #for dummy scan with patches
 namesubdummy='lu_training' #for dummy scan with patches
 nsubsubdummy='lu_f'  #for dummy scan with patches
+dummyinclude=False #to add patch roi after each set of pattern
 
-dummyinclude=True #to add patch roi after each set of pattern
-nameHug='HUG'
+nameHug='IMAGEDIR'
 #nameHug='CHU'
 #nameHug='DUMMY'
 
-#extension for output dir
-#extendir='ILD_TXT'
-#extendir='UIP'
 extendirdummy=namesubdummy
-#extendir='ILD9'
-#extendir='S3'
-#extendir='lu_predic'
-#extendir='small1'
 
 toppatch= 'TOPROI' #for scan classified ROI
-extendir='ILD_TXT'  #for scan classified ROI
+#extendir='ILD_TXT'  #for scan classified ROI
 #extendir='ILD0'  #for scan classified ROI
+extendir='1'  #for scan classified ROI
 #extendir='UIP2'  #for scan classified ROI
 
-#toppatch= 'TOPPATCH'
-
-pickel_dirsource='pickle_train_set' #path for data fort training
-pickel_dirsourcenum='1' #extensioon for path for data for training
+pickel_dirsource='TRAIN_SET/pickle_train_set' #path for data fort training
+pickel_dirsourcenum='f' #extensioon for path for data for training
 
 
 ##############################################################
@@ -69,7 +61,7 @@ pickel_dirsource_root='pickle'
 #sepextend2='ROI'
 if len (extendir2)>0:
     extendir2='_'+extendir2
-
+#path for cnn training data recording
 pickel_dirsource=pickel_dirsource+'_'+pickel_dirsourcenum+extendir2
 
 
@@ -92,7 +84,7 @@ patchpicklename='picklepatches.pkl'
 roipicklepath = 'roipicklepatches'
 picklepatches='picklepatches'
 picklepathdir =os.path.join(patchtoppath,roipicklepath) # path scan classified by ROI
-pathdummy =os.path.join(cwdtop,nametopdummy)
+pathdummy =os.path.join(cwdtop+'/TRAIN_SET',nametopdummy)
 pathdummy =os.path.join(pathdummy,toppatchdummy+'_'+namesubdummy)
 pathdummy =os.path.join(pathdummy,picklepatches)
 pathdummy =os.path.join(pathdummy,nsubsubdummy) #path for dummy scan with patches
@@ -331,7 +323,10 @@ for numgen in range(maximage*numclass):
 print 'number of data',len(patch_list)
 print '-----------'
 
-num_classes,class_weights=numbclasses(label_list)
+
+X_train, X_test, y_train, y_test = train_test_split(patch_list,
+                                        label_list,test_size=0.1, random_state=42)
+num_classes,class_weights=numbclasses(y_test)
 print 'weights:'
 setvalue=[]
 for key,value in class_weights.items():
@@ -346,8 +341,6 @@ for key,value in class_weights.items():
    print key, fidclass (key,classif), value
 print('-' * 30)
 
-X_train, X_test, y_train, y_test = train_test_split(patch_list,
-                                        label_list,test_size=0.1, random_state=42)
 
 X_train, X_test, y_train, y_test= readclasses2(num_classes,X_train,y_train,X_test,y_test)
 
