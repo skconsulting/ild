@@ -61,7 +61,7 @@ def get_Obj(obj):
         'ce': 'categorical_crossentropy',
     }[obj]
 
-def get_model(input_shape, output_shape, params,filew):
+def get_model(input_shape, output_shape, params,filew,patch_dir_store):
 
     print('compiling model...')
         
@@ -154,6 +154,8 @@ def get_model(input_shape, output_shape, params,filew):
     model.compile(optimizer=Adam(lr=learning_rate), loss='categorical_crossentropy', metrics=['categorical_accuracy'])
     filew.write ('learning rate:'+str(learning_rate)+'\n')
     print ('learning rate:'+str(learning_rate))
+    json_string = model.to_json()
+    pickle.dump(json_string, open(os.path.join(patch_dir_store,modelname), "wb"),protocol=-1)
 
 #    optimizer=keras.optimizers.Adam(lr=lr,decay=decay)
 #    model.compile(optimizer=optimizer, loss=get_Obj(params['obj']))
@@ -231,8 +233,10 @@ def train(x_train, y_train, x_val, y_val, params,eferror,patch_dir_store):
         print('[New Data Shape]\t->\tX: '+str(x_train.shape))
 
     print 'x_shape is: ', x_train.shape
+    print 'x_val is: ', x_val.shape
     print ('x min max is : '+ str(x_train.min())+' '+str(x_train.max()))
     filew.write('x_shape is : '+ str(x_train.shape)+'\n')
+    filew.write( 'x_val is: '+ str(x_val.shape)+'\n')
     filew.write('x min max is : '+ str(x_train.min())+' '+str(x_train.max())+'\n')
     
     listmodel=[name for name in os.listdir(patch_dir_store) if name.find('weights')==0]
@@ -259,8 +263,15 @@ def train(x_train, y_train, x_val, y_val, params,eferror,patch_dir_store):
     else:
          print 'first training to be run'
          filew.write('first training to be run\n')
-         model = get_model(x_train.shape, y_train.shape, params,filew)
-    
+         model = get_model(x_train.shape, y_train.shape, params,filew,patch_dir_store)
+    model.summary()
+#    orig_stdout = sys.stdout
+#    f = open('out1.txt', 'w')
+#    sys.stdout = f
+#    print(model.summary())
+#    sys.stdout = orig_stdout
+#    f.close()
+
     filew.write ('-----------------\n')
     nb_epoch_i_p=params['patience']
 

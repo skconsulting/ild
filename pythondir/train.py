@@ -40,8 +40,8 @@ ptrainfile='trainlog'+today+'.txt'
 # initialization
 args         = H.parse_args()                          # Function for parsing command-line arguments
 train_params = {
-     'do' : float(args.do) if args.do else 0.5,        # Dropout Parameter
-     'a'  : float(args.a) if args.a else 0.3,          # Conv Layers LeakyReLU alpha param [if alpha set to 0 LeakyReLU is equivalent with ReLU]
+     'do' : float(args.do) if args.do else 0.5,        # Dropout Parameter default = 0.5
+     'a'  : float(args.a) if args.a else 0.01,          # Conv Layers LeakyReLU default =0.3 alpha param [if alpha set to 0 LeakyReLU is equivalent with ReLU]
      'k'  : int(args.k) if args.k else 4,              # Feature maps k multiplier
      's'  : float(args.s) if args.s else 1,            # Input Image rescale factor
      'pf' : float(args.pf) if args.pf else 1,          # Percentage of the pooling layer: [0,1]
@@ -51,7 +51,7 @@ train_params = {
      'opt': args.opt if args.opt else 'Adam',          # Optimizer: SGD, Adagrad, Adam
      'obj': args.obj if args.obj else 'ce',            # Minimization Objective: mse, ce
      'patience' : args.pat if args.pat else 200
-     ,       # Patience parameter for early stoping
+     ,       # Patience parameter for early stoping 200
      'tolerance': args.tol if args.tol else 1.005,     # Tolerance parameter for early stoping [default: 1.005, checks if > 0.5%]
      'res_alias': args.csv if args.csv else 'res' + str(today)     # csv results filename alias
 }
@@ -61,8 +61,9 @@ topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 
 #path with data for training
 pickel_dirsource_root='pickle'
-pickel_dirsource_e='train_set' #path for data fort training
-pickel_dirsourcenum='0p' #extensioon for path for data for training
+pickel_dirsource_e='train' #path for data fort training
+pickel_dirsourcenum='CHU' #extensioon for path for data for training
+extendir1='0'
 extendir2=''
 #########################################################################################
 
@@ -70,7 +71,7 @@ pickleStore='pickle'
 if len (extendir2)>0:
     extendir2='_'+extendir2
 
-pickel_dirsource='th'+str(thrpatch)+'_'+pickel_dirsource_root+'_'+pickel_dirsource_e+'_'+pickel_dirsourcenum+extendir2
+pickel_dirsource='th'+str(thrpatch)+'_'+pickel_dirsource_root+'_'+pickel_dirsource_e+'_'+pickel_dirsourcenum+'_'+extendir1+extendir2
 
 patch_dir=os.path.join(topdir,pickel_dirsource)
 patch_dir_store=os.path.join(patch_dir,pickleStore)
