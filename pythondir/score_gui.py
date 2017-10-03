@@ -200,9 +200,7 @@ def predictScore (btn):
     paramdict['Select All']=indata['Select All']
     paramdict['thrpatch']=indata['thrpatch']
     paramdict['thrproba']=indata['thrproba']
-#    paramdict['thrprobaUIP']=indata['thrprobaUIP']
-#    paramdict['picklein_file']=indata['picklein_file']
-#    paramdict['subErosion in mm']=indata['subErosion']
+
     paramdict['picklein_file_front']=indata['picklein_file_front']
     paramdict['picklein_file']=indata['picklein_file']
     paramdict['centerHU']=indata['centerHU']

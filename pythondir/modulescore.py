@@ -347,21 +347,27 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,slnt,tabro
         npv[pat]=0       
     
     tablung1=np.copy(tabscanLung[slicenumber])
+    referencepatroi= np.copy(tabroi[slicenumber])
     np.putmask(tablung1,tablung1>0,255)
-    patchdict=np.bitwise_and(tablung1, patchdict) 
+#    tablung_inv=np.bitwise_not(tablung1)
+    predictpatu=np.bitwise_and(tablung1, patchdict) 
+    referencepatu=np.bitwise_and(tablung1, referencepatroi) 
     
-    mask=patchdict.copy()
-    tabxorig=patchdict.copy()
-    np.putmask(mask,mask>0,255)
-    tabxn=np.bitwise_not(mask)   
-    tablung=np.copy(tabscanLung[slicenumber])       
-    tablung=np.bitwise_and(tablung, tabxn)
-    np.putmask(tablung,tablung>0,classif['healthy']+1)
-    
-    volpat['healthy']=np.copy(tablung)
-     
-    predictpatu=np.bitwise_or(tabxorig,tablung)
-    referencepatu= np.copy(tabroi[slicenumber])
+#    mask=patchdict.copy()
+#    tabxorig=patchdict.copy()
+#    np.putmask(mask,mask>0,255)
+#    tabxn=np.bitwise_not(mask)   
+#    tablung=np.copy(tabscanLung[slicenumber])       
+#    tablung=np.bitwise_and(tablung, tabxn)
+#    np.putmask(tablung,tablung>0,classif['healthy']+1)
+#    
+##    volpat['healthy']=np.copy(tablung)
+#
+#    predictpatu=np.bitwise_and(tabxorig,tablung)
+
+
+#    cv2.imwrite('ref.bmp',normi(referencepatu))
+#    cv2.imwrite('pred.bmp',normi(predictpatu))
 
 #    if slicenumber==125:
 #                
@@ -408,12 +414,10 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,slnt,tabro
     numberp=0
     for pat in usedclassif:           
         precision[pat],recall[pat],fscore[pat], spc[pat],npv[pat],volpat[pat],volroi[pat]=cals(cm,pat)
-
         if pat in listlabel:            
             tl=True
         else:
             tl=False
-
         precisioni=int(round(precision[pat]*100,0))
         recalli=int(round(recall[pat]*100,0))
         fscorei=int(round(fscore[pat]*100,0))
@@ -521,6 +525,7 @@ def openfichiervolumetxtall(listHug,path_patient,indata,thrprobaUIP,cnnweigh,f,t
         f.write(str(patient)+' ')
     f.write('\n-----\n')
     pf=True
+    listroiall=[]
     for patient in listHug:
 
         patient_path_complet=os.path.join(path_patient,patient)
@@ -541,9 +546,14 @@ def openfichiervolumetxtall(listHug,path_patient,indata,thrprobaUIP,cnnweigh,f,t
 #        tabMed= pickle.load( open( os.path.join(path_data_dir,"tabMed"), "rb" ))
         tabscanLung= pickle.load( open( os.path.join(path_data_dir,"tabscanLungs"), "rb" ))
         tabroi= pickle.load( open( os.path.join(path_data_dir,"tabrois"), "rb" ))
-                  
+        listroi= pickle.load( open( os.path.join(path_data_dir,"listrois"), "rb" ))
+        for key,value in listroi.items():
+            for k in value:
+                if k not in listroiall:
+                    listroiall.append(k)
+                          
         ref,pred,messageout = openfichiervolumetxt(patient,path_patient,patch_list_cross_slice,
-                      thrprobaUIP,tabroi,datarep,slnroi,tabscanLung,f,cnnweigh,thrpatch,tp)
+                      thrprobaUIP,tabroi,datarep,slnroi,tabscanLung,f,cnnweigh,thrpatch,tp,listroi)
 
         if pf:
 
@@ -555,11 +565,11 @@ def openfichiervolumetxtall(listHug,path_patient,indata,thrprobaUIP,cnnweigh,f,t
             referencepat= np.concatenate((referencepat,ref),axis=0)
             predictpat= np.concatenate((predictpat,pred),axis=0)
 
-        
-    cfma(f,referencepat,predictpat,num_class,'all set',thrprobaUIP,cnnweigh,tp,thrpatch)
+    print 'listroiall',listroiall
+    cfma(f,referencepat,predictpat,num_class,'all set',thrprobaUIP,cnnweigh,tp,thrpatch,listroiall)
     f.close()
 
-def cfma(f,referencepat,predictpat,num_class, namep,thrprobaUIP,cnnweigh,tp,thrpatch):
+def cfma(f,referencepat,predictpat,num_class, namep,thrprobaUIP,cnnweigh,tp,thrpatch,listroi):
         f.write('confusion matrix for '+namep+'\n')
         f.write(tp+' View , threshold: '+str(thrprobaUIP)+ ' CNN param: '+cnnweigh+' th_patch'+str(thrpatch)+'\n\n')
 
@@ -573,21 +583,37 @@ def cfma(f,referencepat,predictpat,num_class, namep,thrprobaUIP,cnnweigh,tp,thrp
         presip={}
         recallp={}
         fscorep={}
+#        print cm
+#        fscore={},
+        spc={}
+        npv={}
+        volpat={}
+        volroi={}
         for pat in usedclassif:
             presip[pat]=0
             recallp[pat]=0
             fscorep[pat]=0
-            numpat=classif[pat]+1
+#            fscore[pat]=0
+            spc[pat]=0
+            npv[pat]=0
+            volpat[pat]=0
+            volroi[pat]=0
+#            numpat=classif[pat]
 
 #            print numpat
-            presip[pat], recallp[pat]=evaluate(referencepat,predictpat,num_class,(numpat,))
+#            presip[pat], recallp[pat]=evaluate(referencepat,predictpat,num_class,(numpat,))
+            presip[pat],recallp[pat],fscorep[pat], spc[pat],npv[pat],volpat[pat],volroi[pat]=cals(cm,pat)
+#            if pat=='ground_glass':
+#                print cm[numpat]
+#                print numpat
+#                print presip[pat], recallp[pat]
 #            print pat,presip[pat],recallp[pat]
 
-        for pat in usedclassif:             
-         if presip[pat]+recallp[pat]>0:
-            fscorep[pat]=2*presip[pat]*recallp[pat]/(presip[pat]+recallp[pat])
-        else:
-            fscorep[pat]=0    
+#        for pat in usedclassif:             
+#         if presip[pat]+recallp[pat]>0:
+#            fscorep[pat]=2*presip[pat]*recallp[pat]/(presip[pat]+recallp[pat])
+#        else:
+#            fscorep[pat]=0    
         f.write(15*' ')
         for i in range (0,n):
             pat=fidclass(i,classif)
@@ -615,12 +641,12 @@ def cfma(f,referencepat,predictpat,num_class, namep,thrprobaUIP,cnnweigh,tp,thrp
     #    print newclassif
         f.write('\n--------------------\n')
 
-        wrresu(f,cm,'Report for full Patient',1)
+        wrresu(f,cm,'Report for full Patient',1,listroi)
 
         f.write('----------------------\n')
 
 
-def wrresu(f,cm,obj,refmax):
+def wrresu(f,cm,obj,refmax,listroi):
     volroi={}
     volpat={}
     precision={}
@@ -643,35 +669,71 @@ def wrresu(f,cm,obj,refmax):
     fscoreAverage=0
     spcAverage=0
     npvAverage=0
+    tpaverage=0
+   
     numberp=0
+#    roip=[]
+#    print obj
+#    print cm
+    cpp=0
+    cpr=0
 #    print 'global score'
-    for pat in usedclassif:           
+    for pat in usedclassif:   
+            cpa=classif[pat]        
             precision[pat],recall[pat],fscore[pat], spc[pat],npv[pat],volpat[pat],volroi[pat]=cals(cm,pat)
+#            if pat=='ground_glass':
+#            print pat,cm[classif[pat]]
+#            print cm[classif[pat]:]
+            if pat in listroi:
+                numberp+=1
+                tpaverage+=cm[cpa][cpa]
+                cpp+=cm[:,classif[pat]].sum()
+#                recallAverage+=recall[pat]
+                cpr+=cm[classif[pat]].sum()
+#                print cm[classif[pat]]
+                spcAverage+=spc[pat]
+                npvAverage+=npv[pat]
+   
+#            print cm[classif[pat]:].sum()
+            
+#                print precision[pat],recall[pat],fscore[pat]
             precisioni=int(round(precision[pat]*100,0))
             recalli=int(round(recall[pat]*100,0))
             fscorei=int(round(fscore[pat]*100,0))
-            if fscorei>0 :
-                precisionAverage+=precision[pat]
-                recallAverage+=recall[pat]
-                fscoreAverage+=fscore[pat]
-                spcAverage+=spc[pat]
-                npvAverage+=npv[pat]
-                numberp+=1            
-                spci=int(round(spc[pat]*100,0))
-                npvi=int(round(npv[pat]*100,0))     
-        
+#            if fscorei>0 :
+            
+            
+#            fscoreAverage+=fscore[pat]
+            
+#                numberp+=1            
+            spci=int(round(spc[pat]*100,0))
+            npvi=int(round(npv[pat]*100,0))     
+            if precisioni+recalli+fscorei>0:
                 f.write('%14s'%pat+'%7s'%precisioni+
                         '%9s'%recalli+'%9s'%fscorei+
                         '%9s'%spci+'%9s'%npvi+'\n')
     f.write('\n')
+#    print '1',tpaverage
+###    print '1',recallAverage
+##    print cm.sum()
+#    print cpp
+#    print cpr
+    if cpp>0:
+        precisionAverage=1.0*tpaverage/cpp
+#        print '2',precisionAverage
+    else:
+        precisionAverage=0
+    if cpr>0:
+        recallAverage=1.0*tpaverage/cpr
+#        print '2',recallAverage
+    else:
+        recallAverage=0
+#        fscoreAverage/=numberp
     if numberp>0:
-        precisionAverage/=numberp
-        recallAverage/=numberp
-        fscoreAverage/=numberp
         spcAverage/=numberp
         npvAverage/=numberp
     if refmax>0:
-
+        f.write('list of roi: '+str(listroi)+'\n')
         f.write('%10s'%('Precision %')+
                     '%11s'%('Recall%')+ 
                     '%11s'%('Fscores')+
@@ -679,7 +741,10 @@ def wrresu(f,cm,obj,refmax):
                     '%10s'%('NPV%')+'\n')
     precisionAverage=int(round(precisionAverage*100,0))
     recallAverage=int(round(recallAverage*100,0))
-    fscoreAverage=int(round(fscoreAverage*100,0))
+    if recallAverage+precisionAverage>0:
+        fscoreAverage=int(round(2.*precisionAverage*recallAverage/(recallAverage+precisionAverage),0))
+    else:
+        fscoreAverage=0
     spcAverage=int(round(spcAverage*100,0))
     npvAverage=int(round(npvAverage*100,0))
     f.write('%10s'%(precisionAverage)+
@@ -691,7 +756,7 @@ def wrresu(f,cm,obj,refmax):
 
 
 def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
-                      thrprobaUIP,tabroi,datacross,slnroi,tabscanLung,f,cnnweigh,thrpatch,tp):
+                      thrprobaUIP,tabroi,datacross,slnroi,tabscanLung,f,cnnweigh,thrpatch,tp,listroi):
     global  quitl,dimtabx,dimtaby,patchi,ix,iy
     print 'openfichiervolume txt start in',path_patient,' for', listHug, 'predict type ',tp
     slnt=datacross[0]
@@ -742,30 +807,39 @@ def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
             
             tablung1=np.copy(tabscanLung[slicenumber])
             np.putmask(tablung1,tablung1>0,255)
-            patchdict[slicenumber]=np.bitwise_and(tablung1, patchdict[slicenumber]) 
             
-            mask=patchdict[slicenumber].copy()
-            tabxorig=patchdict[slicenumber].copy()
-            np.putmask(mask,mask>0,255)
-            tabxn=np.bitwise_not(mask)   
-            tablung=np.copy(tabscanLung[slicenumber])       
-            tablung=np.bitwise_and(tablung, tabxn)
-            np.putmask(tablung,tablung>0,classif['healthy']+1)
-     
-            predictpatu[slroi]=np.bitwise_or(tabxorig,tablung)
-            referencepatu[slroi]=np.copy(tabroi[slicenumber])
-           
+            
+            predictpatu[slroi]=np.bitwise_and(tablung1, patchdict[slicenumber]) 
+            referencepatu[slroi]=np.bitwise_and(tablung1, tabroi[slicenumber])
+            
+#            mask=patchdict[slicenumber].copy()
+#            tabxorig=patchdict[slicenumber].copy()
+#            np.putmask(mask,mask>0,255)
+#            tabxn=np.bitwise_not(mask)   
+#            tablung=np.copy(tabscanLung[slicenumber])       
+#            tablung=np.bitwise_and(tablung, tabxn)
+#            np.putmask(tablung,tablung>0,classif['healthy']+1)
+#     
+##            predictpatu[slroi]=np.bitwise_or(tabxorig,tablung)
+#            referencepatu[slroi]=np.copy(tabroi[slicenumber])
+#           
         
             
             referencepat= referencepatu[slroi].flatten()
             predictpat=  predictpatu[slroi].flatten() 
             cm=evaluatef(referencepat,predictpat,num_class)
-            wrresu(f,cm,'Slice: '+str(slicenumber),referencepatu[slroi].max())
+            wrresu(f,cm,'Slice: '+str(slicenumber),referencepatu[slroi].max(),listroi[slicenumber])
 
 #    print 'global matrix'
+    listroiall=[]
     referencepat= referencepatu.flatten()
     predictpat=  predictpatu.flatten() 
-    cfma(f,referencepat,predictpat,num_class,listHug,thrprobaUIP,cnnweigh,tp,thrpatch)
+    for key,value in listroi.items():
+        for k in value:
+            if k not in listroiall:
+                listroiall.append(k)
+                          
+    cfma(f,referencepat,predictpat,num_class,listHug,thrprobaUIP,cnnweigh,tp,thrpatch,listroiall)
     f.write('----------------------\n')
 
     return referencepat,predictpat,''
@@ -1138,6 +1212,7 @@ def visuarun(indata,path_patient):
         thrpatch=pickle.load( open( os.path.join(path_data_dir,"thrpatchs"), "rb" ))
         tabscanLung= pickle.load( open( os.path.join(path_data_dir,"tabscanLungs"), "rb" ))
         tabroi= pickle.load( open( os.path.join(path_data_dir,"tabrois"), "rb" ))
+        listroi= pickle.load( open( os.path.join(path_data_dir,"listrois"), "rb" ))
         dirf=os.path.join(path_patient,listHug)
         dirfreport=os.path.join(dirf,reportdir)   
         if not os.path.exists(dirfreport):
@@ -1148,7 +1223,7 @@ def visuarun(indata,path_patient):
         f=open(repf,'w')
         x,x,messageout = openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
                       thrproba,
-                      tabroi,datarep,slnroi,tabscanLung,f,cnnweigh,thrpatch,tp)
+                      tabroi,datarep,slnroi,tabscanLung,f,cnnweigh,thrpatch,tp,listroi)
         f.close()
         os.startfile(repf)
         
@@ -1169,6 +1244,7 @@ def visuarun(indata,path_patient):
         thrpatch=pickle.load( open( os.path.join(path_data_dir,"thrpatchs"), "rb" ))
         tabscanLung= pickle.load( open( os.path.join(path_data_dir,"tabscanLungs"), "rb" ))
         tabroi= pickle.load( open( os.path.join(path_data_dir,"tabrois"), "rb" ))
+        listroi= pickle.load( open( os.path.join(path_data_dir,"listrois"), "rb" ))
         dirf=os.path.join(path_patient,listHug)
         dirfreport=os.path.join(dirf,reportdir)   
         if not os.path.exists(dirfreport):
@@ -1179,7 +1255,7 @@ def visuarun(indata,path_patient):
         f=open(repf,'w')
         x,x,messageout = openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
                       thrproba,
-                      tabroi,datarep,slnroi,tabscanLung,f,cnnweigh,thrpatch,tp)
+                      tabroi,datarep,slnroi,tabscanLung,f,cnnweigh,thrpatch,tp,listroi)
         f.close()
         os.startfile(repf)
     elif viewstyle=='reportMerge':
@@ -1199,6 +1275,7 @@ def visuarun(indata,path_patient):
         thrpatch=pickle.load( open( os.path.join(path_data_dir,"thrpatchs"), "rb" ))
         tabscanLung= pickle.load( open( os.path.join(path_data_dir,"tabscanLungs"), "rb" ))
         tabroi= pickle.load( open( os.path.join(path_data_dir,"tabrois"), "rb" ))
+        listroi= pickle.load( open( os.path.join(path_data_dir,"listrois"), "rb" ))
         dirf=os.path.join(path_patient,listHug)
         dirfreport=os.path.join(dirf,reportdir)   
         if not os.path.exists(dirfreport):
@@ -1209,7 +1286,7 @@ def visuarun(indata,path_patient):
         f=open(repf,'w')
         x,x,messageout = openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
                       thrproba,
-                      tabroi,datarep,slnroi,tabscanLung,f,cnnweigh,thrpatch,tp)
+                      tabroi,datarep,slnroi,tabscanLung,f,cnnweigh,thrpatch,tp,listroi)
         f.close()
         os.startfile(repf)
         

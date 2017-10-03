@@ -128,7 +128,7 @@ threeFileTop1='uiptop1.html'
 threeFileTop2='uiptop2.html'
 threeFileBot='uipbot.html'
 
-
+#RGB
 black=(0,0,0)
 grey=(100,100,100)
 red=(255,0,0)
@@ -156,6 +156,9 @@ dirpickleArch=os.path.join(dirpickle,path_pickleArch)
 
 
 classifnotvisu=['healthy',]
+layertokeep= [
+        'bronchiectasis',
+        ]
 setdataref='set1'
 
 classifdict={}
@@ -189,7 +192,6 @@ derivedpatdict['CHU']=[
         'bropret'
         ]
 
-
 ##set0
 classifdict['set0'] ={
         'consolidation':0,
@@ -218,11 +220,7 @@ usedclassifdict['set0'] = [
         'GGpret'
         ]
 derivedpatdict['set0']=[
-        'HCpret',
-        'HCpbro',
-        'GGpbro',
         'GGpret',
-        'bropret'
         ]
 
 classifdict['set0p'] ={
@@ -285,11 +283,7 @@ usedclassifdict['set1'] = [
         'GGpret'
         ]
 derivedpatdict['set1']=[
-        'HCpret',
-        'HCpbro',
-        'GGpbro',
         'GGpret',
-        'bropret'
         ]
 
 classifdict['set1p'] ={
@@ -349,11 +343,7 @@ usedclassifdict['set2'] = [
         'GGpret'
         ]
 derivedpatdict['set2']=[
-        'HCpret',
-        'HCpbro',
-        'GGpbro',
         'GGpret',
-        'bropret'
         ]
 #set2p###########################☻
 classifdict['set2p'] ={
