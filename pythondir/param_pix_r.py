@@ -24,8 +24,8 @@ setdata='set0'
 #surfelem= surfelemp/100 #surface of 1 pixel in cm2
 
 imageDepth=255
-dimtabx=512
-dimtaby=512
+dimtabnorm=512
+#dimtaby=512
 dimtabmenu=190
 
 source_name='source'
