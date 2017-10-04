@@ -25,19 +25,18 @@ print keras.__version__
 print theano.__version__
 print ' keras.backend.image_data_format :',keras.backend.image_data_format()
 ######################################################################
-setdata='set2'
+setdata='set0'
 thrpatch = 0.8 #patch overlapp tolerance
 ######################################################
-
 writeFile=False
 
 MIN_BOUND = -1000.0
 MAX_BOUND = 400.0
 PIXEL_MEAN = 0.25
 
-
 dimpavx=16
 dimpavy=16
+dimtabxref=512
 
 pxy=float(dimpavx*dimpavy) #surface in pixel
 
@@ -50,7 +49,6 @@ volelemp=avgPixelSpacing*avgPixelSpacing*avgPixelSpacing # for 1 pixel
 volelem= volelemp*pxy/1000 #in ml, to multiply by slicepitch in mm
 
 modelname='CNN.h5'
-
 
 jpegpath='jpegpath'
 
@@ -418,6 +416,35 @@ elif setdata=='setall':
         'GGpret',
         'bropret'
         ]
+    
+elif setdata=='CHU':
+    classif ={
+        'consolidation':0,
+        'HC':1,
+        'ground_glass':2,
+        'healthy':3,
+        'reticulation':4,
+        'bronchiectasis':5,
+        'lung':6
+        }
+    
+    usedclassif = [
+        'consolidation',
+        'HC',
+        'ground_glass',
+        'healthy',
+        'reticulation',
+        'bronchiectasis'
+        ]
+    
+    derivedpat=[
+        'HCpret',
+        'HCpbro',
+        'GGpbro',
+        'GGpret',
+        'bropret'
+        ]
+    
 else:
     print 'error: not defined set'
 
@@ -542,6 +569,7 @@ def maxproba(proba):
 
 #write the log file with label list
 def genelabelloc(patchtoppath,plabelfile,jpegpath):
+    print 'geneloc'
     eflabel=os.path.join(patchtoppath,plabelfile)
     mflabel=open(eflabel,"w")
     mflabel.write('label  _  localisation\n')
@@ -602,6 +630,10 @@ def genelabelloc(patchtoppath,plabelfile,jpegpath):
                         listlabel[label]=listlabel[label]+npo
                     else:
                         listlabel[label]=npo
+
+#                    if label=='HCpret':
+#                        print listlabel['HCpret']
+#                        print f1
     #        listslice.append(sln)
             
     #        print listlabel
@@ -646,11 +678,13 @@ def totalnbpat (patchtoppath,picklepathdir):
     #file for data pn patches
     filepwt1 = open(os.path.join(patchtoppath,'totalpat.txt'), 'w')
     dirlabel=os.walk( picklepathdir).next()[1]
+
     #print filepwt
     ntot=0;
     labellist=[]
     localist=[]
     labeldict={}
+    labeldictref={}
     for pat in usedclassifall:
         labeldict[pat]=0
     for dirnam in dirlabel:
@@ -672,16 +706,24 @@ def totalnbpat (patchtoppath,picklepathdir):
             if label=='' or loca =='':
                 print('not found:',dirnam)
             subdir = os.path.join(dirloca,loca)
-    #        print 'subdir',subdir
+#            print 'subdir',subdir
             n=0
             listcwd=os.listdir(subdir)
-    #        print 'listcwd',listcwd
+#            print 'listcwd',listcwd
             for ff in listcwd:
+                namtopp=ff.find('_',0)
+                nametop=ff[0:namtopp]
+                if  nametop not in labeldictref:
+                    labeldictref[nametop]={}
+                    for pat in usedclassifall:
+                        labeldictref[nametop][pat]=0
+                
                 if ff.find('.pkl') >0 :
                     p=pickle.load(open(os.path.join(subdir,ff),'rb'))
                     lp=len(p)
                     n=n+lp
                     ntot=ntot+lp
+                    labeldictref[nametop][label]+=lp
     #        print(label,loca,n)
             labeldict[label]+=n
             filepwt1.write('label: '+label+' localisation: '+loca+\
@@ -694,7 +736,17 @@ def totalnbpat (patchtoppath,picklepathdir):
         if labeldict[pat]>0:
             filepwt1.write('label: '+pat+' : '+str(labeldict[pat])+'\n' )
 #            print('label: '+pat+' : '+str(labeldict[pat]))
-    filepwt1.close()
     
+    filepwt1.write('-------------------------------------\n')
+    for key ,value in labeldictref.items():
+#        print key
+        filepwt1.write(key+'\n')
+        filepwt1.write('-\n')
+        for k,v in value.items():
+#            print k,v
+            if v>0:
+                filepwt1.write(k+' : '+str(v)+'\n')
+        filepwt1.write('----------\n')
+    filepwt1.close()
 ###############
     

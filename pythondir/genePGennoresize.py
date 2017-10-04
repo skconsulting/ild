@@ -6,11 +6,12 @@ this is cross view only
 no support of superimposed patterns
 include back-ground
 first step
+No resize
 
 version 1.0
 """
-from param_pix_t import classifall,usedclassifall,classifc
-from param_pix_t import dimpavx,dimpavy,typei,typei1,avgPixelSpacing,thrpatch,lungmaskbmp1
+from param_pix_t import classifall,usedclassifall,classifc,dimtabxref
+from param_pix_t import dimpavx,dimpavy,typei,typei1,thrpatch,lungmaskbmp1
 from param_pix_t import remove_folder,normi,genelabelloc,totalpat,totalnbpat,fidclass
 from param_pix_t import white
 from param_pix_t import patchpicklename,scan_bmp,lungmask,lungmask1,lungmaskbmp,sroi,patchesdirname
@@ -31,13 +32,13 @@ import scipy.misc
 #global directory for scan file
 topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 namedirHUG = 'HUG'
-#subHUG='ILD_TXT'
-subHUG='ILD105'
+subHUG='ILD_TXT'
+#subHUG='ILD105'
 
 toppatch= 'TOPPATCH'
 #extension for output dir
 extendir='all'
-extendir1='k'
+extendir1='01'
 
 
 #labelEnh=('consolidation','reticulation,air_trapping','bronchiectasis','cysts')
@@ -162,21 +163,23 @@ def genepara(namedirtopcf):
 
    
     slnt=slnt+1
-    fxs=float(RefDs.PixelSpacing[0])/avgPixelSpacing
+#    fxs=float(RefDs.PixelSpacing[0])/avgPixelSpacing
     dsr= RefDs.pixel_array
     errorfile.write('patient shape  :'+str(dsr.shape[0])+'\n')
     errorfile.write('--------------------------------\n')
     errorfile.close()
 #    print dsr.shape
 #    errorfile.write('patient shape  :'+str(dsr.shape[0])+'\n')
-    dsr= dsr-dsr.min()
     dsr=dsr.astype('uint16')
 #    dsrresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
-    dsrresize = scipy.ndimage.interpolation.zoom(dsr, fxs, mode='nearest')
-
-    dimtabx=int(dsrresize.shape[0])
-    dimtaby=int(dsrresize.shape[1])
-    return dimtabx,dimtaby,slnt
+#    dsrresize = scipy.ndimage.interpolation.zoom(dsr, fxs, mode='nearest')
+    actdimtabx=dsr.shape[0]
+    if actdimtabx!= dimtabxref:
+        print 'this is not ',dimtabxref
+    dimtabx=dimtabxref
+    dimtaby=dimtabxref
+    
+    return dimtabx,dimtaby,slnt,actdimtabx
 
 
 def genebmp(dirName):
@@ -221,6 +224,7 @@ def genebmp(dirName):
     
     tabscanName={}
 #    os.listdir(lung_dir)
+    print 'generate scan'
     for filename in fileList:
 #            print(filename)
 #        if ".dcm" in filename.lower():  # check whether the file's DICOM
@@ -229,7 +233,7 @@ def genebmp(dirName):
             dsr= RefDs.pixel_array
             
             dsr=dsr.astype('int16')
-            fxs=float(RefDs.PixelSpacing[0])/avgPixelSpacing
+#            fxs=float(RefDs.PixelSpacing[0])/avgPixelSpacing
 #                print 'fxs',fxs
             scanNumber=int(RefDs.InstanceNumber)
             endnumslice=filename.find('.dcm')
@@ -245,10 +249,13 @@ def genebmp(dirName):
 
             dsr += np.int16(intercept)
 #            dsr = dsr.astype('int16')
-            dsr = dsr.astype('float32')
-        
-#            dsr=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_CUBIC)
-            dsr = scipy.ndimage.interpolation.zoom(dsr, fxs, mode='nearest')
+#            
+            if dsr.shape[0]!= dimtabxref:
+
+                 dsr = dsr.astype('float32')
+                 dsr=cv2.resize(dsr,(dimtabxref,dimtabxref),interpolation=cv2.INTER_LINEAR)
+            
+#                dsr = scipy.ndimage.interpolation.zoom(dsr, fxs, mode='nearest')
 #        imgresize=dsr
             dsr=dsr.astype('int16')
 #                        print dsr.min(),dsr.max(),dsr.shape
@@ -272,23 +279,27 @@ def genebmp(dirName):
             cv2.imwrite (bmpfileroi, dsrforimage)
             tabsroi[scanNumber]=dsrforimage
 
-
+    print 'generate lung'
     for lungfile in lunglist:
 #             print(lungfile)
 #             if ".dcm" in lungfile.lower():  # check whether the file's DICOM
                 FilesDCM =(os.path.join(lung_dir,lungfile))
                 RefDs = dicom.read_file(FilesDCM,force=True)
                 dsr= RefDs.pixel_array
-                dsr=dsr.astype('int16')
-                fxs=float(RefDs.PixelSpacing[0])/avgPixelSpacing
+  
+#                fxs=float(RefDs.PixelSpacing[0])/avgPixelSpacing
 #                print 'fxs',fxs
                 scanNumber=int(RefDs.InstanceNumber)
                 endnumslice=filename.find('.dcm')
                 imgcoredeb=filename[0:endnumslice]+'_'+str(scanNumber)+'.'
                 imgcore=imgcoredeb+typei
-                bmpfile=os.path.join(lung_bmp_dir,imgcore)
-                dsr=normi(dsr)
-                dsrresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
+                bmpfile=os.path.join(lung_bmp_dir,imgcore)               
+                if dsr.shape[0]!= dimtabxref:
+
+                     dsr = dsr.astype('float32')
+                     dsr=cv2.resize(dsr,(dimtabxref,dimtabxref),interpolation=cv2.INTER_LINEAR)
+                dsr=dsr.astype('int16')
+                dsrresize=normi(dsr)
                 tabslung[scanNumber]=dsrresize
                 cv2.imwrite (bmpfile, dsrresize)
 
@@ -644,8 +655,7 @@ for f in listdirc:
         remove_folder(sroidir)
     os.mkdir(sroidir)
     
-    dimtabx,dimtaby,slnt = genepara(namedirtopcf)
-#        print dimtabx,dimtaby,slnt
+    dimtabx,dimtaby,slnt,actdimtabx = genepara(namedirtopcf)
     tabscan,tabsroi,tabscanname,tabslung=genebmp(namedirtopcf)
     nbpf=0
     tabroipat={}
@@ -653,27 +663,23 @@ for f in listdirc:
         tabroipat[label]={}
         for sln in range(1,slnt):
            tabroipat[label][sln]= np.zeros((dimtabx,dimtaby,3),np.uint8)
-#    tabroipat[pat][scannumb]
-  
+ 
     listsliceok=[]
     posp=f.find('.',0)
     posu=f.find('_',0)
-   
-    
+       
     pathpatchfilecomplet=os.path.join(namedirtopcf,patchfile)
-#    pathpatchfilecomplet=unicode(pathpatchfilecomplet)
-#    print type(pathpatchfilecomplet)
+
     if os.path.exists(pathpatchfilecomplet):
         remove_folder(pathpatchfilecomplet)
     os.mkdir(pathpatchfilecomplet)
-    #namedirtopcf = final/ILD_DB_txtROIs/35
+
     if posp==-1 and posu==-1:
         contenudir = os.listdir(namedirtopcf)
 #        print(contenudir)
-        fif=False
-        
-        for f1 in contenudir:
+        fif=False        
 
+        for f1 in contenudir:
             if f1.find('.txt') >0 and (f1.find('CT')==0 or \
              f1.find('Tho')==0):
 #                print f1
@@ -711,7 +717,6 @@ for f in listdirc:
                 if l.find(c,0)==0:
 #                    print('debut l',l,'c:',c)
 
-
                     pathl=os.path.join(pathpatchfilecomplet,l)
                     tabcff = np.loadtxt(pathl,dtype='f')
                     ofile = open(pathl, 'r')
@@ -731,7 +736,11 @@ for f in listdirc:
                     pos1=c.find('_',pos+1)
                     numslice=c[pos+1:pos1]
 
-                    tabccfi=tabcff/avgPixelSpacing
+#                    tabccfi=tabcff/avgPixelSpacing
+                    tabccfi=tabcff/coefi*dimtabx/actdimtabx
+
+#                    tabccfi=tabcff
+
 
                     tabc=tabccfi.astype(int)
 

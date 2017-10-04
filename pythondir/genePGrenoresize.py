@@ -4,6 +4,7 @@
 include new patterns when patterns are super imposed, cross view
 it is for cross view only
 includes back_ground
+no resize
 version 1.0
 18 august 2017
 S. Kritter
@@ -12,13 +13,14 @@ S. Kritter
 
 #from param_pix_t import *
 
-from param_pix_t import derivedpatall,classifc,usedclassifall,classifall
+from param_pix_t import derivedpatall,classifc,usedclassifall,classifall,dimtabxref
 from param_pix_t import dimpavx,dimpavy,typei,typei1,avgPixelSpacing,thrpatch,perrorfile,plabelfile,pxy
 from param_pix_t import remove_folder,normi,genelabelloc,totalpat,totalnbpat,fidclass,rsliceNum
 from param_pix_t import white
 from param_pix_t import patchpicklename,scan_bmp,lungmask,lungmask1,sroi,patchesdirname
 from param_pix_t import imagedirname,picklepath,source,lungmaskbmp,layertokeep
 import os
+import copy
 #import sys
 #import png
 import numpy as np
@@ -27,7 +29,6 @@ import datetime
 import scipy.misc
 import dicom
 #import PIL
-import copy
 import cv2
 #import matplotlib.pyplot as plt
 import cPickle as pickle
@@ -35,12 +36,12 @@ import cPickle as pickle
 #######################################################
 #global directory for scan file
 topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
-namedirHUG = 'CHU2'
+namedirHUG = 'CHU'
 #subdir for roi in text
 #subHUG='UIP'
 #subHUG='UIP_106530'
 subHUG='UIP'
-#subHUG='UIP0'
+#subHUG='UIP5'
 
 #global directory for output patches file
 toppatch= 'TOPPATCH'
@@ -48,7 +49,7 @@ toppatch= 'TOPPATCH'
 extendir='all'
 #extendir='essai1'
 #extension1 for output dir
-extendir1='1'
+extendir1='01'
 
 alreadyDone =[ 'S107260', 'S139370', 'S139430', 'S139431', 'S145210', 
               'S14740', 'S15440', 'S1830', 'S274820', 
@@ -197,9 +198,9 @@ def genepara(namedirtopcf):
     errorfile.write('--------------------------------\n')
     errorfile.close()  
 #    dsrresize = scipy.ndimage.interpolation.zoom(dsr, fxs, mode='nearest')
-    dsrresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
-    dimtabx=int(dsrresize.shape[0])
-    dimtaby=int(dsrresize.shape[1])
+#    dsrresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_CUBIC)
+    dimtabx=dimtabxref
+    dimtaby=dimtabxref
     return dimtabx,dimtaby,slnt,fxs,listsln
 
 def tagviews(tab,text,x,y):
@@ -215,8 +216,9 @@ def genebmp(dirName, sou,tabscanName,fxs,listsln,listroi):
     dirFileP = os.path.join(dirName, sou)
     (top,tail)=os.path.split(dirName)
     listslnCopy=copy.copy(listsln)
-    
+
     if sou ==source:
+        #scan image
         tabscan=np.zeros((slnt,dimtabx,dimtaby),np.int16)
         dirFilePbmp=os.path.join(dirFileP,scan_bmp)
         remove_folder(dirFilePbmp)
@@ -240,19 +242,19 @@ def genebmp(dirName, sou,tabscanName,fxs,listsln,listroi):
                     dsr = dsr.astype(np.int16)
                 dsr += np.int16(intercept)
 #                dsr = dsr.astype('int16')
-                dsr = dsr.astype('float32')
+#                dsr = dsr.astype('float32')
         
-                dsr=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
+#                dsr=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_CUBIC)
 #                dsr = scipy.ndimage.interpolation.zoom(dsr, fxs, mode='nearest')
 #        imgresize=dsr
                 dsr=dsr.astype('int16')
 #                        print dsr.min(),dsr.max(),dsr.shape
-
+#                dsr=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_CUBIC)
                 dsrforimage=normi(dsr)
                 tabscan[scanNumber]=dsr                                  
                 tabscanName[scanNumber]=imgcoredeb
 
-                imgcored=imgcoredeb+'.'+typei1
+                imgcored=imgcoredeb+'.'+typei
                 bmpfiled=os.path.join(dirFilePbmp,imgcored)
                 bmpfileroi=os.path.join(sroidir,imgcored)
 
@@ -266,7 +268,7 @@ def genebmp(dirName, sou,tabscanName,fxs,listsln,listroi):
 
                 
     elif sou == lungmask or sou == lungmask1 :
-
+#lung
         dirFilePbmp=os.path.join(dirFileP,lungmaskbmp)
         tabscan=np.zeros((slnt,dimtabx,dimtaby),np.uint8)
         if not os.path.exists(dirFilePbmp):
@@ -282,14 +284,13 @@ def genebmp(dirName, sou,tabscanName,fxs,listsln,listroi):
 #                print img.shape
 #                cv2.imshow('img',img)
                 
-                dsrresizer=cv2.resize(img,(dimtabx,dimtabx),interpolation=cv2.INTER_LINEAR)
+                img=cv2.resize(img,(dimtabx,dimtabx),interpolation=cv2.INTER_LINEAR)
                 scanNumber=rsliceNum(namefile,'_','.'+typei1)
 
-                np.putmask(dsrresizer,dsrresizer>0,100)
-                tabscan[scanNumber]=dsrresizer
+                np.putmask(img,img>0,100)
+                tabscan[scanNumber]=img
                 listslnCopy.remove(scanNumber)
-        if len(listslnCopy)>0:     
-            print 'lung  bmp not  complete' 
+        if len(listslnCopy)>0:               
             fileList =[name for name in  os.listdir(dirFileP) if ".dcm" in name.lower()]
             if len(fileList)>0:
                 for filename in fileList:
@@ -305,18 +306,20 @@ def genebmp(dirName, sou,tabscanName,fxs,listsln,listroi):
                         imgcoredeb=filename[0:endnumslice]+'_'+str(scanNumber)
                         dsr=normi(dsr)
                         if dsr.max()>0:
-                            dsrresize=cv2.resize(dsr,(dimtabx,dimtaby),interpolation=cv2.INTER_LINEAR)                        
+                            dsr=cv2.resize(dsr,(dimtabx,dimtaby),interpolation=cv2.INTER_LINEAR)                        
                             imgcored=tabscanName[scanNumber]+'.'+typei1
                             bmpfiled=os.path.join(dirFilePbmp,imgcored)
-                            imgc=colorimage(dsrresize,classifc[sou])
+                            imgc=colorimage(dsr,classifc[sou])
                             cv2.imwrite (bmpfiled, imgc)
-                            dsrresizer=np.copy(dsrresize)
+                            dsrresizer=np.copy(dsr)
     #                        np.putmask(dsrresizer,dsrresizer==1,0)
                             np.putmask(dsrresizer,dsrresizer>0,100)
                             tabscan[scanNumber]=dsrresizer
         else:
-              print 'lung  bmp complete' 
+              print 'lung  bmp complete'             
+    
     else:
+    #roi
         tabscan=np.zeros((slnt,dimtabx,dimtaby),np.uint8)
         if not os.path.exists(dirFileP):
             os.mkdir(dirFileP)
@@ -326,13 +329,12 @@ def genebmp(dirName, sou,tabscanName,fxs,listsln,listroi):
                 for fil in fileList:
                     namefile=os.path.join(dirFileP,fil)
                     img=cv2.imread(namefile,0)
+                    dsrresizer=cv2.resize(img,(dimtabx,dimtabx),interpolation=cv2.INTER_LINEAR)
+                    scanNumber=rsliceNum(namefile,'_','.'+typei1)
+    #                np.putmask(dsrresizer,dsrresizer==1,0)
                     if img.max()>0:
-                        scanNumber=rsliceNum(namefile,'_','.'+typei1)
                         if scanNumber not in listroi:
-                                listroi.append(scanNumber)
-                        dsrresizer=cv2.resize(img,(dimtabx,dimtabx),interpolation=cv2.INTER_LINEAR)
-                        
-        #                np.putmask(dsrresizer,dsrresizer==1,0)
+                            listroi.append(scanNumber)
                         np.putmask(dsrresizer,dsrresizer>0,100)
                         tabscan[scanNumber]=dsrresizer
             fileList =[name for name in  os.listdir(dirFileP) if ".dcm" in name.lower()]
@@ -479,7 +481,7 @@ def pavs (dirName,pat,slnt,dimtabx,dimtaby,tabscanName,listroi):
                 imn=tagview(imn,pat,0,100)
                 tabsroi[scannumb]=imn
                 imn = cv2.cvtColor(imn, cv2.COLOR_BGR2RGB)
-                sroifile=tabscanName[scannumb]+'.'+typei1
+                sroifile=tabscanName[scannumb]+'.'+typei
                 filenamesroi=os.path.join(sroidir,sroifile)
                 cv2.imwrite(filenamesroi,imn)
 
@@ -560,7 +562,7 @@ def colorimage(image,color):
     return im
 
 
-def calnewpat(dirName,pat,slnt,dimtabx,dimtaby,tabscanName):
+def calnewpat(dirName,pat,slnt,dimtabx,dimtaby,tabscanName,listroi):
     print 'new pattern : ',pat
 #    (top,tail)=os.path.split(dirName)
     tab=np.zeros((slnt,dimtabx,dimtaby),np.uint8)
@@ -593,7 +595,7 @@ def calnewpat(dirName,pat,slnt,dimtabx,dimtaby,tabscanName):
 
     nm=False
 
-    for i in range (0,slnt):
+    for i in listroi:
 #        if i == 145 and pat=='bropret':
 #        if tab1[i].max()>0:
 #            cv2.imshow('tab1',tab1[i])
@@ -627,7 +629,7 @@ def calnewpat(dirName,pat,slnt,dimtabx,dimtaby,tabscanName):
 #            npdbmp=os.path.join(npd,scan_bmp)
 #            os.mkdir(npdbmp)
             
-            for i in range (0,slnt):
+            for i in listroi:
                  if tab3[i].max()>0:
 #                    naf3=pat+'_'+str(i)+'.'+typei
                     naf3=tabscanName[i]+'.'+typei1
@@ -687,8 +689,6 @@ def genebackground(namedir,listroi):
             imgcoreScan=os.path.join(labeldir,namepat)
     #                imgcoreScan=os.path.join(locadir,namepat)
             tabtowrite=colorimage(tabroipat[fidclass(0,classifall)][sln],classifc[fidclass(0,classifall)])
-#            tabtowrite=colorimage(tabroipat[fidclass(0,classifall)][sln],(100,100,100))
-
 #            tabtowrite=cv2.cvtColor(tabtowrite,cv2.COLOR_BGR2RGB)
             cv2.imwrite(imgcoreScan,tabtowrite)    
 
@@ -702,8 +702,8 @@ print 'class used :',usedclassifall
 for f in listdirc:
 
     print('work on:',f)
-    errorfile = open(eferror, 'a')
     listroi=[]
+    errorfile = open(eferror, 'a')
     tn = datetime.datetime.now()
     todayn = str(tn.month)+'-'+str(tn.day)+'-'+str(tn.year)+' - '+str(tn.hour)+'h '+str(tn.minute)+'m'+'\n'
     errorfile.write('started ' +namedirHUG+' '+f+' at :'+todayn)
@@ -747,13 +747,13 @@ for f in listdirc:
     for i in contenudir:
         if i != 'back_ground':
             tabroipat[i],tabsroi,a,listroi=genebmp(namedirtopcf, i,tabscanName,fxs,listsln,listroi)
-
+#    print listroi
     for i in derivedpatall:
 #        i='HCpret'
         tabroipat[i]=np.zeros((slnt,dimtabx,dimtaby),np.uint8)
-        tabroipat[i]=calnewpat(namedirtopcf,i,slnt,dimtabx,dimtaby,tabscanName)
+        tabroipat[i]=calnewpat(namedirtopcf,i,slnt,dimtabx,dimtaby,tabscanName,listroi)
 #        break
-#    print listroi
+    
     genebackground(namedirtopcf,listroi)
 
     contenudir = [name for name in os.listdir(namedirtopcf) if name in usedclassifall]
