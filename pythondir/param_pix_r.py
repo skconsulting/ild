@@ -48,7 +48,7 @@ reportalldir='REPORT_SCORE'
 
 black=(0,0,0)
 grey=(100,100,100)
-highgrey=(200,200,200)
+highgrey=(100,100,100)
 red=(255,0,0)
 green=(0,255,0)
 blue=(0,0,255)

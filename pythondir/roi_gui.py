@@ -82,8 +82,7 @@ if os.path.exists(paramsaveDirf):
             paramdict['centerHU']=-662
             paramdict['limitHU']=1700
             pickle.dump(paramdict,open( paramsaveDirf, "wb" ))
-            
-    
+                
 else:
     lisdir=os.environ['USERPROFILE']     
     paramdict['path_patient']=lisdir
