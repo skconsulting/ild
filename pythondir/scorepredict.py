@@ -8,8 +8,8 @@ version 1.5
 '''
 #from param_pix_p import *
 from param_pix_s import scan_bmp,avgPixelSpacing,dimpavx,dimpavy,dirpickleArch,modelArch,surfelemp
-from param_pix_s import typei,typei1,typei2
-from param_pix_s import white,yellow
+from param_pix_s import typei,typei1
+from param_pix_s import white,yellow,red
 
 from param_pix_s import lung_namebmp,jpegpath,lungmask,lungmask1
 from param_pix_s import fidclass,pxy
@@ -26,7 +26,7 @@ from param_pix_s import jpegpadirm,source_name,path_data,dirpickle,cwdtop
 from param_pix_s import remove_folder,normi,rsliceNum,norm,maxproba
 from param_pix_s import classifdict,usedclassifdict,oldFormat,derivedpatdict,layertokeep
 
-import scipy
+#import scipy
 import time
 from time import time as mytime
 import numpy as np
@@ -44,7 +44,7 @@ from keras.models import model_from_json
 #from keras.optimizers import Adam
 
 
-
+moderesize=True # True means linear resize
 t0=mytime()
 
 def reshapeScanl(tabscan):
@@ -52,21 +52,7 @@ def reshapeScanl(tabscan):
     tabres=np.moveaxis(tabscan,0,1)
     return tabres
 
-#def tagview(tab,label,x,y):
-#    """write text in image according to label and color"""
-#    font = cv2.FONT_HERSHEY_SIMPLEX
-#    col=classifc[label]
-#    coli=[]
-#    for i in range (3):
-#        coli[i]=col[3-i]
-#    labnow=classif[label]
-##    print (labnow, text)
-#
-##        deltay=25*((labnow-1)%5)
-#    deltay=10*(labnow)
-#
-#    viseg=cv2.putText(tab,label,(x, y+deltay), font,0.3,col,1)
-#    return viseg
+
 
 def genebmp(fn,sou,nosource,centerHU, limitHU, tabscanName,tabscanroi):
     """generate patches from dicom files"""
@@ -102,14 +88,20 @@ def genebmp(fn,sou,nosource,centerHU, limitHU, tabscanName,tabscanroi):
     lbHU=centerHU-limitHU/2
     lhHU=centerHU+limitHU/2
     dsr= RefDs.pixel_array
-    dsr = dsr.astype('int16')
-    fxs=float(RefDs.PixelSpacing[0])/avgPixelSpacing
 
-    imgresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_CUBIC)
-    dimtabx=imgresize.shape[0]
-    dimtaby=imgresize.shape[1]
-#    dimtabx=dsr.shape[0]
-#    dimtaby=dimtabx
+    dsr = dsr.astype('float32')
+    if moderesize:
+        print 'resize'
+        fxs=float(RefDs.PixelSpacing[0])/avgPixelSpacing
+        imgresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
+#    imgresize = scipy.ndimage.interpolation.zoom(dsr, fxs, mode='nearest')
+#    dsr = dsr.astype('int16')
+        dimtabx=imgresize.shape[0]
+        dimtaby=imgresize.shape[1]
+    else:
+        print 'no resize'
+        dimtabx=dsr.shape[0]
+        dimtaby=dimtabx
 #    print dimtabx, dimtaby
     slnt=0
     for l in listdcm:
@@ -143,27 +135,32 @@ def genebmp(fn,sou,nosource,centerHU, limitHU, tabscanName,tabscanroi):
              dsr = dsr.astype(np.int16)
 
         dsr += np.int16(intercept)
-#        dsr = dsr.astype('int16')
-        dsr = dsr.astype('float32')
-        
-        imgresize=cv2.resize(dsr,(dimtabx,dimtaby),interpolation=cv2.INTER_CUBIC)
+        if moderesize:
+            dsr = dsr.astype('float32')
+            imgresize1=cv2.resize(dsr,(dimtabx,dimtaby),interpolation=cv2.INTER_LINEAR)
+            imgresize=imgresize1.astype('int16')
 #        imgresize = scipy.ndimage.interpolation.zoom(dsr, fxs, mode='nearest')
-#        imgresize=dsr
-        imgresize=imgresize.astype('int16')
+        else:
+            imgresize=dsr
+        
 
-        
-        
         endnumslice=l.find('.dcm')
         imgcoreScan=l[0:endnumslice]+'_'+str(slicenumber)+'.'+typei1  
         
-        tabscan[slicenumber]=imgresize
+        tabscan[slicenumber]=imgresize.copy()
+#        if slicenumber==12:
+#            print '1',tabscan[slicenumber].min(),tabscan[slicenumber].max()
         np.putmask(imgresize,imgresize<lbHU,lbHU)
         np.putmask(imgresize,imgresize>lhHU,lhHU)
         
-        
+     
         imtowrite=normi(imgresize)
         imtowrite = cv2.cvtColor(imtowrite, cv2.COLOR_GRAY2RGB)
-
+#        if slicenumber==12:
+#            print '2',tabscan[slicenumber].min(),tabscan[slicenumber].max()
+#        if slicenumber==12:
+#            pickle.dump(imgresize, open('score.pkl', "wb" ),protocol=-1)
+#            cv2.imwrite('score.bmp',imtowrite)
 #        bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
         tabscanName[slicenumber]=imgcoreScan
 #        (topw,tailw)=os.path.split(picklein_file)
@@ -175,9 +172,16 @@ def genebmp(fn,sou,nosource,centerHU, limitHU, tabscanName,tabscanroi):
         t4=time.asctime()
         t5='CenterHU: '+str(int(centerHU))
         t6='LimitHU: +/-' +str(int(limitHU/2))
-                
-        anoted_image=tagviews(imtowrite,t0,0,10,t1,0,dimtaby-20,t2,0,20,
-                     t3,0,dimtaby-30,t4,0,dimtaby-10,t5,0,dimtaby-40,t6,0,dimtaby-50)        
+    
+        anoted_image=tagviews(imtowrite,
+                              t0,dimtabx-100,dimtaby-10,
+                              t1,0,dimtaby-21,
+                              t2,dimtabx-100,dimtaby-20,
+                              t3,0,dimtaby-32,
+                              t4,0,dimtaby-10,
+                              t5,0,dimtaby-43,
+                              t6,0,dimtaby-54)     
+           
         tabscanroi[slicenumber]=anoted_image
 
     return tabscan,slnt,dimtabx,slicepitch,lislnn,tabscanroi,tabscanName
@@ -285,7 +289,7 @@ def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan,listsln,tabscanName
     tabrange={}
     tabrange['min']=100000000
     tabrange['max']=0
-    kernel = np.ones((16,16),np.uint8)
+#    kernel = np.ones((4,4),np.uint8)
     (top,tail) =os.path.split(fn)
     print ('load lung segmented dicom files in :',tail)
     fmbmp=os.path.join(fn,lungname)    
@@ -307,10 +311,13 @@ def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan,listsln,tabscanName
                     imr=cv2.imread(os.path.join(fmbmpbmp,img),0) 
                     imr=cv2.resize(imr,(dimtabx,dimtaby),interpolation=cv2.INTER_LINEAR)  
                     np.putmask(imr,imr>0,classif['lung']+1)                                  
-                    dilation = cv2.dilate(imr,kernel,iterations = 1)
-                    tabscan[slicenumber]=dilation
+#                    dilation = cv2.dilate(imr,kernel,iterations = 1)
+                    tabscan[slicenumber]=imr
+#                    if slicenumber==12:
+#                        pickle.dump(imr, open('scorelung.pkl', "wb" ),protocol=-1)
                     listslnCopy.remove(slicenumber)
     if len(listslnCopy)>0:
+        print 'not all lung in bmp'
         if len(listdcm)>0:  
             print 'lung scan exists in dcm'
                
@@ -328,8 +335,8 @@ def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan,listsln,tabscanName
                 imgcoreScan=tabscanName[slicenumber]
                 bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
                 if tabscan[slicenumber].max()==0:
-                    dilation = cv2.dilate(imgresize,kernel,iterations = 1)
-                    tabscan[slicenumber]=dilation
+#                    dilation = cv2.dilate(imgresize,kernel,iterations = 1)
+                    tabscan[slicenumber]=imgresize
                     colorlung=colorimage(imgresize,classifc['lung'])
                     cv2.imwrite(bmpfile,colorlung)  
                     
@@ -348,8 +355,8 @@ def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan,listsln,tabscanName
                     imgcoreScan=tabscanName[i]
                     bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
                     if tabscan[i].max()==0:
-                        dilation = cv2.dilate(tabscan1[i],kernel,iterations = 1)
-                        tabscan[i]=dilation
+#                        dilation = cv2.dilate(tabscan1[i],kernel,iterations = 1)
+                        tabscan[i]=tabscan1[i]
                         colorlung=colorimage(tabscan[i],classifc['lung'])
                         cv2.imwrite(bmpfile,colorlung)
     else:
@@ -366,21 +373,25 @@ def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan,listsln,tabscanName
     return tabscan,tabrange
 
 
+
 def tagviews (tab,t0,x0,y0,t1,x1,y1,t2,x2,y2,t3,x3,y3,t4,x4,y4,t5,x5,y5,t6,x6,y6):
     """write simple text in image """
-    font = cv2.FONT_HERSHEY_SIMPLEX
-    col=yellow
+    font = cv2.FONT_HERSHEY_PLAIN
+    col=red
+    size=1
+    sizes=0.8
 
-    viseg=cv2.putText(tab,t0,(x0, y0), font,0.3,col,1)
-    viseg=cv2.putText(viseg,t1,(x1, y1), font,0.4,col,1)
-    viseg=cv2.putText(viseg,t2,(x2, y2), font,0.3,col,1)
+    viseg=cv2.putText(tab,t0,(x0, y0), font,sizes,col,1)
+    viseg=cv2.putText(viseg,t1,(x1, y1), font,size,col,1)
+    viseg=cv2.putText(viseg,t2,(x2, y2), font,sizes,col,1)
 
-    viseg=cv2.putText(viseg,t3,(x3, y3), font,0.4,col,1)
-    viseg=cv2.putText(viseg,t4,(x4, y4), font,0.4,col,1)
-    viseg=cv2.putText(viseg,t5,(x5, y5), font,0.4,col,1)
-    viseg=cv2.putText(viseg,t6,(x6, y6), font,0.4,col,1)
+    viseg=cv2.putText(viseg,t3,(x3, y3), font,size,col,1)
+    viseg=cv2.putText(viseg,t4,(x4, y4), font,size,col,1)
+    viseg=cv2.putText(viseg,t5,(x5, y5), font,size,col,1)
+    viseg=cv2.putText(viseg,t6,(x6, y6), font,size,col,1)
 
     return viseg
+
 
 def pavgene(dirf,dimtabx,dimtaby,tabscanScan,tabscanLung,slnt,jpegpath,listsln):
    
@@ -400,6 +411,9 @@ def pavgene(dirf,dimtabx,dimtaby,tabscanScan,tabscanLung,slnt,jpegpath,listsln):
                 
         for img in listsln:
              tabscan[img]=tabscanScan[img]
+#             if img==12:
+#                        pickle.dump(tabscan[img], open('scorepav.pkl', "wb" ),protocol=-1)
+
 
              tabfw = np.zeros((dimtabx,dimtaby,3), np.uint8)
              tablung = np.copy(tabscanLung[img])
@@ -736,6 +750,7 @@ def tagviewct(tab,label,x,y):
 #  
     deltay=10*(labnow%5)
     deltax=100*(labnow/5)
+#    print label, deltax,deltay
     font = cv2.FONT_HERSHEY_SIMPLEX
     viseg=cv2.putText(tab,label,(x+deltax, y+deltay), font,0.3,col,1)
 #    viseg = cv2.cvtColor(viseg,cv2.COLOR_RGB2BGR)
@@ -1100,8 +1115,7 @@ def calnewpat(pat,slnroi,tabroipat,tabroi):
 
 def generoi(dirf,tabroi,dimtabx,dimtaby,slnroi,tabscanName,dirroit,tabscanroi,tabscanLung,slnroidir,slnt,fer):
     (top,tail)=os.path.split(dirf)
-    tabroipat={}
-    
+    tabroipat={}    
     listroi={}
     for pat in usedclassif:
         tabroipat[pat]=np.zeros((slnt,dimtabx,dimtaby),np.uint8)
@@ -1112,13 +1126,8 @@ def generoi(dirf,tabroi,dimtabx,dimtaby,slnroi,tabscanName,dirroit,tabscanroi,ta
                 numslice=rsliceNum(s,'_','.'+typei1)                    
                 img=cv2.imread(os.path.join(pathroi,s),0)
                 img=cv2.resize(img,(dimtabx,dimtabx),interpolation=cv2.INTER_LINEAR)                
-#                np.putmask(tabroi[numslice], img > 0, 0)
                 np.putmask(img, img > 0, classif[pat]+1)
-#                tablung=np.copy(tabscanLung[numslice])
-#                np.putmask(tablung,tablung>0,255)                      
-#                img=np.bitwise_and(tablung, img)  
                 tabroipat[pat][numslice]=img     
-#                cv2.imshow(pat+' tabo',normi(tabroi[numslice]))
                 if numslice not in slnroi:
                     slnroi.append(numslice)  
     
@@ -1135,26 +1144,30 @@ def generoi(dirf,tabroi,dimtabx,dimtaby,slnroi,tabscanName,dirroit,tabscanroi,ta
 #                cv2.destroyAllWindows()     
     for pat in derivedpat:    
             tabroi=calnewpat(pat,slnroi,tabroipat,tabroi)
+            
     for numslice in slnroi:
         for pat in layertokeep:
             tab=np.copy(tabroipat[pat][numslice])
-            np.putmask(tabroi[numslice], tab > 0, 0)
-#            np.putmask(tab, tab > 0, classif[pat]+1)            
+            np.putmask(tabroi[numslice], tab > 0, 0)       
             tabroi[numslice]+=tab
     
     for numslice in slnroi:
-        mask=np.copy(tabscanLung[numslice])        
-#        mask=tabroi[numslice].copy()
-        tabxorig=tabroi[numslice].copy()  
-        if mask.max()==0 and tabxorig.max()!=0:
+        maskLung=tabscanLung[numslice].copy()
+        np.putmask(maskLung,maskLung>0,255)
+        maskRoi=tabroi[numslice].copy() 
+        maskRoi1=tabroi[numslice].copy()
+        np.putmask(maskRoi1,maskRoi1>0,255)
+        
+        if maskLung.max()==0 and maskRoi.max()!=0:
             fer.write('no lung for: '+str(numslice)+'\n')
             print ('no lung for: '+str(numslice))
+        tabroi[numslice]=np.bitwise_and(maskRoi,maskLung)   
 
-        np.putmask(mask,mask>0,255)
-#        tabxn=np.bitwise_not(mask)       
-#        tablung=np.bitwise_and(tablung, tabxn)
-#        np.putmask(tablung,tablung>0,classif['healthy']+1)        
-        tabroi[numslice]=np.bitwise_and(tabxorig,mask)   
+        maskRoi1Not=np.bitwise_not(maskRoi1)       
+        tablung=np.bitwise_and(maskLung, maskRoi1Not)
+        np.putmask(tablung,tablung>0,classif['healthy']+1) 
+        tabroi[numslice]=np.bitwise_or(tabroi[numslice],tablung)
+        
 #        if tabroi[numslice].max()>0:
 #                cv2.imshow(str(numslice)+' tabo',normi(tabroi[numslice])) 
 #                cv2.imshow(str(numslice)+' mask',normi(mask)) 
@@ -1183,16 +1196,6 @@ def generoi(dirf,tabroi,dimtabx,dimtaby,slnroi,tabscanName,dirroit,tabscanroi,ta
                     volumeroi[numslice][pat]=area  
                     
                     if area>0:
-#                        print pat,numslice,area
-#                        if pat =='GGpret':
-#                            print numslice,area
-#                            tt=tabroi[numslice].copy()
-#                            np.putmask(tt,tt!=classif['GGpret']+1,0)
-#                            np.putmask(tt,tt==classif['GGpret']+1,255)
-#                            cv2.imshow(str(numslice)+' tabo',normi(tabroi[numslice])) 
-#                            cv2.imshow(str(numslice)+' mask',normi(tt)) 
-#                            cv2.waitKey(0)
-#                            cv2.destroyAllWindows()   
                         
                         if pat not in listroi[numslice] and area>1:
                             listroi[numslice].append(pat)
@@ -1200,11 +1203,12 @@ def generoi(dirf,tabroi,dimtabx,dimtaby,slnroi,tabscanName,dirroit,tabscanroi,ta
                         ctkey=drawcontours2(img,pat,dimtabx,dimtaby) 
                         anoted_image=tagviewct(anoted_image,pat,200,10)
                         anoted_image=cv2.add(anoted_image,ctkey)
-#                        cv2.imshow(str(numslice)+pat+' tabo',ctkey) 
+
                                                
                 else:
                     volumeroi[numslice][pat]=0 
             anoted_image= cv2.cvtColor(anoted_image,cv2.COLOR_RGB2BGR)
+#            print roibmpfile
             cv2.imwrite(roibmpfile,anoted_image)   
 #    print volumeroi[12]  
     slnroidir[tail]=len(slnroi)
