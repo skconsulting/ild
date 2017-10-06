@@ -312,7 +312,7 @@ def boutonStop(btn):
     global app
     ans= app.yesNoBox("Confirm Exit", "Are you sure you want to exit the application?")
     if ans:
-#        app.stop(Stop)
+        app.stop(Stop)
         sys.exit(1)
     else:
         redraw(app)
@@ -350,15 +350,9 @@ def gscore(indata):
                 goodp=False
                 break
                 
-    if goodp:
-
-#        indata['picklein_file']=vold
-    
-        paramdict['thrproba']=indata['thrproba']
-#        paramdict['thrpatch']=indata['thrpatch']
-    
-        pickle.dump(paramdict,open( paramsaveDirf, "wb" ))
-    
+    if goodp:   
+        paramdict['thrproba']=indata['thrproba']   
+        pickle.dump(paramdict,open( paramsaveDirf, "wb" ))   
         app.hide()
         visuarun(indata,lisdir)
 

@@ -185,11 +185,7 @@ usedclassifdict['CHU'] = [
         'bronchiectasis'
         ]
 derivedpatdict['CHU']=[
-        'HCpret',
-        'HCpbro',
-        'GGpbro',
-        'GGpret',
-        'bropret'
+  
         ]
 
 ##set0
@@ -252,11 +248,7 @@ usedclassifdict['set0p'] = [
         'GGpret'
         ]
 derivedpatdict['set0p']=[
-        'HCpret',
-        'HCpbro',
-        'GGpbro',
         'GGpret',
-        'bropret'
         ]
 ##set1
 
@@ -311,11 +303,7 @@ usedclassifdict['set1p'] = [
         'GGpret'
         ]
 derivedpatdict['set1p']=[
-        'HCpret',
-        'HCpbro',
-        'GGpbro',
         'GGpret',
-        'bropret'
         ]
 
 classifdict['set2'] ={
@@ -373,11 +361,7 @@ usedclassifdict['set2p'] = [
         'GGpret'
         ]
 derivedpatdict['set2p']=[
-        'HCpret',
-        'HCpbro',
-        'GGpbro',
         'GGpret',
-        'bropret'
         ]
 
 classifc ={
