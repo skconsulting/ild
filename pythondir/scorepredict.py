@@ -1078,13 +1078,6 @@ def calnewpat(pat,slnroi,tabroipat,tabroi):
         np.putmask(taball, taball> 0, 255) 
         taballnot=np.bitwise_not(taball)
 
-#        if i == 12 :
-#            if tab1.max()>0:
-#        cv2.imshow(pat1+'tab1',normi(tab1))
-#        cv2.imshow(pat2+'tab2',normi(tab2))
-#        cv2.imshow(pat+'tab3',normi(tab3))
-#        cv2.waitKey(0)
-#        cv2.destroyAllWindows()
 
         tab=np.bitwise_and(tab1,tab2)        
         if tab.max()>0:     
@@ -1096,19 +1089,12 @@ def calnewpat(pat,slnroi,tabroipat,tabroi):
             tab2=np.bitwise_and(tab2,tabn)
             np.putmask(tab2, tab2> 0, classif[pat2]+1)  
             
-            np.putmask(tab, tab> 0, classif[pat]+1) 
-            
+            np.putmask(tab, tab> 0, classif[pat]+1)            
 
             tabroi[i]=np.bitwise_and(tabroi[i],taballnot)             
             tabroi[i]=np.bitwise_or(tabroi[i],tab1) 
             tabroi[i]=np.bitwise_or(tabroi[i],tab2) 
             tabroi[i]=np.bitwise_or(tabroi[i],tab) 
-            
-#            if i == 12 :
-#            cv2.imshow('tabf',normi(tabroi[i])) 
-#            cv2.imwrite('a.bmp',10*(tabroi[i])) 
-#            cv2.waitKey(0)
-#            cv2.destroyAllWindows()
 
     return tabroi
 

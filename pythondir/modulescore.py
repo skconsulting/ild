@@ -556,7 +556,8 @@ def openfichiervolumetxtall(listHug,path_patient,indata,thrprobaUIP,cnnweigh,f,t
             predictpatu=pred
             pf=False
         else:           
-
+#            print referencepatu.shape
+#            print ref.shape
             referencepatu= np.concatenate((referencepatu,ref),axis=0)
             predictpatu= np.concatenate((predictpatu,pred),axis=0)
 #    print predictpatu.shape
@@ -771,6 +772,9 @@ def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
             
             predictpatu[slroi]=np.bitwise_and(tablung1, patchdict[slicenumber]) 
             referencepatu[slroi]=np.bitwise_and(tablung1, tabroi[slicenumber])
+#            print '1',referencepatu.shape
+#            print '1',predictpatu.shape
+#            print '1',tablung1.shape
             
 #            mask=patchdict[slicenumber].copy()
 #            tabxorig=patchdict[slicenumber].copy()
@@ -803,7 +807,7 @@ def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
     cfma(f,referencepat,predictpat,num_class,listHug,thrprobaUIP,cnnweigh,tp,thrpatch,listroiall)
     f.write('----------------------\n')
 
-    return referencepatu,predictpatu,''
+    return referencepat,predictpat,''
 
 def writeslice(num,menus):
 #        print 'write',num
