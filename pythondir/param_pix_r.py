@@ -231,8 +231,9 @@ def normi(tabi):
      mm=max_val-min_val
      if mm ==0:
          mm=1
+     
 #     print 'tabi1',min_val, max_val,imageDepth/float(max_val)
-     tabi2=(tabi-min_val)*(255/mm)
+     tabi2=(tabi.astype('float32')-min_val)*(255./mm)
      tabi2=tabi2.astype('uint8')
      return tabi2
  

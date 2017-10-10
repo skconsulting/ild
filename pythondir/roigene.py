@@ -888,16 +888,18 @@ def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName):
 
 def tagviews (tab,t0,x0,y0,t1,x1,y1,t2,x2,y2,t3,x3,y3,t4,x4,y4,t5,x5,y5,t6,x6,y6):
     """write simple text in image """
-    font = cv2.FONT_HERSHEY_SIMPLEX
+    font = cv2.FONT_HERSHEY_PLAIN
     col=yellow
-    viseg=cv2.putText(tab,t0,(x0, y0), font,0.35,col,1)
-    viseg=cv2.putText(viseg,t1,(x1, y1), font,0.35,col,1)
-    viseg=cv2.putText(viseg,t2,(x2, y2), font,0.3,col,1)
+    sizef=0.8
+    sizefs=0.7
+    viseg=cv2.putText(tab,t0,(x0, y0), font,sizef,col,1)
+    viseg=cv2.putText(viseg,t1,(x1, y1), font,sizef,col,1)
+    viseg=cv2.putText(viseg,t2,(x2, y2), font,sizefs,col,1)
 
-    viseg=cv2.putText(viseg,t3,(x3, y3), font,0.35,col,1)
-    viseg=cv2.putText(viseg,t4,(x4, y4), font,0.3,col,1)
-    viseg=cv2.putText(viseg,t5,(x5, y5), font,0.35,col,1)
-    viseg=cv2.putText(viseg,t6,(x6, y6), font,0.35,col,1)
+    viseg=cv2.putText(viseg,t3,(x3, y3), font,sizef,col,1)
+    viseg=cv2.putText(viseg,t4,(x4, y4), font,sizefs,col,1)
+    viseg=cv2.putText(viseg,t5,(x5, y5), font,sizef,col,1)
+    viseg=cv2.putText(viseg,t6,(x6, y6), font,sizef,col,1)
     return viseg
 
 def largest_label_volume(im, bg=-1):
