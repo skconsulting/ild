@@ -21,7 +21,7 @@ import keras
 import theano
 
 from keras import backend as K
-K.set_image_dim_ordering('th')
+K.set_image_dim_ordering('tf')
 
 
 print keras.__version__
@@ -163,7 +163,9 @@ classifnotvisu=[]
 #cv2.imshow('lung1',imgngray)
 #cv2.waitKey(0)
 #cv2.destroyAllWindows()
-
+layertokeep= [
+        'bronchiectasis',
+        ]
 classifdict={}
 usedclassifdict={}
 derivedpatdict={}
@@ -181,8 +183,8 @@ classifdict['set0'] ={
          'consolidation':7,
         'micronodules':8,
         'air_trapping':9,
-        'GGpret':10,
-        'lung':11
+        'GGpret':10
+
         }
 usedclassifdict['set0'] = [
         'healthy',   
@@ -197,13 +199,10 @@ usedclassifdict['set0'] = [
         'GGpret'
         
         ]
-derivedpatdict['sk0']=[
-        'HCpret',
-        'HCpbro',
-        'GGpbro',
+derivedpatdict['set0']=[
         'GGpret',
-        'bropret'
         ]
+
 
 classifdict['sk0'] ={        
         'back_ground':0,
@@ -220,6 +219,7 @@ classifdict['sk0'] ={
         'lung':11
         }
 usedclassifdict['sk0'] = [
+        'back_ground',
         'healthy',   
         'ground_glass',
         'HC',
@@ -229,15 +229,12 @@ usedclassifdict['sk0'] = [
         'consolidation',
         'micronodules',
         'air_trapping',
-        'GGpret'
-        
+        'GGpret'       
         ]
-derivedpatdict['set0']=[
-        'HCpret',
-        'HCpbro',
-        'GGpbro',
+derivedpatdict['sk0']=[
+
         'GGpret',
-        'bropret'
+
         ]
 
 ##set1
@@ -269,11 +266,8 @@ usedclassifdict['set1'] = [
         'GGpret'
         ]
 derivedpatdict['set1']=[
-        'HCpret',
-        'HCpbro',
-        'GGpbro',
         'GGpret',
-        'bropret'
+
         ]
 
 
@@ -305,11 +299,8 @@ usedclassifdict['set2'] = [
         'GGpret'
         ]
 derivedpatdict['set2']=[
-        'HCpret',
-        'HCpbro',
-        'GGpbro',
         'GGpret',
-        'bropret'
+
         ]
 
 classifc ={
