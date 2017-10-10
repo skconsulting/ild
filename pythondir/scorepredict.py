@@ -751,8 +751,8 @@ def tagviewct(tab,label,x,y):
     deltay=10*(labnow%5)
     deltax=100*(labnow/5)
 #    print label, deltax,deltay
-    font = cv2.FONT_HERSHEY_SIMPLEX
-    viseg=cv2.putText(tab,label,(x+deltax, y+deltay), font,0.3,col,1)
+    font = cv2.FONT_HERSHEY_PLAIN
+    viseg=cv2.putText(tab,label,(x+deltax, y+deltay), font,0.7,col,1)
 #    viseg = cv2.cvtColor(viseg,cv2.COLOR_RGB2BGR)
     return viseg
 

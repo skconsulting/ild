@@ -214,42 +214,42 @@ def predictScore (btn):
 #        print lisdir
         indata['lispatientselect'],b,c=lisdirprocess(lisdir)
     paramdict['lispatientselect']= indata['lispatientselect']
-
+#    print "indata['lispatientselect']",indata['lispatientselect']
     pickle.dump(paramdict,open( paramsaveDirf, "wb" ))       
-    if len(indata['lispatientselect']) >0:
-        app.hide()
-        listdir,message=predictmodule(indata,lisdir) 
-        
-    
-        indata['viewstyle']='reportAll'
-        indata['lispatientselect']= indata['lispatientselect'][0]
-         
-        indata['viewstylet']='Cross'
-        visuarun(indata,lisdir)
-        if indata['threedpredictrequest']!='Cross Only':
-            indata['viewstylet']='FrontProjected'
-            visuarun(indata,lisdir)
-            indata['viewstylet']='Merge'
-            visuarun(indata,lisdir)
+#    if len(app.getListItems("list")) >0:
+    app.hide()
+    listdir,message=predictmodule(indata,lisdir)         
 
-        
-        app.show()        
-        if len(message)>0:
-            app.errorBox('error', message)
-            app.stop(Stop)
-            initDraw()
-        else:
-            app.stop(Stop)
-            if allAsked:
-                continuevisu=False
-                initDraw()
-            else:
-                continuevisu=True
-                visuDraw()
-    else:
-        app.errorBox('error', 'no patient selected for predict')
+    indata['viewstyle']='reportAll'
+    indata['lispatientselect']= indata['lispatientselect']
+     
+    indata['viewstylet']='Cross'
+
+    visuarun(indata,lisdir)
+    if indata['threedpredictrequest']!='Cross Only':
+        indata['viewstylet']='FrontProjected'
+        visuarun(indata,lisdir)
+        indata['viewstylet']='Merge'
+        visuarun(indata,lisdir)
+
+    
+    app.show()        
+    if len(message)>0:
+        app.errorBox('error', message)
         app.stop(Stop)
         initDraw()
+    else:
+        app.stop(Stop)
+        if allAsked:
+            continuevisu=False
+            initDraw()
+        else:
+            continuevisu=True
+            visuDraw()
+#    else:
+#        app.errorBox('error', 'no patient selected for predict')
+#        app.stop(Stop)
+#        initDraw()
 #        continuevisu=False
     goodir=False
     continuevisu=False
@@ -323,12 +323,13 @@ def gscore(indata):
     indata['picklein_file']=app.getEntry("cross view weight")
     indata['picklein_file_front']= app.getEntry("front view weight")
     indata['viewstyle']='reportAll'
+    indata['thrpatch']=app.getEntry("Percentage of pad Overlapp")
     indata['thrproba']=app.getEntry("Threshold proba")
 #    indata['viewstyle']='reportAll'
 #    indata['thrpatch']=app.getEntry("Percentage of pad Overlapp")   
     a,b,c=lisdirprocess(lisdir)
     goodp=True
-    indata['lispatientselect']= a[0]
+    indata['lispatientselect']= a
     frontasked=False
     tp=indata['viewstylet']
     if tp=='FrontProjected' or tp == 'Merge':
@@ -502,10 +503,8 @@ def initDraw():
         app.setLabelBg("path_patientt", "Blue")
         app.setLabelFg("path_patientt", "Yellow")
 
-
         app.addButton("Change Patient Dir",  selectPatientDirB,colspan=2)
         app.addHorizontalSeparator( colour="red",colspan=2)
-
 
 #        app.addHorizontalSeparator( colour="red")
         app.addLabel("top1", "Select patient for prediction:")

@@ -1068,14 +1068,19 @@ def visuarun(indata,path_patient):
     print 'visuarun start'
 
     messageout=""
- 
+
+    viewstyle=indata['viewstyle']
+    if viewstyle == 'reportAll':
+        lpt=indata['lispatientselect'][0]
+    else:
 #    print 'path_patient',path_patient
-    lpt=indata['lispatientselect']
+        lpt=indata['lispatientselect']
     pos=lpt.find(' ')
     if pos>0:
         listHug=(lpt[0:pos])
     else:
         listHug=lpt
+
     patient_path_complet=os.path.join(path_patient,listHug)
     path_data_dir=os.path.join(patient_path_complet,path_data)
 
@@ -1091,11 +1096,11 @@ def visuarun(indata,path_patient):
         datarep= pickle.load( open( os.path.join(path_data_dir,"datacrosss"), "rb" ))
         setref=datarep[5]
 #        print setref
-
-    classif=classifdict[setref]
-    usedclassif=usedclassifdict[setref]
+    
+        classif=classifdict[setref]
+        usedclassif=usedclassifdict[setref]
 #    print usedclassif,setref
-    viewstyle=indata['viewstyle']
+
 
 #    pathhtml=os.path.join(patient_path_complet,htmldir)
     
@@ -1257,10 +1262,9 @@ def visuarun(indata,path_patient):
         
     elif viewstyle=='reportAll':
         tp=indata['viewstylet']
-        print 'report All for', tp
+        
         thrproba=float(indata['thrproba'])
-        thrpatch=pickle.load( open( os.path.join(path_data_dir,"thrpatchs"), "rb" ))
-
+        thrpatch=float(indata['thrpatch'])
         cnnweigh=indata['picklein_file']
         pathreport=os.path.join(path_patient,reportalldir)
         if not os.path.exists(pathreport):
@@ -1271,11 +1275,22 @@ def visuarun(indata,path_patient):
         f=open(repf,'w')
 #        remove_folder(pathreport)
         listHug=[]
-        a,b,c=lisdirprocess(path_patient)
-        for patient in a:
-            if b[patient]['cross']==True:
-                listHug.append(patient)
-
+#        print listHug
+        listHugi=indata['lispatientselect']
+#        print listHugi
+        for lpt in listHugi:
+#             print lpt
+             pos=lpt.find(' PREDICT!:')
+             if pos >0:
+                    listHug.append(lpt[0:pos])
+             else:
+                    pos=lpt.find(' noPREDICT!')
+                    if pos >0:
+                        listHug.append(lpt[0:pos])
+                    else:
+                        listHug.append(lpt)
+#        print listHug
+        print 'report All for', tp, listHug
         if not os.path.exists(pathreport):
             os.mkdir(pathreport)
         messageout = openfichiervolumetxtall(listHug,path_patient,indata,thrproba,cnnweigh,f,thrpatch,tp)
