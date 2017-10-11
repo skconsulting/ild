@@ -350,6 +350,7 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,
     
     referencepat= referencepatu.flatten()             
     predictpat=  predictpatu.flatten() 
+#    print num_class 
     cm=evaluatef(referencepat,predictpat,num_class)
     
 #    print cm
@@ -497,7 +498,7 @@ def retrievepatch(x,y,slicenumber,patch_list_cross_slice,xtrains):
 
 def openfichiervolumetxtall(listHug,path_patient,indata,thrprobaUIP,cnnweigh,f,tp,xtrains):
 
-    num_class=len(classif)
+    num_class=len(usedclassif)
 
     f.write('Score for list of patients:\n')
     for patient in listHug:
@@ -548,7 +549,7 @@ def cfma(f,referencepat,predictpat,num_class, namep,thrprobaUIP,cnnweigh,tp):
         f.write('confusion matrix for '+namep+'\n')
         f.write(tp+' View , threshold: '+str(thrprobaUIP)+ ' CNN param: '+cnnweigh+'\n\n')
         
-        cm=evaluatef(referencepat,predictpat,num_class-1)
+        cm=evaluatef(referencepat,predictpat,num_class)
         n= cm.shape[0]
     
         presip={}
@@ -618,35 +619,53 @@ def wrresu(f,cm,obj,refmax):
         npv[pat]=0       
     f.write(str(obj)+'\n')
     f.write('    pattern   precision%  recall%  Fscore%   SPC%     NPV%\n')
+   
     precisionAverage=0
     recallAverage=0
     fscoreAverage=0
     spcAverage=0
     npvAverage=0
     numberp=0
-    for pat in usedclassif:           
-            precision[pat],recall[pat],fscore[pat], spc[pat],npv[pat],volpat[pat],volroi[pat]=cals(cm,pat)
+    tpaverage=0
+    cpp=0
+    cpr=0
+    for pat in usedclassif:   
+        if pat !='back_ground':
+            cpa=classif[pat]-1 
+
+            precision[pat],recall[pat],fscore[pat], spc[pat],npv[pat],volpat[pat],volroi[pat]=cals(cm,pat)    
             precisioni=int(round(precision[pat]*100,0))
             recalli=int(round(recall[pat]*100,0))
             fscorei=int(round(fscore[pat]*100,0))
-            if fscorei>0 :
-                precisionAverage+=precision[pat]
-                recallAverage+=recall[pat]
-                fscoreAverage+=fscore[pat]
+            if cm[cpa].sum()>0:
+#                print pat ,cm[cpa]
+                numberp+=1
+                tpaverage+=cm[cpa][cpa]
+                cpp+=cm[:,cpa].sum()
+                cpr+=cm[cpa].sum()
                 spcAverage+=spc[pat]
                 npvAverage+=npv[pat]
-                numberp+=1            
+                     
                 spci=int(round(spc[pat]*100,0))
-                npvi=int(round(npv[pat]*100,0))     
-        
+                npvi=int(round(npv[pat]*100,0)) 
+            
                 f.write('%14s'%pat+'%7s'%precisioni+
-                        '%9s'%recalli+'%9s'%fscorei+
-                        '%9s'%spci+'%9s'%npvi+'\n')
-    f.write('\n')
+                            '%9s'%recalli+'%9s'%fscorei+
+                            '%9s'%spci+'%9s'%npvi+'\n')
+    f.write('---\n')
+    if cpp>0:
+        precisionAverage=1.0*tpaverage/cpp
+#        print '2',precisionAverage
+    else:
+        precisionAverage=0
+    if cpr>0:
+        recallAverage=1.0*tpaverage/cpr
+#        print '2',recallAverage
+    else:
+        recallAverage=0
+#        fscoreAverage/=numberp
     if numberp>0:
-        precisionAverage/=numberp
-        recallAverage/=numberp
-        fscoreAverage/=numberp
+#        print spcAverage,numberp
         spcAverage/=numberp
         npvAverage/=numberp
     if refmax>0:
@@ -654,19 +673,25 @@ def wrresu(f,cm,obj,refmax):
         f.write('%10s'%('Precision %')+
                     '%11s'%('Recall%')+ 
                     '%11s'%('Fscores')+
-                    '%10s'%('SPC%')+
-                    '%10s'%('NPV%')+'\n')
-    precisionAverage=int(round(precisionAverage*100,0))
-    recallAverage=int(round(recallAverage*100,0))
-    fscoreAverage=int(round(fscoreAverage*100,0))
-    spcAverage=int(round(spcAverage*100,0))
-    npvAverage=int(round(npvAverage*100,0))
-    f.write('%10s'%(precisionAverage)+
+#                    '%10s'%('SPC%')+
+#                    '%10s'%('NPV%')+
+                    '\n')
+        precisionAverage=int(round(precisionAverage*100,0))
+        recallAverage=int(round(recallAverage*100,0))
+        if recallAverage+precisionAverage>0:
+            fscoreAverage=int(round(2.*precisionAverage*recallAverage/(recallAverage+precisionAverage),0))
+        else:
+            fscoreAverage=0
+        
+        spcAverage=int(round(spcAverage*100,0))
+        npvAverage=int(round(npvAverage*100,0))
+        f.write('%10s'%(precisionAverage)+
                     '%11s'%(recallAverage)+ 
                     '%11s'%(fscoreAverage)+
-                    '%10s'%(spcAverage)+
-                    '%10s'%(npvAverage)+'\n')
-
+#                    '%10s'%(spcAverage)+
+#                    '%10s'%(npvAverage)+
+                    '\n')
+    f.write('-----------------------------------\n')
 
 def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
                       thrprobaUIP,tabroi,datacross,slnroi,tabscanLung,f,cnnweigh,tp,xtrains):
@@ -689,7 +714,8 @@ def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
     patchdict=np.zeros((slnt,dimtaby,dimtabx), np.uint8)
     predictpatu=np.zeros((slntroi,dimtaby,dimtabx), np.uint8)
     referencepatu=np.zeros((slntroi,dimtaby,dimtabx), np.uint8)
-    num_class=len(classif)
+#    num_class=len(classif)
+    num_class=len(usedclassif)
     th=thrprobaUIP
     for slroi in range (0,slntroi):
 #        print 'slroi',slroi
@@ -711,17 +737,17 @@ def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
 
             tablung1=np.copy(tabscanLung[slicenumber])
             np.putmask(tablung1,tablung1>0,255)
-            patchdict[slicenumber]=np.bitwise_and(tablung1, patchdict[slicenumber]) 
+#            patchdict[slicenumber]=np.bitwise_and(tablung1, patchdict[slicenumber]) 
             
-            mask=patchdict[slicenumber].copy()
-            tabxorig=patchdict[slicenumber].copy()
-            np.putmask(mask,mask>0,255)
-            tabxn=np.bitwise_not(mask)   
-            tablung=np.copy(tabscanLung[slicenumber])       
-            tablung=np.bitwise_and(tablung, tabxn)
-            np.putmask(tablung,tablung>0,classif['healthy'])
+#            mask=patchdict[slicenumber].copy()
+#            tabxorig=patchdict[slicenumber].copy()
+#            np.putmask(mask,mask>0,255)
+#            tabxn=np.bitwise_not(mask)   
+#            tablung=np.copy(tabscanLung[slicenumber])       
+#            tablung=np.bitwise_and(tablung, tabxn)
+#            np.putmask(tablung,tablung>0,classif['healthy'])
      
-            predictpatu[slroi]=np.bitwise_or(tabxorig,tablung)
+            predictpatu[slroi]=np.bitwise_and(tablung1, patchdict[slicenumber]) 
             referencepatu[slroi]=np.copy(tabroi[slicenumber])          
             
             referencepat= referencepatu[slroi].flatten()
@@ -997,9 +1023,14 @@ def visuarun(indata,path_patient):
     print 'visuarun start'
 
     messageout=""
- 
+    viewstyle=indata['viewstyle']
+    if viewstyle == 'reportAll':
+        lpt=indata['lispatientselect'][0]
+    else:
 #    print 'path_patient',path_patient
-    lpt=indata['lispatientselect']
+        lpt=indata['lispatientselect']
+#    print 'path_patient',path_patient
+
     pos=lpt.find(' ')
     if pos>0:
         listHug=(lpt[0:pos])
@@ -1024,8 +1055,6 @@ def visuarun(indata,path_patient):
     print 'setref',setref
     classif=classifdict[setref]
     usedclassif=usedclassifdict[setref]
-#    print usedclassif
-    viewstyle=indata['viewstyle']
 
 #    pathhtml=os.path.join(patient_path_complet,htmldir)
     
@@ -1174,6 +1203,8 @@ def visuarun(indata,path_patient):
         xtrains  = pickle.load( open( os.path.join(path_data_dir,"xtrainss2"), "rb" ))
 
         cnnweigh=indata['picklein_file']
+        print cnnweigh
+        return ' '
         pathreport=os.path.join(path_patient,reportalldir)
         if not os.path.exists(pathreport):
             os.mkdir(pathreport)
@@ -1183,10 +1214,22 @@ def visuarun(indata,path_patient):
         f=open(repf,'w')
 #        remove_folder(pathreport)
         listHug=[]
-        a,b,c=lisdirprocess(path_patient)
-        for patient in a:
-            if b[patient]['cross']==True:
-                listHug.append(patient)
+#        print listHug
+        listHugi=indata['lispatientselect']
+#        print listHugi
+        for lpt in listHugi:
+#             print lpt
+             pos=lpt.find(' PREDICT!:')
+             if pos >0:
+                    listHug.append(lpt[0:pos])
+             else:
+                    pos=lpt.find(' noPREDICT!')
+                    if pos >0:
+                        listHug.append(lpt[0:pos])
+                    else:
+                        listHug.append(lpt)
+#        print listHug
+        print 'report All for', tp, listHug
 
         if not os.path.exists(pathreport):
             os.mkdir(pathreport)

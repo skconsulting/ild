@@ -122,6 +122,7 @@ def predict(btn):
     indata['picklein_file_front']= app.getEntry("front view weight")
     indata['lispatientselect']=app.getListItems("list")
     indata['ForceGenerate']=app.getCheckBox("ForceGenerate")
+    indata['ForcePredict']=app.getCheckBox("ForcePredict")
 
 #    indata['subErosion']= app.getEntry("subErosion in mm")
     
@@ -190,6 +191,7 @@ def predictScore (btn):
     indata['picklein_file_front']= app.getEntry("front view weight")
     indata['lispatientselect']=app.getListItems("list")
     indata['ForceGenerate']=app.getCheckBox("ForceGenerate")
+    indata['ForcePredict']=app.getCheckBox("ForcePredict")
 
 #    indata['subErosion']= app.getEntry("subErosion in mm")
     
@@ -223,7 +225,7 @@ def predictScore (btn):
         
     
         indata['viewstyle']='reportAll'
-        indata['lispatientselect']= indata['lispatientselect'][0]
+#        indata['lispatientselect']= indata['lispatientselect'][0]
          
         indata['viewstylet']='Cross'
         visuarun(indata,lisdir)
@@ -321,13 +323,21 @@ def boutonStop(btn):
 def gscore(indata):
     global app,continuevisu
 #    print(app.getListItems("list"))
-    
+    indata={}
+    indata['viewstylet']='Cross'
     indata['viewstyle']='reportAll'
+    indata['lispatientselect']=app.getListItems("list")
     indata['thrproba']=app.getEntry("Threshold proba")
- 
-    a,b,c=lisdirprocess(lisdir)
+    indata['Select All']=app.getCheckBox("Select All")
+    indata['picklein_file']=app.getEntry("cross view weight")
+
+    if len(app.getListItems("list"))==0 and indata['Select All']:
+
+#        print lisdir
+        indata['lispatientselect'],b,c=lisdirprocess(lisdir)
+   
     goodp=True
-    indata['lispatientselect']= a[0]
+
     frontasked=False
     tp=indata['viewstylet']
     if tp=='FrontProjected' or tp == 'Merge':
@@ -351,15 +361,13 @@ def gscore(indata):
                 
     if goodp:
 
-        indata['picklein_file']=vold
-    
-        paramdict['thrproba']=indata['thrproba']
- 
-    
+#        indata['picklein_file']=app.getEntry("cross view weight")    
+        paramdict['thrproba']=indata['thrproba'] 
         pickle.dump(paramdict,open( paramsaveDirf, "wb" ))
     
         app.hide()
         visuarun(indata,lisdir)
+        
 
         app.stop(Stop)
         continuevisu=False
@@ -508,10 +516,8 @@ def initDraw():
         app.setLabelBg("path_patientt", "Blue")
         app.setLabelFg("path_patientt", "Yellow")
 
-
         app.addButton("Change Patient Dir",  selectPatientDirB,colspan=2)
         app.addHorizontalSeparator( colour="red",colspan=2)
-
 
 #        app.addHorizontalSeparator( colour="red")
         app.addLabel("top1", "Select patient for prediction:")
@@ -583,6 +589,10 @@ def initDraw():
         app.addLabel("ForceGenerate","Tick to force re-generate all files:",row,0)
         app.addCheckBox("ForceGenerate",row,1)
         app.setCheckBox("ForceGenerate",ticked=False,callFunction=False)
+        row = app.getRow()
+        app.addLabel("ForcePredict","Tick to force re-predict all files:",row,0)
+        app.addCheckBox("ForcePredict",row,1)
+        app.setCheckBox("ForcePredict",ticked=False,callFunction=False)
 
 #        app.setFont(10)
         app.setSticky("n")
@@ -594,8 +604,8 @@ def initDraw():
         app.addButton("Visualisation",  visuDrawl)
         app.addHorizontalSeparator( colour="red")
         row = app.getRow()
-        app.addButtons(["Global Score Cross","Global Score Front Projected","Global Score Merge"], [gscorec,gscoref,gscorem])
-#        app.addButton("Global Score Front Projected", row,1, gscore)
+#        app.addButtons(["Global Score Cross","Global Score Front Projected","Global Score Merge"], [gscorec,gscoref,gscorem])
+        app.addButton("Global Score", gscore)
 #        app.addButton("Global Score Merge", row,2, gscore)
         app.addHorizontalSeparator( colour="red")
     app.addButton("Quit",  boutonStop)
@@ -718,8 +728,8 @@ def visuDraw():
 
 #                app.addRadioButton("planar","front view")
                
-                app.addRadioButton("planar","front projected view")
-                app.addRadioButton("planar","merge view")
+#                app.addRadioButton("planar","front projected view")
+#                app.addRadioButton("planar","merge view")
 
                 app.addLabel("Report", "Report Selection")
                 app.setLabelBg("Report","blue")

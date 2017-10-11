@@ -221,7 +221,7 @@ def predictScore (btn):
     listdir,message=predictmodule(indata,lisdir)         
 
     indata['viewstyle']='reportAll'
-    indata['lispatientselect']= indata['lispatientselect']
+#    indata['lispatientselect']= indata['lispatientselect']
      
     indata['viewstylet']='Cross'
 
