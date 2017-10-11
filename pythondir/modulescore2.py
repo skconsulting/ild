@@ -1203,8 +1203,7 @@ def visuarun(indata,path_patient):
         xtrains  = pickle.load( open( os.path.join(path_data_dir,"xtrainss2"), "rb" ))
 
         cnnweigh=indata['picklein_file']
-        print cnnweigh
-        return ' '
+
         pathreport=os.path.join(path_patient,reportalldir)
         if not os.path.exists(pathreport):
             os.mkdir(pathreport)
