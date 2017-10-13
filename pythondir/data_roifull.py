@@ -28,21 +28,22 @@ from skimage import measure
 
 #path for images source
 nametop='SOURCE_IMAGE'
-nameHug='HUG'
+#nameHug='HUG'
+nameHug='CHU'
 #nameHug='CHU2'
 #nameHug='REFVAL'
-subHUG='ILD6'
+#subHUG='ILD94'
 #subHUG='ILD_TXT'
 #subHUG='ILDS14740'
 
 #subHUG='UIP6'
-#subHUG='UIP'
+subHUG='UIP'
 
 #path for image dir for CNN
 
 imagedir='IMAGEDIR'
 toppatch= 'TOPROI'
-extendir='1'
+extendir='4'
 #extendir='3'
 
 ###############################################################
@@ -78,7 +79,7 @@ if not os.path.isdir(roipicklepathdir):
 def genepara(fileList,namedir):
     print 'gene parametres'
     listsln=[]
-    fileList =[name for name in  os.listdir(namedir) if ".dcm" in name.lower()]
+#    fileList =[name for name in  os.listdir(namedir) if ".dcm" in name.lower()]
     slnt=0
     for filename in fileList:
         FilesDCM =(os.path.join(namedir,filename))
@@ -243,7 +244,9 @@ def genebmp(dirName,fileList,slnt,hug,tabscanName):
             dsr += np.int16(intercept)
             dsr = dsr.astype('int16')
 
-            dsr=cv2.resize(dsr,(image_cols, image_rows),interpolation=cv2.INTER_LINEAR)
+            if dsr.shape[0] != image_cols:
+                print 'resize'
+                dsr=cv2.resize(dsr,(image_cols, image_rows),interpolation=cv2.INTER_LINEAR)
 
             dsrforimage=normi(dsr)
             tabscan[scanNumber]=dsr
@@ -416,7 +419,7 @@ def drawcontours2(im,pat,dimtabx,dimtaby):
     ret,thresh = cv2.threshold(imgray,10,255,0)
     _,contours,heirarchy=cv2.findContours(thresh,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
     im2 = np.zeros((dimtabx,dimtaby,3), np.uint8)
-    cv2.drawContours(im2,contours,-1,classifc[pat],1)
+    cv2.drawContours(im2,contours,-1,classifc[pat],2)
     im2=cv2.cvtColor(im2,cv2.COLOR_BGR2RGB)
     return im2
 
@@ -427,9 +430,9 @@ def create_test_data(namedirtopcf,pat,tabscan,tabsroi,tabslung,datascan,tabscanN
     pathpat=os.path.join(namedirtopcf,pat)
 
     list_image=[name for name in os.listdir(pathpat) if name.find('.'+typei1)>0] 
-    if len(list_image)==0:
-        list_image=[name for name in os.listdir(pathpat) if name.find('.'+typei)>0] 
-  
+#    if len(list_image)==0:
+#        list_image=[name for name in os.listdir(pathpat) if name.find('.'+typei)>0] 
+#  
     if len(list_image)>0:
 
             for l in list_image:
@@ -457,26 +460,7 @@ def create_test_data(namedirtopcf,pat,tabscan,tabsroi,tabslung,datascan,tabscanN
                     print 'error image empty'
                     sys.exit()
                 img=cv2.resize(newroi,(image_cols, image_rows),interpolation=cv2.INTER_LINEAR)
-                """
-                newroic=newroi.copy()
-                np.putmask(newroic,newroic>0,1)            
-    
-                oldroi=tabroi[numslice].copy().astype(np.uint8)
-                tabroinum=oldroi.copy()
-                np.putmask(oldroi,oldroi>0,255)
-               
-                oldroi=np.bitwise_not(oldroi)          
-                
-                tabroix=cv2.bitwise_and(newroic,newroic,mask=oldroi)
-                
-                np.putmask(newroi,newroi>0,classif[pat])
-                
-                tabroif=cv2.bitwise_and(newroi,newroi,mask=tabroix)
-                tabroif=cv2.add(tabroif,tabroinum)
-                tabroi[numslice]=tabroif
-                
-                
-                """
+
                 
                 np.putmask(tabroi[numslice], img > 0, 0)
     #                if classif[pat]>0:
@@ -495,18 +479,7 @@ def create_test_data(namedirtopcf,pat,tabscan,tabsroi,tabslung,datascan,tabscanN
                 tabroif=np.bitwise_or(img,tabroi[numslice])
                 tabroi[numslice]=tabroif
                            
-#                if  numslice==275:
-#                    print tabroif.min(),tabroif.max()
-##                    o=normi(oldroi)
-##                    n=normi(newroi)
-##                    x=normi(tabroix)
-#                    f=normi(tabroif)
-##                    cv2.imwrite('a.bmp',10*tabroif)
-##                    cv2.imshow('newroi',n)
-##                    cv2.imshow('tabroix',x)
-#                    cv2.imshow('tabroif',f)
-#                    cv2.waitKey(0)
-#                    cv2.destroyAllWindows()
+#            
                     
     return tabroi,datascan
 
@@ -528,13 +501,7 @@ def genesroi(numsliceok,tabroi,tabsroi,tabscanName):
                 ctkey=drawcontours2(newroic,pat,image_rows,image_cols)   
                 
                 anoted_image=cv2.add(anoted_image,ctkey)
-#        if sln==13:
-##            cv2.imshow(pat+' tabroi1',normi(newroic1))
-##            cv2.imshow(pat+' tabroi',normi(newroic))
-##            cv2.imshow(pat+' ctkey',ctkey)
-#            cv2.imshow(pat+' anoted_image',anoted_image)
-#            cv2.waitKey(0)
-#            cv2.destroyAllWindows()
+
         cv2.imwrite(roibmpfile,anoted_image)
 
 ##############################################################################
@@ -598,18 +565,7 @@ for f in listdirc:
                 listpat.append(pat)
             tabroi,datascan=create_test_data(namedirtopcf,pat,tabscan,tabsroi,tabslung,datascan,tabscanName)
 
-#                    print newroi.min(),newroi.max()
-##                    o=normi(oldroi)
-##                    n=normi(newroi)
-##                    x=normi(tabroix)
-#                    f=normi(tabroif)
-#                    cv2.imwrite('a.bmp',10*tabroif)
-##                    cv2.imshow('newroi',n)
-##                    cv2.imshow('tabroix',x)
-#    cv2.imshow('tabroif',normi(tabroi[13]))
-#    cv2.imshow('tabrois',normi(tabsroi[13]))
-#    cv2.waitKey(0)
-#    cv2.destroyAllWindows()
+
     genesroi(numsliceok,tabroi,tabsroi,tabscanName)
     preparroi(namedirtopcf,datascan,tabroi)
     

@@ -6,14 +6,19 @@ class patches against probability
 """
 
 from param_pix import *
-
-K.set_image_dim_ordering('th')
+import os
+import keras
+import numpy as np
+from keras import backend as K
+K.set_image_dim_ordering('tf')
 print 'NEW keras.backend.image_data_format :',keras.backend.image_data_format()
 print '-------------'
+nametophug='SOURCE_IMAGE'
+
 #nameHug='DUMMY' #name of top directory for patches pivkle from dicom
 nameHug='DUMMY' #name of top directory for patches pivkle from dicom
 
-subHUG='lu_f'#subdirectory from nameHug input pickle
+subHUG='patchesref'#subdirectory from nameHug input pickle
 #subHUG='S3'#subdirectory from nameHug input pickle
 
 
@@ -41,18 +46,21 @@ cwd=os.getcwd()
 (cwdtop,tail)=os.path.split(cwd)
 
 picklepatches='picklepatches' 
-
 weightildcnn='weightildcnn'
-pcross='pickle_ex80'
-pfront='pickle_ex81'
-modelname='ILD_CNN_model.h5'
+pcross='set0_c2'
+pfront='set0_c2'
+modelArch='CNN.h5'
+pathmodelarch='modelArch'
 
 
-path_HUG=os.path.join(cwdtop,nameHug)
+
+path_HUGtop=os.path.join(cwdtop,nametophug)
+path_HUG=os.path.join(path_HUGtop,nameHug)
 namedirtopc =os.path.join(path_HUG,subHUG)
 namedirtopcpickle=os.path.join(namedirtopc,picklepatches)
 
-pathildcnn =os.path.join(cwdtop,weightildcnn)
+pathildcnn =os.path.join(path_HUG,weightildcnn)
+dirpickleArch=os.path.join(pathildcnn,pathmodelarch)
 
 picklein_file=os.path.join(pathildcnn,pcross)
 picklein_file_front=os.path.join(pathildcnn,pfront)
@@ -207,20 +215,36 @@ def ILDCNNpredict(patch_list,model):
 
     return proba
 
-def modelCompilation(t,picklein_file,picklein_file_front):
-    print 'compiling model'
+
+def modelCompilation(t,picklein_file,picklein_file_front,setdata):
+    
+    print 'model compilation',t
+    
+
+    dirpickleArchs=os.path.join(dirpickleArch,setdata)
+    dirpickleArchsc=os.path.join(dirpickleArchs,modelArch)
+
+    json_string=pickle.load( open(dirpickleArchsc, "rb"))
+    model = model_from_json(json_string)
+    model.compile(optimizer='Adam', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
+#        model.compile()
+
     if t=='cross':
-        modelpath = os.path.join(picklein_file, modelname)
+        lismodel=os.listdir(picklein_file)
+        
+        modelpath = os.path.join(picklein_file, lismodel[0])
+#        print modelpath
     if t=='front':
-        modelpath = os.path.join(picklein_file_front, modelname)
+        lismodel=os.listdir(picklein_file_front)
+        modelpath = os.path.join(picklein_file_front, lismodel[0])
 
     if os.path.exists(modelpath):
-        model = load_model(modelpath)
-#        model.compile(optimizer='Adam', loss=CNN4.get_Obj('ce'))
+
+        model.load_weights(modelpath)  
+        
         return model
     else:
         print 'weight dos not exist',modelpath
-
 
 
 listpat=[]
@@ -231,9 +255,11 @@ listpat=[]
 #        'ground_glass':2}
 classifused=classif
 classinsource =[name for name in os.listdir(namedirtopcpickle) if name in classifused]
-#print classinsource
+classinsource.remove('back_ground')
+print classinsource,namedirtopcpickle
+
 patdic={}
-model=modelCompilation('cross',picklein_file,picklein_file_front)
+model=modelCompilation('cross',picklein_file,picklein_file_front,setdata)
 
 thpat={}
 for pat in classinsource: 

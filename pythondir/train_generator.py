@@ -25,13 +25,13 @@ print ' keras.backend.image_data_format :',keras.backend.image_data_format()
 nameHug='IMAGEDIR'
 
 toppatch= 'TOPROI' #for scan classified ROI
-extendir='2'  #for scan classified ROI
+extendir='4'  #for scan classified ROI
 #extendir='0'  #for scan classified ROI
 
 nametop='TRAIN_SET'
 pickel_top='pickle' #path to get input data
 pickel_ext='train_set'  #path to get input data
-pickel_ext_set='4'  #path to get input data
+pickel_ext_set='8'  #path to get input data
 
 trainSetSize=200# default 200 , number of images for each epoch
 nb_epoch=30 # default 30 number of epoch for each set

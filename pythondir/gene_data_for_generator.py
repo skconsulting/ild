@@ -31,16 +31,16 @@ print ' keras.backend.image_data_format :',keras.backend.image_data_format()
 #######################################################################################################
 
 nameHug='IMAGEDIR'
-toppatch= 'TOPROI' #for scan classified ROI
-extendir='2'  #for scan classified ROI
+toppatch= 'TOPPATCH' #for scan classified ROI
+extendir='0'  #for scan classified ROI
 #extendir='essai'  #for scan classified ROI
 
-valshare=5 #percentage for validation set
+valshare=10 #percentage for validation set
 
 pickel_dirsource_root='TRAIN_SET' #path for data fort training
 pickel_dirsource='pickle' #path for data fort training
 pickel_dirsourcenum='train_set' #extensioon for path for data for training
-extendir2='4'
+extendir2='p'
 calculOnly=False
 ##############################################################
 validationdir='V'

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Sat Jun 17 11:16:58 2017
-generator of images and label
+generator of images and label step 1
 @author: sylvain
 """
 import os
@@ -11,27 +11,29 @@ import time
 import shutil
 import numpy as np
 import random
+from param_pix import image_rows,image_cols,typei,typeibmp,sroi,bmpname,classif
+from param_pix import normi,norm,remove_folder,classifc,fidclass,red
 
-#nameHug='DUMMY' #name of top directory for patches pivkle from dicom
-nameHug='HUG' #name of top directory for patches pivkle from dicom
+nametopHug='SOURCE_IMAGE'
+nameHug='DUMMY' #name of top directory for patches pivkle from dicom
+#nameHug='HUG' #name of top directory for patches pivkle from dicom
 
-#subHUG='lu_f'#subdirectory from nameHug input pickle
 subHUG='classpatch'#subdirectory from nameHug input pickle
+#subHUG='classpatch'#subdirectory from nameHug input pickle
 
 #subHUG='S3'#subdirectory from nameHug input pickle
 
-
+toppatchtop='IMAGEDIR'
 toppatch= 'TOPPATCH' #name of top directory for image and label generation
-subtop_patch='lu_full'#subdirectory for top patch
+subtop_patch='0'#subdirectory for top patch
 
 lpatch=True #to generate images from  lung patch (True) or geometrical
 col = False # to generate color patterns (True), NOT TESTED
 
-slnt=5 # number of images to generate
+slnt=100 # number of images to generate
 numfig=200 # for geometrical, number of figuress per type 
 randomdim=False #True to generate big figures, False for small dimensions
-image_rows = 512
-image_cols = 512
+
 
 #image_rows = 96
 #image_cols = 96
@@ -45,136 +47,31 @@ cwd=os.getcwd()
 #
 (cwdtop,tail)=os.path.split(cwd)
 
-typei='jpg' #can be jpg
-typeibmp='bmp'
-sroi='sroi'
-bmpname='scan_bmp'
 picklepatches='picklepatches' 
 
 
 
-black=(0,0,0)
-red=(255,0,0)
-green=(0,255,0)
-blue=(0,0,255)
-yellow=(255,255,0)
-cyan=(0,255,255)
-purple=(255,0,255)
-white=(255,255,255)
-darkgreen=(11,123,96)
-pink =(255,128,255)
-lightgreen=(125,237,125)
-orange=(255,153,102)
-lowgreen=(0,51,51)
-parme=(234,136,222)
-chatain=(139,108,66)
-
-
-classif ={
-        'back_ground':0,
-        'healthy':1,    
-        'ground_glass':2,
-        'HC':3,
-        'reticulation':4,
-        'bronchiectasis':5,
-        'cysts':6,
-         'consolidation':7,
-        'micronodules':8,
-        'air_trapping':9,
-        'GGpret':10
-        }
-
-classifc ={
-    'back_ground':chatain,
-    'consolidation':cyan,
-    'HC':blue,
-    'ground_glass':red,
-    'healthy':darkgreen,
-    'micronodules':green,
-    'reticulation':yellow,
-    'air_trapping':pink,
-    'cysts':lightgreen,
-    'bronchiectasis':orange,
-    'emphysema':chatain,
-    'GGpret': parme,
-
-     'nolung': lowgreen,
-     'bronchial_wall_thickening':white,
-     'early_fibrosis':white,
-
-     'increased_attenuation':white,
-     'macronodules':white,
-     'pcp':white,
-     'peripheral_micronodules':white,
-     'tuberculosis':white
- }
-
-
-
-path_HUG=os.path.join(cwdtop,nameHug)
+path_HUG=os.path.join(cwdtop,nametopHug)
+path_HUG=os.path.join(path_HUG,nameHug)
 namedirtopc =os.path.join(path_HUG,subHUG)
 namedirtopcpickle=os.path.join(namedirtopc,picklepatches)
 
+path_RES=os.path.join(cwdtop,toppatchtop)
 extendir=subtop_patch
 patchesdirnametop = toppatch+'_'+extendir
-patchtoppath=os.path.join(path_HUG,patchesdirnametop)
+patchtoppath=os.path.join(path_RES,patchesdirnametop)
+#patchtoppath=os.path.join(path_HUG,patchesdirnametop)
 patchpicklename='picklepatches.pkl'
 picklepath = 'picklepatches'
 picklepathdir =os.path.join(patchtoppath,picklepath)
+#print picklepathdir
+
 if not os.path.isdir(patchtoppath):
     os.mkdir(patchtoppath)
 
 if not os.path.isdir(picklepathdir):
     os.mkdir(picklepathdir)
 
-MIN_BOUND = -1000.0
-MAX_BOUND = 400.0
-PIXEL_MEAN = 0.25
-
-def normHU(image): #normalize HU images
-    image1= (image - MIN_BOUND) / (MAX_BOUND - MIN_BOUND)
-    image1[image1>1] = 1.
-    image1[image1<0] = 0.
-    image2=image1 - PIXEL_MEAN
-    return image2
-
-
-def remove_folder(path):
-    """to remove folder"""
-    # check if folder exists
-    if os.path.exists(path):
-#         print 'path exist'
-         # remove if exists
-         shutil.rmtree(path)
-         time.sleep(1)
- 
-def normi(img):
-#     tabi2=bytescale(img, low=0, high=255)
-     tabi1=img-img.min()
-     maxt=float(tabi1.max())
-     if maxt==0:
-         maxt=1
-     tabi2=tabi1*(255/maxt)
-     tabi2=tabi2.astype('uint8')
-     return tabi2
- 
-def fidclass(numero,classn):
-    """return class from number"""
-    found=False
-#    print numero
-    for cle, valeur in classn.items():
-
-        if valeur == numero:
-            found=True
-            return cle
-    if not found:
-        return 'unknown'
-       
-def tagviews(tab,text,x,y):
-    """write simple text in image """
-    font = cv2.FONT_HERSHEY_SIMPLEX
-    viseg=cv2.putText(tab,text,(x, y), font,0.3,white,1)
-    return viseg
 def show_image(im, name='image'):
     cv2.imshow(name, im)
     cv2.waitKey(0)
@@ -377,6 +274,7 @@ def genebmppatch(dirName,slnt,contenupat):
 #    global constPixelSpacing, dimtabx,dimtaby
     #directory for patches
     bmp_dir = os.path.join(top, bmpname)
+    
     remove_folder(bmp_dir)
     os.mkdir(bmp_dir)
     sroidir=os.path.join(top,sroi)
@@ -388,6 +286,7 @@ def genebmppatch(dirName,slnt,contenupat):
     img=np.zeros((slnt,image_rows,image_cols),np.int16)
     np.putmask(img,img==0,-1000)
     mask=np.zeros((slnt,image_rows,image_cols),np.uint8)
+    maskw=np.zeros((slnt,image_rows,image_cols,3),np.uint8)
     patdic={}
     print 'contenupat',contenupat
     for pat in contenupat:
@@ -434,6 +333,7 @@ def genebmppatch(dirName,slnt,contenupat):
 ##                    print i,j
 #                    ooo
                 cv2.rectangle(mask[s], (i, j), (i+dimpavx,j+dimpavy), classif[pat], -1)
+                cv2.rectangle(maskw[s], (i, j), (i+dimpavx,j+dimpavy), classifc[pat], -1)
                 j+=dimpavy
             i+=dimpavx
 #        print 'number of classes :',len( np.unique(mask[s]))
@@ -447,8 +347,8 @@ def genebmppatch(dirName,slnt,contenupat):
         imgcoresroi='mask_'+str(s)+'.'+typeibmp
         bmpfileroi=os.path.join(sroidir,imgcoresroi)
     #            print imgcoresroi,bmpfileroi
-        dsrforimage=normi(mask[s])
-        dsrforimage=cv2.cvtColor(dsrforimage,cv2.COLOR_GRAY2BGR)                     
+        dsrforimage=maskw[s]
+#        dsrforimage=cv2.cvtColor(dsrforimage,cv2.COLOR_GRAY2BGR)                     
         cv2.imwrite (bmpfileroi, dsrforimage)
 
     return img,mask
@@ -465,14 +365,14 @@ def preparroi(namedirtopcf,tabscan,tabsroi):
     for num in range(slnt):
         patchpicklenamepatient=str(num)+'_'+patchpicklename   
         pathpicklepatfile=os.path.join(pathpicklepat,patchpicklenamepatient)
-        scan_list=[]
-        mask_list=[]
-        scan_list.append(tabscan[num] ) 
-#        print tabscan[0].shape,tabscan[0].min(),tabscan[0].max()
-#        maski= tabsroi[num].copy()    
-#        np.putmask(maski,maski>0,classif['healthy'])
-
-        mask_list.append(tabsroi[num])
+#        scan_list=[]
+#        mask_list=[]
+#        scan_list.append(norm(tabscan[num]) ) 
+##        print tabscan[0].shape,tabscan[0].min(),tabscan[0].max()
+##        maski= tabsroi[num].copy()    
+##        np.putmask(maski,maski>0,classif['healthy'])
+#
+#        mask_list.append(tabsroi[num])
 #        print tabsroi[num].min(),tabsroi[num].max(),np.unique(tabsroi[num])
 #        oooo
 #        if num==3:
@@ -490,7 +390,7 @@ def preparroi(namedirtopcf,tabscan,tabsroi):
 #            cv2.waitKey(0)
 #            cv2.destroyAllWindows()
             
-        patpickle=(scan_list,mask_list)
+        patpickle=(norm(tabscan[num]),tabsroi[num])
 #        print len(scan_list)
         pickle.dump(patpickle, open(pathpicklepatfile, "wb"),protocol=-1)
 
@@ -512,6 +412,8 @@ else:
     sroidir=os.path.join(namedirtopc,sroi)
     remove_folder(sroidir)
     os.mkdir(sroidir)
+    print sroidir
+    
 #    classifused={
 #    'back_ground':0,
 #        'healthy':1,    

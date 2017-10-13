@@ -2,8 +2,7 @@
 """
 Created on Tue May 02 15:04:39 2017
 Create Xtrain etc data for training 
-use ROI data to generate dat: 1 pattern after another + patchassembly
-only one validation set for all training sets
+specific for patch based images
 2nd step
 @author: sylvain
 
@@ -26,8 +25,9 @@ import random
 from sklearn.model_selection import train_test_split
 #######################################################################################################
 
-pklnum=30 #number of sets (to not have too big databases)
-print 'number of set :',pklnum
+pklnum=100 #number of total images to generate
+print 'number of turns :',pklnum
+perval = 0.2 #percentage for validation
 
 nametopdummy='DUMMY' # name of top directory for dummy images with patches
 toppatchdummy= 'TOPPATCH' #for dummy scan with patches
@@ -41,14 +41,14 @@ nameHug='IMAGEDIR'
 
 extendirdummy=namesubdummy
 
-toppatch= 'TOPROI' #for scan classified ROI
+toppatch= 'TOPPATCH' #for scan classified ROI
 #extendir='ILD_TXT'  #for scan classified ROI
 #extendir='ILD0'  #for scan classified ROI
-extendir='1'  #for scan classified ROI
+extendir='0'  #for scan classified ROI
 #extendir='UIP2'  #for scan classified ROI
 
 pickel_dirsource='TRAIN_SET/pickle_train_set' #path for data fort training
-pickel_dirsourcenum='f' #extensioon for path for data for training
+pickel_dirsourcenum='p' #extensioon for path for data for training
 
 
 ##############################################################
@@ -79,20 +79,26 @@ os.mkdir(pickle_dir)
 path_HUG=os.path.join(cwdtop,nameHug)
 patchesdirnametop = toppatch+'_'+extendir
 patchtoppath=os.path.join(path_HUG,patchesdirnametop)
-print 'work on :',patchtoppath , 'for scan data input '
-patchpicklename='picklepatches.pkl'
-roipicklepath = 'roipicklepatches'
-picklepatches='picklepatches'
-picklepathdir =os.path.join(patchtoppath,roipicklepath) # path scan classified by ROI
-pathdummy =os.path.join(cwdtop+'/TRAIN_SET',nametopdummy)
-pathdummy =os.path.join(pathdummy,toppatchdummy+'_'+namesubdummy)
-pathdummy =os.path.join(pathdummy,picklepatches)
-pathdummy =os.path.join(pathdummy,nsubsubdummy) #path for dummy scan with patches
 
-print 'path for dummy images with patches' ,pathdummy
-lisdummy=os.listdir(pathdummy)
-lenlisdummy=len(lisdummy)
-print 'number of images in dummy',lenlisdummy
+
+patchpicklename='picklepatches.pkl'
+#roipicklepath = 'roipicklepatches'
+picklepatches='picklepatches'
+classpatch='classpatch'
+picklepathdir =os.path.join(patchtoppath,picklepatches) # path scan 
+picklepathdir =os.path.join(picklepathdir,classpatch) # path scan 
+print 'work on :',picklepathdir , 'for scan data input '
+
+
+#pathdummy =os.path.join(cwdtop+'/TRAIN_SET',nametopdummy)
+#pathdummy =os.path.join(pathdummy,toppatchdummy+'_'+namesubdummy)
+#pathdummy =os.path.join(pathdummy,picklepatches)
+#pathdummy =os.path.join(pathdummy,nsubsubdummy) #path for dummy scan with patches
+#
+#print 'path for dummy images with patches' ,pathdummy
+#lisdummy=os.listdir(pathdummy)
+#lenlisdummy=len(lisdummy)
+#print 'number of images in dummy',lenlisdummy
 
 def get_class_weights(y):
     counter = collections.Counter(y)
@@ -121,22 +127,22 @@ def readclassesdummy(lisdummy,indexdummy,indexaug):
 
 
 
-def readclasses(pat,namepat,indexpat,indexaug):
-
-    patpick=os.path.join(picklepathdir,pat)
-    patpick=os.path.join(patpick,namepat[indexpat])
+def readclasses(lisscan,picklepathdir,indexpat,indexaug):
+        
+    patpick=os.path.join(picklepathdir,lisscan[indexpat])
     readpkl=pickle.load(open(patpick, "rb"))
                                             
-    scanr=readpkl[0][0]
+    scanr=readpkl[0]
     scan=geneaug(scanr,indexaug)
-    maskr=readpkl[1][0]
+    maskr=readpkl[1]
     mask=geneaug(maskr,indexaug)
-#    cv2.imshow(pat+str(indexpat)+'mask',normi(mask))
+#    cv2.imshow(str(indexpat)+'mask',normi(mask))
+#    cv2.imshow(str(indexpat)+'scan',normi(scan))
 #    cv2.waitKey(0)
 #    cv2.destroyAllWindows()
-    scanm=norm(scan)
+#    scanm=norm(scan)
 
-    return scanm, mask  
+    return scan, mask  
 
 def numbclasses(y):
     y_train = np.array(y)
@@ -272,60 +278,53 @@ def geneaug(image,tt):
 
 ###########################################################"
 
-listroi=[name for name in os.listdir(picklepathdir)]
-
-numclass=len(listroi)
+lisscan=[name for name in os.listdir(picklepathdir)]
+#
+numscan=len(lisscan)
 print '-----------'
-print'number of classes in scan:', numclass
+print'number of scan images in scan:', numscan
 print '-----------'
 
-listscaninroi={}
+#listscaninroi={}
+#
+#indexpatc={}
+#for j in listroi:
+#        indexpatc[j]=0
+#
+#totalimages=0
 
-indexpatc={}
-for j in listroi:
-        indexpatc[j]=0
-
-totalimages=0
-maximage=0
-
-for c in listroi:
-    listscaninroi[c]=os.listdir(os.path.join(picklepathdir,c))
-    numberscan=len(listscaninroi[c])
-    if numberscan>maximage:
-        maximage=numberscan
-        ptmax=c
-    totalimages+=numberscan
-    
-print 'number total of scan images:',totalimages
-print 'maximum data in one pat:',maximage,' in ',ptmax
+#
+#for c in listroi:
+#    listscaninroi[c]=os.listdir(os.path.join(picklepathdir,c))
+#    numberscan=len(listscaninroi[c])
+#    if numberscan>maximage:
+#        maximage=numberscan
+#        ptmax=c
+#    totalimages+=numberscan
+#    
+#print 'number total of scan images:',totalimages
+#print 'maximum data in one pat:',maximage,' in ',ptmax
 print '-----------'
 patch_list=[]
 label_list=[]
     
-for numgen in range(maximage*numclass):
-        pat =listroi[numgen%numclass]
-        numberscan=len(listscaninroi[pat])
-        indexpatc[pat] =  indexpatc[pat]%numberscan
-        indexpat=indexpatc[pat]
-        indexpatc[pat]=indexpatc[pat]+1
-
+for numgen in range(pklnum):
+      
+        indexpat=random.randint(0, numscan-1)
         indexaug = random.randint(0, 11)
-        indexdummy = random.randint(0, lenlisdummy-1)
-#        print numgen ,pat,indexpat,numberscan
-        scan,mask=readclasses(pat,listscaninroi[pat],indexpat,indexaug)  
+
+#        print numgen ,indexpat,numscan
+        scan,mask=readclasses(lisscan,picklepathdir,indexpat,indexaug)  
         patch_list.append(scan)
         label_list.append(mask)
-        if numgen%numclass==0 and dummyinclude:
-            scan,mask=readclassesdummy(lisdummy,indexdummy,indexaug)  
-            patch_list.append(scan)
-            label_list.append(mask)
     
 print 'number of data',len(patch_list)
 print '-----------'
 
 
 X_train, X_test, y_train, y_test = train_test_split(patch_list,
-                                        label_list,test_size=0.1, random_state=42)
+                                        label_list,test_size=perval)
+#                                        , random_state=42)
 num_classes,class_weights=numbclasses(y_test)
 print 'weights:'
 setvalue=[]
@@ -354,32 +353,34 @@ remove_folder(diri)
 os.mkdir(diri)
 pickle.dump(X_test, open( os.path.join(diri,"X_test.pkl"), "wb" ),protocol=-1)
 pickle.dump(y_test, open( os.path.join(diri,"y_test.pkl"), "wb" ),protocol=-1)
+pickle.dump(X_train, open( os.path.join(diri,"X_train.pkl"), "wb" ),protocol=-1)
+pickle.dump(y_train, open( os.path.join(diri,"y_train.pkl"), "wb" ),protocol=-1)
 pickle.dump(class_weights, open( os.path.join(pickle_dir,"class_weights.pkl"), "wb" ),protocol=-1)
 
-splx=np.array_split(X_train,pklnum)
-sply=np.array_split(y_train,pklnum)
-
+#splx=np.array_split(X_train,pklnum)
+#sply=np.array_split(y_train,pklnum)
+#
+##for i in range(pklnum):
+##    print 'shape set :',i, splx[i].shape, sply[i].shape
+#print '-----------'
 #for i in range(pklnum):
-#    print 'shape set :',i, splx[i].shape, sply[i].shape
-print '-----------'
-for i in range(pklnum):
-    print 'work on subset :',i
-    diri=os.path.join(pickle_dir,str(i))
-    remove_folder(diri)
-    os.mkdir(diri)
-
-    print 'shape X_train :',splx[i].shape 
-    print 'shape y_train :',sply[i].shape
-
-    print('-' * 30)
-    pickle.dump(splx[i], open( os.path.join(diri,"X_train.pkl"), "wb" ),protocol=-1)
-    pickle.dump(sply[i], open( os.path.join(diri,"y_train.pkl"), "wb" ),protocol=-1)
+#    print 'work on subset :',i
+#    diri=os.path.join(pickle_dir,str(i))
+#    remove_folder(diri)
+#    os.mkdir(diri)
+#
+#    print 'shape X_train :',splx[i].shape 
+#    print 'shape y_train :',sply[i].shape
+#
+#    print('-' * 30)
+#pickle.dump(splx[i], open( os.path.join(diri,"X_train.pkl"), "wb" ),protocol=-1)
+#pickle.dump(sply[i], open( os.path.join(diri,"y_train.pkl"), "wb" ),protocol=-1)
 
 debug=True
 if debug:
-    for j in range(1):
-        diri=os.path.join(pickle_dir,str(j))
-        print 'set',j
+#    for j in range(3):
+#        diri=os.path.join(pickle_dir,str(j))
+#        print 'set',j
         xt=  pickle.load(open( os.path.join(diri,"X_train.pkl"), "rb" ))
         yt= pickle.load(open( os.path.join(diri,"y_train.pkl"), "rb" ))
         xcol=30

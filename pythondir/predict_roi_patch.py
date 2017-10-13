@@ -3,34 +3,58 @@
 Created on Tue May 02 15:04:39 2017
 
 @author: sylvain
+
+predict images in predict_source, with weights in pickle_train
+can be used for patch recosntructed images , only one image per data set
 """
 
 #from __future__ import print_function
-from param_pix import *
 
+from param_pix import classif,classifc
+from param_pix import black
+from param_pix import normi,get_model
+from param_pix import bmpname,image_rows,image_cols,num_bit
+from param_pix import sroi
+
+import cPickle as pickle
+
+import matplotlib.pyplot as plt
+import numpy as np
+import cv2
+from skimage.io import imsave
+import os
+
+
+predicttop='PREDICT'
+trainsettop='TRAIN_SET'
 #predict_source='predict_dum'
 #predict_source='predict_new'
-predict_source='predict_patc'
+predict_source='predict_patc1'
 
 classifnotvisu=[]
 
 #pickel_train='pickle_lu_f6'
-pickel_train='best_we'
+pickel_train='best_wesk3'
+#pickel_train='best_weunet'
+
+num_class=len(classif)
 
 #pickel_train='pickle_ILD_TXT'
 
 thrproba=0.1
-ldummy=False
+#ldummy=False
 
 attn=0.4 #attenuation color
-if ldummy:
-    print 'mode dummy'
+#if ldummy:
+#    print 'mode dummy'
 cwd=os.getcwd()
 
 (cwdtop,tail)=os.path.split(cwd)
-namedirtopc=os.path.join(cwdtop,predict_source)
+namedirtopc=os.path.join(cwdtop,predicttop)
+namedirtopc=os.path.join(namedirtopc,predict_source)
 
-pickle_dir_train=os.path.join(cwdtop,pickel_train)
+pickle_dir_train=os.path.join(cwdtop,trainsettop)
+pickle_dir_train=os.path.join(pickle_dir_train,pickel_train)
 
 predict_result='predict_result'
 
@@ -171,7 +195,7 @@ def visu(namedirtopcf,imgs_mask_test,num_list,dimtabx,dimtaby,tabscan,sroidir,Xp
         imgrgb= cv2.cvtColor(img,cv2.COLOR_GRAY2RGB)
         imgn=normi(img)
 #        imgnc=cv2.resize(imgn,(dimtabx, dimtaby),interpolation=cv2.INTER_LINEAR)
-        imgnc= cv2.cvtColor(imgn,cv2.COLOR_GRAY2RGB)
+#        imgnc= cv2.cvtColor(imgn,cv2.COLOR_GRAY2RGB)
         imgncolor = np.zeros((dimtabx, dimtaby,3), dtype=np.uint8)
         
         for key,value in classif.items():
@@ -192,11 +216,11 @@ def visu(namedirtopcf,imgs_mask_test,num_list,dimtabx,dimtaby,tabscan,sroidir,Xp
 #                print key,bl
 #                print imcc[200][200]
                 np.putmask(imcc,imcc!=bl,black)
-                imcc1=imcc.copy()
+#                imcc1=imcc.copy()
 #                print imcc[200][200]
     #        print 'im4',imclassc[200][200],imclassc.min(),imclassc.max(),type(imclassc[0][0][0]), np.unique(imclassc)
                 np.putmask(imcc,imcc==bl,blc)
-                imcc2=imcc.copy()
+#                imcc2=imcc.copy()
 #                print imcc[200][200]              
                 imgncolor=cv2.add(imgncolor,imcc)
 #        imgnc=np.repeat(imgn,3,axis=2) 
@@ -231,12 +255,6 @@ def visu(namedirtopcf,imgs_mask_test,num_list,dimtabx,dimtaby,tabscan,sroidir,Xp
         imsave(os.path.join(scanbmp, str(image_id) + '.bmp'), souceimage)
 
 
-def tagviews(tab,text,x,y):
-    """write simple text in image """
-    font = cv2.FONT_HERSHEY_SIMPLEX
-    viseg=cv2.putText(tab,text,(x, y), font,0.3,white,1)
-    return viseg
-
 
 def load_train_data(numpidir):
 
@@ -254,10 +272,10 @@ def load_train_data(numpidir):
   
     return class_weights_r,num_class
 
-def loadmodel():
+def loadmodel(num_class):
     print 'load model'
-    weights,num_class=load_train_data(pickle_dir_train)
- 
+#    weights,num_class=load_train_data(pickle_dir_train)
+    weights=[]
 #    model = get_unet(num_class,image_rows,image_cols)
 #    model = get_model(num_class,image_rows,image_cols,weights)
     model = get_model(num_class,num_bit,image_rows,image_cols,False,weights)
@@ -280,8 +298,9 @@ def fullprint(*args, **kwargs):
 
 ############################################
 listdirc= (os.listdir(namedirtopc))
-model=loadmodel()
+model=loadmodel(num_class)
 print('work in directory:',namedirtopc)
+
 for f in listdirc:
     print '-----------'
     print('work on:',f)
@@ -296,7 +315,7 @@ for f in listdirc:
         os.mkdir(scanbmp)
     
     contenudir = [name for name in os.listdir(namedirtopcf) if name.find('.pkl')>0]
-#    print contenudir
+    print contenudir
     
     if len(contenudir)>0:
             y_test=pickle.load(open( os.path.join(namedirtopcf,"y_test.pkl"), "rb" ))

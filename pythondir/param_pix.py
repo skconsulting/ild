@@ -28,7 +28,7 @@ import sys
 import time
 from itertools import product
 import functools
-
+import cv2
 
 import keras
 import theano
@@ -131,8 +131,7 @@ if setdata=='set0':
         'air_trapping':9,
         'GGpret':10
         } 
-    
-    
+        
     usedclassif=[
         'healthy',    
         'ground_glass',
@@ -145,6 +144,8 @@ if setdata=='set0':
         'air_trapping',
         'GGpret'
         ]
+    
+    
 elif setdata=='ILD1':
 #ILD1
     classif ={
@@ -259,6 +260,11 @@ classifc ={
      'peripheral_micronodules':white,
      'tuberculosis':white
  }
+def colorimage(image,color):
+#    im=image.copy()
+    im = cv2.cvtColor(image,cv2.COLOR_GRAY2BGR)
+    np.putmask(im,im>0,color)
+    return im
 
 def rsliceNum(s,c,e):
     endnumslice=s.find(e)
