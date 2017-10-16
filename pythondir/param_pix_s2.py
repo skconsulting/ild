@@ -453,7 +453,7 @@ def evaluatef(actual,pred,num_class):
 #    pres = metrics.precision_score(actual, pred,labels=label,average='weighted')
 #    recall = metrics.recall_score(actual, pred,labels=label,average='weighted')
     labl=[]
-    for i in range(1,num_class):
+    for i in range(0,num_class):
              labl.append(i)
     cm = metrics.confusion_matrix(actual,pred,labels=labl)
     return cm

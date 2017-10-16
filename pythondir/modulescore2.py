@@ -209,7 +209,7 @@ def tagvaccuracy(fig,label,precision,recall,fscore):
     deltax=480
     deltay=10+(11*labnow)
     gro=0.8
-    cv2.putText(fig,'precision: '+'%4s'%(str(precision)+'%')+' recall: '+
+    cv2.putText(fig,'precision: '+'%4s'%(str(precision)+'%')+' sensitvity: '+
                 '%4s'%(str(recall)+'%')+' Fscore: '+'%4s'%(str(fscore)+'%'),
                 (deltax, deltay),cv2.FONT_HERSHEY_PLAIN,gro,col,1)
 
@@ -222,8 +222,8 @@ def tagvcm(fig,cm):
     deltaxm=110 
     deltaxt=110
     for pat in usedclassif:
-        if pat !='back_ground':
-            cp=classif[pat]-1
+#        if pat !='back_ground':
+            cp=classif[pat]
     #        if cp==lcl:
     #            dy=0
     #        elif cp==0:
@@ -245,7 +245,7 @@ def tagvcm(fig,cm):
             cv2.putText(fig,'%5s'%str(cm[i][j]),(dx, dy),cv2.FONT_HERSHEY_PLAIN,gro,white,1)
 
 def cals(cm,pat):
-    numpat=classif[pat]-1
+    numpat=classif[pat]
     tp=cm[numpat][numpat]
     fp=cm[:,numpat].sum()-tp
     fn=cm[numpat].sum()-tp
@@ -302,18 +302,21 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,
 #    imi=np.flip(imi,axis=2)
 #    print'1', imi[278][195]
     imclass0=np.argmax(imi, axis=2).astype(np.uint8)
-#    print '2',imclass0[278][195]
     imamax=np.amax(imi, axis=2)
- 
+    
+    imamaxc=imamax.copy()
     tablung1=np.copy(tabscanLung[slicenumber])   
     np.putmask(tablung1,tablung1>0,255)
-    imclass0=np.bitwise_and(tablung1, imclass0) 
+#    imclass0=np.bitwise_and(tablung1, imclass0) 
 #    print '3',imclass0[278][195]
 
     np.putmask(imamax,imamax>=th,255)
     np.putmask(imamax,imamax<th,0)
+
     imamax=imamax.astype(np.uint8)
     imclass=np.bitwise_and(imamax,imclass0)
+    np.putmask(imclass,imamaxc<th,classif['healthy'])
+    imclass=np.bitwise_and(tablung1, imclass) 
 #    print '4',imclass[278][195]
 #    print '5',tabroi[slicenumber][278][195]
     
@@ -353,7 +356,6 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,
 #    print num_class 
     cm=evaluatef(referencepat,predictpat,num_class)
     
-#    print cm
 #    print num_class
 #    fer=open('report.txt','w')
 #    n= cm.shape[0]
@@ -375,9 +377,9 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,
     cv2.putText(datav,'%24s'%('cm2')+ '%13s'%('cm2'),
                 (20, 20),cv2.FONT_HERSHEY_PLAIN,0.8,yellow,1)
     if referencepatu.max()>0:
-        cv2.putText(datav,'%10s'%('Precision')+
-                    '%11s'%('Recall')+ 
-                    '%11s'%('Fscore')+
+        cv2.putText(datav,'%11s'%('Precision')+
+                    '%11s'%('Sensitvity')+ 
+                    '%10s'%('Fscore')+
                     '%10s'%('SPC')+
                     '%10s'%('NPV'),
                 (350, 10),cv2.FONT_HERSHEY_PLAIN,0.8,yellow,1)
@@ -393,7 +395,7 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,
     cpr=0
     for pat in usedclassif:   
         if pat !='back_ground':
-            cpa=classif[pat]-1 
+            cpa=classif[pat]
 
             precision[pat],recall[pat],fscore[pat], spc[pat],npv[pat],volpat[pat],volroi[pat]=cals(cm,pat)    
             if pat in listlabel:            
@@ -434,7 +436,7 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,
     
     if referencepatu.max()>0:
         cv2.putText(datav,'%10s'%('Precision %')+
-                    '%11s'%('Recall%')+ 
+                    '%11s'%('sensitvity%')+ 
                     '%11s'%('Fscores')+
 #                    '%10s'%('SPC %')+
 #                    '%10s'%('NPV %'),
@@ -555,30 +557,34 @@ def cfma(f,referencepat,predictpat,num_class, namep,thrprobaUIP,cnnweigh,tp):
         presip={}
         recallp={}
         fscorep={}
+#        print cm
+#        fscore={},
+        spc={}
+        npv={}
+        volpat={}
+        volroi={}
         for pat in usedclassif:
             presip[pat]=0
             recallp[pat]=0
             fscorep[pat]=0
-            numpat=classif[pat]
+#            fscore[pat]=0
+            spc[pat]=0
+            npv[pat]=0
+            volpat[pat]=0
+            volroi[pat]=0
 
-#            print numpat
-            presip[pat], recallp[pat]=evaluate(referencepat,predictpat,num_class,(numpat,))
+            presip[pat],recallp[pat],fscorep[pat], spc[pat],npv[pat],volpat[pat],volroi[pat]=cals(cm,pat)
 #            print pat,presip[pat],recallp[pat]
 
-        for pat in usedclassif:             
-         if presip[pat]+recallp[pat]>0:
-            fscorep[pat]=2*presip[pat]*recallp[pat]/(presip[pat]+recallp[pat])
-        else:
-            fscorep[pat]=0    
         f.write(15*' ')
         for i in range (0,n):
-            pat=fidclass(i+1,classif)
+            pat=fidclass(i,classif)
             f.write('%8s'%pat[0:7])
     #    print newclassif
-        f.write('  recall \n')
+        f.write('  sensitvity \n')
             
         for i in range (0,n):            
-            pat=fidclass(i+1,classif)
+            pat=fidclass(i,classif)
             f.write('%15s'%pat)
             for j in range (0,n):
                 f.write('%8s'%str(cm[i][j]))
@@ -586,13 +592,13 @@ def cfma(f,referencepat,predictpat,num_class, namep,thrprobaUIP,cnnweigh,tp):
         f.write('----------------------\n')
         f.write('      precision')
         for i in range (0,n):
-            pat=fidclass(i+1,classif)
+            pat=fidclass(i,classif)
             f.write('%8s'%(str(int(round(100*presip[pat],0)))+'%'))
     #    print newclassif
         f.write('\n')
         f.write('         Fscore')
         for i in range (0,n):
-            pat=fidclass(i+1,classif)
+            pat=fidclass(i,classif)
             f.write('%8s'%(str(int(round(100*fscorep[pat],0)))+'%'))
     #    print newclassif
         f.write('\n--------------------\n')
@@ -618,7 +624,7 @@ def wrresu(f,cm,obj,refmax):
         spc[pat]=0
         npv[pat]=0       
     f.write(str(obj)+'\n')
-    f.write('    pattern   precision%  recall%  Fscore%   SPC%     NPV%\n')
+    f.write('     pattern   precision%  sensitvity%  Fscore%    SPC%      NPV%\n')
    
     precisionAverage=0
     recallAverage=0
@@ -631,7 +637,7 @@ def wrresu(f,cm,obj,refmax):
     cpr=0
     for pat in usedclassif:   
         if pat !='back_ground':
-            cpa=classif[pat]-1 
+            cpa=classif[pat] 
 
             precision[pat],recall[pat],fscore[pat], spc[pat],npv[pat],volpat[pat],volroi[pat]=cals(cm,pat)    
             precisioni=int(round(precision[pat]*100,0))
@@ -650,8 +656,8 @@ def wrresu(f,cm,obj,refmax):
                 npvi=int(round(npv[pat]*100,0)) 
             
                 f.write('%14s'%pat+'%7s'%precisioni+
-                            '%9s'%recalli+'%9s'%fscorei+
-                            '%9s'%spci+'%9s'%npvi+'\n')
+                            '%11s'%recalli+'%11s'%fscorei+
+                            '%11s'%spci+'%11s'%npvi+'\n')
     f.write('---\n')
     if cpp>0:
         precisionAverage=1.0*tpaverage/cpp
@@ -671,7 +677,7 @@ def wrresu(f,cm,obj,refmax):
     if refmax>0:
 
         f.write('%10s'%('Precision %')+
-                    '%11s'%('Recall%')+ 
+                    '%12s'%('Sensitvity%')+ 
                     '%11s'%('Fscores')+
 #                    '%10s'%('SPC%')+
 #                    '%10s'%('NPV%')+
@@ -726,14 +732,26 @@ def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
         if tabroi[slicenumber].max()>0:
             imi=  patch_list_cross_slice[slroi]
 #            print imi.shape
+            
             imclass0=np.argmax(imi, axis=2).astype(np.uint8)
             imamax=np.amax(imi, axis=2)
-
+            
+            imamaxc=imamax.copy()
+            
+            tablung1=np.copy(tabscanLung[slicenumber])   
+            np.putmask(tablung1,tablung1>0,255)
+        #    imclass0=np.bitwise_and(tablung1, imclass0) 
+        #    print '3',imclass0[278][195]
+        
             np.putmask(imamax,imamax>=th,255)
             np.putmask(imamax,imamax<th,0)
+        
             imamax=imamax.astype(np.uint8)
+            imclass=np.bitwise_and(imamax,imclass0)
+            np.putmask(imclass,imamaxc<th,classif['healthy']) 
+           
 
-            patchdict[slicenumber]=np.bitwise_and(imamax,imclass0)
+            patchdict[slicenumber]=np.bitwise_and(tablung1, imclass) 
 
             tablung1=np.copy(tabscanLung[slicenumber])
             np.putmask(tablung1,tablung1>0,255)

@@ -631,16 +631,14 @@ def writeslice(num):
     cv2.putText(menus,'Slice: '+str(num),(5,450),cv2.FONT_HERSHEY_PLAIN,1.0,white,1 )
 
 def contrasti(im,r):
-
      r1=0.5+r/100.0
-     im=im.astype(np.uint16)
+     im=im.astype(np.float32)
      tabi1=im*r1
      tabi2=np.clip(tabi1,0,imageDepth)
      tabi3=tabi2.astype(np.uint8)
      return tabi3
 
-def lumi(tabi,r):
-    r1=r
+def lumi(tabi,r1):
     tabi1=tabi.astype(np.uint16)
     tabi1=tabi1+r1
     tabi2=np.clip(tabi1,0,imageDepth)
@@ -696,6 +694,7 @@ def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName):
     cv2.createTrackbar( 'Flip','SliderRoi',slnt/2,slnt-2,nothing)
     cv2.createTrackbar( 'Zoom','SliderRoi',0,100,nothing)
     cv2.createTrackbar( 'imh','SliderRoi',0,4,nothing)
+    cv2.createTrackbar( 'imh1','SliderRoi',0,5,nothing)
     cv2.createTrackbar( 'Panx','SliderRoi',50,100,nothing)
     cv2.createTrackbar( 'Pany','SliderRoi',50,100,nothing)
     cv2.createTrackbar( 'All','SliderRoi',1,1,nothing)
@@ -781,12 +780,14 @@ def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName):
         allview = cv2.getTrackbarPos('All','SliderRoi')
         noneview = cv2.getTrackbarPos('None','SliderRoi')
         imh = cv2.getTrackbarPos('imh','SliderRoi')
+        imh1 = cv2.getTrackbarPos('imh1','SliderRoi')
 
         
         if allview==1:
             for key2 in usedclassif:
                 cv2.setTrackbarPos(key2,'SliderRoi' ,1)
             cv2.setTrackbarPos('All','SliderRoi' ,0)
+            cv2.setTrackbarPos('lung','SliderRoi' ,0)
         if noneview==1:
             for key2 in usedclassif:
                 cv2.setTrackbarPos(key2,'SliderRoi' ,0)
@@ -833,21 +834,52 @@ def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName):
 #            imagenamecomplet=os.path.join(pdirk,imagename)
 #            print pdirk
 #            image = cv2.imread(imagenamecomplet,1)
-            imageo=tabscanRoi[scannumber]
+            imageo1=tabscanRoi[scannumber]
+            imglumi=lumi(imageo1,l)
+            imageo=contrasti(imglumi,c)
             
 #            image=image.astype('float32')
+            if imh1==0:
+                kernel=(1,1)
+            elif imh1==1:
+                kernel=(2,2)
+            elif imh1==2:
+               kernel=(3,3)
+            elif imh1==3:
+               kernel=(4,4)  
+            elif imh1==4:
+               kernel=(5,5) 
+            elif imh1==5:
+               kernel=(6,6) 
+
+                
             if imh==1:
-                kernel=(3,3)
-                image=cv2.blur(imageo,kernel)
+                try:
+                    print 'blur',kernel
+                    image=cv2.blur(imageo,kernel)
+                except:
+                        print 'blur not ok',kernel
             elif imh==2:
-                kernel=(3,3)
-                image=cv2.medianBlur(imageo,kernel[0])
+                try:
+                   print 'medianBlur',kernel[0]
+                   image=cv2.medianBlur(imageo,kernel[0])
+                except:
+                        print 'medianBlur not ok',kernel[0]
+ 
             elif imh==3:
-               kernel=(3,3)
-               image=cv2.bilateralFilter(imageo,3,75,75)
+                try:
+                   print 'bilateralFilter',kernel[0]
+                   image=cv2.bilateralFilter(imageo,kernel[0],75,75)
+                except:
+                        print 'bilateralFilterk not ok',kernel[0]
+
             elif imh==4:
-               kernel=(3,3)
-               image=cv2.GaussianBlur(imageo,kernel,0)
+                try:
+                   print 'GaussianBlur',kernel
+                   image=cv2.GaussianBlur(imageo,kernel,0)  
+                except:
+                        print 'GaussianBlur not ok',kernel
+             
             else:
                 image=imageo
 #                image=np.zeros((512,512,3),np.uint8) 
@@ -861,8 +893,7 @@ def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName):
             imagesview=zoomfunction(images[scannumber],z,px,py)
     
             
-            imglumi=lumi(image,l)
-            image=contrasti(imglumi,c)
+            
             
             imageview=cv2.add(image,imagesview)
             imageview=cv2.add(menus,imageview)
@@ -1161,7 +1192,9 @@ def genebmp(fn,nosource,dirroit,centerHU,limitHU):
     FilesDCM =(os.path.join(fn,listdcm[0]))
     RefDs = dicom.read_file(FilesDCM,force=True)
     dsr= RefDs.pixel_array
-    dimtabx= dsr.shape[0]
+#    dimtabx= dsr.shape[0]
+    
+    dimtabx= dimtabnorm
     slnt=0
     listsln=[]
     for l in listdcm:
@@ -1336,7 +1369,7 @@ def drawcontours2(im,pat,dimtabx,dimtaby):
     ret,thresh = cv2.threshold(imgray,10,255,0)
     _,contours,heirarchy=cv2.findContours(thresh,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
     im2 = np.zeros((dimtabx,dimtaby,3), np.uint8)
-    cv2.drawContours(im2,contours,-1,classifc[pat],1)
+    cv2.drawContours(im2,contours,-1,classifc[pat],2)
     im2=cv2.cvtColor(im2,cv2.COLOR_BGR2RGB)
     return im2   
 
@@ -1379,7 +1412,7 @@ def populate(pp,lissln,slnt,pixelSpacing,tabscanName):
                      
                     img=os.path.join(dirroi,roiimage)
                     imageroi= cv2.imread(img,1)              
-#                    imageroi=cv2.resize(imageroi,(dimtabx,dimtabx),interpolation=cv2.INTER_CUBIC)  
+                    imageroi=cv2.resize(imageroi,(dimtabx,dimtabx),interpolation=cv2.INTER_LINEAR)  
     
                     cdelimter='_'
                     extensionimage='.'+typei1
@@ -1409,11 +1442,21 @@ def populate(pp,lissln,slnt,pixelSpacing,tabscanName):
                         ctkey=drawcontours2(tabgrey,key,dimtabx,dimtabx)
      
                         anoted_image=cv2.imread(sroiname,1) 
+                        ctkeym=ctkey.copy()
+
+                        ctkeym=cv2.cvtColor(ctkeym,cv2.COLOR_RGB2GRAY)
+
+                        ctkeym=cv2.cvtColor(ctkeym,cv2.COLOR_GRAY2RGB) 
+
+                        np.putmask(anoted_image, ctkeym >0, 0)
+
+                        anoted_image=cv2.add(anoted_image,ctkey)
+
 #                        anoted_image=cv2.resize(anoted_image,(dimtabx,dimtabx),interpolation=cv2.INTER_CUBIC)  
                         
 #                        print sroiname
     
-                        anoted_image=cv2.add(anoted_image,ctkey)
+#                        anoted_image=cv2.add(anoted_image,ctkey)
                         cv2.imwrite(sroiname,anoted_image)
                               
 

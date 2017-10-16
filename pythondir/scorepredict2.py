@@ -285,56 +285,62 @@ def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan,listsln,tabscanName
         os.mkdir(fmbmpbmp)
 
     listdcm=[name for name in  os.listdir(fmbmp) if name.lower().find('.dcm')>0]
-    listbmp= os.listdir(fmbmpbmp) 
+    listbmp=[name for name in  os.listdir(fmbmpbmp) if name.lower().find(typei1)>0] 
     tabscan = np.zeros((slnt,dimtaby,dimtabx), np.uint8)
     if len(listbmp)>0:
         print 'lung scan exists in bmp'
         for img in listbmp:
             slicenumber= rsliceNum(img,'_','.'+typei1)
             imr=cv2.imread(os.path.join(fmbmpbmp,img),0) 
+
             if imr.max()>0: 
                 imr=cv2.resize(imr,(dimtabx,dimtaby),interpolation=cv2.INTER_LINEAR)
                 np.putmask(imr,imr>0,classif['lung']+1)          
                 tabscan[slicenumber]=imr
+
+    if len(listbmp)<slnt-1: 
+        print 'not all lung in bmp'
+        if len(listdcm)>0  :
+            print 'lung scan exists in dcm'           
+            for l in listdcm:
+                FilesDCM =(os.path.join(fmbmp,l))
+                RefDs = dicom.read_file(FilesDCM,force=True)    
+                dsr= RefDs.pixel_array
+                dsr=normi(dsr)    
+                imgresize=cv2.resize(dsr,(dimtabx,dimtaby),interpolation=cv2.INTER_LINEAR)
+                np.putmask(imgresize,imgresize>0,classif['lung']+1)
+        
+                slicenumber=int(RefDs.InstanceNumber)
     
-    if len(listdcm)>0:  
-        print 'lung scan exists in dcm'           
-        for l in listdcm:
-            FilesDCM =(os.path.join(fmbmp,l))
-            RefDs = dicom.read_file(FilesDCM,force=True)    
-            dsr= RefDs.pixel_array
-            dsr=normi(dsr)    
-            imgresize=cv2.resize(dsr,(dimtabx,dimtaby),interpolation=cv2.INTER_LINEAR)
-            np.putmask(imgresize,imgresize>0,classif['lung']+1)
-    
-            slicenumber=int(RefDs.InstanceNumber)
-
-            imgcoreScan=tabscanName[slicenumber]
-            bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
-            if tabscan[slicenumber].max()==0:
-                tabscan[slicenumber]=imgresize
-                colorlung=colorimage(imgresize,classifc['lung'])
-                cv2.imwrite(bmpfile,colorlung)  
-
-    else:
-            print 'no lung scan in dcm'
-            tabscan1 = np.zeros((slnt,dimtaby,dimtabx), np.int16)
-
-            segmented_lungs_fill = segment_lung_mask(tabscanScan, True)
-#            print segmented_lungs_fill.shape
-            for i in listsln:
-                
-                tabscan1[i]=morph(segmented_lungs_fill[i],13)
-#                if i ==200:
-#                    cv2.imshow(str(i),normi(tabscan1[i]))
-
-                imgcoreScan=tabscanName[i]
+                imgcoreScan=tabscanName[slicenumber]
                 bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
-                if tabscan[i].max()==0:
-                    tabscan[i]=tabscan1[i]
-                    colorlung=colorimage(tabscan[i],classifc['lung'])
-                    cv2.imwrite(bmpfile,colorlung)
-  
+                if tabscan[slicenumber].max()==0:
+                    tabscan[slicenumber]=imgresize
+                    colorlung=colorimage(imgresize,classifc['lung'])
+                    cv2.imwrite(bmpfile,colorlung)  
+    
+        else:
+                print 'no lung scan in dcm'
+                tabscan1 = np.zeros((slnt,dimtaby,dimtabx), np.int16)
+    
+                segmented_lungs_fill = segment_lung_mask(tabscanScan, True)
+    #            print segmented_lungs_fill.shape
+                for i in listsln:
+                    
+                    tabscan1[i]=morph(segmented_lungs_fill[i],13)
+    #                if i ==200:
+    #                    cv2.imshow(str(i),normi(tabscan1[i]))
+    
+                    imgcoreScan=tabscanName[i]
+                    bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
+                    if tabscan[i].max()==0:
+                        tabscan[i]=tabscan1[i]
+                        colorlung=colorimage(tabscan[i],classifc['lung'])
+                        cv2.imwrite(bmpfile,colorlung)
+    else:
+        print 'all lung in bmp'
+                        
+    
     for sli in listsln:
         cpt=np.copy(tabscan[sli])
         np.putmask(cpt,cpt>0,1)
@@ -567,7 +573,7 @@ def drawcontours2(im,pat,dimtabx,dimtaby):
     ret,thresh = cv2.threshold(imgray,10,255,0)
     _,contours,heirarchy=cv2.findContours(thresh,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
     im2 = np.zeros((dimtabx,dimtaby,3), np.uint8)
-    cv2.drawContours(im2,contours,-1,classifc[pat],2)
+    cv2.drawContours(im2,contours,-1,classifc[pat],1)
 #    im2=cv2.cvtColor(im2,cv2.COLOR_BGR2RGB)
     return im2
 
@@ -637,6 +643,7 @@ def tagviewct(tab,label,x,y):
     """write text in image according to label and color"""
 
     col=classifc[label]
+
     labnow=classif[label]
 #  
     deltay=10*(labnow%5)
@@ -975,12 +982,12 @@ def calnewpat(pat,slnroi,tabroipat,tabroi):
             tab3=np.bitwise_or(tab3,tab)
             tabn=np.bitwise_not(tab3)      
             tab1=np.bitwise_and(tab1,tabn)
-            np.putmask(tab1, tab1> 0, classif[pat1]+1)
+            np.putmask(tab1, tab1> 0, classif[pat1])
             
             tab2=np.bitwise_and(tab2,tabn)
-            np.putmask(tab2, tab2> 0, classif[pat2]+1)  
+            np.putmask(tab2, tab2> 0, classif[pat2])  
             
-            np.putmask(tab, tab> 0, classif[pat]+1)            
+            np.putmask(tab, tab> 0, classif[pat])            
 
             tabroi[i]=np.bitwise_and(tabroi[i],taballnot)             
             tabroi[i]=np.bitwise_or(tabroi[i],tab1) 
@@ -996,6 +1003,7 @@ def generoi(dirf,tabroi,dimtabx,dimtaby,slnroi,tabscanName,dirroit,tabscanroi,ta
     tabroipat={}    
     listroi={}
     for pat in usedclassif:
+#        print pat,classif[pat]
         if pat !='back_ground':
             tabroipat[pat]=np.zeros((slnt,dimtabx,dimtaby),np.uint8)
             pathroi=os.path.join(dirf,pat)
@@ -1059,27 +1067,33 @@ def generoi(dirf,tabroi,dimtabx,dimtaby,slnroi,tabscanName,dirroit,tabscanroi,ta
                 if pat !='back_ground':
                     img=np.copy(tabroi[numslice])
                     if img.max()>0:                    
-                        if classif[pat]>0:
-                            np.putmask(img, img !=classif[pat], 0)
-                            np.putmask(img, img ==classif[pat], 1)
-                        else:
-                            np.putmask(img, img !=0, 2)
-                            np.putmask(img, img ==0, 1)
-                            np.putmask(img, img ==2, 0)
-                        
-                        area= img.sum()* surfelem /100
+#                        if classif[pat]>0:
+                        np.putmask(img, img !=classif[pat], 0)
+                        np.putmask(img, img ==classif[pat], 1)
+#                        else:
+#                            np.putmask(img, img !=0, 2)
+#                            np.putmask(img, img ==0, 1)
+#                            np.putmask(img, img ==2, 0)
+#                        
+                        area= img.sum()* surfelem 
                         volumeroi[numslice][pat]=area  
                         if area>0:
-                            if pat not in listroi[numslice] and area>0.5:
+                            if pat not in listroi[numslice] and area>0.1:
                                 listroi[numslice].append(pat)
+#                            img=cv2.cvtColor(img,cv2.COLOR_GRAY2BGR)
+
                             np.putmask(img, img >0, 100)
-                            ctkey=drawcontours2(img,pat,dimtabx,dimtaby)    
+                            ctkey=drawcontours2(img,pat,dimtabx,dimtaby) 
+                            ctkeym=ctkey.copy()
+                            ctkeym=cv2.cvtColor(ctkeym,cv2.COLOR_RGB2GRAY)
+                            ctkeym=cv2.cvtColor(ctkeym,cv2.COLOR_GRAY2RGB)                       
+                            np.putmask(anoted_image, ctkeym >0, 0)
                             anoted_image=cv2.add(anoted_image,ctkey)
                             anoted_image=tagviewct(anoted_image,pat,200,10)                                           
                     else:
                         volumeroi[numslice][pat]=0    
-                anoted_image=cv2.cvtColor(anoted_image,cv2.COLOR_RGB2BGR)
-                cv2.imwrite(roibmpfile,anoted_image)
+            anoted_image=cv2.cvtColor(anoted_image,cv2.COLOR_RGB2BGR)
+            cv2.imwrite(roibmpfile,anoted_image)
                       
     return tabroi,volumeroi,slnroi,listroi
 
@@ -1298,7 +1312,8 @@ def predictrun(indata,path_patient):
                 slnroi=[]
                 tabroi=np.zeros((slnt,dimtaby,dimtabx), np.uint8) 
                 tabroi,volumeroi,slnroi,listroi=generoi(dirf,tabroi,dimtabx,dimtabx,slnroi,
-                                            tabscanName,dirroi,tabscanroi,tabscanLung,PixelSpacing,slnt)                
+                                            tabscanName,dirroi,tabscanroi,tabscanLung,PixelSpacing,slnt)   
+
                 datacross=(slnt,slicepitch,lissln,setref, thrproba,PixelSpacing)
                 pickle.dump(centerHU, open(os.path.join(path_data_write,'centerHUs2'), "wb" ),protocol=-1)
                 pickle.dump(limitHU, open(os.path.join(path_data_write,'limitHUs2'), "wb" ),protocol=-1) 
