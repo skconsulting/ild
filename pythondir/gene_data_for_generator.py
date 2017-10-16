@@ -24,23 +24,23 @@ import numpy as np
 import os
 import random
 import sys
-import math
-import cv2
+#import math
+#import cv2
 import keras
 print ' keras.backend.image_data_format :',keras.backend.image_data_format()
 #######################################################################################################
 
 nameHug='IMAGEDIR'
-toppatch= 'TOPPATCH' #for scan classified ROI
-extendir='0'  #for scan classified ROI
+toppatch= 'TOPROI' #for scan classified ROI
+extendir='g'  #for scan classified ROI
 #extendir='essai'  #for scan classified ROI
 
-valshare=10 #percentage for validation set
+valshare=20 #percentage for validation set
 
 pickel_dirsource_root='TRAIN_SET' #path for data fort training
 pickel_dirsource='pickle' #path for data fort training
 pickel_dirsourcenum='train_set' #extensioon for path for data for training
-extendir2='p'
+extendir2='q'
 calculOnly=False
 ##############################################################
 validationdir='V'
@@ -190,6 +190,7 @@ def gen_random_image(numgen,numclass,listroi,listscaninroi):
 #    print numgen,numgen%numclass
     pat =listroi[numgen%numclass]
     numberscan=classnumber[pat]
+#    print numberscan
 #    if  pat in hugeClass:
     indexpat =  random.randint(0, numberscan-1)                       
 #    else:                                                   
@@ -241,11 +242,12 @@ for c in listroi:
     listscaninroi[c]=os.listdir(os.path.join(picklepathdir,c))
     numberscan=len(listscaninroi[c])
     classnumber[c]=numberscan
+#    print c,numberscan
     if numberscan>maximage:
         maximage=numberscan
         ptmax=c
     totalimages+=numberscan
-    
+ 
 print 'number total of scan images:',totalimages
 print 'maximum data in one pat:',maximage,' in ',ptmax
 print '-----------'

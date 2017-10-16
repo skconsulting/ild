@@ -25,18 +25,18 @@ print ' keras.backend.image_data_format :',keras.backend.image_data_format()
 nameHug='IMAGEDIR'
 
 toppatch= 'TOPROI' #for scan classified ROI
-extendir='4'  #for scan classified ROI
+extendir='g'  #for scan classified ROI
 #extendir='0'  #for scan classified ROI
 
 nametop='TRAIN_SET'
 pickel_top='pickle' #path to get input data
 pickel_ext='train_set'  #path to get input data
-pickel_ext_set='8'  #path to get input data
+pickel_ext_set='q'  #path to get input data
 
-trainSetSize=200# default 200 , number of images for each epoch
-nb_epoch=30 # default 30 number of epoch for each set
-batch_size= 2#default 2batch size (gpu ram dependant)
-turnNumber=30 #number of turn of trainset size
+trainSetSize=30# default 200 , number of images for each epoch
+nb_epoch=10 # default 30 number of epoch for each set
+batch_size= 4#default 2 batch size (gpu ram dependant)
+turnNumber=10 #number of turn of trainset size
 numgen=-1   #to restart after crash
 calculate=True #to be put to False for actual training
 calculate=False #to be put to False for actual training
@@ -138,25 +138,6 @@ def load_train_val(numpidir):
     return X_test, y_test,num_class,img_rows,img_cols,num_images
         
 
-def load_train_data(numpidir):
-    X_train = pickle.load( open( os.path.join(numpidir,"X_train.pkl"), "rb" ))
-    y_train = pickle.load( open( os.path.join(numpidir,"y_train.pkl"), "rb" ))
-    DIM_ORDERING=keras.backend.image_data_format()
-    if DIM_ORDERING == 'channels_first':
-        num_class= y_train.shape[1]
-#    num_class= 4
-        img_rows=X_train.shape[2]
-        img_cols=X_train.shape[3]
-        num_images=X_train.shape[0]
-    else:
-        num_class= y_train.shape[3]
-#    num_class= 4
-        img_rows=X_train.shape[1]
-        img_cols=X_train.shape[2]
-        num_images=X_train.shape[0]
-                
-    return X_train, y_train,num_class,img_rows,img_cols,num_images
-
 
 def load_weight(numpidir):
     class_weights=pickle.load(open( os.path.join(numpidir,"class_weights.pkl"), "rb" ))
@@ -180,8 +161,8 @@ def store_model(model,it):
     name_model=os.path.join(pickle_store,'weights_'+str(today)+'_'+str(it)+'model.hdf5')
     model.save_weights(name_model)
 
-def load_model_set(pickle_dir_train):
-    listmodel=[name for name in os.listdir(pickle_dir_train) if name.find('1weights')==0]
+def load_model_set(pickle_dir_train,filew):
+    listmodel=[name for name in os.listdir(pickle_dir_train) if name.find('weights')==0]
     print 'load_model',pickle_dir_train
     ordlist=[]
     for name in listmodel:
@@ -193,17 +174,9 @@ def load_model_set(pickle_dir_train):
     namelast=ordlistc[0][0]
     namelastc=os.path.join(pickle_dir_train,namelast)
     print 'last weights :',namelast   
+    filew.write ('last weights :'+namelast+'\n')
     return namelastc
 
-#def generate_arrays_from_file(path):
-#    while 1:
-#        f = open(path)
-#        for line in f:
-#            # create Numpy arrays of input data
-#            # and labels, from each line in the file
-#            x, y = process_line(line)
-#            yield (x, y)
-#    f.close()
 
 def geneaug(image,tt):
     if tt==0:
@@ -254,10 +227,7 @@ def readclasses(pat,namepat,indexpat,indexaug):
     scan=geneaug(scanr,indexaug)
     maskr=readpkl[1]
     mask=geneaug(maskr,indexaug)
-#    cv2.imshow(pat+str(indexpat)+'mask',normi(mask))
-#    cv2.waitKey(0)
-#    cv2.destroyAllWindows()
-#    scanm=norm(scan)
+ 
 
     return scan, mask  
 
@@ -341,8 +311,8 @@ def train():
  
     print('Creating and compiling model...')
     print('-'*30)
-
-    model = get_model(num_class,num_bit,image_rows,image_cols,False,weights)
+    weightedloss=True
+    model = get_model(num_class,num_bit,image_rows,image_cols,False,weights,weightedloss)
     
     numpidirval =os.path.join(pickle_dir,validationdir)
     x_val, y_val, num_class,img_rows,img_cols,num_images = load_train_val(numpidirval)
@@ -353,13 +323,16 @@ def train():
     assert img_rows==image_rows,"dimension mismatch"
     assert img_cols==image_cols,"dimension mismatch"
     
-    listmodel=[name for name in os.listdir(pickle_store) if name.find('1weights')==0]
+    listmodel=[name for name in os.listdir(pickle_store) if name.find('weights')==0]
     if len(listmodel)>0:
+
          print 'load weight found from last training'
-         namelastc=load_model_set(pickle_store)         
+         filew.write ('load weight found from last training\n')
+         namelastc=load_model_set(pickle_store,filew)         
          model.load_weights(namelastc)  
     else:
          print 'first training to be run'
+         filew.write ('first training to be run\n')
     today = str('m'+str(t.month)+'_d'+str(t.day)+'_y'+str(t.year)+'_'+str(t.hour)+'h_'+str(t.minute)+'m')
     rese=os.path.join(pickle_store,str(today)+'_e.csv')
     listroi=[name for name in os.listdir(picklepathdir)]

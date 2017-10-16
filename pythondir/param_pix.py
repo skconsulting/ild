@@ -7,7 +7,7 @@ Created on Tue May 02 15:04:39 2017
 setdata='set0'
 
 #modelName='fcn8s'
-modelName='unet'
+#modelName='unet'
 modelName='sk3'
 #modelName='alexnet'
 #modelName='vgg16
@@ -68,7 +68,6 @@ image_cols = 512
 DIM_ORDERING=keras.backend.image_data_format()
 print DIM_ORDERING
 
-
 num_bit=1
 learning_rate=1e-4
 #image_rows = 16
@@ -80,18 +79,31 @@ cwd=os.getcwd()
 #
 (cwdtop,tail)=os.path.split(cwd)
 
-MIN_BOUND = -1000.0
-MAX_BOUND = 400.0
-PIXEL_MEAN = 0.25
+limitHU=1700.0
+centerHU=-662.0
 
-bmpname='scan_bmp'
+minb=centerHU-(limitHU/2)
+maxb=centerHU+(limitHU/2)
+
+#MIN_BOUND = -1000.0
+#MAX_BOUND = 400.0
+
+MIN_BOUND =minb
+MAX_BOUND = maxb
+#PIXEL_MEAN = 0.25
+PIXEL_MEAN = 0.92
+
+print MIN_BOUND,MAX_BOUND
+
+
+scan_bmp='scan_bmp'
 transbmp='trans_bmp'
 #directory with lung mask dicom
 lungmask='lung'
 lungmask1='lung_mask'
 #directory to put  lung mask bmp
-lungmaskbmp='bmp'
-sourcedcm = 'source'
+lung_namebmp='bmp'
+source = 'source'
 
 
 typei='jpg' #can be jpg
@@ -115,6 +127,13 @@ orange=(255,153,102)
 lowgreen=(0,51,51)
 parme=(234,136,222)
 chatain=(139,108,66)
+
+#cv2.destroyAllWindows()
+layertokeep= [
+        'bronchiectasis',
+        ]
+
+
 
 if setdata=='set0':
 #CHU
@@ -143,6 +162,9 @@ if setdata=='set0':
         'micronodules',
         'air_trapping',
         'GGpret'
+        ]
+    derivedpat=[
+        'GGpret',
         ]
     
     
@@ -219,6 +241,7 @@ else:
 #    print i, j
 print '---------------'
 hugeClass=['healthy','back_ground']
+hugeClass=[]
 notusedclassif=[]
 for i in classif:
     if i not in usedclassif:
@@ -745,7 +768,7 @@ def squeezed_accuracy(y_true, y_pred):
         return class_acc
 
 
-def get_model(num_class,num_bit,img_rows,img_cols,mat_t_k,weights):
+def get_model(num_class,num_bit,img_rows,img_cols,mat_t_k,weights,weightedl):
     DIM_ORDERING=keras.backend.image_data_format()
     if DIM_ORDERING == 'channels_first':
         INP_SHAPE = (num_bit, image_rows, image_cols)  
@@ -854,11 +877,19 @@ def get_model(num_class,num_bit,img_rows,img_cols,mat_t_k,weights):
     #alexnet
 #        print weights
 #        print weights.shape
+         
         model=sk3(num_class,num_bit,img_rows,img_cols,INP_SHAPE,DIM_ORDERING)
 #        weights = np.ones(512)
-        mloss = weighted_categorical_crossentropy(weights).myloss
+        if weightedl:
+            print 'weighted loss'
+            mloss = weighted_categorical_crossentropy(weights).myloss
+            model.compile(optimizer=Adam(lr=learning_rate), loss=mloss, metrics=['categorical_accuracy'])
+        else:
+            model.compile(optimizer=Adam(lr=learning_rate), loss='categorical_crossentropy', metrics=['categorical_accuracy'])
+            print 'NO weighted loss'
+
         
-        model.compile(optimizer=Adam(lr=learning_rate), loss=mloss, metrics=['categorical_accuracy'])
+        
 # 
 # nicolov model
 #    model = add_softmax(nicolov(num_class,img_rows,img_cols),img_rows,img_cols)
@@ -873,8 +904,8 @@ if __name__ == "__main__":
    image_size=512
    num_bit=1
    num_class=11
-
-   model=get_model(num_class,num_bit,image_size,image_size,False,weights)
+   weightedl=False
+   model=get_model(num_class,num_bit,image_size,image_size,False,weights,weightedl)
    print model.layers[-1].output_shape #== (None, 16, 16, 21)
    DIM_ORDERING=keras.backend.image_data_format()
    if DIM_ORDERING == 'channels_first':
