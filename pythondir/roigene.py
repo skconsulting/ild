@@ -15,7 +15,7 @@ from param_pix_r import classifc,classif,classifcontour,usedclassif
 from param_pix_r import remove_folder,volumeroifile,normi,rsliceNum 
 
 from skimage import measure
-
+from sklearn.cluster import KMeans
 import cv2
 import dicom
 import os
@@ -24,7 +24,17 @@ import numpy as np
 import time
 import matplotlib.pyplot as plt
 from itertools import product
-import scipy
+
+from skimage import morphology
+
+
+from skimage.segmentation import clear_border
+from skimage.measure import label,regionprops
+from skimage.morphology import  disk, dilation, binary_erosion, binary_closing
+from skimage.filters import roberts
+
+from scipy import ndimage as ndi
+
 
 
 pattern=''
@@ -687,7 +697,7 @@ def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName):
 
     cv2.namedWindow('imageRoi',cv2.WINDOW_NORMAL)
     cv2.resizeWindow('imageRoi', (dimtabx+2*dimtabmenu),dimtabx)
-    cv2.namedWindow("SliderRoi",cv2.WINDOW_NORMAL)
+    cv2.namedWindow("SliderRoi",cv2.WINDOW_AUTOSIZE)
 
     cv2.createTrackbar( 'Brightness','SliderRoi',0,100,nothing)
     cv2.createTrackbar( 'Contrast','SliderRoi',50,100,nothing)
@@ -712,8 +722,8 @@ def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName):
 
         key = cv2.waitKey(1000)
 #        key = cv2.waitKey(1000) & 0xFF
-        if key != -1:
-            print key
+#        if key != -1:
+#            print key
         if key >47 and key<58:
             numberfinal=0
             knum=key-48
@@ -911,6 +921,7 @@ def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName):
             imageview=np.concatenate((menuleft,imageview),axis=1)
             imageview=cv2.cvtColor(imageview,cv2.COLOR_BGR2RGB)
             cv2.imshow("imageRoi", imageview)
+            cv2.waitKey(25)
         else:
             print 'quit', quitl
             cv2.destroyAllWindows()
@@ -944,9 +955,8 @@ def largest_label_volume(im, bg=-1):
     else:
         return None
 
-def segment_lung_mask(image, slnt ,fill_lung_structures=True):
+def segment_lung_mask(image, slnt ,fill_lung_structures=True,viewi=False):
     print 'start generation'
-    viewi=True
 
     # not actually binary, but 1 and 2.
     # 0 is treated as background, which we do not want
@@ -955,64 +965,69 @@ def segment_lung_mask(image, slnt ,fill_lung_structures=True):
         plt.imshow(image[slnt/2])
         plt.show()
         print image.min(), image.max()
-        
+        print image.shape
+#    airloc= np.argwhere(image==-1024)
+#    print airloc.shape
+#    if airloc.shape[0]==0:
+#        airloc= np.argwhere(image==-1000)
+    
+    
+#    imageo=np.zeros((image.shape[0],image.shape[1],image.shape[2]),np.int16)
+#    kernel=(3,3)
+
     binary_image = np.array(image > -350, dtype=np.int8)+1 # initial 320 350
     
     if viewi:
         print binary_image.min(), binary_image.max()
+#        print airloc[0]
+#        print len(airloc)
+#        print 'loc air',image[airloc[0][0],airloc[0][1],airloc[0][2]]
         print 'after treshold 237'
         plt.imshow(binary_image[slnt/2])
         plt.show()
 #    binary_image = clear_border(binary_image)
     labels = measure.label(binary_image)
     if viewi:
-        print labels.min(),labels.max()
         print 'label'
+        print labels.min(),labels.max()
+ 
         plt.imshow(labels[slnt/2])
+        plt.show()
+        labl1 =np.array(labels==1,dtype=np.int8)
+        plt.imshow(labl1[slnt/2])
+        plt.show()
+        labl2 =np.array(labels==2,dtype=np.int8)
+        plt.imshow(labl2[slnt/2])
         plt.show()
 
     # Pick the pixel in the very corner to determine which label is air.
     #   Improvement: Pick multiple background labels from around the patient
     #   More resistant to "trays" on which the patient lays cutting the air
     #   around the person in half
-#    print labels.shape[0],labels.shape[1],labels.shape[2]
-
-#    background_label = labels[0,0,0]
-#    bg={} 
+# 
+    
     ls0=labels.shape[0]-1
     ls1=labels.shape[1]-1
     ls2=labels.shape[2]-1
 
-#    for i,j in product(range (0,8), range (1,3)):
-#    for i in range (0,8):#8
-##        print  'i:',i
-##        print (i/4)%2, (i/2)%2, i%2
-#        for j in range (1,3):#3
-#            print (i/4)%2*ls0,(i/2)%2*ls1,i%2*ls2/j
-#            print (i/4)%2*ls0,(i/2)%2*ls1/j,i%2*ls2
-#            print (i/4)%2*ls0/j,(i/2)%2*ls1,i%2*ls2
-#            background_label=labels[(i/4)%2*ls0,(i/2)%2*ls1,i%2*ls2/j]
-#            binary_image[background_label == labels] = 2
-#            background_label=labels[(i/4)%2*ls0,(i/2)%2*ls1/j,i%2*ls2]
-#            binary_image[background_label == labels] = 2
-#            background_label=labels[(i/4)%2*ls0/j,(i/2)%2*ls1,i%2*ls2]
-#            binary_image[background_label == labels] = 2  
-#    for i in range (0,5):#8
-    for i,j,k in product(range (0,4), range (0,4),range(0,4)):
+    for i,j,k in product(range (0,5), range (0,5),range(0,5)):
 
 ##        print  'i:',i
 ##        print (i/4)%2, (i/2)%2, i%2
-        im=int(i/3.*ls0)
+        im=int(i/4.*ls0)
 #        for j in range (0,5):#3
-        jm=int(j/3.*ls1)
+        jm=int(j/4.*ls1)
 #            for k in range(0,5):
-        km=int(k/3.*ls2)
+        km=int(k/4.*ls2)
         if im*jm*km==0:
 #            print im,jm,km
             background_label=labels[im,jm,km]
             binary_image[background_label == labels] = 2
+    
     if viewi:
         print 'after label applied'
+        print 'background_label',background_label
+
         plt.imshow(binary_image[slnt/2])
         plt.show()
     #Fill the air around the person
@@ -1024,6 +1039,7 @@ def segment_lung_mask(image, slnt ,fill_lung_structures=True):
     if fill_lung_structures:
         # For every slice we determine the largest solid structure
         for i, axial_slice in enumerate(binary_image):
+#            print i,axial_slice
             axial_slice = axial_slice - 1
             labeling = measure.label(axial_slice)
             l_max = largest_label_volume(labeling, bg=0)
@@ -1036,8 +1052,22 @@ def segment_lung_mask(image, slnt ,fill_lung_structures=True):
         plt.show()
     binary_image -= 1 #Make the image actual binary
     binary_image = 1-binary_image # Invert it, lungs are now 1
+    
+#    imageo=np.zeros((image.shape[0],image.shape[1],image.shape[2]),np.int16)
+#    ke=5
+#    kernele=np.ones((ke,ke),np.uint8)
+#    kerneld=np.ones((ke,ke),np.uint8)
+#
+##    print type(binary_image[0,0,0])
+#    for i in range (image.shape[0]):
+#        edges = roberts(binary_image[i])
+#        binary_image[i] = ndi.binary_fill_holes(edges)
+#        binary_image[i]= cv2.dilate(binary_image[i].astype('uint8'),kerneld,iterations = 5)
+#        binary_image[i] = cv2.erode(binary_image[i].astype('uint8'),kernele,iterations = 5)
+             
 
-    # Remove other air pockets insided body
+#    binary_image=imageo.copy()
+    
     labels = measure.label(binary_image, background=0)
     l_max = largest_label_volume(labels, bg=0)
     if l_max is not None: # There are air pockets
@@ -1046,7 +1076,118 @@ def segment_lung_mask(image, slnt ,fill_lung_structures=True):
         print 'remove air pocket'
         plt.imshow(binary_image[slnt/2])
         plt.show()
-    return binary_image
+    labels = measure.label(binary_image[slnt/2]) # Different labels are displayed in different colors
+#    label_vals = np.unique(labels)
+#    print label_vals
+    regions = measure.regionprops(labels)
+#    print regions
+    numlung=0
+    for prop in regions:
+#        print prop.area
+        if prop.area>5000:
+            numlung+=1
+#    regions = measure.regionprops(labels)
+    areas = [r.area for r in regionprops(labels)]
+    areassorted=sorted(areas,reverse=True)
+    if viewi:
+        print 'numlung',numlung
+        print 'sorted areas',areassorted
+    if len(areassorted)>0:
+        if numlung==2 or areassorted[0]>50000:
+            ok=True
+            print 'successful generation'
+        else:
+            ok=False
+            print 'NOT successful generation'          
+    else:
+        ok=False
+        print 'NOT successful generation'
+ 
+    return binary_image,ok
+
+def get_segmented_lungs(im, plot=False):
+
+    '''
+    This funtion segments the lungs from the given 2D slice.
+    '''
+    if plot == True:
+        f, plots = plt.subplots(8, 1, figsize=(5, 40))
+    '''
+    Step 1: Convert into a binary image.
+    '''
+#    binary = im < 604-1024
+    binary = im < -320
+    if plot == True:
+        plots[0].axis('off')
+        plots[0].imshow(binary, cmap='gray')
+
+    '''
+    Step 2: Remove the blobs connected to the border of the image.
+    '''
+    cleared = clear_border(binary)
+    if plot == True:
+        plots[1].axis('off')
+        plots[1].imshow(cleared, cmap='gray')
+    '''
+    Step 3: Label the image.
+    '''
+    cleared=morph(cleared,5)
+    label_image = label(cleared)
+    if plot == True:
+        plots[2].axis('off')
+        plots[2].imshow(label_image)
+    '''
+    Step 4: Keep the labels with 2 largest areas.
+    '''
+    areas = [r.area for r in regionprops(label_image)]
+    areas.sort()
+    if len(areas) > 2:
+        for region in regionprops(label_image):
+            if region.area < areas[-2]:
+                for coordinates in region.coords:
+                       label_image[coordinates[0], coordinates[1]] = 0
+    binary = label_image > 0
+    if plot == True:
+        plots[3].axis('off')
+        plots[3].imshow(binary, cmap=plt.cm.bone)
+    '''
+    Step 5: Erosion operation with a disk of radius 2. This operation is
+    seperate the lung nodules attached to the blood vessels.
+    '''
+    selem = disk(2)
+    binary = binary_erosion(binary, selem)
+    if plot == True:
+        plots[4].axis('off')
+        plots[4].imshow(binary, cmap=plt.cm.bone)
+    '''
+    Step 6: Closure operation with a disk of radius 10. This operation is
+    to keep nodules attached to the lung wall.
+    '''
+    selem = disk(10)
+    binary = binary_closing(binary, selem)
+    if plot == True:
+        plots[5].axis('off')
+        plots[5].imshow(binary, cmap=plt.cm.bone)
+    '''
+    Step 7: Fill in the small holes inside the binary mask of lungs.
+    '''
+    edges = roberts(binary)
+    binary = ndi.binary_fill_holes(edges)
+    if plot == True:
+        plots[6].axis('off')
+        plots[6].imshow(binary, cmap=plt.cm.bone)
+    '''
+    Step 8: Superimpose the binary mask on the input image.
+    '''
+    get_high_vals = binary == 0
+    im[get_high_vals] = 0
+    if plot == True:
+        plots[7].axis('off')
+        plots[7].imshow(im, cmap=plt.cm.bone)
+    binary = morphology.dilation(binary,np.ones([5,5]))
+    return binary
+
+
 
 def morph(imgt,k):
 
@@ -1114,8 +1255,26 @@ def genebmplung(fn,tabscanScan,tabscanName,slnt,listsln,tabroifinal,volumeroi):
     else:
             print 'no lung scan, generation proceeds'
             tabscanlung = np.zeros((slnt,dimtabx,dimtabx), np.uint8)
+#            segmented_lungs_fill=np.zeros((slnt,dimtabx,dimtabx), np.uint8)
 
-            segmented_lungs_fill = segment_lung_mask(tabscanScan,slnt, True)
+            segmented_lungs_fill,ok = segment_lung_mask(tabscanScan,slnt, True,True)
+            if ok== False:
+                print 'use 2nd algorihm'
+                segmented_lungs_fill=np.zeros((slnt,dimtabx,dimtabx), np.uint8)
+                for i in listsln:
+                    v=False
+#                    if i ==slnt/2:
+#                        v=True
+#                    else:
+#                        v=False
+                    segmented_lungs_fill[i]=get_segmented_lungs(tabscanScan[i], v)
+
+
+            
+#            segmented_lungs_fill[50]=get_segmented_lungs(tabscanScan[50], True)
+#            segmented_lungs_fill[216]=get_segmented_lungs(tabscanScan[216], True)
+#            segmented_lungs_fill[380]=get_segmented_lungs(tabscanScan[380], True)
+           
             for i in listsln:
                 
                 tabscanlung[i]=morph(segmented_lungs_fill[i],13)
@@ -1210,8 +1369,8 @@ def genebmp(fn,nosource,dirroit,centerHU,limitHU):
     tabscan = np.zeros((slnt,dimtabx,dimtabx),np.int16)
     tabscanRoi=np.zeros((slnt,dimtabx,dimtabx,3),np.uint8)
     tabscanName = {}
-    lbHU=centerHU-1.0*limitHU/2.
-    lhHU=centerHU+1.0*limitHU/2.
+    lbHU=centerHU-(1.0*limitHU/2.0)
+    lhHU=centerHU+(1.0*limitHU/2.0)
 #    print lbHU,lhHU
     ll=len(listdcm)
     printProgressBar(0,ll , prefix = 'Progress:', suffix = 'Complete', length = 50)
@@ -1248,7 +1407,7 @@ def genebmp(fn,nosource,dirroit,centerHU,limitHU):
         np.putmask(dsr,dsr<lbHU,lbHUt)
         np.putmask(dsr,dsr>lhHU,lhHUt)
 #        print dsr.min(),dsr.max()
-        tabscan[slicenumber]=dsr
+        tabscan[slicenumber]=dsr.copy()
         dsrnormi=normi(dsr)
         dsrnormi=cv2.cvtColor(dsrnormi,cv2.COLOR_GRAY2RGB)
 
@@ -1544,7 +1703,12 @@ def openfichierroi(patient,patient_path_complet,centerHU,limitHU,lungask,ForceGe
     if lungask:
         tabroifinal,volumeroi=genebmplung(dirsource,tabscanScan,tabscanName,slnt,listsln,tabroifinal,volumeroi)
     initmenus(slnt,dirpath_patient)  
-    cv2.destroyWindow('wait')      
+    cv2.destroyWindow('wait')  
+#    img=Image.fromarray(normi(tabscanScan[260]), 'RGB')
+#    plt.imshow(normi(tabscanScan[260]), interpolation='nearest')
+#    plt.show()
+#    img.show()
+#    cv2.waitKey(0)
     loop(slnt,dirsourcescan,dirpath_patient,dirroit,tabscanRoi,tabscanName)
     return 'completed'
 

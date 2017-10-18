@@ -9,7 +9,7 @@ version 1.5
 #from param_pix_p import *
 from param_pix_s2 import scan_bmp,dimpavx,dimpavy,dirpickleArch,modelArch
 from param_pix_s2 import typei,typei1
-from param_pix_s2 import white,yellow
+from param_pix_s2 import white,yellow,MAX_BOUND
 
 from param_pix_s2 import lung_namebmp,lungmask,lungmask1
 from param_pix_s2 import fidclass,pxy
@@ -35,8 +35,14 @@ import numpy as np
 import os
 import cv2
 import dicom
-
-from skimage import measure
+from skimage import measure, morphology
+from skimage.segmentation import clear_border
+from skimage.morphology import  disk, binary_erosion, binary_closing
+from skimage.filters import roberts
+from skimage.measure import label,regionprops
+from scipy import ndimage as ndi
+from itertools import product
+ 
 import cPickle as pickle
 #import matplotlib.pyplot as plt
 import keras
@@ -183,49 +189,25 @@ def largest_label_volume(im, bg=-1):
     else:
         return None
 
-def segment_lung_mask(image, fill_lung_structures=True):
+def segment_lung_mask(image, slnt ,fill_lung_structures=True):
+    print 'start generation'
 
-    # not actually binary, but 1 and 2.
-    # 0 is treated as background, which we do not want
-    binary_image = np.array(image > -350, dtype=np.int8)+1#init 320, or 350
-#    binary_image = clear_border(binary_image)
+    binary_image = np.array(image > -350, dtype=np.int8)+1 # initial 320 350 
     labels = measure.label(binary_image)
 
-    # Pick the pixel in the very corner to determine which label is air.
-    #   Improvement: Pick multiple background labels from around the patient
-    #   More resistant to "trays" on which the patient lays cutting the air
-    #   around the person in half
-#    print labels.shape[0],labels.shape[1],labels.shape[2]
-#    background_label = labels[0,0,0]
-#    bg={} 
     ls0=labels.shape[0]-1
     ls1=labels.shape[1]-1
     ls2=labels.shape[2]-1
-    for i in range (0,8):
-#        print  'i:',i
-#        print (i/4)%2, (i/2)%2, i%2
-        for j in range (1,3):
-#            print 'j:',j
-#            print labels[(i/4)%2*ls0,(i/2)%2*ls1,i%2*ls2/j]
-#            print (i/4)%2*ls0,(i/2)%2*ls1,i%2*ls2/j
-#            print (i/4)%2*ls0,(i/2)%2*ls1/j,i%2*ls2
-#            print (i/4)%2*ls0/j,(i/2)%2*ls1,i%2*ls2
-            background_label=labels[(i/4)%2*ls0,(i/2)%2*ls1,i%2*ls2/j]
+
+    for i,j,k in product(range (0,4), range (0,4),range(0,4)):
+
+        im=int(i/3.*ls0)
+        jm=int(j/3.*ls1)
+        km=int(k/3.*ls2)
+        if im*jm*km==0:
+            background_label=labels[im,jm,km]
             binary_image[background_label == labels] = 2
-            background_label=labels[(i/4)%2*ls0,(i/2)%2*ls1/j,i%2*ls2]
-            binary_image[background_label == labels] = 2
-            background_label=labels[(i/4)%2*ls0/j,(i/2)%2*ls1,i%2*ls2]
-            binary_image[background_label == labels] = 2  
-#    for i in range (0,8):
-#        binary_image[background_label == labels] = 2
-#        background_label = labels[labels.shape[0]-1,labels.shape[1]-1,labels.shape[2]-1]
 
-    #Fill the air around the person
-#    binary_image[background_label == labels] = 2
-
-
-    # Method of filling the lung structures (that is superior to something like
-    # morphological closing)
     if fill_lung_structures:
         # For every slice we determine the largest solid structure
         for i, axial_slice in enumerate(binary_image):
@@ -236,7 +218,6 @@ def segment_lung_mask(image, fill_lung_structures=True):
             if l_max is not None: #This slice contains some lung
                 binary_image[i][labeling != l_max] = 1
 
-
     binary_image -= 1 #Make the image actual binary
     binary_image = 1-binary_image # Invert it, lungs are now 1
 
@@ -245,7 +226,29 @@ def segment_lung_mask(image, fill_lung_structures=True):
     l_max = largest_label_volume(labels, bg=0)
     if l_max is not None: # There are air pockets
         binary_image[labels != l_max] = 0
-    return binary_image
+    labels = measure.label(binary_image[slnt/2]) # Different labels are displayed in different colors
+    regions = measure.regionprops(labels)
+    numlung=0
+    for prop in regions:
+
+        if prop.area>5000:
+            numlung+=1
+
+    areas = [r.area for r in regionprops(labels)]
+    areassorted=sorted(areas,reverse=True)
+    if len(areassorted)>0:
+        if numlung==2 or areassorted[0]>50000:
+            ok=True
+            print 'successful generation'
+        else:
+            ok=False
+            print 'NOT successful generation'          
+    else:
+        ok=False
+        print 'NOT successful generation'
+ 
+    return binary_image,ok
+
 
 def morph(imgt,k):
 
@@ -268,6 +271,36 @@ def colorimage(image,color):
     im = cv2.cvtColor(image,cv2.COLOR_GRAY2BGR)
     np.putmask(im,im>0,color)
     return im
+
+def get_segmented_lungs(im):
+
+    binary = im < -320
+    cleared = clear_border(binary) 
+    cleared=morph(cleared,5)
+    label_image = label(cleared)
+  
+    areas = [r.area for r in regionprops(label_image)]
+    areas.sort()
+    if len(areas) > 2:
+        for region in regionprops(label_image):
+            if region.area < areas[-2]:
+                for coordinates in region.coords:
+                       label_image[coordinates[0], coordinates[1]] = 0
+    binary = label_image > 0  
+    selem = disk(2)
+    binary = binary_erosion(binary, selem)
+ 
+    selem = disk(10)
+    binary = binary_closing(binary, selem)
+    edges = roberts(binary)
+    binary = ndi.binary_fill_holes(edges)
+ 
+    get_high_vals = binary == 0
+    im[get_high_vals] = 0
+  
+    binary = morphology.dilation(binary,np.ones([5,5]))
+    return binary
+
 
 def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan,listsln,tabscanName):
     """generate patches from dicom files"""
@@ -323,7 +356,12 @@ def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan,listsln,tabscanName
                 print 'no lung scan in dcm'
                 tabscan1 = np.zeros((slnt,dimtaby,dimtabx), np.int16)
     
-                segmented_lungs_fill = segment_lung_mask(tabscanScan, True)
+                segmented_lungs_fill,ok = segment_lung_mask(tabscanScan,slnt, True)
+                if ok== False:
+                    print 'use 2nd algorihm'
+                    segmented_lungs_fill=np.zeros((slnt,dimtabx,dimtabx), np.uint8)
+                    for i in listsln:
+                        segmented_lungs_fill[i]=get_segmented_lungs(tabscanScan[i], False)
     #            print segmented_lungs_fill.shape
                 for i in listsln:
                     
@@ -740,10 +778,10 @@ def  calcMed (tabscanLung,lisslnfront):
              kernele=np.ones((ke,ke),np.uint8)
              kerneld=np.ones((ke,ke),np.uint8)
 
-             erosion = cv2.erode(imgngray,kernele,iterations = 1)
-             dilation = cv2.dilate(erosion,kerneld,iterations = 1)
+             erosioni = cv2.erode(imgngray,kernele,iterations = 1)
+             dilationi = cv2.dilate(erosioni,kerneld,iterations = 1)
 
-             im2,contours0, hierarchy = cv2.findContours(dilation,cv2.RETR_TREE,\
+             im2,contours0, hierarchy = cv2.findContours(dilationi,cv2.RETR_TREE,\
                       cv2.CHAIN_APPROX_SIMPLE)
 #             cv2.imshow('lung2',imgngray)
              xmed=np.zeros((2), np.uint16)
@@ -846,9 +884,9 @@ def subpleural(dirf,tabscanLung,lissln,subErosion,crfr):
     #avgPixelSpacing=0.734 in mm/ pixel
         subErosionPixel = int(round(2 * subErosion / PixelSpacing))
         kernele=np.ones((subErosionPixel,subErosionPixel),np.uint8)
-        erosion = cv2.erode(imgngray,kernele,iterations = 1)
+        erosioni = cv2.erode(imgngray,kernele,iterations = 1)
 
-        ret, mask = cv2.threshold(erosion, 0, 255, cv2.THRESH_BINARY)
+        ret, mask = cv2.threshold(erosioni, 0, 255, cv2.THRESH_BINARY)
         mask_inv = cv2.bitwise_not(mask)
 #        mask_inv = np.bitwise_not(erosion)
         subpleurmask = np.bitwise_and(imgngray, mask_inv)
@@ -1113,7 +1151,7 @@ def preparscan(tabscan,tabslung,numsliceok):
         np.putmask(tabl,tabl>0,1)
         tablc=tabl.astype(np.int16)
 
-        np.putmask(tablc,tablc==0,-1000)
+        np.putmask(tablc,tablc==0,MAX_BOUND)
         np.putmask(tablc,tablc==1,0)
 #        taba=cv2.bitwise_and(scan,scan,mask=tabl)
         
