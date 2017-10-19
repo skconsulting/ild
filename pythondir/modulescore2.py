@@ -858,9 +858,9 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,tabroi,
         
     viewasked={}
     for key1 in usedclassif:
-#            print key1
-        viewasked[key1]=True
-        cv2.createTrackbar( key1,'Sliderfis2',0,1,nothings)
+       if key1 !='back_ground':
+            viewasked[key1]=True
+            cv2.createTrackbar( key1,'Sliderfis2',0,1,nothings)
     nbdig=0
     numberentered={}
     initimg = np.zeros((dimtaby,dimtabx,3), np.uint8)

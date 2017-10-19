@@ -703,8 +703,8 @@ def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName):
     cv2.createTrackbar( 'Contrast','SliderRoi',50,100,nothing)
     cv2.createTrackbar( 'Flip','SliderRoi',slnt/2,slnt-2,nothing)
     cv2.createTrackbar( 'Zoom','SliderRoi',0,100,nothing)
-    cv2.createTrackbar( 'imh','SliderRoi',0,4,nothing)
-    cv2.createTrackbar( 'imh1','SliderRoi',0,5,nothing)
+#    cv2.createTrackbar( 'imh','SliderRoi',0,4,nothing)
+#    cv2.createTrackbar( 'imh1','SliderRoi',0,5,nothing)
     cv2.createTrackbar( 'Panx','SliderRoi',50,100,nothing)
     cv2.createTrackbar( 'Pany','SliderRoi',50,100,nothing)
     cv2.createTrackbar( 'All','SliderRoi',1,1,nothing)
@@ -789,8 +789,8 @@ def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName):
         py = cv2.getTrackbarPos('Pany','SliderRoi')
         allview = cv2.getTrackbarPos('All','SliderRoi')
         noneview = cv2.getTrackbarPos('None','SliderRoi')
-        imh = cv2.getTrackbarPos('imh','SliderRoi')
-        imh1 = cv2.getTrackbarPos('imh1','SliderRoi')
+#        imh = cv2.getTrackbarPos('imh','SliderRoi')
+#        imh1 = cv2.getTrackbarPos('imh1','SliderRoi')
 
         
         if allview==1:
@@ -846,64 +846,61 @@ def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName):
 #            image = cv2.imread(imagenamecomplet,1)
             imageo1=tabscanRoi[scannumber]
             imglumi=lumi(imageo1,l)
-            imageo=contrasti(imglumi,c)
+            image=contrasti(imglumi,c)
             
 #            image=image.astype('float32')
-            if imh1==0:
-                kernel=(1,1)
-            elif imh1==1:
-                kernel=(2,2)
-            elif imh1==2:
-               kernel=(3,3)
-            elif imh1==3:
-               kernel=(4,4)  
-            elif imh1==4:
-               kernel=(5,5) 
-            elif imh1==5:
-               kernel=(6,6) 
+#            if imh1==0:
+#                kernel=(1,1)
+#            elif imh1==1:
+#                kernel=(2,2)
+#            elif imh1==2:
+#               kernel=(3,3)
+#            elif imh1==3:
+#               kernel=(4,4)  
+#            elif imh1==4:
+#               kernel=(5,5) 
+#            elif imh1==5:
+#               kernel=(6,6) 
 
                 
-            if imh==1:
-                try:
-                    print 'blur',kernel
-                    image=cv2.blur(imageo,kernel)
-                except:
-                        print 'blur not ok',kernel
-            elif imh==2:
-                try:
-                   print 'medianBlur',kernel[0]
-                   image=cv2.medianBlur(imageo,kernel[0])
-                except:
-                        print 'medianBlur not ok',kernel[0]
- 
-            elif imh==3:
-                try:
-                   print 'bilateralFilter',kernel[0]
-                   image=cv2.bilateralFilter(imageo,kernel[0],75,75)
-                except:
-                        print 'bilateralFilterk not ok',kernel[0]
-
-            elif imh==4:
-                try:
-                   print 'GaussianBlur',kernel
-                   image=cv2.GaussianBlur(imageo,kernel,0)  
-                except:
-                        print 'GaussianBlur not ok',kernel
-             
-            else:
-                image=imageo
+#            if imh==1:
+#                try:
+#                    print 'blur',kernel
+#                    image=cv2.blur(imageo,kernel)
+#                except:
+#                        print 'blur not ok',kernel
+#            elif imh==2:
+#                try:
+#                   print 'medianBlur',kernel[0]
+#                   image=cv2.medianBlur(imageo,kernel[0])
+#                except:
+#                        print 'medianBlur not ok',kernel[0]
+# 
+#            elif imh==3:
+#                try:
+#                   print 'bilateralFilter',kernel[0]
+#                   image=cv2.bilateralFilter(imageo,kernel[0],75,75)
+#                except:
+#                        print 'bilateralFilterk not ok',kernel[0]
+#
+#            elif imh==4:
+#                try:
+#                   print 'GaussianBlur',kernel
+#                   image=cv2.GaussianBlur(imageo,kernel,0)  
+#                except:
+#                        print 'GaussianBlur not ok',kernel
+#             
+#            else:
+#                image=imageo
 #                image=np.zeros((512,512,3),np.uint8) 
 
 #            image=image.astype('uint8')
 #            image=cv2.cvtColor(image,cv2.COLOR_GRAY2RGB)
-            image=cv2.cvtColor(image,cv2.COLOR_BGR2RGB)
-            
+            image=cv2.cvtColor(image,cv2.COLOR_BGR2RGB)            
             image=zoomfunction(image,z,px,py)
 #            print images[scannumber].shape
             imagesview=zoomfunction(images[scannumber],z,px,py)
-    
-            
-            
+                
             
             imageview=cv2.add(image,imagesview)
             imageview=cv2.add(menus,imageview)
@@ -955,7 +952,7 @@ def largest_label_volume(im, bg=-1):
     else:
         return None
 
-def segment_lung_mask(image, slnt ,fill_lung_structures=True,viewi=False):
+def segment_lung_mask(image, slnt ,srd=False,fill_lung_structures=True,viewi=False):
     print 'start generation'
 
     # not actually binary, but 1 and 2.
@@ -1054,16 +1051,18 @@ def segment_lung_mask(image, slnt ,fill_lung_structures=True,viewi=False):
     binary_image = 1-binary_image # Invert it, lungs are now 1
     
 #    imageo=np.zeros((image.shape[0],image.shape[1],image.shape[2]),np.int16)
-#    ke=5
-#    kernele=np.ones((ke,ke),np.uint8)
-#    kerneld=np.ones((ke,ke),np.uint8)
-#
-##    print type(binary_image[0,0,0])
-#    for i in range (image.shape[0]):
-#        edges = roberts(binary_image[i])
-#        binary_image[i] = ndi.binary_fill_holes(edges)
-#        binary_image[i]= cv2.dilate(binary_image[i].astype('uint8'),kerneld,iterations = 5)
-#        binary_image[i] = cv2.erode(binary_image[i].astype('uint8'),kernele,iterations = 5)
+#   
+    if srd: 
+        ke=5
+        kernele=np.ones((ke,ke),np.uint8)
+        kerneld=np.ones((ke,ke),np.uint8)
+    
+    #    print type(binary_image[0,0,0])
+        for i in range (image.shape[0]):
+#            edges = roberts(binary_image[i])
+#            binary_image[i] = ndi.binary_fill_holes(edges)
+            binary_image[i]= cv2.dilate(binary_image[i].astype('uint8'),kerneld,iterations = 5)
+            binary_image[i] = cv2.erode(binary_image[i].astype('uint8'),kernele,iterations = 5)
              
 
 #    binary_image=imageo.copy()
@@ -1098,10 +1097,10 @@ def segment_lung_mask(image, slnt ,fill_lung_structures=True,viewi=False):
             print 'successful generation'
         else:
             ok=False
-            print 'NOT successful generation'          
+            print 'Need 2nd algortithm'          
     else:
         ok=False
-        print 'NOT successful generation'
+        print 'Need 2nd algortithm'
  
     return binary_image,ok
 
@@ -1237,7 +1236,7 @@ def genebmplung(fn,tabscanScan,tabscanName,slnt,listsln,tabroifinal,volumeroi):
 
     listdcm=[name for name in  os.listdir(fmbmp) if name.lower().find('.dcm')>0]
     if len(listdcm)>0:  
-        print 'lung scan exists'
+        print 'lung scan exists in dcm'
            
         for l in listdcm:
             FilesDCM =(os.path.join(fmbmp,l))
@@ -1256,8 +1255,12 @@ def genebmplung(fn,tabscanScan,tabscanName,slnt,listsln,tabroifinal,volumeroi):
             print 'no lung scan, generation proceeds'
             tabscanlung = np.zeros((slnt,dimtabx,dimtabx), np.uint8)
 #            segmented_lungs_fill=np.zeros((slnt,dimtabx,dimtabx), np.uint8)
-
-            segmented_lungs_fill,ok = segment_lung_mask(tabscanScan,slnt, True,True)
+            srd=False
+            debugview=False
+            segmented_lungs_fill,ok = segment_lung_mask(tabscanScan,slnt, srd,True,debugview)
+            if ok== False:
+                srd=True
+                segmented_lungs_fill,ok = segment_lung_mask(tabscanScan,slnt, srd,True,debugview)
             if ok== False:
                 print 'use 2nd algorihm'
                 segmented_lungs_fill=np.zeros((slnt,dimtabx,dimtabx), np.uint8)
