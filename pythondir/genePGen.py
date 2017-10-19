@@ -31,13 +31,13 @@ import scipy.misc
 #global directory for scan file
 topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 namedirHUG = 'HUG'
-#subHUG='ILD_TXT'
-subHUG='ILD105'
+subHUG='ILD_TXT'
+#subHUG='ILD105'
 
 toppatch= 'TOPPATCH'
 #extension for output dir
 extendir='all'
-extendir1='k'
+extendir1='2'
 
 
 #labelEnh=('consolidation','reticulation,air_trapping','bronchiectasis','cysts')
@@ -51,7 +51,7 @@ print 'class used :',usedclassifall
 if len (extendir1)>0:
     extendir1='_'+extendir1
 #define the name of directory for patches
-patchesdirnametop = 'th'+str(round(thrpatch,1))+'_'+toppatch+'_'+extendir+extendir1
+patchesdirnametop = 'th'+str(round(thrpatch,2))+'_'+toppatch+'_'+extendir+extendir1
 print 'name of directory for patches :', patchesdirnametop
 #define the name of directory for patches
 

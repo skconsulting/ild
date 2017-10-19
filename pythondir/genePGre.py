@@ -48,7 +48,7 @@ toppatch= 'TOPPATCH'
 extendir='all'
 #extendir='essai1'
 #extension1 for output dir
-extendir1='1'
+extendir1='2'
 
 alreadyDone =[ 'S107260', 'S139370', 'S139430', 'S139431', 'S145210', 
               'S14740', 'S15440', 'S1830', 'S274820', 
@@ -64,7 +64,7 @@ forceDcm=False #true to force dcm for ROI, otherwise first put bmp
 ########################################################################
 if len (extendir1)>0:
     extendir1='_'+extendir1
-patchesdirnametop = 'th'+str(round(thrpatch,1))+'_'+toppatch+'_'+extendir+extendir1
+patchesdirnametop = 'th'+str(round(thrpatch,2))+'_'+toppatch+'_'+extendir+extendir1
 print 'name of directory for patches :', patchesdirnametop
 
 #full path names

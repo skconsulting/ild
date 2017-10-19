@@ -29,6 +29,10 @@ from param_pix_t import thrpatch
 import ild_helpers as H
 import cnn_model as CNN
 import os
+import keras
+from keras import backend as K
+K.set_image_dim_ordering('tf')
+print 'NEW keras.backend.image_data_format :',keras.backend.image_data_format()
 
 import datetime
 t = datetime.datetime.now()
@@ -40,7 +44,7 @@ ptrainfile='trainlog'+today+'.txt'
 # initialization
 args         = H.parse_args()                          # Function for parsing command-line arguments
 train_params = {
-     'do' : float(args.do) if args.do else 0.5,        # Dropout Parameter default = 0.5
+     'do' : float(args.do) if args.do else 0.3,        # Dropout Parameter default = 0.5
      'a'  : float(args.a) if args.a else 0.01,          # Conv Layers LeakyReLU default =0.3 alpha param [if alpha set to 0 LeakyReLU is equivalent with ReLU]
      'k'  : int(args.k) if args.k else 4,              # Feature maps k multiplier
      's'  : float(args.s) if args.s else 1,            # Input Image rescale factor
@@ -62,8 +66,8 @@ topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 #path with data for training
 pickel_dirsource_root='pickle'
 pickel_dirsource_e='train' #path for data fort training
-pickel_dirsourcenum='CHU' #extensioon for path for data for training
-extendir1='0'
+pickel_dirsourcenum='set0' #extensioon for path for data for training
+extendir1='2'
 extendir2=''
 #########################################################################################
 

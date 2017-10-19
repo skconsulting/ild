@@ -63,7 +63,7 @@ for f in usedclassif:
 
 
 #define the name of directory for patches
-patchesdirnametop = 'th'+str(round(thrpatch,1))+'_'+toppatch+'_'+extendir+'_'+extendir0+extendir1
+patchesdirnametop = 'th'+str(round(thrpatch,2))+'_'+toppatch+'_'+extendir+'_'+extendir0+extendir1
 
 hugeClass=['healthy','back_ground']
 #hugeClass=['']

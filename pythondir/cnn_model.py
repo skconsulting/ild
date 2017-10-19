@@ -49,6 +49,7 @@ from keras.callbacks import ModelCheckpoint,ReduceLROnPlateau,CSVLogger,EarlySto
 from keras.models import model_from_json
 from keras.optimizers import Adam
 
+
 def get_FeatureMaps(L, policy, constant=17):
     return {
         'proportional': (L+1)**2,
@@ -258,19 +259,11 @@ def train(x_train, y_train, x_val, y_val, params,eferror,patch_dir_store):
 #         model= load_model(namelastc)
          model.load_weights(namelastc)  
 
-
-
     else:
          print 'first training to be run'
          filew.write('first training to be run\n')
          model = get_model(x_train.shape, y_train.shape, params,filew,patch_dir_store)
-    model.summary()
-#    orig_stdout = sys.stdout
-#    f = open('out1.txt', 'w')
-#    sys.stdout = f
-#    print(model.summary())
-#    sys.stdout = orig_stdout
-#    f.close()
+#    model.summary()
 
     filew.write ('-----------------\n')
     nb_epoch_i_p=params['patience']
@@ -280,7 +273,7 @@ def train(x_train, y_train, x_val, y_val, params,eferror,patch_dir_store):
 
     print ('starting the loop of training with number of patience = ', params['patience'])
     t = datetime.datetime.now()
-#    todayn = str(tn.month)+'-'+str(tn.day)+'-'+str(tn.year)+' - '+str(tn.hour)+'h '+str(tn.minute)+'m'+'\n' 
+
     todayn = str('m'+str(t.month)+'_d'+str(t.day)+'_y'+str(t.year)+'_'+str(t.hour)+'h_'+str(t.minute)+'m'+'\n')
     today = str('m'+str(t.month)+'_d'+str(t.day)+'_y'+str(t.year)+'_'+str(t.hour)+'h_'+str(t.minute)+'m')
     filew.write ('starting the loop of training with number of patience = '+ str(params['patience'])+'\n')
@@ -319,7 +312,7 @@ def train(x_train, y_train, x_val, y_val, params,eferror,patch_dir_store):
     n= cm.shape[0]
     for cmi in range (0,n): 
 
-        filew.write('  ')
+#        filew.write('  ')
         for j in range (0,n):
             filew.write(str(cm[cmi][j])+' ')
         filew.write('\n')
