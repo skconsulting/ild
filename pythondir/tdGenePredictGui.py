@@ -180,10 +180,11 @@ def genebmp(fn,sou,nosource,centerHU, limitHU,tabscanroi,tabscanName={}):
                               t5,0,dimtaby-43,
                               t6,0,dimtaby-54) 
                
-#        anoted_image=cv2.cvtColor(anoted_image,cv2.COLOR_BGR2RGB)
+        tabscanroi[slicenumber]=anoted_image.copy()
+        anoted_image=cv2.cvtColor(anoted_image,cv2.COLOR_BGR2RGB)
         cv2.imwrite(bmpfile,anoted_image)   
         cv2.imwrite(bmpfileroi,anoted_image)
-        tabscanroi[slicenumber]=anoted_image
+        
 
     return tabscan,slnt,dimtabx,slicepitch,lislnn,tabscanroi,tabscanName
 
@@ -1767,7 +1768,8 @@ def generoi(dirf,tabroi,dimtabx,tabscanLung,slnroi,dirroit,tabscanroi,tabscanNam
                         
                 else:
                     volumeroi[numslice][pat]=0
-            anoted_image= cv2.cvtColor(anoted_image,cv2.COLOR_RGB2BGR)        
+            anoted_image= cv2.cvtColor(anoted_image,cv2.COLOR_RGB2BGR)  
+#            print roibmpfile
             cv2.imwrite(roibmpfile,anoted_image)
     return tabroi,volumeroi,slnroi
         
