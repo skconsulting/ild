@@ -99,7 +99,7 @@ def genebmp(fn,sou,nosource,centerHU, limitHU, tabscanName,tabscanroi):
     if moderesize:
         print 'resize'
         fxs=float(RefDs.PixelSpacing[0])/avgPixelSpacing
-        imgresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
+        imgresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_CUBIC)
 #    imgresize = scipy.ndimage.interpolation.zoom(dsr, fxs, mode='nearest')
 #    dsr = dsr.astype('int16')
         dimtabx=imgresize.shape[0]
@@ -143,7 +143,7 @@ def genebmp(fn,sou,nosource,centerHU, limitHU, tabscanName,tabscanroi):
         dsr += np.int16(intercept)
         if moderesize:
             dsr = dsr.astype('float32')
-            imgresize1=cv2.resize(dsr,(dimtabx,dimtaby),interpolation=cv2.INTER_LINEAR)
+            imgresize1=cv2.resize(dsr,(dimtabx,dimtaby),interpolation=cv2.INTER_CUBIC)
             imgresize=imgresize1.astype('int16')
 #        imgresize = scipy.ndimage.interpolation.zoom(dsr, fxs, mode='nearest')
         else:
@@ -180,9 +180,9 @@ def genebmp(fn,sou,nosource,centerHU, limitHU, tabscanName,tabscanroi):
         t6='LimitHU: +/-' +str(int(limitHU/2))
     
         anoted_image=tagviews(imtowrite,
-                              t0,dimtabx-100,dimtaby-10,
+                              t0,dimtabx-200,dimtaby-10,
                               t1,0,dimtaby-21,
-                              t2,dimtabx-100,dimtaby-20,
+                              t2,dimtabx-200,dimtaby-20,
                               t3,0,dimtaby-32,
                               t4,0,dimtaby-10,
                               t5,0,dimtaby-43,
@@ -349,7 +349,7 @@ def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan,listsln,tabscanName
             slicenumber= rsliceNum(img,'_','.'+typei1)
             if slicenumber>0:       
                     imr=cv2.imread(os.path.join(fmbmpbmp,img),0) 
-                    imr=cv2.resize(imr,(dimtabx,dimtaby),interpolation=cv2.INTER_LINEAR)  
+                    imr=cv2.resize(imr,(dimtabx,dimtaby),interpolation=cv2.INTER_CUBIC)  
                     np.putmask(imr,imr>0,classif['lung']+1)                                  
 #                    dilation = cv2.dilate(imr,kernel,iterations = 1)
                     tabscan[slicenumber]=imr
@@ -369,7 +369,7 @@ def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan,listsln,tabscanName
                 dsr=normi(dsr)
         
                 fxs=float(RefDs.PixelSpacing[0])/avgPixelSpacing
-                imgresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
+                imgresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_CUBIC)
                 np.putmask(imgresize,imgresize>0,classif['lung']+1)    
                 slicenumber=int(RefDs.InstanceNumber)
                 imgcoreScan=tabscanName[slicenumber]
@@ -394,7 +394,7 @@ def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan,listsln,tabscanName
                     print 'use 2nd algorihm'
                     segmented_lungs_fill=np.zeros((slnt,dimtabx,dimtabx), np.uint8)
                     for i in listsln:
-                        segmented_lungs_fill[i]=get_segmented_lungs(tabscanScan[i], False)
+                        segmented_lungs_fill[i]=get_segmented_lungs(tabscanScan[i])
     #            tabscanlung = np.zeros((slnt,dimtabx,dimtaby), np.uint8)
     #            print tabscanScan.shape
 #                segmented_lungs_fill = segment_lung_mask(tabscanScan, True)
@@ -429,8 +429,8 @@ def tagviews (tab,t0,x0,y0,t1,x1,y1,t2,x2,y2,t3,x3,y3,t4,x4,y4,t5,x5,y5,t6,x6,y6
     """write simple text in image """
     font = cv2.FONT_HERSHEY_PLAIN
     col=red
-    size=1
-    sizes=0.8
+    size=0.5
+    sizes=0.4
 
     viseg=cv2.putText(tab,t0,(x0, y0), font,sizes,col,1)
     viseg=cv2.putText(viseg,t1,(x1, y1), font,size,col,1)
@@ -620,7 +620,7 @@ def wtebres(wridir,dirf,tab,dimtabx,slicepitch,lungm,ty,centerHU,limitHU):
 #        print i, tab[i].max()
         lislnn.append(i)
 
-        imgresize=cv2.resize(tab[i],None,fx=1,fy=fxs,interpolation=cv2.INTER_LINEAR)
+        imgresize=cv2.resize(tab[i],None,fx=1,fy=fxs,interpolation=cv2.INTER_CUBIC)
 
         if ty=='scan':
             typext=typei1
@@ -1162,7 +1162,7 @@ def generoi(dirf,tabroi,dimtabx,dimtaby,slnroi,tabscanName,dirroit,tabscanroi,ta
             for s in lroi:
                 numslice=rsliceNum(s,'_','.'+typei1)                    
                 img=cv2.imread(os.path.join(pathroi,s),0)
-                img=cv2.resize(img,(dimtabx,dimtabx),interpolation=cv2.INTER_LINEAR)                
+                img=cv2.resize(img,(dimtabx,dimtabx),interpolation=cv2.INTER_CUBIC)                
                 np.putmask(img, img > 0, classif[pat]+1)
                 tabroipat[pat][numslice]=img     
                 if numslice not in slnroi:
@@ -1243,7 +1243,8 @@ def generoi(dirf,tabroi,dimtabx,dimtaby,slnroi,tabscanName,dirroit,tabscanroi,ta
                         ctkeym=cv2.cvtColor(ctkeym,cv2.COLOR_GRAY2RGB)                       
                         np.putmask(anoted_image, ctkeym >0, 0)
                         anoted_image=cv2.add(anoted_image,ctkey)
-                        anoted_image=tagviewct(anoted_image,pat,200,10)                        
+                        anoted_image=tagviewct(anoted_image,pat,200,10)  
+                        tabscanroi[numslice]=anoted_image
                                                
                 else:
                     volumeroi[numslice][pat]=0 
@@ -1252,7 +1253,7 @@ def generoi(dirf,tabroi,dimtabx,dimtaby,slnroi,tabscanName,dirroit,tabscanroi,ta
             cv2.imwrite(roibmpfile,anoted_image)   
 #    print volumeroi[12]  
     slnroidir[tail]=len(slnroi)
-    return tabroi,volumeroi,slnroi,slnroidir,listroi
+    return tabroi,volumeroi,slnroi,slnroidir,listroi,tabscanroi
         
 
 def predictrun(indata,path_patient):
@@ -1424,7 +1425,7 @@ def predictrun(indata,path_patient):
 
             slnroi=[]
             tabroi=np.zeros((slnt,dimtabx,dimtabx), np.uint8) 
-            tabroi,volumeroi,slnroi,slnroidir,listroi=generoi(dirf,tabroi,dimtabx,dimtabx,slnroi,     
+            tabroi,volumeroi,slnroi,slnroidir,listroi,tabscanroi=generoi(dirf,tabroi,dimtabx,dimtabx,slnroi,     
                     tabscanName,dirroi,tabscanroi,tabscanLung,slnroidir,slnt,fer)
 #            print listroi
 #            return ' '
@@ -1432,7 +1433,7 @@ def predictrun(indata,path_patient):
             pickle.dump(listroi, open(os.path.join(path_data_write,'listrois'), "wb" ),protocol=-1)           
             pickle.dump(tabroi, open( os.path.join(path_data_write,"tabrois"), "wb" ),protocol=-1)
             pickle.dump(slnroi, open( os.path.join(path_data_write,"slnrois"), "wb" ),protocol=-1)
-
+            pickle.dump(tabscanroi, open(os.path.join(path_data_write,'tabscanrois'), "wb" ),protocol=-1)
             """
             slnt=datacross[0]
             dimtabx=datacross[1]

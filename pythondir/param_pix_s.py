@@ -31,10 +31,20 @@ print ' keras.backend.image_data_format :',keras.backend.image_data_format()
 oldFormat=False #for compatibility with old format
 
 writeFile=False
-
+"""
 MIN_BOUND = -1000.0
 MAX_BOUND = 400.0
 PIXEL_MEAN = 0.25
+"""
+limitHU=1700.0
+centerHU=-662.0
+
+minb=centerHU-(limitHU/2)
+maxb=centerHU+(limitHU/2)
+MIN_BOUND =minb
+MAX_BOUND = maxb
+PIXEL_MEAN = 0.52
+
 
 dimpavx=16
 dimpavy=16
