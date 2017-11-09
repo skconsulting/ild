@@ -31,14 +31,14 @@ import scipy.misc
 #global directory for scan file
 topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 namedirHUG = 'HUG'
-subHUG='ILD_TXT'
-#subHUG='ILD105'
+#subHUG='ILD_TXT'
+subHUG='ILD105'
 
 toppatch= 'TOPPATCH'
 #extension for output dir
 extendir='all'
-extendir1='2'
-
+#extendir1='0'
+extendir1='essai'
 
 #labelEnh=('consolidation','reticulation,air_trapping','bronchiectasis','cysts')
 labelEnh=()
@@ -114,8 +114,6 @@ errorfile.close()
 
 #filetowrite=os.path.join(namedirtopc,'lislabel.txt')
 
-
-
 def genepara(namedirtopcf):
 #    dirFileP = os.path.join(namedirtopcf, 'source')
         #list dcm files
@@ -179,24 +177,30 @@ def genepara(namedirtopcf):
     return dimtabx,dimtaby,slnt
 
 
-def genebmp(dirName):
+def genebmp(dirName,slnt,dimtabx,dimtaby):
     """generate patches from dicom files and sroi"""
     print ('generate  bmp files from dicom files in :',f)
     (top,tail)=os.path.split(dirName)
+
 #    global constPixelSpacing, dimtabx,dimtaby
     #directory for patches
     bmp_dir = os.path.join(dirName, 'bgdir')
     remove_folder(bmp_dir)
+
     bmp_dir = os.path.join(dirName, 'scan_bmp')
     remove_folder(bmp_dir)
+
     bmp_dir = os.path.join(dirName, 'bmp')
     remove_folder(bmp_dir)
+
     bmp_dir = os.path.join(dirName, source)
     remove_folder(bmp_dir)
     os.mkdir(bmp_dir)
+
     bmp_dir = os.path.join(bmp_dir, scan_bmp)
     remove_folder(bmp_dir)
     os.mkdir(bmp_dir)
+
 #    bgdirf = os.path.join(dirName, bgdir)
 #    remove_folder(bgdirf)
 #    os.mkdir(bgdirf)
@@ -212,6 +216,7 @@ def genebmp(dirName):
     os.mkdir(lung_bmp_dir)
 
     #list dcm files
+
     fileList = [name for name in os.listdir(dirName) if ".dcm" in name.lower()]
     lunglist = [name for name in os.listdir(lung_dir) if ".dcm" in name.lower()]
 
@@ -221,6 +226,7 @@ def genebmp(dirName):
     
     tabscanName={}
 #    os.listdir(lung_dir)
+
     for filename in fileList:
 #            print(filename)
 #        if ".dcm" in filename.lower():  # check whether the file's DICOM
@@ -246,18 +252,19 @@ def genebmp(dirName):
             dsr += np.int16(intercept)
 #            dsr = dsr.astype('int16')
             dsr = dsr.astype('float32')
-        
-#            dsr=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_CUBIC)
-            dsr = scipy.ndimage.interpolation.zoom(dsr, fxs, mode='nearest')
+#            print 'start resize'
+            dsr=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_CUBIC)
+#            print 'end resize'
+#            dsr = scipy.ndimage.interpolation.zoom(dsr, fxs, mode='nearest')
 #        imgresize=dsr
             dsr=dsr.astype('int16')
+#            print dsr.mean()/(16*16)
 #                        print dsr.min(),dsr.max(),dsr.shape
-#            dsr=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
-            dsrforimage=normi(dsr)
+#            dsr=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)          
 
-            tabscan[scanNumber]=dsr
+            tabscan[scanNumber]=dsr.copy()
             tabscanName[scanNumber]=imgcoredebss
-
+            dsrforimage=normi(dsr)
             imgcored=imgcoredeb+typei
             bmpfiled=os.path.join(bmp_dir,imgcored)
             imgcoresroi=imgcored
@@ -272,7 +279,7 @@ def genebmp(dirName):
             cv2.imwrite (bmpfileroi, dsrforimage)
             tabsroi[scanNumber]=dsrforimage
 
-
+    
     for lungfile in lunglist:
 #             print(lungfile)
 #             if ".dcm" in lungfile.lower():  # check whether the file's DICOM
@@ -288,7 +295,7 @@ def genebmp(dirName):
                 imgcore=imgcoredeb+typei
                 bmpfile=os.path.join(lung_bmp_dir,imgcore)
                 dsr=normi(dsr)
-                dsrresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
+                dsrresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_CUBIC)
                 tabslung[scanNumber]=dsrresize
                 cv2.imwrite (bmpfile, dsrresize)
 
@@ -646,7 +653,7 @@ for f in listdirc:
     
     dimtabx,dimtaby,slnt = genepara(namedirtopcf)
 #        print dimtabx,dimtaby,slnt
-    tabscan,tabsroi,tabscanname,tabslung=genebmp(namedirtopcf)
+    tabscan,tabsroi,tabscanname,tabslung=genebmp(namedirtopcf,slnt,dimtabx,dimtaby)
     nbpf=0
     tabroipat={}
     for label in usedclassifall:
@@ -774,7 +781,7 @@ for f in listdirc:
 
                 nbpf=nbpf+nbp
 #    print '2',tabroipat['ground_glass']['13'].max()
-    genebackground(namedirtopcf)
+#    genebackground(namedirtopcf)
 #    print listsliceok
 #    print type(listsliceok[0])
     for numslice in listsliceok:

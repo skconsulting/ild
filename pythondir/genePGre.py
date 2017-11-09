@@ -35,20 +35,23 @@ import cPickle as pickle
 #######################################################
 #global directory for scan file
 topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
-namedirHUG = 'CHU2'
+namedirHUG = 'REFVAL'
+#namedirHUG = 'CHU2'
+
 #subdir for roi in text
-#subHUG='UIP'
 #subHUG='UIP_106530'
-subHUG='UIP'
+subHUG='UIPGF'
 #subHUG='UIP0'
 
 #global directory for output patches file
 toppatch= 'TOPPATCH'
 #extension for output dir
-extendir='all'
+extendir='GF'
 #extendir='essai1'
 #extension1 for output dir
-extendir1='2'
+extendir1='0'
+#extendir1='essai'
+
 
 alreadyDone =[ 'S107260', 'S139370', 'S139430', 'S139431', 'S145210', 
               'S14740', 'S15440', 'S1830', 'S274820', 
@@ -242,14 +245,16 @@ def genebmp(dirName, sou,tabscanName,fxs,listsln,listroi):
 #                dsr = dsr.astype('int16')
                 dsr = dsr.astype('float32')
         
-                dsr=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
+#                dsr=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
+                dsr=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_CUBIC)
+
 #                dsr = scipy.ndimage.interpolation.zoom(dsr, fxs, mode='nearest')
 #        imgresize=dsr
                 dsr=dsr.astype('int16')
 #                        print dsr.min(),dsr.max(),dsr.shape
-
+                tabscan[scanNumber]=dsr.copy()  
                 dsrforimage=normi(dsr)
-                tabscan[scanNumber]=dsr                                  
+                                            
                 tabscanName[scanNumber]=imgcoredeb
 
                 imgcored=imgcoredeb+'.'+typei1
@@ -491,7 +496,7 @@ def pavs (dirName,pat,slnt,dimtabx,dimtaby,tabscanName,listroi):
                 ymax=atabf[0].max()
 
                 np.putmask(tabf,tabf>0,1)
-                _tabscan=tabscan[scannumb]
+                _tabscan=tabscan[scannumb].copy()
 
                 i=xmin
                 while i <= xmax:
@@ -754,7 +759,7 @@ for f in listdirc:
         tabroipat[i]=calnewpat(namedirtopcf,i,slnt,dimtabx,dimtaby,tabscanName)
 #        break
 #    print listroi
-    genebackground(namedirtopcf,listroi)
+#    genebackground(namedirtopcf,listroi)
 
     contenudir = [name for name in os.listdir(namedirtopcf) if name in usedclassifall]
 #    contenudir=['HCpret']

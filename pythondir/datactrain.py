@@ -1,5 +1,5 @@
 # coding: utf-8
-'''create dataset from patches 
+'''create dataset from patches for training, all patches with augmentation
 support Hu
 includes back_ground
 version 1.0
@@ -18,9 +18,10 @@ import os
 import sys
 
 import numpy as np
-from sklearn.model_selection import train_test_split
+#from sklearn.model_selection import train_test_split
 import cPickle as pickle
 import random
+from random import shuffle
 
 
 #####################################################################
@@ -37,12 +38,12 @@ extendir1=''
 pickel_dirsource_root='pickle'
 pickel_dirsource_e='train' #path for data fort training
 pickel_dirsourcenum=setdata #extensioon for path for data for training
-extendir2='0'
+extendir2='1'
 #extendir2='essai'
 extendir3=extendir1
 
 augf=5#augmentation factor default 3
-test_size=0.1 #split test training percent
+#test_size=0.1 #split test training percent
 ########################################################################
 ######################  end ############################################
 ########################################################################
@@ -83,8 +84,8 @@ if not os.path.isdir(patch_dirsource):
 print '--------------------------------'
 
 ###############################################################
-remove_folder(patch_dir)
-os.mkdir(patch_dir)
+if not os.path.exists(patch_dir):
+    os.mkdir(patch_dir)
 eferror=os.path.join(patch_dir,perrorfile)
 errorfile = open(eferror, 'w')
 tn = datetime.datetime.now()
@@ -92,12 +93,12 @@ todayn = str(tn.month)+'-'+str(tn.day)+'-'+str(tn.year)+' - '+str(tn.hour)+'h '+
 errorfile.write('started at :'+todayn)
 errorfile.write('--------------------\n')
 errorfile.write('numbe of loops :'+str(augf)+'\n')
-errorfile.write('percentage split: :'+str(test_size)+'\n')
+
 errorfile.write('path for pickle inputs'+patch_dirsource+'\n')
 errorfile.write('path to write data for training'+patch_dir+'\n')
 errorfile.write('pattern set :'+str(setdata)+'\n')
 print 'number of loops:', augf
-print 'percentage split:', test_size
+
 errorfile.write('--------------------\n')
 errorfile.close()
 
@@ -200,22 +201,14 @@ for f in usedclassifFinal:
 print '----------'
 
 def genedata(category):
+    """include normalisation"""
     feature=[]
     label=[]
     lc=classif[category]
-    avpavg=0
-    nump=0
     for p in patclass[category]:
-            pf = p.astype('float32')
-            normp=norm(pf)
-            feature.append(normp)
-            avm=np.mean(normp)
-            nump+=1
-            avpavg=avpavg+avm
+            feature.append(norm(p))
             label.append(lc)
-#            print avm,avpavg
-    avmr=avpavg/nump
-    return feature,label,avmr
+    return feature,label
 
 
 def geneaug(image,tt):
@@ -242,7 +235,7 @@ def geneaug(image,tt):
     elif tt==7:
     #7 flip fimage left-right +rot 270
         imout = np.rot90(np.fliplr(image),3)
-  
+
     return imout
 
 
@@ -251,6 +244,7 @@ def genf(features_train,labels_train,maxl):
     label=[]
     indexpatc={}
     maxindex=0
+    featurelab=[]
 #    print numclass,maxl
     for j in usedclassifFinal:
         indexpatc[j]=0
@@ -274,9 +268,16 @@ def genf(features_train,labels_train,maxl):
 #                    print pat,indexpat,indexaug
                     
                     mask=classif[pat]
-                    feature.append(scan)
-                    label.append(mask)
+                    tt=(scan,mask)
+                    featurelab.append(tt)
+#                    feature.append(scan)
+#                    label.append(mask)
     print 'max index',patmax,maxindex
+    
+    shuffle(featurelab)
+    unzipped = zip(*featurelab )
+    feature=(unzipped[0])
+    label=(unzipped[1])
     return feature,label
 
                 
@@ -287,73 +288,29 @@ feature_d ={}
 label_d={}
 
 print ('----------------')
-avgp=0
-nump=0
 for f in usedclassifFinal:
-     print('gene normalize data from images work on :',f)
-     feature_d[f],label_d[f],avgpl=genedata(f)
-#     print np.array(feature_d[f]).min(),np.array(feature_d[f]).max()
-     avgp=avgp+avgpl
-     nump+=1
+     print('genedata from images work on :',f)
+     feature_d[f],label_d[f]=genedata(f)
      print ('---')
 
-print 'average data scan',avgp/nump 
 for f in usedclassifFinal:
     print 'initial ',f,len(feature_d[f]),len(label_d[f])
 
 print ('----------------') 
 
-feature_test ={}
-label_test={}
-feature_train ={}
-label_train={}
-print 'split data'
-for f in usedclassifFinal:
-    feature_train[f], feature_test[f], label_train[f], label_test[f] =  train_test_split(
-            feature_d[f],label_d[f],test_size=test_size)
-
-print 'after split '
-maxltraining=0
-maxltest=0
-errorfile = open(eferror, 'a')
-
-for f in usedclassifFinal:
-    ltrain=len(feature_train[f])
-    ltest=len(feature_test[f])
-    print 'training ',f,ltrain,len(label_train[f])
-    print 'test ',f,ltest,len(label_test[f])
-    print '---'
-    errorfile.write('split data training '+' '+f+' '+str(ltrain)+' '+str(len(label_train[f]))+'\n')   
-    errorfile.write('split data test '+' '+f+' '+str(ltest)+' '+str(len(label_test[f]))+'\n')   
-    errorfile.write('--\n')  
-    if f not in hugeClass:
-        if ltrain>maxltraining:
-            maxltraining=ltrain
-            maxpattrain=f
-        if ltest>maxltest:
-            maxltest=ltest
-            maxpatest=f
-print '------'
-errorfile.close()
-print 'max training',maxltraining, 'for: ',maxpattrain
-print 'max test',maxltest, 'for:', maxpatest
-
 print '----'
 features_train_f=[]
 labels_train_f=[]
-features_test_f=[]
-labels_test_f=[]
 print 'augmentation training'
-features_train_f,labels_train_f= genf(feature_train,label_train,maxltraining)
-print 'augmentation test'
-features_test_f,labels_test_f= genf(feature_test,label_test,maxltest)
+features_train_f,labels_train_f= genf(feature_d,label_d,maxl)
 
 print 'data training after augmentation ',len(features_train_f),len(labels_train_f)
-print 'data test after augmentation ',len(features_test_f),len(labels_test_f)
+print 'which is maxl * num class * augf',maxl*numclass*augf
+
 print '----'
 errorfile = open(eferror, 'a')
 errorfile.write('data training after augmentation '+' '+str(len(features_train_f))+' '+str(len(labels_train_f))+'\n')   
-errorfile.write('data test after augmentation '+' '+str(len(features_test_f))+' '+str(len(labels_test_f))+'\n')   
+  
 errorfile.write('--------------------\n')    
 errorfile.close()
 
@@ -363,8 +320,8 @@ errorfile.write('Number of data and label \n')
 print ('Number of data and label ')
 print 'train',len(features_train_f),len(labels_train_f)
 errorfile.write('train '+' '+str(len(features_train_f))+' '+str(len(labels_train_f))+'\n')   
-print 'test',len(features_test_f),len(labels_test_f)
-errorfile.write('test '+' '+str(len(features_test_f))+' '+str(len(labels_test_f))+'\n')
+
+
 print ('----')
 errorfile.write('--------------------\n')
 errorfile.close()
@@ -372,33 +329,29 @@ errorfile.close()
 X_train = np.array(features_train_f)
 y_train = np.array(labels_train_f)
 
-X_test = np.array(features_test_f)
-y_test = np.array(labels_test_f)
 
 print '-----------FINAL----------------'
 print ('Xtrain :',X_train.shape)
-print ('Xtest : ',X_test.shape)
+
 print ('ytrain : ',y_train.shape)
 print 'ytrain min max', y_train.min(),y_train.max()
-print ('ytest : ',y_test.shape)
+
 errorfile = open(eferror, 'a')
 errorfile.write('Xtrain : '+' '+str(X_train.shape)+'\n')
-errorfile.write('Xtest : '+' '+str(X_test.shape)+'\n') 
+
 errorfile.write('ytrain : '+' '+str(y_train.shape)+'\n') 
-errorfile.write('ytest : '+' '+str(y_test.shape)+'\n')   
+
 errorfile.write('--------------------\n')
 errorfile.close()
 
 pickle.dump(X_train, open( os.path.join(patch_dir,"X_train.pkl"), "wb" ),protocol=-1)
-pickle.dump(X_test, open( os.path.join(patch_dir,"X_val.pkl"), "wb" ),protocol=-1)
 
 pickle.dump(y_train, open( os.path.join(patch_dir,"y_train.pkl"), "wb" ),protocol=-1)
-pickle.dump(y_test, open( os.path.join(patch_dir,"y_val.pkl"), "wb" ),protocol=-1)
+
 
 
 
 recuperated_X_train = pickle.load( open( os.path.join(patch_dir,"X_train.pkl"), "rb" ) )
 min_val=np.min(recuperated_X_train)
 max_val=np.max(recuperated_X_train)
-mean_val=np.mean(recuperated_X_train)
-print 'recuperated_X_train', min_val, max_val,mean_val
+print 'recuperated_X_train', min_val, max_val

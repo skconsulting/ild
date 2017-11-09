@@ -30,7 +30,7 @@ version 1.1
 '''
 # debug
 # from ipdb import set_trace as bp
-from param_pix_t import modelname
+from param_pix_t import modelname,learning_rate
 import ild_helpers as H
 import datetime
 import cPickle as pickle
@@ -39,7 +39,8 @@ import os
 import numpy as np
 import sys
 #import h5py
-
+import keras
+from keras.constraints import maxnorm
 from keras.models import Sequential
 from keras.layers.convolutional import Conv2D, MaxPooling2D,AveragePooling2D
 from keras.layers.advanced_activations import LeakyReLU
@@ -48,6 +49,7 @@ from keras.models import load_model
 from keras.callbacks import ModelCheckpoint,ReduceLROnPlateau,CSVLogger,EarlyStopping
 from keras.models import model_from_json
 from keras.optimizers import Adam
+
 
 
 def get_FeatureMaps(L, policy, constant=17):
@@ -63,11 +65,74 @@ def get_Obj(obj):
     }[obj]
 
 def get_model(input_shape, output_shape, params,filew,patch_dir_store):
+    print input_shape,output_shape
+     
+    num_class=output_shape[-1]
+
+    dimpx=input_shape[-1]
+
+    INP_SHAPE = (1, dimpx, dimpx)
+    dim_org=keras.backend.image_data_format()
+    kernel_size=(2,2)
+    
+    print 'sk3 with num_class :',num_class
+    model = Sequential() 
+    model.add(Conv2D(32, kernel_size, input_shape=INP_SHAPE, padding='valid', 
+                      data_format=dim_org, kernel_constraint=maxnorm(3)))    
+    model.add(LeakyReLU(alpha=.01))   # add an advanced activation
+#    model.add(Dropout(0.1)) 
+    model.add(Conv2D(64, kernel_size, padding='valid', 
+                data_format=dim_org, kernel_constraint=maxnorm(3)))
+    model.add(LeakyReLU(alpha=.01))   # add an advanced activation
+#    model.add(Dropout(0.2)) 
+    model.add(Conv2D(128, kernel_size, padding='valid', 
+                      data_format=dim_org, kernel_constraint=maxnorm(3)))
+    model.add(LeakyReLU(alpha=.01))   # add an advanced activation
+    model.add(Dropout(0.3)) 
+  
+    model.add(Conv2D(256, kernel_size,  padding='valid', 
+                      data_format=dim_org, kernel_constraint=maxnorm(3)))
+    model.add(LeakyReLU(alpha=.01))   # add an advanced activation    
+    model.add(AveragePooling2D(pool_size=(2, 2),data_format=dim_org))
+    model.add(Dropout(0.5)) 
+    
+    model.add(Flatten())
+#    model.add(Dropout(0.25)) 
+    
+    model.add(Dense(1000))
+    model.add(LeakyReLU(alpha=.01))  
+    model.add(Dropout(0.5)) 
+    
+#    model.add(Dense(1000))
+#    model.add(LeakyReLU(alpha=.01))  
+#    model.add(Dropout(0.5)) 
+    
+    model.add(Dense(num_class, activation='softmax'))
+   
+ 
+    model.compile(optimizer=Adam(lr=learning_rate), loss='categorical_crossentropy', metrics=['categorical_accuracy'])
+    filew.write ('learning rate:'+str(learning_rate)+'\n')
+    print ('learning rate:'+str(learning_rate))
+    json_string = model.to_json()
+    pickle.dump(json_string, open(os.path.join(patch_dir_store,modelname), "wb"),protocol=-1)
+    orig_stdout = sys.stdout
+    f = open('modelnex.txt', 'w')
+    sys.stdout = f
+    print(model.summary())
+    sys.stdout = orig_stdout
+    f.close()
+    return model
+
+
+
+
+def get_modelold(input_shape, output_shape, params,filew,patch_dir_store):
 
     print('compiling model...')
         
     # Dimension of The last Convolutional Feature Map (eg. if input 32x32 and there are 5 conv layers 2x2 fm_size = 27)
     fm_size = input_shape[-1] - params['cl']
+
     print 'fm_size : ', fm_size
     print 'input_shape[-1] : ', input_shape[-1]
     print 'number of convolutional layers : ', params['cl']
@@ -81,7 +146,9 @@ def get_model(input_shape, output_shape, params,filew,patch_dir_store):
     # Add convolutional layers to model
     # model.add(Convolution2D(params['k']*get_FeatureMaps(1, params['fp']), 2, 2, init='orthogonal', activation=LeakyReLU(params['a']), input_shape=input_shape[1:]))
     # added by me
-    model.add(Conv2D(params['k']*get_FeatureMaps(1, params['fp']), (2, 2), kernel_initializer='orthogonal', input_shape=input_shape[1:]))
+    model.add(Conv2D(params['k']*get_FeatureMaps(1, params['fp']), (2, 2), 
+                     kernel_initializer='orthogonal', input_shape=input_shape[1:],
+                     kernel_constraint=maxnorm(3)))
     # model.add(Activation('relu'))
     #SK
     model.add(LeakyReLU(alpha=params['a']))
@@ -95,9 +162,11 @@ def get_model(input_shape, output_shape, params,filew,patch_dir_store):
     for i in range(2, params['cl']+1):
         print i, params['k']*get_FeatureMaps(i, params['fp'])
         # model.add(Convolution2D(params['k']*get_FeatureMaps(i, params['fp']), 2, 2, init='orthogonal', activation=LeakyReLU(params['a'])))
-        model.add(Conv2D(params['k']*get_FeatureMaps(i, params['fp']), (2, 2), kernel_initializer='orthogonal'))
+        model.add(Conv2D(params['k']*get_FeatureMaps(i, params['fp']), 
+                         (2, 2), kernel_initializer='orthogonal',kernel_constraint=maxnorm(3)))
         # model.add(Activation('relu'))
         model.add(LeakyReLU(alpha=params['a']))
+#        model.add(Dropout(params['do']))
         print 'Layer',  i, ' parameters settings:'
         print 'number of filters to be used : ', params['k']*get_FeatureMaps(i, params['fp'])
         print 'kernel size : 2 x 2' 
@@ -107,6 +176,7 @@ def get_model(input_shape, output_shape, params,filew,patch_dir_store):
     print 'entering 2D Pooling layer'
     print 'Pooling : ', params['pt']
     print 'pool_size : ', pool_siz
+#    pool_siz=(2,2) 
     if params['pt'] == 'Avg':
         model.add(AveragePooling2D(pool_size=pool_siz))
     elif params['pt'] == 'Max':
@@ -118,24 +188,32 @@ def get_model(input_shape, output_shape, params,filew,patch_dir_store):
 
     # dropout is 50% or do=0.5
     model.add(Dropout(params['do']))
+    print 'd0',params['do']
 
     # Add Dense layers and Output to model
     # model.add(Dense(int(params['k']*get_FeatureMaps(params['cl'], params['fp']))/params['pf']*6, init='he_uniform', activation=LeakyReLU(0)))
-    model.add(Dense(int(params['k']*get_FeatureMaps(params['cl'], params['fp']))/params['pf']*6, kernel_initializer='he_uniform'))
-    
     print 'output_dimension : ', int(params['k']*get_FeatureMaps(params['cl'], params['fp']))/params['pf']*6
-
+    model.add(Dense(int((params['k']*get_FeatureMaps(params['cl'], params['fp']))/params['pf']*6), 
+                    kernel_initializer='he_uniform',kernel_constraint=maxnorm(3)))
+#    model.add(Dense(864, 
+#                    kernel_initializer='he_uniform',kernel_constraint=maxnorm(3)))
+    
+   
+    
     # model.add(Activation('relu'))
     model.add(LeakyReLU(alpha=params['a']))
     model.add(Dropout(params['do']))
 
     
     # model.add(Dense(int(params['k']*get_FeatureMaps(params['cl'], params['fp']))/params['pf']*2, init='he_uniform', activation=LeakyReLU(0)))
-    model.add(Dense(int(params['k']*get_FeatureMaps(params['cl'], params['fp']))/params['pf']*2, kernel_initializer='he_uniform'))
+    model.add(Dense(int(params['k']*get_FeatureMaps(params['cl'], params['fp']))/params['pf']*2, 
+                    kernel_initializer='he_uniform',
+                    kernel_constraint=maxnorm(3)))
     #  model.add(Activation('relu'))
     model.add(LeakyReLU(alpha=params['a']))
     model.add(Dropout(params['do']))
-    model.add(Dense(output_shape[1], kernel_initializer='he_uniform', activation='softmax'))
+    model.add(Dense(output_shape[1], kernel_initializer='he_uniform', activation='softmax',
+                    kernel_constraint=maxnorm(3)))
   
 
 
@@ -145,7 +223,7 @@ def get_model(input_shape, output_shape, params,filew,patch_dir_store):
 #    decay = 1.e-6
 #    lr=0.001
 #    lr =1.0
-    learning_rate=1e-4
+#    learning_rate=1e-4
     # Compile model and select optimizer and objective function
     if params['opt'] not in ['Adam', 'Adagrad', 'SGD']:
         sys.exit('Wrong optimizer: Please select one of the following. Adam, Adagrad, SGD')
@@ -157,6 +235,12 @@ def get_model(input_shape, output_shape, params,filew,patch_dir_store):
     print ('learning rate:'+str(learning_rate))
     json_string = model.to_json()
     pickle.dump(json_string, open(os.path.join(patch_dir_store,modelname), "wb"),protocol=-1)
+    orig_stdout = sys.stdout
+    f = open('model.txt', 'w')
+    sys.stdout = f
+    print(model.summary())
+    sys.stdout = orig_stdout
+    f.close()
 
 #    optimizer=keras.optimizers.Adam(lr=lr,decay=decay)
 #    model.compile(optimizer=optimizer, loss=get_Obj(params['obj']))
@@ -243,15 +327,20 @@ def train(x_train, y_train, x_val, y_val, params,eferror,patch_dir_store):
     listmodel=[name for name in os.listdir(patch_dir_store) if name.find('weights')==0]
 #    model = get_model(x_train.shape, y_train.shape, params)
     
-
+#    model = get_model(x_train.shape, y_train.shape, params,filew,patch_dir_store)
+    
     if len(listmodel)>0:
-         json_string1=pickle.load( open(os.path.join(patch_dir_store,modelname), "rb"))
-         model = model_from_json(json_string1)
-         learning_rate=1e-4
+#    if False:
+
+#         json_string1=pickle.load( open(os.path.join(patch_dir_store,modelname), "rb"))
+#         model = model_from_json(json_string1)
+         model = get_model(x_train.shape, y_train.shape, params,filew,patch_dir_store)
+         
+#         learning_rate=1e-4
          filew.write ('learning rate:'+str(learning_rate)+'\n')
          print ('learning rate:'+str(learning_rate))
 #         model.compile(optimizer=params['opt'], loss=get_Obj(params['obj']), metrics=['categorical_accuracy'])
-         model.compile(optimizer=Adam(lr=learning_rate), loss='categorical_crossentropy', metrics=['categorical_accuracy'])
+#         model.compile(optimizer=Adam(lr=learning_rate), loss='categorical_crossentropy', metrics=['categorical_accuracy'])
 
          namelastc=load_model_set(patch_dir_store) 
          print 'load weight found from last training',namelastc
@@ -264,7 +353,7 @@ def train(x_train, y_train, x_val, y_val, params,eferror,patch_dir_store):
          filew.write('first training to be run\n')
          model = get_model(x_train.shape, y_train.shape, params,filew,patch_dir_store)
 #    model.summary()
-
+    
     filew.write ('-----------------\n')
     nb_epoch_i_p=params['patience']
 
@@ -279,21 +368,26 @@ def train(x_train, y_train, x_val, y_val, params,eferror,patch_dir_store):
     filew.write ('starting the loop of training with number of patience = '+ str(params['patience'])+'\n')
     filew.write('started at :'+todayn)
 
-    early_stopping=EarlyStopping(monitor='val_loss', patience=25, verbose=1,min_delta=0.005,mode='min')                     
+    early_stopping=EarlyStopping(monitor='val_loss', patience=20, verbose=1,min_delta=0.0,mode='auto')                     
     model_checkpoint = ModelCheckpoint(os.path.join(patch_dir_store,'weights_'+today+'.{epoch:02d}-{val_loss:.2f}.hdf5'), 
                                 monitor='val_loss', save_best_only=True,save_weights_only=True)       
     reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2,
-                      patience=5, min_lr=1e-5,verbose=1)
+                      patience=5, min_lr=1e-6,verbose=1)
     csv_logger = CSVLogger(rese,append=True)
     filew.close()
-    model.fit(x_train, y_train, batch_size=500, epochs=nb_epoch_i_p, verbose =1,
-                      validation_data=(x_val,y_val),
-#                      class_weight=class_weights,
+    model.fit(x_train, y_train, batch_size=500, epochs=nb_epoch_i_p, verbose =2,
+#                      validation_data=(x_val,y_val),
+                    validation_split=0.1,
                       callbacks=[model_checkpoint,reduce_lr,csv_logger,early_stopping]  )
         # Evaluate models
     filew = open(eferror, 'a')
     
     print 'predict model'
+    namelastc=load_model_set(patch_dir_store) 
+    print 'load weight found from last training',namelastc
+    filew.write('load weight found from last training\n'+namelastc+'\n')
+#         model= load_model(namelastc)
+    model.load_weights(namelastc)
     y_score = model.predict(x_val, batch_size=1050)
 
     fscore, acc, cm = H.evaluate(np.argmax(y_val, axis=1), np.argmax(y_score, axis=1))
