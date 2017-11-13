@@ -7,15 +7,15 @@ Version 1.5
 06 September 2017
 """
 #from param_pix_r import *
-from param_pix_r import path_data,dimtabmenu,dimtabnorm
+from param_pix_r import path_data,dimtabmenu,dimtabnorm,dimtabxdef
 from param_pix_r import typei1,typei,typei2
 from param_pix_r import source_name,scan_bmp,roi_name,imageDepth,lung_mask_bmp,lung_mask_bmp1,lung_mask,lung_mask1
 from param_pix_r import white,black,red,yellow
 from param_pix_r import classifc,classif,classifcontour,usedclassif
 from param_pix_r import remove_folder,volumeroifile,normi,rsliceNum 
-
+#from appJar import gui
 from skimage import measure
-from sklearn.cluster import KMeans
+#from sklearn.cluster import KMeans
 import cv2
 import dicom
 import os
@@ -30,7 +30,7 @@ from skimage import morphology
 
 from skimage.segmentation import clear_border
 from skimage.measure import label,regionprops
-from skimage.morphology import  disk, dilation, binary_erosion, binary_closing
+from skimage.morphology import  disk, binary_erosion, binary_closing
 from skimage.filters import roberts
 
 from scipy import ndimage as ndi
@@ -218,9 +218,11 @@ def click_and_crop(event, x, y, flags, param):
         if not labelfound:
             print 'add point',pattern
             if len(pattern)>0 and pattern !='init':
-                xnew=int((x+x0new-dimtabmenu)/fxs)
-                ynew=int((y+y0new)/fxs)
-#                print x,y,xnew,ynew
+                xnew=int((x-dimtabmenu)/fxs/2)+int(x0new/fxs)
+#                ynew=int((y+y0new)/fxs)/2
+                ynew=int(y/fxs/2)+int(y0new/fxs)
+
+#                print x,y,xnew,ynew,fxs,x0new
                 numeropoly=tabroinumber[pattern][scannumber]
                 tabroi[pattern][scannumber][numeropoly].append((xnew, ynew))
                 cv2.rectangle(images[scannumber], (xnew,ynew),
@@ -656,25 +658,25 @@ def lumi(tabi,r1):
     return tabi3
 
 
-def zoomfunction(im,z,px,py):
+def zoomfunction(im,z,px,py,dx):
     global fxs,x0new,y0new
 
     fxs=1+(z/50.0)
     if fxs !=1:
 #        print 'resize'
-        imgresize=cv2.resize(im,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_CUBIC)
+        imgresize=cv2.resize(im,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
     else:
         imgresize=im
     dimtabxn=imgresize.shape[0]
     dimtabyn=imgresize.shape[1]
-    px0=((dimtabxn-dimtabx)/2)*px/50
-    py0=((dimtabyn-dimtabx)/2)*py/50
+    px0=((dimtabxn-dx)/2)*px/50
+    py0=((dimtabyn-dx)/2)*py/50
 
     x0=max(0,px0)
 
     y0=max(0,py0)
-    x1=min(dimtabxn,x0+dimtabx)
-    y1=min(dimtabyn,y0+dimtabx)
+    x1=min(dimtabxn,x0+dx)
+    y1=min(dimtabyn,y0+dx)
 
     crop_img=imgresize[y0:y1,x0:x1]
 
@@ -693,18 +695,21 @@ def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName):
 # 
     fl=slnt/2
 #     
-    image=tabscanRoi[fl+1]
-
+#    image=tabscanRoi[fl+1]
+#    print dimtabmenu
     cv2.namedWindow('imageRoi',cv2.WINDOW_NORMAL)
-    cv2.resizeWindow('imageRoi', (dimtabx+2*dimtabmenu),dimtabx)
-    cv2.namedWindow("SliderRoi",cv2.WINDOW_AUTOSIZE)
+#    cv2.resizeWindow('imageRoi', (dimtabxdef+2*dimtabmenu),dimtabx)
+    cv2.resizeWindow('imageRoi', (dimtabnorm+2*dimtabmenu),dimtabnorm)
+
+    cv2.namedWindow("SliderRoi",cv2.WINDOW_NORMAL)
+    cv2.resizeWindow('SliderRoi', 300,1000)
 
     cv2.createTrackbar( 'Brightness','SliderRoi',0,100,nothing)
     cv2.createTrackbar( 'Contrast','SliderRoi',50,100,nothing)
     cv2.createTrackbar( 'Flip','SliderRoi',slnt/2,slnt-2,nothing)
     cv2.createTrackbar( 'Zoom','SliderRoi',0,100,nothing)
-#    cv2.createTrackbar( 'imh','SliderRoi',0,4,nothing)
-#    cv2.createTrackbar( 'imh1','SliderRoi',0,5,nothing)
+    cv2.createTrackbar( 'imh','SliderRoi',0,4,nothing)
+    cv2.createTrackbar( 'imh1','SliderRoi',0,5,nothing)
     cv2.createTrackbar( 'Panx','SliderRoi',50,100,nothing)
     cv2.createTrackbar( 'Pany','SliderRoi',50,100,nothing)
     cv2.createTrackbar( 'All','SliderRoi',1,1,nothing)
@@ -718,8 +723,22 @@ def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName):
 
     nbdig=0
     numberentered={}
-    while True:         
-
+#    app = gui("slider","300x800")
+#    app.setFont(20)
+#    app.addLabelScale("scale")
+#    while True:         
+#        app = gui("slider","300x800")
+#        app.setFont(20)
+#        app.addLabelScale("scale")
+#       
+#         
+#        
+#        
+#        sc=app.getScale("scale")
+#        print 'sc',sc
+#        app.go()
+    while True:    
+        
         key = cv2.waitKey(1000)
 #        key = cv2.waitKey(1000) & 0xFF
 #        if key != -1:
@@ -789,8 +808,8 @@ def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName):
         py = cv2.getTrackbarPos('Pany','SliderRoi')
         allview = cv2.getTrackbarPos('All','SliderRoi')
         noneview = cv2.getTrackbarPos('None','SliderRoi')
-#        imh = cv2.getTrackbarPos('imh','SliderRoi')
-#        imh1 = cv2.getTrackbarPos('imh1','SliderRoi')
+        imh = cv2.getTrackbarPos('imh','SliderRoi')
+        imh1 = cv2.getTrackbarPos('imh1','SliderRoi')
 
         
         if allview==1:
@@ -845,83 +864,104 @@ def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName):
 #            print pdirk
 #            image = cv2.imread(imagenamecomplet,1)
             imageo1=tabscanRoi[scannumber]
-            imglumi=lumi(imageo1,l)
-            image=contrasti(imglumi,c)
+#            print imageo1.shape
+#            imageo1 = imageo1.astype('float32')
+#            imageo1=cv2.resize(imageo1,(dimtabnorm,dimtabnorm),interpolation=cv2.INTER_LINEAR)
+#            print imageo1.shape
+#            imageo1=imageo1.astype('int8')
             
-#            image=image.astype('float32')
-#            if imh1==0:
-#                kernel=(1,1)
-#            elif imh1==1:
-#                kernel=(2,2)
-#            elif imh1==2:
-#               kernel=(3,3)
-#            elif imh1==3:
-#               kernel=(4,4)  
-#            elif imh1==4:
-#               kernel=(5,5) 
-#            elif imh1==5:
-#               kernel=(6,6) 
+            imglumi=lumi(imageo1,l)
+            imageo=contrasti(imglumi,c)
+            
+            imageo=imageo.astype('float32')
+            if imh1==0:
+                kernel=(1,1)
+            elif imh1==1:
+                kernel=(2,2)
+            elif imh1==2:
+               kernel=(3,3)
+            elif imh1==3:
+               kernel=(4,4)  
+            elif imh1==4:
+               kernel=(5,5) 
+            elif imh1==5:
+               kernel=(6,6) 
 
                 
-#            if imh==1:
-#                try:
-#                    print 'blur',kernel
-#                    image=cv2.blur(imageo,kernel)
-#                except:
-#                        print 'blur not ok',kernel
-#            elif imh==2:
-#                try:
-#                   print 'medianBlur',kernel[0]
-#                   image=cv2.medianBlur(imageo,kernel[0])
-#                except:
-#                        print 'medianBlur not ok',kernel[0]
-# 
-#            elif imh==3:
-#                try:
-#                   print 'bilateralFilter',kernel[0]
-#                   image=cv2.bilateralFilter(imageo,kernel[0],75,75)
-#                except:
-#                        print 'bilateralFilterk not ok',kernel[0]
-#
-#            elif imh==4:
-#                try:
-#                   print 'GaussianBlur',kernel
-#                   image=cv2.GaussianBlur(imageo,kernel,0)  
-#                except:
-#                        print 'GaussianBlur not ok',kernel
-#             
-#            else:
-#                image=imageo
-#                image=np.zeros((512,512,3),np.uint8) 
+            if imh==1:
+                try:
+                    print 'blur',kernel
+                    image=cv2.blur(imageo,kernel)
+                except:
+                        print 'blur not ok',kernel
+            elif imh==2:
+                try:
+                   print 'medianBlur',kernel[0]
+                   image=cv2.medianBlur(imageo,kernel[0])
+                except:
+                        print 'medianBlur not ok',kernel[0]
+ 
+            elif imh==3:
+                try:
+                   print 'bilateralFilter',kernel[0]
+                   image=cv2.bilateralFilter(imageo,kernel[0],75,75)
+                except:
+                        print 'bilateralFilterk not ok',kernel[0]
 
-#            image=image.astype('uint8')
+            elif imh==4:
+                try:
+                   print 'GaussianBlur',kernel
+                   image=cv2.GaussianBlur(imageo,kernel,0)  
+                except:
+                        print 'GaussianBlur not ok',kernel
+             
+            else:
+                image=imageo
+#                image=np.zeros((dimtabnorm,dimtabnorm,3),np.uint8) 
+
+            image=image.astype('uint8')
+                      
+            
 #            image=cv2.cvtColor(image,cv2.COLOR_GRAY2RGB)
             image=cv2.cvtColor(image,cv2.COLOR_BGR2RGB)            
-            image=zoomfunction(image,z,px,py)
+            image=zoomfunction(image,z,px,py,dimtabxdef)
 #            print images[scannumber].shape
-            imagesview=zoomfunction(images[scannumber],z,px,py)
+#            imagesr=cv2.resize(images[scannumber],(dimtabnorm,dimtabnorm),interpolation=cv2.INTER_LINEAR)
+            imagesv=images[scannumber]
+
+            imagesview=zoomfunction(imagesv,z,px,py,dimtabxdef)
                 
             
             imageview=cv2.add(image,imagesview)
+#            menuresize=cv2.resize(menus,(dimtabnorm,dimtabnorm),interpolation=cv2.INTER_LINEAR)
             imageview=cv2.add(menus,imageview)
             
             for key1 in usedclassif:
                 if viewasked[key1]:
                     try:
-                        if tabroifinal[key1][scannumber].max()>0:                        
-#                            imagetab=cv2.resize(tabroifinal[key1][scannumber],(dimtabx,dimtabx),interpolation=cv2.INTER_CUBIC  )
-                            tabroifinalview=zoomfunction(tabroifinal[key1][scannumber],z,px,py)
+                        tbroiks=tabroifinal[key1][scannumber]
+                        if tbroiks.max()>0:                        
+#                            tbroiks=cv2.resize(tbroiks,(dimtabnorm,dimtabnorm),interpolation=cv2.INTER_LINEAR )
+                            tabroifinalview=zoomfunction(tbroiks,z,px,py,dimtabxdef)
                             imageview=cv2.addWeighted(imageview,1,tabroifinalview,0.8,0)
                     except:
                       continue
+#            menurightr=cv2.resize(menuright,(dimtabnorm,dimtabnorm),interpolation=cv2.INTER_LINEAR )
+#            menuleftr=cv2.resize(menuleft,(dimtabnorm,dimtabnorm),interpolation=cv2.INTER_LINEAR )imageview=cv2.resize(imageview,(dimtabnorm,dimtabnorm),interpolation=cv2.INTER_LINEAR )
+            imageview=cv2.resize(imageview,(dimtabnorm,dimtabnorm),interpolation=cv2.INTER_LINEAR )
             imageview=np.concatenate((imageview,menuright),axis=1)
             imageview=np.concatenate((menuleft,imageview),axis=1)
             imageview=cv2.cvtColor(imageview,cv2.COLOR_BGR2RGB)
+            
+            
+
             cv2.imshow("imageRoi", imageview)
             cv2.waitKey(25)
+#            app.go()
         else:
             print 'quit', quitl
             cv2.destroyAllWindows()
+#            app.stop()
             break
             
 
@@ -1356,7 +1396,7 @@ def genebmp(fn,nosource,dirroit,centerHU,limitHU):
     dsr= RefDs.pixel_array
 #    dimtabx= dsr.shape[0]
     
-    dimtabx= dimtabnorm
+    dimtabx= dimtabxdef
     slnt=0
     listsln=[]
     for l in listdcm:
@@ -1396,7 +1436,13 @@ def genebmp(fn,nosource,dirroit,centerHU,limitHU):
              dsr = dsr.astype(np.int16)
 
         dsr += np.int16(intercept)       
-#        dsr=cv2.resize(dsr,(dimtabx,dimtaby),interpolation=cv2.INTER_CUBIC)
+#        dsr=cv2.resize(dsr,(dimtabx,dimtabx),interpolation=cv2.INTER_CUBIC)
+#        dsr=cv2.resize(dsr,(dimtabx,dimtabx),interpolation=cv2.INTER_LANCZOS4)
+#        dsr=cv2.resize(dsr,(dimtabnorm,dimtabnorm),interpolation=cv2.INTER_LINEAR)
+        if dsr.shape[0]!= dimtabx:
+            dsr = dsr.astype('float32')
+            dsr=cv2.resize(dsr,(dimtabx,dimtabx),interpolation=cv2.INTER_LINEAR)
+            dsr=dsr.astype('int16')
 
         endnumslice=l.find('.dcm')
         imgcoreScan=l[0:endnumslice]+'_'+str(slicenumber)+'.'+typei1
@@ -1443,7 +1489,7 @@ def menudraw(slnt):
     global posxcomp,posycomp,posxreset,posyreset,posxvisua,posyvisua
     global posxeraseroi,posyeraseroi,posxlastp,posylastp,posxgeneh,posygeneh
 #    posrc=0
-    corectx=dimtabx+dimtabmenu
+    corectx=dimtabnorm+dimtabmenu
     for key1,value1 in classif.items():
         tabroi[key1]={}
 #        tabroifinal[key1]={}
@@ -1459,69 +1505,69 @@ def menudraw(slnt):
                 xrn=xr+20
                 yrn=yr+20
                 cv2.rectangle(menuleft, (xr, yr),(xrn,yrn), classifc[key1], -1)
-                cv2.putText(menuleft,key1,(xr+25,yr+15),cv2.FONT_HERSHEY_PLAIN,1.0,classifc[key1],1 )
+                cv2.putText(menuleft,key1,(xr+25,yr+15),cv2.FONT_HERSHEY_PLAIN,1.1,classifc[key1],1 )
 #        posrc+=1
     
     posxinit=dimtabmenu-25
-    fontsize=0.9
+    fontsize=1.1
     posxdel=posxinit
     posydel=15
     cv2.rectangle(menuright, (posxdel,posydel),(posxdel+20,posydel+20), white, -1)
-    cv2.putText(menuright,'(d) del',(posxdel-60, posydel+20),cv2.FONT_HERSHEY_PLAIN,fontsize,white,1 )
+    cv2.putText(menuright,'(d) del',(posxdel-65, posydel+20),cv2.FONT_HERSHEY_PLAIN,fontsize,white,1 )
     posxdel+=corectx
         
     posxdellast=posxinit
     posydellast=40
     cv2.rectangle(menuright, (posxdellast,posydellast),(posxdellast+20,posydellast+20), white, -1)
-    cv2.putText(menuright,'(l) del last',(posxdellast-88, posydellast+20),cv2.FONT_HERSHEY_PLAIN,fontsize,white,1 )
+    cv2.putText(menuright,'(l) del last',(posxdellast-98, posydellast+20),cv2.FONT_HERSHEY_PLAIN,fontsize,white,1 )
     posxdellast+=corectx
 
     posxdelall=posxinit
     posydelall=65
     cv2.rectangle(menuright, (posxdelall,posydelall),(posxdelall+20,posydelall+20), white, -1)
-    cv2.putText(menuright,'(e) del all',(posxdelall-77, posydelall+20),cv2.FONT_HERSHEY_PLAIN,fontsize,white,1 )
+    cv2.putText(menuright,'(e) del all',(posxdelall-90, posydelall+20),cv2.FONT_HERSHEY_PLAIN,fontsize,white,1 )
     posxdelall+=corectx
     
     posxlastp=posxinit
     posylastp=90
     cv2.rectangle(menuright, (posxlastp,posylastp),(posxlastp+20,posylastp+20), white, -1)
-    cv2.putText(menuright,'(f) last p',(posxlastp-95, posylastp+20),cv2.FONT_HERSHEY_PLAIN,fontsize,white,1 )
+    cv2.putText(menuright,'(f) last p',(posxlastp-90, posylastp+20),cv2.FONT_HERSHEY_PLAIN,fontsize,white,1 )
     posxlastp+=corectx
 
     posxcomp=posxinit
     posycomp=115
     cv2.rectangle(menuright, (posxcomp,posycomp),(posxcomp+20,posycomp+20), white, -1)
-    cv2.putText(menuright,'(c) completed',(posxcomp-115, posycomp+20),cv2.FONT_HERSHEY_PLAIN,fontsize,white,1 )
+    cv2.putText(menuright,'(c) completed',(posxcomp-130, posycomp+20),cv2.FONT_HERSHEY_PLAIN,fontsize,white,1 )
     posxcomp+=corectx
 
     posxreset=posxinit
     posyreset=140
     cv2.rectangle(menuright, (posxreset,posyreset),(posxreset+20,posyreset+20), white, -1)
-    cv2.putText(menuright,'(r) reset',(posxreset-75, posyreset+20),cv2.FONT_HERSHEY_PLAIN,fontsize,white,1 )
+    cv2.putText(menuright,'(r) reset',(posxreset-83, posyreset+20),cv2.FONT_HERSHEY_PLAIN,fontsize,white,1 )
     posxreset+=corectx
 
     posxvisua=posxinit
     posyvisua=165
     cv2.rectangle(menuright, (posxvisua,posyvisua),(posxvisua+20,posyvisua+20), white, -1)
-    cv2.putText(menuright,'(v) visua',(posxvisua-75, posyvisua+20),cv2.FONT_HERSHEY_PLAIN,fontsize,white,1 )
+    cv2.putText(menuright,'(v) visua',(posxvisua-80, posyvisua+20),cv2.FONT_HERSHEY_PLAIN,fontsize,white,1 )
     posxvisua+=corectx
 
     posxeraseroi=posxinit
     posyeraseroi=190
     cv2.rectangle(menuright, (posxeraseroi,posyeraseroi),(posxeraseroi+20,posyeraseroi+20), white, -1)
-    cv2.putText(menuright,'(e) eraseroi',(posxeraseroi-95, posyeraseroi+20),cv2.FONT_HERSHEY_PLAIN,fontsize,white,1 )
+    cv2.putText(menuright,'(e) eraseroi',(posxeraseroi-115, posyeraseroi+20),cv2.FONT_HERSHEY_PLAIN,fontsize,white,1 )
     posxeraseroi+=corectx
    
     posxgeneh=posxinit
     posygeneh=215
     cv2.rectangle(menuright, (posxgeneh,posygeneh),(posxgeneh+20,posygeneh+20), white, -1)
-    cv2.putText(menuright,'(h) gene Healthy',(posxgeneh-130, posygeneh+20),cv2.FONT_HERSHEY_PLAIN,fontsize,white,1 )
+    cv2.putText(menuright,'(h) gene Healthy',(posxgeneh-155, posygeneh+20),cv2.FONT_HERSHEY_PLAIN,fontsize,white,1 )
     posxgeneh+=corectx
     
     posxquit=posxinit
     posyquit=450
     cv2.rectangle(menuright, (posxquit,posyquit),(posxquit+20,posyquit+20), red, -1)
-    cv2.putText(menuright,'(q) quit',(posxquit-65, posyquit+20),cv2.FONT_HERSHEY_PLAIN,fontsize,red,1 )
+    cv2.putText(menuright,'(q) quit',(posxquit-70, posyquit+20),cv2.FONT_HERSHEY_PLAIN,fontsize,red,1 )
     posxquit+=corectx
     
     
@@ -1614,11 +1660,6 @@ def populate(pp,lissln,slnt,pixelSpacing,tabscanName):
 
                         anoted_image=cv2.add(anoted_image,ctkey)
 
-#                        anoted_image=cv2.resize(anoted_image,(dimtabx,dimtabx),interpolation=cv2.INTER_CUBIC)  
-                        
-#                        print sroiname
-    
-#                        anoted_image=cv2.add(anoted_image,ctkey)
                         cv2.imwrite(sroiname,anoted_image)
                               
 
@@ -1627,8 +1668,8 @@ def populate(pp,lissln,slnt,pixelSpacing,tabscanName):
 def initmenus(slnt,dirpath_patient):
     global menuright,menuleft,imageview,zoneverticalgauche,zoneverticaldroite,images,menus
 
-    menuright=np.zeros((dimtabx,dimtabmenu,3), np.uint8)
-    menuleft=np.zeros((dimtabx,dimtabmenu,3), np.uint8)
+    menuright=np.zeros((dimtabnorm,dimtabmenu,3), np.uint8)
+    menuleft=np.zeros((dimtabnorm,dimtabmenu,3), np.uint8)
     menus=np.zeros((dimtabx,dimtabx,3), np.uint8)
     menuright[:,0:2]=yellow
     menuleft[:,dimtabmenu-2:dimtabmenu]=yellow
@@ -1639,8 +1680,8 @@ def initmenus(slnt,dirpath_patient):
 
     menudraw(slnt)
 
-    zoneverticalgauche=((0,0),(dimtabmenu,dimtabx))
-    zoneverticaldroite=((dimtabx+dimtabmenu,0),(dimtabx+(2*dimtabmenu),dimtabx))
+    zoneverticalgauche=((0,0),(dimtabmenu,dimtabnorm))
+    zoneverticaldroite=((dimtabnorm+dimtabmenu,0),(dimtabnorm+(2*dimtabmenu),dimtabnorm))
 
 def openfichierroi(patient,patient_path_complet,centerHU,limitHU,lungask,ForceGenerate):
     global dirpath_patient,dirroit,path_data_write,volumeroi,path_data_writefile,pixelSpacing

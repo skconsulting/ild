@@ -24,8 +24,8 @@ setdata='set0'
 #surfelem= surfelemp/100 #surface of 1 pixel in cm2
 
 imageDepth=255
-dimtabnorm=512
-#dimtaby=512
+dimtabnorm=1024
+dimtabxdef=512
 dimtabmenu=190
 
 source_name='source'
@@ -49,7 +49,7 @@ reportalldir='REPORT_SCORE'
 black=(0,0,0)
 grey=(100,100,100)
 highgrey=(200,200,200)
-highgrey=(255,250,0)
+#highgrey=(255,250,0)
 red=(255,0,0)
 green=(0,255,0)
 blue=(0,0,255)

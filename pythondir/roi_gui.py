@@ -158,16 +158,26 @@ def presshelp(btn):
     webbrowser.open_new(r'file://'+filehelp)
 
 def redraw(app):
-    app.stop(Stop)
+#    app.stop()
     initDraw()
 
 def Stop():
-    return True
+    return app.yesNoBox("Confirm Exit", "Are you sure you want to exit the application?")
+#    if ans:
+##        app.stop(Stop)
+#        return ans
+#        sys.exit(1)
+#    else:
+#        redraw(app)
+#    app.stop(Stop)
+#    ans= app.yesNoBox("Confirm Exit", "Are you sure you want to exit the application?")
+#    sys.exit(1)
+    
 
 def boutonStop(btn):
     ans= app.yesNoBox("Confirm Exit", "Are you sure you want to exit the application?")
     if ans:
-#        app.stop(Stop)
+#        app.stop()
         sys.exit(1)
     else:
         redraw(app)
@@ -204,13 +214,13 @@ def selectPatientDir():
                         pbg=True
                     break
     if pbg:
-        app.stop(Stop)
+#        app.stop()
         goodir=True
         initDraw()
     else:
         lisdir=lisdirold
         app.errorBox('error', 'path for  patient not correct')
-        app.stop(Stop)
+#        app.stop()
         goodir=False
         initDraw()
 
@@ -224,7 +234,7 @@ def initDraw():
     limitHU=paramdict['limitHU']
     global app
     app = gui("ROI form"+version,"1000x500")
-    app.setStopFunction(Stop)
+#    app.setStopFunction(Stop)
     if not goodir: selectPatientDir()
 
     if goodir:
@@ -284,6 +294,9 @@ def initDraw():
 #        app.addHorizontalSeparator( colour="red",colspan=2)
     app.addButton("Quit",  boutonStop,row,0)
     app.go()
+    sys.exit(1)
 
-if __name__ == '__main__':
-    initDraw()
+#if __name__ == '__main__':
+initDraw()
+sys.exit(1)
+#    app.stop(Stop)
