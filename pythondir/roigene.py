@@ -7,7 +7,7 @@ Version 1.5
 06 September 2017
 """
 #from param_pix_r import *
-from param_pix_r import path_data,dimtabmenu,dimtabnorm,dimtabxdef
+from param_pix_r import path_data,dimtabmenul,dimtabmenur,dimtabnorm,dimtabxdef
 from param_pix_r import typei1,typei,typei2
 from param_pix_r import source_name,scan_bmp,roi_name,imageDepth,lung_mask_bmp,lung_mask_bmp1,lung_mask,lung_mask1
 from param_pix_r import white,black,red,yellow
@@ -218,7 +218,7 @@ def click_and_crop(event, x, y, flags, param):
         if not labelfound:
             print 'add point',pattern
             if len(pattern)>0 and pattern !='init':
-                xnew=int((x-dimtabmenu)/fxs/2)+int(x0new/fxs)
+                xnew=int((x-dimtabmenul)/fxs/2)+int(x0new/fxs)
 #                ynew=int((y+y0new)/fxs)/2
                 ynew=int(y/fxs/2)+int(y0new/fxs)
 
@@ -699,7 +699,7 @@ def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName):
 #    print dimtabmenu
     cv2.namedWindow('imageRoi',cv2.WINDOW_NORMAL)
 #    cv2.resizeWindow('imageRoi', (dimtabxdef+2*dimtabmenu),dimtabx)
-    cv2.resizeWindow('imageRoi', (dimtabnorm+2*dimtabmenu),dimtabnorm)
+    cv2.resizeWindow('imageRoi', (dimtabnorm+dimtabmenur+dimtabmenul),dimtabnorm)
 
     cv2.namedWindow("SliderRoi",cv2.WINDOW_NORMAL)
     cv2.resizeWindow('SliderRoi', 300,1000)
@@ -1489,7 +1489,7 @@ def menudraw(slnt):
     global posxcomp,posycomp,posxreset,posyreset,posxvisua,posyvisua
     global posxeraseroi,posyeraseroi,posxlastp,posylastp,posxgeneh,posygeneh
 #    posrc=0
-    corectx=dimtabnorm+dimtabmenu
+    corectx=dimtabnorm+dimtabmenul
     for key1,value1 in classif.items():
         tabroi[key1]={}
 #        tabroifinal[key1]={}
@@ -1505,69 +1505,71 @@ def menudraw(slnt):
                 xrn=xr+20
                 yrn=yr+20
                 cv2.rectangle(menuleft, (xr, yr),(xrn,yrn), classifc[key1], -1)
-                cv2.putText(menuleft,key1,(xr+25,yr+15),cv2.FONT_HERSHEY_PLAIN,1.1,classifc[key1],1 )
+                cv2.putText(menuleft,key1,(xr+25,yr+15),cv2.FONT_HERSHEY_SIMPLEX,0.8,classifc[key1],2 )
 #        posrc+=1
     
-    posxinit=dimtabmenu-25
-    fontsize=1.1
+    posxinit=dimtabmenur-25
+    fontsize=0.8
+    fontw=2
     posxdel=posxinit
+    posxdelt=dimtabmenur-90
     posydel=15
     cv2.rectangle(menuright, (posxdel,posydel),(posxdel+20,posydel+20), white, -1)
-    cv2.putText(menuright,'(d) del',(posxdel-65, posydel+20),cv2.FONT_HERSHEY_PLAIN,fontsize,white,1 )
+    cv2.putText(menuright,'(d) del',(posxdelt-65, posydel+20),cv2.FONT_HERSHEY_SIMPLEX,fontsize,white,fontw )
     posxdel+=corectx
         
     posxdellast=posxinit
     posydellast=40
     cv2.rectangle(menuright, (posxdellast,posydellast),(posxdellast+20,posydellast+20), white, -1)
-    cv2.putText(menuright,'(l) del last',(posxdellast-98, posydellast+20),cv2.FONT_HERSHEY_PLAIN,fontsize,white,1 )
+    cv2.putText(menuright,'(l) del last',(posxdelt-98, posydellast+20),cv2.FONT_HERSHEY_SIMPLEX,fontsize,white,fontw )
     posxdellast+=corectx
 
     posxdelall=posxinit
     posydelall=65
     cv2.rectangle(menuright, (posxdelall,posydelall),(posxdelall+20,posydelall+20), white, -1)
-    cv2.putText(menuright,'(e) del all',(posxdelall-90, posydelall+20),cv2.FONT_HERSHEY_PLAIN,fontsize,white,1 )
+    cv2.putText(menuright,'(e) del all',(posxdelt-90, posydelall+20),cv2.FONT_HERSHEY_SIMPLEX,fontsize,white,fontw )
     posxdelall+=corectx
     
     posxlastp=posxinit
     posylastp=90
     cv2.rectangle(menuright, (posxlastp,posylastp),(posxlastp+20,posylastp+20), white, -1)
-    cv2.putText(menuright,'(f) last p',(posxlastp-90, posylastp+20),cv2.FONT_HERSHEY_PLAIN,fontsize,white,1 )
+    cv2.putText(menuright,'(f) last p',(posxdelt-90, posylastp+20),cv2.FONT_HERSHEY_SIMPLEX,fontsize,white,fontw )
     posxlastp+=corectx
 
     posxcomp=posxinit
     posycomp=115
     cv2.rectangle(menuright, (posxcomp,posycomp),(posxcomp+20,posycomp+20), white, -1)
-    cv2.putText(menuright,'(c) completed',(posxcomp-130, posycomp+20),cv2.FONT_HERSHEY_PLAIN,fontsize,white,1 )
+    cv2.putText(menuright,'(c) completed',(posxdelt-130, posycomp+20),cv2.FONT_HERSHEY_SIMPLEX,fontsize,white,fontw )
     posxcomp+=corectx
 
     posxreset=posxinit
     posyreset=140
     cv2.rectangle(menuright, (posxreset,posyreset),(posxreset+20,posyreset+20), white, -1)
-    cv2.putText(menuright,'(r) reset',(posxreset-83, posyreset+20),cv2.FONT_HERSHEY_PLAIN,fontsize,white,1 )
+    cv2.putText(menuright,'(r) reset',(posxdelt-83, posyreset+20),cv2.FONT_HERSHEY_SIMPLEX,fontsize,white,fontw )
     posxreset+=corectx
 
     posxvisua=posxinit
     posyvisua=165
     cv2.rectangle(menuright, (posxvisua,posyvisua),(posxvisua+20,posyvisua+20), white, -1)
-    cv2.putText(menuright,'(v) visua',(posxvisua-80, posyvisua+20),cv2.FONT_HERSHEY_PLAIN,fontsize,white,1 )
+    cv2.putText(menuright,'(v) visua',(posxdelt-80, posyvisua+20),cv2.FONT_HERSHEY_SIMPLEX,fontsize,white,fontw )
     posxvisua+=corectx
 
     posxeraseroi=posxinit
     posyeraseroi=190
     cv2.rectangle(menuright, (posxeraseroi,posyeraseroi),(posxeraseroi+20,posyeraseroi+20), white, -1)
-    cv2.putText(menuright,'(e) eraseroi',(posxeraseroi-115, posyeraseroi+20),cv2.FONT_HERSHEY_PLAIN,fontsize,white,1 )
+    cv2.putText(menuright,'(e) eraseroi',(posxdelt-115, posyeraseroi+20),cv2.FONT_HERSHEY_SIMPLEX,fontsize,white,fontw )
     posxeraseroi+=corectx
    
     posxgeneh=posxinit
     posygeneh=215
     cv2.rectangle(menuright, (posxgeneh,posygeneh),(posxgeneh+20,posygeneh+20), white, -1)
-    cv2.putText(menuright,'(h) gene Healthy',(posxgeneh-155, posygeneh+20),cv2.FONT_HERSHEY_PLAIN,fontsize,white,1 )
+    cv2.putText(menuright,'(h) gene Healthy',(posxdelt-155, posygeneh+20),cv2.FONT_HERSHEY_SIMPLEX,fontsize,white,fontw )
     posxgeneh+=corectx
     
     posxquit=posxinit
     posyquit=450
     cv2.rectangle(menuright, (posxquit,posyquit),(posxquit+20,posyquit+20), red, -1)
-    cv2.putText(menuright,'(q) quit',(posxquit-70, posyquit+20),cv2.FONT_HERSHEY_PLAIN,fontsize,red,1 )
+    cv2.putText(menuright,'(q) quit',(posxdelt-70, posyquit+20),cv2.FONT_HERSHEY_SIMPLEX,fontsize,red,fontw )
     posxquit+=corectx
     
     
@@ -1668,20 +1670,20 @@ def populate(pp,lissln,slnt,pixelSpacing,tabscanName):
 def initmenus(slnt,dirpath_patient):
     global menuright,menuleft,imageview,zoneverticalgauche,zoneverticaldroite,images,menus
 
-    menuright=np.zeros((dimtabnorm,dimtabmenu,3), np.uint8)
-    menuleft=np.zeros((dimtabnorm,dimtabmenu,3), np.uint8)
-    menus=np.zeros((dimtabx,dimtabx,3), np.uint8)
+    menuright=np.zeros((dimtabnorm,dimtabmenur,3), np.uint8)
+    menuleft=np.zeros((dimtabnorm,dimtabmenul,3), np.uint8)
+    menus=np.zeros((dimtabxdef,dimtabxdef,3), np.uint8)
     menuright[:,0:2]=yellow
-    menuleft[:,dimtabmenu-2:dimtabmenu]=yellow
+    menuleft[:,dimtabmenul-2:dimtabmenul]=yellow
  
     for i in range(1,slnt):
-        images[i]=np.zeros((dimtabx,dimtabx,3), np.uint8)
-    imageview=np.zeros((dimtabx,dimtabx,3), np.uint8)
+        images[i]=np.zeros((dimtabxdef,dimtabxdef,3), np.uint8)
+    imageview=np.zeros((dimtabxdef,dimtabxdef,3), np.uint8)
 
     menudraw(slnt)
 
-    zoneverticalgauche=((0,0),(dimtabmenu,dimtabnorm))
-    zoneverticaldroite=((dimtabnorm+dimtabmenu,0),(dimtabnorm+(2*dimtabmenu),dimtabnorm))
+    zoneverticalgauche=((0,0),(dimtabmenul,dimtabnorm))
+    zoneverticaldroite=((dimtabnorm+dimtabmenur,0),(dimtabnorm+dimtabmenur+dimtabmenul,dimtabnorm))
 
 def openfichierroi(patient,patient_path_complet,centerHU,limitHU,lungask,ForceGenerate):
     global dirpath_patient,dirroit,path_data_write,volumeroi,path_data_writefile,pixelSpacing
