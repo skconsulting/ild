@@ -29,8 +29,8 @@ dimtabxdef=512
 dimtabmenul=225
 dimtabmenur=250
 
-#debugenh=True
-debugenh=False
+debugenh=True
+#debugenh=False
 
 
 source_name='source'
