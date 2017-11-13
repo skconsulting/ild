@@ -7,7 +7,7 @@ Version 1.5
 06 September 2017
 """
 #from param_pix_r import *
-from param_pix_r import path_data,dimtabmenul,dimtabmenur,dimtabnorm,dimtabxdef
+from param_pix_r import path_data,dimtabmenul,dimtabmenur,dimtabnorm,dimtabxdef,debugenh
 from param_pix_r import typei1,typei,typei2
 from param_pix_r import source_name,scan_bmp,roi_name,imageDepth,lung_mask_bmp,lung_mask_bmp1,lung_mask,lung_mask1
 from param_pix_r import white,black,red,yellow
@@ -707,9 +707,11 @@ def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName):
     cv2.createTrackbar( 'Brightness','SliderRoi',0,100,nothing)
     cv2.createTrackbar( 'Contrast','SliderRoi',50,100,nothing)
     cv2.createTrackbar( 'Flip','SliderRoi',slnt/2,slnt-2,nothing)
+
     cv2.createTrackbar( 'Zoom','SliderRoi',0,100,nothing)
-    cv2.createTrackbar( 'imh','SliderRoi',0,4,nothing)
-    cv2.createTrackbar( 'imh1','SliderRoi',0,5,nothing)
+    if debugenh==True:
+        cv2.createTrackbar( 'imh','SliderRoi',0,4,nothing)
+        cv2.createTrackbar( 'imh1','SliderRoi',0,5,nothing)
     cv2.createTrackbar( 'Panx','SliderRoi',50,100,nothing)
     cv2.createTrackbar( 'Pany','SliderRoi',50,100,nothing)
     cv2.createTrackbar( 'All','SliderRoi',1,1,nothing)
@@ -723,20 +725,7 @@ def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName):
 
     nbdig=0
     numberentered={}
-#    app = gui("slider","300x800")
-#    app.setFont(20)
-#    app.addLabelScale("scale")
-#    while True:         
-#        app = gui("slider","300x800")
-#        app.setFont(20)
-#        app.addLabelScale("scale")
-#       
-#         
-#        
-#        
-#        sc=app.getScale("scale")
-#        print 'sc',sc
-#        app.go()
+
     while True:    
         
         key = cv2.waitKey(1000)
@@ -808,8 +797,9 @@ def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName):
         py = cv2.getTrackbarPos('Pany','SliderRoi')
         allview = cv2.getTrackbarPos('All','SliderRoi')
         noneview = cv2.getTrackbarPos('None','SliderRoi')
-        imh = cv2.getTrackbarPos('imh','SliderRoi')
-        imh1 = cv2.getTrackbarPos('imh1','SliderRoi')
+        if debugenh==True:
+            imh = cv2.getTrackbarPos('imh','SliderRoi')
+            imh1 = cv2.getTrackbarPos('imh1','SliderRoi')
 
         
         if allview==1:
@@ -860,80 +850,60 @@ def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName):
         if (imsstatus==0) and (imistatus==0)  :
             scannumber=fl+1
             imagename=tabscanName[scannumber]
-#            imagenamecomplet=os.path.join(pdirk,imagename)
-#            print pdirk
-#            image = cv2.imread(imagenamecomplet,1)
-            imageo1=tabscanRoi[scannumber]
-#            print imageo1.shape
-#            imageo1 = imageo1.astype('float32')
-#            imageo1=cv2.resize(imageo1,(dimtabnorm,dimtabnorm),interpolation=cv2.INTER_LINEAR)
-#            print imageo1.shape
-#            imageo1=imageo1.astype('int8')
-            
+            imageo1=tabscanRoi[scannumber]            
             imglumi=lumi(imageo1,l)
-            imageo=contrasti(imglumi,c)
+            image=contrasti(imglumi,c)
             
-            imageo=imageo.astype('float32')
-            if imh1==0:
-                kernel=(1,1)
-            elif imh1==1:
-                kernel=(2,2)
-            elif imh1==2:
-               kernel=(3,3)
-            elif imh1==3:
-               kernel=(4,4)  
-            elif imh1==4:
-               kernel=(5,5) 
-            elif imh1==5:
-               kernel=(6,6) 
-
-                
-            if imh==1:
-                try:
-                    print 'blur',kernel
-                    image=cv2.blur(imageo,kernel)
-                except:
-                        print 'blur not ok',kernel
-            elif imh==2:
-                try:
-                   print 'medianBlur',kernel[0]
-                   image=cv2.medianBlur(imageo,kernel[0])
-                except:
-                        print 'medianBlur not ok',kernel[0]
- 
-            elif imh==3:
-                try:
-                   print 'bilateralFilter',kernel[0]
-                   image=cv2.bilateralFilter(imageo,kernel[0],75,75)
-                except:
-                        print 'bilateralFilterk not ok',kernel[0]
-
-            elif imh==4:
-                try:
-                   print 'GaussianBlur',kernel
-                   image=cv2.GaussianBlur(imageo,kernel,0)  
-                except:
-                        print 'GaussianBlur not ok',kernel
-             
-            else:
-                image=imageo
-#                image=np.zeros((dimtabnorm,dimtabnorm,3),np.uint8) 
-
-            image=image.astype('uint8')
+            if debugenh==True:
+                image=image.astype('float32')
+                if imh1==0:
+                    kernel=(1,1)
+                elif imh1==1:
+                    kernel=(2,2)
+                elif imh1==2:
+                   kernel=(3,3)
+                elif imh1==3:
+                   kernel=(4,4)  
+                elif imh1==4:
+                   kernel=(5,5) 
+                elif imh1==5:
+                   kernel=(6,6) 
                       
-            
-#            image=cv2.cvtColor(image,cv2.COLOR_GRAY2RGB)
+                if imh==1:
+                    try:
+                        print 'blur',kernel
+                        image=cv2.blur(image,kernel)
+                    except:
+                            print 'blur not ok',kernel
+                elif imh==2:
+                    try:
+                       print 'medianBlur',kernel[0]
+                       image=cv2.medianBlur(image,kernel[0])
+                    except:
+                            print 'medianBlur not ok',kernel[0]
+     
+                elif imh==3:
+                    try:
+                       print 'bilateralFilter',kernel[0]
+                       image=cv2.bilateralFilter(image,kernel[0],75,75)
+                    except:
+                            print 'bilateralFilterk not ok',kernel[0]
+    
+                elif imh==4:
+                    try:
+                       print 'GaussianBlur',kernel
+                       image=cv2.GaussianBlur(image,kernel,0)  
+                    except:
+                            print 'GaussianBlur not ok',kernel
+                 
+
+                image=image.astype('uint8')
+                      
             image=cv2.cvtColor(image,cv2.COLOR_BGR2RGB)            
             image=zoomfunction(image,z,px,py,dimtabxdef)
-#            print images[scannumber].shape
-#            imagesr=cv2.resize(images[scannumber],(dimtabnorm,dimtabnorm),interpolation=cv2.INTER_LINEAR)
             imagesv=images[scannumber]
-
-            imagesview=zoomfunction(imagesv,z,px,py,dimtabxdef)
-                
-            
+            imagesview=zoomfunction(imagesv,z,px,py,dimtabxdef)                            
             imageview=cv2.add(image,imagesview)
-#            menuresize=cv2.resize(menus,(dimtabnorm,dimtabnorm),interpolation=cv2.INTER_LINEAR)
             imageview=cv2.add(menus,imageview)
             
             for key1 in usedclassif:
@@ -941,27 +911,21 @@ def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName):
                     try:
                         tbroiks=tabroifinal[key1][scannumber]
                         if tbroiks.max()>0:                        
-#                            tbroiks=cv2.resize(tbroiks,(dimtabnorm,dimtabnorm),interpolation=cv2.INTER_LINEAR )
                             tabroifinalview=zoomfunction(tbroiks,z,px,py,dimtabxdef)
                             imageview=cv2.addWeighted(imageview,1,tabroifinalview,0.8,0)
                     except:
                       continue
-#            menurightr=cv2.resize(menuright,(dimtabnorm,dimtabnorm),interpolation=cv2.INTER_LINEAR )
-#            menuleftr=cv2.resize(menuleft,(dimtabnorm,dimtabnorm),interpolation=cv2.INTER_LINEAR )imageview=cv2.resize(imageview,(dimtabnorm,dimtabnorm),interpolation=cv2.INTER_LINEAR )
             imageview=cv2.resize(imageview,(dimtabnorm,dimtabnorm),interpolation=cv2.INTER_LINEAR )
             imageview=np.concatenate((imageview,menuright),axis=1)
             imageview=np.concatenate((menuleft,imageview),axis=1)
             imageview=cv2.cvtColor(imageview,cv2.COLOR_BGR2RGB)
             
-            
-
+        
             cv2.imshow("imageRoi", imageview)
             cv2.waitKey(25)
-#            app.go()
         else:
             print 'quit', quitl
             cv2.destroyAllWindows()
-#            app.stop()
             break
             
 
