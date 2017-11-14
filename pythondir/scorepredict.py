@@ -82,14 +82,11 @@ def genebmp(fn,sou,nosource,centerHU, limitHU, tabscanName,tabscanroi):
     RefDs = dicom.read_file(FilesDCM,force=True)
     RefDs1 = dicom.read_file(FilesDCM1,force=True)
     patientPosition=RefDs.PatientPosition
-#    SliceThickness=RefDs.SliceThickness
     try:
             slicepitch = np.abs(RefDs.ImagePositionPatient[2] - RefDs1.ImagePositionPatient[2])
     except:
             slicepitch = np.abs(RefDs.SliceLocation - RefDs1.SliceLocation)
-
     print 'slice pitch in z :',slicepitch
-#    ooo
     print 'patient position :',patientPosition
     lbHU=centerHU-limitHU/2
     lhHU=centerHU+limitHU/2
@@ -99,16 +96,13 @@ def genebmp(fn,sou,nosource,centerHU, limitHU, tabscanName,tabscanroi):
     if moderesize:
         print 'resize'
         fxs=float(RefDs.PixelSpacing[0])/avgPixelSpacing
-        imgresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_CUBIC)
-#    imgresize = scipy.ndimage.interpolation.zoom(dsr, fxs, mode='nearest')
-#    dsr = dsr.astype('int16')
+        imgresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
         dimtabx=imgresize.shape[0]
         dimtaby=imgresize.shape[1]
     else:
         print 'no resize'
         dimtabx=dsr.shape[0]
         dimtaby=dimtabx
-#    print dimtabx, dimtaby
     slnt=0
     for l in listdcm:
 
@@ -122,9 +116,7 @@ def genebmp(fn,sou,nosource,centerHU, limitHU, tabscanName,tabscanroi):
     print 'number of slices', slnt
     slnt=slnt+1
     tabscan = np.zeros((slnt,dimtabx,dimtaby),np.int16)
-#    for i in range(slnt):
-#        tabscan[i] = []
-#    tabscan = np.zeros((slnt,dimtabx,dimtaby), np.int16)
+
     for l in listdcm:
 #        print l
         FilesDCM =(os.path.join(fmbmp,l))
@@ -139,46 +131,30 @@ def genebmp(fn,sou,nosource,centerHU, limitHU, tabscanName,tabscanroi):
         if slope != 1:
              dsr = slope * dsr.astype(np.float64)
              dsr = dsr.astype(np.int16)
-
         dsr += np.int16(intercept)
+        
         if moderesize:
             dsr = dsr.astype('float32')
-            imgresize1=cv2.resize(dsr,(dimtabx,dimtaby),interpolation=cv2.INTER_CUBIC)
-            imgresize=imgresize1.astype('int16')
-#        imgresize = scipy.ndimage.interpolation.zoom(dsr, fxs, mode='nearest')
-        else:
-            imgresize=dsr
-        
-
+            dsr=cv2.resize(dsr,(dimtabx,dimtaby),interpolation=cv2.INTER_LINEAR)
+            dsr=dsr.astype('int16')
+      
         endnumslice=l.find('.dcm')
         imgcoreScan=l[0:endnumslice]+'_'+str(slicenumber)+'.'+typei1  
-        
-        tabscan[slicenumber]=imgresize.copy()
-#        if slicenumber==12:
-#            print '1',tabscan[slicenumber].min(),tabscan[slicenumber].max()
-        np.putmask(imgresize,imgresize<lbHU,lbHU)
-        np.putmask(imgresize,imgresize>lhHU,lhHU)
-        
-     
-        imtowrite=normi(imgresize)
+        tabscan[slicenumber]=dsr.copy()
+        np.putmask(dsr,dsr<lbHU,lbHU)
+        np.putmask(dsr,dsr>lhHU,lhHU)
+
+        imtowrite=normi(dsr)
         imtowrite = cv2.cvtColor(imtowrite, cv2.COLOR_GRAY2RGB)
-#        if slicenumber==12:
-#            print '2',tabscan[slicenumber].min(),tabscan[slicenumber].max()
-#        if slicenumber==12:
-#            pickle.dump(imgresize, open('score.pkl', "wb" ),protocol=-1)
-#            cv2.imwrite('score.bmp',imtowrite)
-#        bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
+
         tabscanName[slicenumber]=imgcoreScan
-#        (topw,tailw)=os.path.split(picklein_file)
         t2='Prototype '
         t1='Patient: '+tail
         t0='CONFIDENTIAL'
         t3='Scan: '+str(slicenumber)
-
         t4=time.asctime()
         t5='CenterHU: '+str(int(centerHU))
-        t6='LimitHU: +/-' +str(int(limitHU/2))
-    
+        t6='LimitHU: +/-' +str(int(limitHU/2))   
         anoted_image=tagviews(imtowrite,
                               t0,dimtabx-200,dimtaby-10,
                               t1,0,dimtaby-21,
@@ -349,7 +325,7 @@ def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan,listsln,tabscanName
             slicenumber= rsliceNum(img,'_','.'+typei1)
             if slicenumber>0:       
                     imr=cv2.imread(os.path.join(fmbmpbmp,img),0) 
-                    imr=cv2.resize(imr,(dimtabx,dimtaby),interpolation=cv2.INTER_CUBIC)  
+                    imr=cv2.resize(imr,(dimtabx,dimtaby),interpolation=cv2.INTER_LINEAR)  
                     np.putmask(imr,imr>0,classif['lung']+1)                                  
 #                    dilation = cv2.dilate(imr,kernel,iterations = 1)
                     tabscan[slicenumber]=imr
@@ -369,7 +345,7 @@ def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan,listsln,tabscanName
                 dsr=normi(dsr)
         
                 fxs=float(RefDs.PixelSpacing[0])/avgPixelSpacing
-                imgresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_CUBIC)
+                imgresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
                 np.putmask(imgresize,imgresize>0,classif['lung']+1)    
                 slicenumber=int(RefDs.InstanceNumber)
                 imgcoreScan=tabscanName[slicenumber]
@@ -620,7 +596,7 @@ def wtebres(wridir,dirf,tab,dimtabx,slicepitch,lungm,ty,centerHU,limitHU):
 #        print i, tab[i].max()
         lislnn.append(i)
 
-        imgresize=cv2.resize(tab[i],None,fx=1,fy=fxs,interpolation=cv2.INTER_CUBIC)
+        imgresize=cv2.resize(tab[i],None,fx=1,fy=fxs,interpolation=cv2.INTER_LINEAR)
 
         if ty=='scan':
             typext=typei1
@@ -655,9 +631,7 @@ def wtebres(wridir,dirf,tab,dimtabx,slicepitch,lungm,ty,centerHU,limitHU):
             anoted_image=tagviews(imgresize8,t0,dimtabxn-300,dimtabyn-10,t1,0,dimtabyn-20,t2,dimtabx-350,dimtabyn-10,
                          t3,0,dimtabyn-30,t4,0,dimtabyn-10,t5,0,dimtabyn-40,t6,0,dimtabyn-50)
                     
-#            t1='Pt: '+tail
             
-#            imgresize8r=tagviews(imgresize8,t0,0,10,t1,0,20,t2,(dimtabyn/2)-10,dimtabxn-10,t3,0,38,t4,0,dimtabxn-10,t5,0,dimtabxn-20)
             cv2.imwrite(namescan,anoted_image)
 
         tabres[i]=imgresize
@@ -1080,9 +1054,9 @@ def genepatchlistslice(patch_list_cross,proba_cross,lissln,dimtabx,dimtaby):
             if sln ==i:
                 t=((xpat,ypat),proba_cross[ii])
                 res[sln].append(t)                
-                tabpatch = np.zeros((dimtabx, dimtaby), np.uint8)
+#                tabpatch = np.zeros((dimtabx, dimtaby), np.uint8)
     
-                tabpatch[ypat:ypat + dimpavy, xpat:xpat + dimpavx] = 1
+#                tabpatch[ypat:ypat + dimpavy, xpat:xpat + dimpavx] = 1
 #                tabsubpl = np.bitwise_and(subpleurmask[i], tabpatch)
 #                np.putmask(tabsubpl, tabsubpl > 0, 1)
 #
@@ -1162,7 +1136,7 @@ def generoi(dirf,tabroi,dimtabx,dimtaby,slnroi,tabscanName,dirroit,tabscanroi,ta
             for s in lroi:
                 numslice=rsliceNum(s,'_','.'+typei1)                    
                 img=cv2.imread(os.path.join(pathroi,s),0)
-                img=cv2.resize(img,(dimtabx,dimtabx),interpolation=cv2.INTER_CUBIC)                
+                img=cv2.resize(img,(dimtabx,dimtabx),interpolation=cv2.INTER_LINEAR)                
                 np.putmask(img, img > 0, classif[pat]+1)
                 tabroipat[pat][numslice]=img     
                 if numslice not in slnroi:

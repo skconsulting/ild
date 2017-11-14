@@ -830,7 +830,7 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,tabroi,
     
     dimtabx=scaleenh*datacross[1]
     dimtaby=scaleenh*datacross[2]
-    print slnroi
+#    print slnroi
     patchi=False
     ix=0
     iy=0
@@ -1000,19 +1000,20 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,tabroi,
 #        imagel=os.path.join(pdirk,list_image[slicenumber])
 #        img = cv2.imread(imagel,1) 
         img=tabscanroi[slicenumber] 
-        if algo==0:
+        img=lumi(img,l)
+        img=contrasti(img,c)    
+        img = img.astype('float32')
+        if algo==0:           
             img=cv2.resize(img,(dimtaby,dimtabx),interpolation=cv2.INTER_LINEAR)
         elif algo==1:
              img=cv2.resize(img,(dimtaby,dimtabx),interpolation=cv2.INTER_CUBIC)
         elif algo==2:
              img=cv2.resize(img,(dimtaby,dimtabx),interpolation=cv2.INTER_LANCZOS4)
-            
+        img=normi(img)    
 #            print img.shape
 #            print  initimg.shape
         img=cv2.add(img,initimg)
-
-        imglumi=lumi(img,l)
-        imcontrast=contrasti(imglumi,c)                
+                
 #        imcontrast=cv2.cvtColor(imcontrast,cv2.COLOR_BGR2RGB)
         drawok=False
         if slicenumber != slicenumberold:
@@ -1044,7 +1045,7 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,tabroi,
         imgngray = cv2.cvtColor(imgn,cv2.COLOR_BGR2GRAY)
         np.putmask(imgngray,imgngray>0,255)
         mask_inv = cv2.bitwise_not(imgngray)
-        outy=cv2.bitwise_and(imcontrast,imcontrast,mask=mask_inv)
+        outy=cv2.bitwise_and(img,img,mask=mask_inv)
         imgt=cv2.add(imgn,outy)
         dxrect=(dimtaby/2)
         cv2.rectangle(imgt,(dxrect,dimtabx-30),(dxrect+20,dimtabx-10),red,-1)
