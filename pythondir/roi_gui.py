@@ -160,7 +160,7 @@ def presshelp(btn):
     webbrowser.open_new(r'file://'+filehelp)
 
 def redraw(app):
-#    app.stop()
+    app.stop()
     initDraw()
 
 def Stop():
@@ -179,9 +179,10 @@ def Stop():
 def boutonStop(btn):
     ans= app.yesNoBox("Confirm Exit", "Are you sure you want to exit the application?")
     if ans:
-#        app.stop()
+        app.stop()
         sys.exit(1)
     else:
+        app.stop()
         redraw(app)
 #    app.stop(Stop)
 
@@ -216,13 +217,13 @@ def selectPatientDir():
                         pbg=True
                     break
     if pbg:
-#        app.stop()
+        app.stop()
         goodir=True
         initDraw()
     else:
         lisdir=lisdirold
         app.errorBox('error', 'path for  patient not correct')
-#        app.stop()
+        app.stop()
         goodir=False
         initDraw()
 
@@ -302,5 +303,6 @@ def initDraw():
 
 #if __name__ == '__main__':
 initDraw()
+app.stop()
 sys.exit(1)
 #    app.stop(Stop)

@@ -105,7 +105,7 @@ def genebmp(fn,sou,nosource,centerHU, limitHU,tabscanroi,tabscanName={}):
     dsr = dsr.astype('int16')
     fxs=float(RefDs.PixelSpacing[0])/avgPixelSpacing
 
-    imgresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
+    imgresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_CUBIC)
     dimtabx=imgresize.shape[0]
     dimtaby=imgresize.shape[1]
 #    print dimtabx, dimtaby
@@ -141,8 +141,8 @@ def genebmp(fn,sou,nosource,centerHU, limitHU,tabscanroi,tabscanName={}):
         dsr += np.int16(intercept)
         
         dsr = dsr.astype('float32')
-#        imgresize1=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
-        imgresize1=cv2.resize(dsr,(dimtabx,dimtaby),interpolation=cv2.INTER_LINEAR)
+#        
+        imgresize1=cv2.resize(dsr,(dimtabx,dimtaby),interpolation=cv2.INTER_CUBIC)
 
         imgresize = imgresize1.astype('int16')
         
@@ -172,9 +172,9 @@ def genebmp(fn,sou,nosource,centerHU, limitHU,tabscanroi,tabscanName={}):
         t6='LimitHU: +/-' +str(int(limitHU/2))
                 
         anoted_image=tagviews(imtowrite,
-                              t0,dimtabx-100,dimtaby-10,
+                              t0,dimtabx-200,dimtaby-10,
                               t1,0,dimtaby-21,
-                              t2,dimtabx-100,dimtaby-20,
+                              t2,dimtabx-200,dimtaby-20,
                               t3,0,dimtaby-32,
                               t4,0,dimtaby-10,
                               t5,0,dimtaby-43,
@@ -335,7 +335,7 @@ def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan,listsln,tabscanName
             slicenumber= rsliceNum(img,'_','.'+typei1)
        
             imr=cv2.imread(os.path.join(fmbmpbmp,img),0) 
-            imr=cv2.resize(imr,(dimtabx,dimtaby),interpolation=cv2.INTER_LINEAR)  
+            imr=cv2.resize(imr,(dimtabx,dimtaby),interpolation=cv2.INTER_CUBIC)  
             np.putmask(imr,imr>0,classif['lung']+1)
             tabscan[slicenumber]=imr
 #            if slicenumber==12:
@@ -361,7 +361,7 @@ def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan,listsln,tabscanName
                 dsr=normi(dsr)
         
                 fxs=float(RefDs.PixelSpacing[0])/avgPixelSpacing
-                imgresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
+                imgresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_CUBIC)
                 np.putmask(imgresize,imgresize>0,classif['lung']+1)
         
                 slicenumber=int(RefDs.InstanceNumber)
@@ -624,7 +624,7 @@ def wtebres(wridir,dirf,tab,dimtabx,slicepitch,lungm,ty,centerHU,limitHU):
 #        print i, tab[i].max()
         lislnn.append(i)
 
-        imgresize=cv2.resize(tab[i],None,fx=1,fy=fxs,interpolation=cv2.INTER_LINEAR)
+        imgresize=cv2.resize(tab[i],None,fx=1,fy=fxs,interpolation=cv2.INTER_CUBIC)
 
         if ty=='scan':
             typext=typei1
@@ -835,7 +835,7 @@ def  visua(listelabelfinal,dirf,patch_list,dimtabx,dimtaby,
         else:
             imgc=os.path.join(dirpatientfdbsource,img)
             tablscan=cv2.imread(imgc,1)
-        tablscan=cv2.resize(tablscan,(dimtaby,dimtabx),interpolation=cv2.INTER_LINEAR)
+        tablscan=cv2.resize(tablscan,(dimtaby,dimtabx),interpolation=cv2.INTER_CUBIC)
         foundp=False
 #        print slicenumber
         pn=patch_list[slicenumber]
@@ -1268,7 +1268,7 @@ def reshapepatern(dirf,tabpx,dimtabxn,dimtaby,slnt,slicepitch,predictout,sou,dcm
             imgc=os.path.join(dirpatientfdb,img)
             
         tabint=cv2.imread(imgc,1)  
-        tabint=cv2.resize(tabint,(dimtaby,dimtaby),interpolation=cv2.INTER_LINEAR)
+        tabint=cv2.resize(tabint,(dimtaby,dimtaby),interpolation=cv2.INTER_CUBIC)
             
         tablscan[slicenumber]=tabint
         
@@ -1282,7 +1282,7 @@ def reshapepatern(dirf,tabpx,dimtabxn,dimtaby,slnt,slicepitch,predictout,sou,dcm
 
         for j in range(0,dimtaby):
                 tabres[j]=tabpx[i][j]
-                tabrisize[j]=cv2.resize( tabres[j],None,fx=1,fy=fxs,interpolation=cv2.INTER_LINEAR)
+                tabrisize[j]=cv2.resize( tabres[j],None,fx=1,fy=fxs,interpolation=cv2.INTER_CUBIC)
 
         for t in range (0,slnt):
             for u in range (0,dimtaby):
@@ -1708,7 +1708,7 @@ def generoi(dirf,tabroi,dimtabx,tabscanLung,slnroi,dirroit,tabscanroi,tabscanNam
             for s in lroi:
                 numslice=rsliceNum(s,'_','.'+typei1)                    
                 img=cv2.imread(os.path.join(pathroi,s),0)
-                img=cv2.resize(img,(dimtabx,dimtabx),interpolation=cv2.INTER_LINEAR)                
+                img=cv2.resize(img,(dimtabx,dimtabx),interpolation=cv2.INTER_CUBIC)                
                 np.putmask(img, img > 0, classif[pat]+1)
                 tabroipat[pat][numslice]=img     
                 if numslice not in slnroi:
@@ -1771,7 +1771,8 @@ def generoi(dirf,tabroi,dimtabx,tabscanLung,slnroi,dirroit,tabscanroi,tabscanNam
             anoted_image= cv2.cvtColor(anoted_image,cv2.COLOR_RGB2BGR)  
 #            print roibmpfile
             cv2.imwrite(roibmpfile,anoted_image)
-    return tabroi,volumeroi,slnroi
+            tabscanroi[numslice]=anoted_image
+    return tabroi,volumeroi,slnroi,tabscanroi
         
 
 def predictrun(indata,path_patient):
@@ -1935,9 +1936,10 @@ def predictrun(indata,path_patient):
 
             slnroi=[]
             tabroi=np.zeros((slnt,dimtabx,dimtabx), np.uint8) 
-            tabroi,volumeroi,slnroi=generoi(dirf,tabroi,dimtabx,tabscanLung,
+            tabroi,volumeroi,slnroi,tabscanroi=generoi(dirf,tabroi,dimtabx,tabscanLung,
                                             slnroi,dirroit,tabscanroi,tabscanName,slnt)
             pickle.dump(volumeroi, open(os.path.join(path_data_write,volumeroifilep), "wb" ),protocol=-1)
+            pickle.dump(tabscanroi, open(os.path.join(path_data_write,"tabscanroip"), "wb" ),protocol=-1)
             pickle.dump(tabroi, open( os.path.join(path_data_write,"tabroi"), "wb" ),protocol=-1)
             pickle.dump(slnroi, open( os.path.join(path_data_write,"slnroi"), "wb" ),protocol=-1)
                      

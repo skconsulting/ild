@@ -247,7 +247,7 @@ def cals(cm,pat):
     return prec,recall,fsc, spc,npv ,tp+fp,tp+fn
 
 
-def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,slnt,tabroi,num_class,tabscanLung):
+def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,slnt,tabroi,num_class,tabscanLung,scaleenh):
 
     imgn = np.zeros((dx,dy,3), np.uint8)
     datav = np.zeros((500,900,3), np.uint8)
@@ -270,15 +270,19 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,slnt,tabro
     lvexist=False
     if len (volumeroi)>0:
 #        print 'volumeroi exists'
-        lv=volumeroi[slicenumber]
-        for pat,value in lv.items():
-            if value>0:
-                lvexist=True
-                break
-
+        try:
+            lv=volumeroi[slicenumber]
+            for pat,value in lv.items():
+                if value>0:
+                    lvexist=True
+                    break
+        except:
+                 lvexist=False   
+    dimpavxr=scaleenh*dimpavx
+    dimpavyr=scaleenh*dimpavy
     for ll in patch_list_cross_slice[slicenumber]:
-            xpat=ll[0][0]
-            ypat=ll[0][1]
+            xpat=scaleenh*ll[0][0]
+            ypat=scaleenh*ll[0][1]
         #we find max proba from prediction
             proba=ll[1]
 
@@ -291,9 +295,9 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,slnt,tabro
                 if classlabel not in listlabel:
                     listlabel.append(classlabel)
                 
-                cv2.rectangle(imgpatch,(xpat,ypat),(xpat+dimpavx-1,ypat+dimpavy-1),classif[classlabel]+1,-1)
+                cv2.rectangle(imgpatch,(xpat,ypat),(xpat+dimpavxr-1,ypat+dimpavyr-1),classif[classlabel]+1,-1)
                 if va[classlabel]==True:
-                    cv2.rectangle(imgn,(xpat,ypat),(xpat+dimpavx,ypat+dimpavy),classcolor,1)
+                    cv2.rectangle(imgn,(xpat,ypat),(xpat+dimpavxr,ypat+dimpavyr),classcolor,1)
 
 #                if lvexist:
                 imgray=np.copy(imgpatch)
@@ -301,7 +305,6 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,slnt,tabro
                 mask=np.bitwise_not(imgray)
                 patchdict=cv2.bitwise_and(patchdict,patchdict ,mask=mask)
                 patchdict=cv2.bitwise_or(imgpatch,patchdict)
-
     
     volroi={}
     volpat={}
@@ -319,27 +322,21 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,slnt,tabro
         spc[pat]=0
         npv[pat]=0       
     
-    tablung1=np.copy(tabscanLung[slicenumber])
-    np.putmask(tablung1,tablung1>0,255)
-    patchdict=np.bitwise_and(tablung1, patchdict) 
-    
-    mask=patchdict.copy()
-    tabxorig=patchdict.copy()
-    np.putmask(mask,mask>0,255)
-    tabxn=np.bitwise_not(mask)   
-    tablung=np.copy(tabscanLung[slicenumber])       
-    tablung=np.bitwise_and(tablung, tabxn)
-    np.putmask(tablung,tablung>0,classif['healthy']+1)
-    volpat['healthy']=np.copy(tablung)
-         
+          
     if lvexist:
-        predictpatu=np.bitwise_or(tabxorig,tablung)
-        referencepatu= np.copy(tabroi[slicenumber])
-    
+        tablung1=np.copy(tabscanLung[slicenumber])
+        patchdict=cv2.resize(patchdict,(tablung1.shape[0],tablung1.shape[1]),interpolation=cv2.INTER_LINEAR)
+        np.putmask(tablung1,tablung1>0,255)
+        predictpatu=np.bitwise_and(tablung1, patchdict) 
+        referencepatroi= np.copy(tabroi[slicenumber])
+        referencepatu=np.bitwise_and(tablung1, referencepatroi) 
+
         referencepat= referencepatu.flatten() 
-                
+#        cv2.imshow('p',normi(predictpatu))
+#        cv2.imshow('r',normi(referencepatu))
         predictpat=  predictpatu.flatten() 
         cm=evaluatef(referencepat,predictpat,num_class)
+#        print cm
         tagvcm(datav,cm)
         cv2.putText(datav,'%16s'%('pattern')+
                         '%8s'%('surface')+ 
@@ -350,11 +347,11 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,slnt,tabro
         cv2.putText(datav,'%24s'%('cm2')+ '%13s'%('cm2'),
                     (20, 20),cv2.FONT_HERSHEY_PLAIN,0.8,yellow,1)
         if referencepatu.max()>0:
-            cv2.putText(datav,'%10s'%('Precision')+
-                        '%11s'%('Recall')+ 
-                        '%11s'%('Fscore')+
-                        '%10s'%('SPC')+
-                        '%10s'%('NPV'),
+            cv2.putText(datav,'%11s'%('Precision')+
+                        '%13s'%('Sensitivity')+ 
+                        '%10s'%('Fscore')+
+                        '%9s'%('SPC')+
+                        '%9s'%('NPV'),
                     (350, 10),cv2.FONT_HERSHEY_PLAIN,0.8,yellow,1)
         
         precisionAverage=0
@@ -363,9 +360,15 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,slnt,tabro
         spcAverage=0
         npvAverage=0
         numberp=0
+        tpaverage=0
+        cpp=0
+        cpr=0
 
-        for pat in usedclassif:           
+        for pat in usedclassif:    
+            cpa=classif[pat] 
             precision[pat],recall[pat],fscore[pat], spc[pat],npv[pat],volpat[pat],volroi[pat]=cals(cm,pat)
+#            if spc[pat]>0:
+#                print pat,spc[pat]
             
             if pat in listlabel:            
                 tl=True
@@ -375,42 +378,57 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,slnt,tabro
             precisioni=int(round(precision[pat]*100,0))
             recalli=int(round(recall[pat]*100,0))
             fscorei=int(round(fscore[pat]*100,0))
-            if fscorei>0 :
-                precisionAverage+=precision[pat]
-                recallAverage+=recall[pat]
-                fscoreAverage+=fscore[pat]
+            if cm[classif[pat]].sum()>0:
+                numberp+=1
+                tpaverage+=cm[cpa][cpa]
+                cpp+=cm[:,classif[pat]].sum()
+                cpr+=cm[classif[pat]].sum()
                 spcAverage+=spc[pat]
-                npvAverage+=npv[pat]
-                numberp+=1            
+                npvAverage+=npv[pat]         
             spci=int(round(spc[pat]*100,0))
             npvi=int(round(npv[pat]*100,0))
             sul=round((volpat[pat])*surfelemp/100,1)
-            suroi=round((volroi[pat])*surfelemp/100,1)
-            
+            suroi=round((volroi[pat])*surfelemp/100,1)           
             tagviewn(datav,pat,sul,surftotf,suroi,tl,precisioni,recalli,fscorei,spci,npvi)
+        if cpp>0:
+            precisionAverage=1.0*tpaverage/cpp
+    #        print '2',precisionAverage
+        else:
+            precisionAverage=0
+        if cpr>0:
+            recallAverage=1.0*tpaverage/cpr
+    #        print '2',recallAverage
+        else:
+            recallAverage=0
+    #        fscoreAverage/=numberp
         if numberp>0:
-            precisionAverage/=numberp
-            recallAverage/=numberp
-            fscoreAverage/=numberp
+#            print spcAverage,numberp
             spcAverage/=numberp
             npvAverage/=numberp
         if referencepatu.max()>0:
-            cv2.putText(datav,'%10s'%('Precision %')+
-                        '%11s'%('Recall%')+ 
-                        '%11s'%('Fscores')+
-                        '%10s'%('SPC %')+
-                        '%10s'%('NPV %'),
+            cv2.putText(datav,'%12s'%('Precision %')+
+                        '%15s'%('Sensitivity%')+ 
+                        '%9s'%('Fscores')+
+#                        '%10s'%('SPC %')+
+#                        '%10s'%('NPV %')+
+                        '',
                     (10, 450),cv2.FONT_HERSHEY_PLAIN,0.8,yellow,1)
-        precisionAverage=int(round(precisionAverage*100,0))
-        recallAverage=int(round(recallAverage*100,0))
-        fscoreAverage=int(round(fscoreAverage*100,0))
-        spcAverage=int(round(spcAverage*100,0))
-        npvAverage=int(round(npvAverage*100,0))
-        cv2.putText(datav,'%10s'%(precisionAverage)+
+            precisionAverage=int(round(precisionAverage*100,0))
+            recallAverage=int(round(recallAverage*100,0))
+            if recallAverage+precisionAverage>0:
+                fscoreAverage=int(round(2.*precisionAverage*recallAverage/(recallAverage+precisionAverage),0))
+            else:
+                fscoreAverage=0
+            
+#            fscoreAverage=int(round(fscoreAverage,0))
+            spcAverage=int(round(spcAverage*100,0))
+            npvAverage=int(round(npvAverage*100,0))
+            cv2.putText(datav,'%10s'%(precisionAverage)+
                         '%11s'%(recallAverage)+ 
                         '%11s'%(fscoreAverage)+
-                        '%10s'%(spcAverage)+
-                        '%10s'%(npvAverage),
+#                        '%10s'%(spcAverage)+
+#                        '%10s'%(npvAverage)+
+                        '',
                         (10, 460),cv2.FONT_HERSHEY_PLAIN,0.8,yellow,1)
     else:
         cv2.putText(datav,'%16s'%('pattern')+
@@ -432,8 +450,7 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,slnt,tabro
             np.putmask(imgpat,imgpat!=numpat,0)
             np.putmask(imgpat,imgpat==numpat,1)
             sul=round(imgpat.sum()*surfelemp/100,1)
-            
-            
+                       
             tagviewn(datav,pat,sul,surftotf,0,tl,0,0,0,0,0)
             
     delx=120
@@ -447,18 +464,20 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,slnt,tabro
     return imgn,datav
 
 
-def retrievepatch(x,y,sln,dx,dy,patch_list_cross_slice):
+def retrievepatch(x,y,sln,dx,dy,patch_list_cross_slice,enhl):
 
     tabtext = np.zeros((dx,dy,3), np.uint8)
+    dimpavxr=enhl*dimpavx
+    dimpavyr=enhl*dimpavy
 
     pfound=False
     for ll in patch_list_cross_slice[sln]:
 
-            xs=ll[0][0]
-            ys=ll[0][1]
+            xs=enhl*ll[0][0]
+            ys=enhl*ll[0][1]
         #we find max proba from prediction
             
-            if x>xs and x < xs+dimpavx and y>ys and y<ys+dimpavy:
+            if x>xs and x < xs+dimpavxr and y>ys and y<ys+dimpavyr:
                      print x, y
                      proba=ll[1]
                      pfound=True
@@ -474,12 +493,12 @@ def retrievepatch(x,y,sln,dx,dy,patch_list_cross_slice):
 #                     print 'listed',listproba
                      lsorted= sorted(listproba,key=lambda std:std[1],reverse=True)
 #                     print 'lsit sorted', lsorted
-                     cv2.putText(tabtext,'X',(xs-5+dimpavx/2,ys+5+dimpavy/2),cv2.FONT_HERSHEY_PLAIN,1,(0,255,0),1)
+                     cv2.putText(tabtext,'X',(xs-5+dimpavxr/2,ys+5+dimpavyr/2),cv2.FONT_HERSHEY_PLAIN,1,(0,255,0),1)
 
                      for j in range (0,3):
                              n=n+1
                              strw=lsorted[j][0]+ ' {0:.1f}%'.format(100*lsorted[j][1])
-                             cv2.putText(tabtext,strw,(dy-142,(dx-40)+10*n),cv2.FONT_HERSHEY_PLAIN,0.7,(0,255,0),1)
+                             cv2.putText(tabtext,strw,(dy-190,(dx-80)+15*n),cv2.FONT_HERSHEY_PLAIN,1,(0,255,0),1)
 
                              print lsorted[j][0], ' {0:.2f}%'.format(100*lsorted[j][1])
                      print'found'
@@ -1157,29 +1176,29 @@ def cfma(f,referencepat,predictpat,num_class, namep,thrprobaUIP,cnnweigh,tp,thrp
         
         cm=evaluatef(referencepat,predictpat,num_class)
         n= cm.shape[0]
-    
+#        print cm
         presip={}
         recallp={}
         fscorep={}
-        for pat in classif:
+        spc={}
+        npv={}
+        volpat={}
+        volroi={}
+#        print classif
+        for pat in usedclassif:           
+#            print pat
             presip[pat]=0
             recallp[pat]=0
             fscorep[pat]=0
-            numpat=classif[pat]+1
-
-            presip[pat], recallp[pat]=evaluate(referencepat,predictpat,num_class,(numpat,))
-
-        for pat in classif:             
-         if presip[pat]+recallp[pat]>0:
-            fscorep[pat]=2*presip[pat]*recallp[pat]/(presip[pat]+recallp[pat])
-        else:
-            fscorep[pat]=0    
+#            numpat=classif[pat]+1
+            presip[pat],recallp[pat],fscorep[pat], spc[pat],npv[pat],volpat[pat],volroi[pat]=cals(cm,pat)
+            
         f.write(15*' ')
         for i in range (0,n):
             pat=fidclass(i,classif)
             f.write('%8s'%pat[0:7])
     #    print newclassif
-        f.write('  recall \n')
+        f.write(' Sensitivity\n')
             
         for i in range (0,n):            
             pat=fidclass(i,classif)
@@ -1202,7 +1221,6 @@ def cfma(f,referencepat,predictpat,num_class, namep,thrprobaUIP,cnnweigh,tp,thrp
         f.write('\n--------------------\n')
 
         wrresu(f,cm,'Report for full Patient',1)
-
         f.write('----------------------\n')
 
 def wrresu(f,cm,obj,refmax):
@@ -1222,57 +1240,75 @@ def wrresu(f,cm,obj,refmax):
         spc[pat]=0
         npv[pat]=0       
     f.write(str(obj)+'\n')
-    f.write('    pattern   precision%  recall%  Fscore%   SPC%     NPV%\n')
+    f.write('pattern   Precision%  Sensitivity%  Fscore%   SPC%     NPV%\n')
     precisionAverage=0
     recallAverage=0
     fscoreAverage=0
     spcAverage=0
     npvAverage=0
     numberp=0
-    for pat in usedclassif:           
+    tpaverage=0
+    cpp=0
+    cpr=0
+    for pat in usedclassif:    
+            cpa=classif[pat] 
             precision[pat],recall[pat],fscore[pat], spc[pat],npv[pat],volpat[pat],volroi[pat]=cals(cm,pat)
             precisioni=int(round(precision[pat]*100,0))
             recalli=int(round(recall[pat]*100,0))
             fscorei=int(round(fscore[pat]*100,0))
-            if fscorei>0 :
-                precisionAverage+=precision[pat]
-                recallAverage+=recall[pat]
-                fscoreAverage+=fscore[pat]
+            if cm[classif[pat]].sum()>0 :
+                numberp+=1
+                tpaverage+=cm[cpa][cpa]
+                cpp+=cm[:,classif[pat]].sum()
+#                recallAverage+=recall[pat]
+                cpr+=cm[classif[pat]].sum()
+#                print cm[classif[pat]]
                 spcAverage+=spc[pat]
                 npvAverage+=npv[pat]
-                numberp+=1            
+                
+                         
                 spci=int(round(spc[pat]*100,0))
                 npvi=int(round(npv[pat]*100,0))     
         
-                f.write('%14s'%pat+'%7s'%precisioni+
-                        '%9s'%recalli+'%9s'%fscorei+
-                        '%9s'%spci+'%9s'%npvi+'\n')
+                f.write('%14s'%pat+'%6s'%precisioni+
+                        '%9s'%recalli+'%10s'%fscorei+
+                        '%10s'%spci+'%9s'%npvi+'\n')
     f.write('\n')
+    if cpp>0:
+        precisionAverage=1.0*tpaverage/cpp
+    else:
+        precisionAverage=0
+    if cpr>0:
+        recallAverage=1.0*tpaverage/cpr
+    else:
+        recallAverage=0
     if numberp>0:
-        precisionAverage/=numberp
-        recallAverage/=numberp
-        fscoreAverage/=numberp
         spcAverage/=numberp
         npvAverage/=numberp
     if refmax>0:
 
         f.write('%10s'%('Precision %')+
-                    '%11s'%('Recall%')+ 
-                    '%11s'%('Fscores')+
-                    '%10s'%('SPC%')+
-                    '%10s'%('NPV%')+'\n')
-    precisionAverage=int(round(precisionAverage*100,0))
-    recallAverage=int(round(recallAverage*100,0))
-    fscoreAverage=int(round(fscoreAverage*100,0))
-    spcAverage=int(round(spcAverage*100,0))
-    npvAverage=int(round(npvAverage*100,0))
-    f.write('%10s'%(precisionAverage)+
+                    '%14s'%('Sensitivity%')+ 
+                    '%9s'%('Fscore%')+
+#                    '%10s'%('SPC%')+
+#                    '%10s'%('NPV%')+
+                    '\n')
+        precisionAverage=int(round(precisionAverage*100,0))
+        recallAverage=int(round(recallAverage*100,0))
+        if recallAverage+precisionAverage>0:
+            fscoreAverage=int(round(2.*precisionAverage*recallAverage/(recallAverage+precisionAverage),0))
+        else:
+            fscoreAverage=0
+        spcAverage=int(round(spcAverage*100,0))
+        npvAverage=int(round(npvAverage*100,0))
+        f.write('%10s'%(precisionAverage)+
                     '%11s'%(recallAverage)+ 
                     '%11s'%(fscoreAverage)+
-                    '%10s'%(spcAverage)+
-                    '%10s'%(npvAverage)+'\n')
+#                    '%10s'%(spcAverage)+
+#                    '%10s'%(npvAverage)+
+                    '\n')
 
-
+    f.write('---------------------------------\n')
 
 def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
                       lungSegment,tabMed,thrprobaUIP,patch_list_cross_slice_sub,
@@ -1461,31 +1497,26 @@ def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
                             mask=np.bitwise_not(imgray)
                             patchdict[slicenumber]=cv2.bitwise_and(patchdict[slicenumber],patchdict[slicenumber],mask=mask)
                             patchdict[slicenumber]=cv2.bitwise_or(imgpatch,patchdict[slicenumber])
-                
+            
+
+            referencepatroi= np.copy(tabroi[slicenumber])
+                        
             tablung1=np.copy(tabscanLung[slicenumber])
             np.putmask(tablung1,tablung1>0,255)
-            patchdict[slicenumber]=np.bitwise_and(tablung1, patchdict[slicenumber]) 
-            
-            mask=patchdict[slicenumber].copy()
-            tabxorig=patchdict[slicenumber].copy()
-            np.putmask(mask,mask>0,255)
-            tabxn=np.bitwise_not(mask)   
-            tablung=np.copy(tabscanLung[slicenumber]) 
-            np.putmask(tablung,tablung>0,classif['healthy']+1)
-            tablung=np.bitwise_and(tablung, tabxn)
 
      
-            predictpatu[slroi]=np.bitwise_or(tabxorig,tablung)
-            referencepatu[slroi]=np.copy(tabroi[slicenumber])          
+            predictpatu[slroi]=np.bitwise_and(tablung1, patchdict[slicenumber]) 
+            referencepatu[slroi]=np.bitwise_and(tablung1, referencepatroi)        
             
             referencepat= referencepatu[slroi].flatten()
             predictpat=  predictpatu[slroi].flatten() 
             cm=evaluatef(referencepat,predictpat,num_class)
             wrresu(f,cm,'Slice: '+str(slicenumber),referencepatu[slroi].max())
 
-            
+#    print       referencepatu.shape
     referencepat= referencepatu.flatten()
     predictpat=  predictpatu.flatten() 
+#    print predictpat.shape
     cfma(f,referencepat,predictpat,num_class,listHug,thrprobaUIP,cnnweigh,tp,thrpatch)
         
 
@@ -1495,18 +1526,18 @@ def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
 
 def writeslice(num,menus):
 #        print 'write',num
-        cv2.rectangle(menus, (5,60), (150,50), red, -1)
-        cv2.putText(menus,'Slice to visualize: '+str(num),(5,60),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
+        cv2.rectangle(menus, (5,10), (150,20), red, -1)
+        cv2.putText(menus,'Slice to visualize: '+str(num),(5,20),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
         
-def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,tabroi,cnnweigh,tabscanLung,viewstyle):   
+def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,tabroi,cnnweigh,tabscanLung,viewstyle,tabscanroi):   
     global  quitl,dimtabx,dimtaby,patchi,ix,iy
     print 'openfichier start' 
-    
+    scaleenh=2
     quitl=False
     num_class=len(classif)
     slnt=datacross[0]
-    dimtabx=datacross[1]
-    dimtaby=datacross[2]
+    dimtabx=scaleenh*datacross[1]
+    dimtaby=scaleenh*datacross[2]
 
     patchi=False
     ix=0
@@ -1557,30 +1588,31 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,tabroi,
             sln=rsliceNum(iimage,cdelimter,extensionimage)
             list_image[sln]=iimage
 
-        image0=os.path.join(pdirk,list_image[slnt/2])
-        img = cv2.imread(image0,1)
+#        image0=os.path.join(pdirk,list_image[slnt/2])
+#        img = cv2.imread(image0,1)
+        img=tabscanroi[slnt/2]
         img=cv2.resize(img,(dimtaby,dimtabx),interpolation=cv2.INTER_LINEAR)
 #        cv2.imshow('cont',img)
 #        cv2.waitKey(0)
 #        cv2.destroyAllWindows()
         imgtext = np.zeros((dimtabx,dimtaby,3), np.uint8)
         
-        cv2.namedWindow('imagepredict',cv2.WINDOW_NORMAL)
-        cv2.namedWindow("Sliderfi",cv2.WINDOW_NORMAL)
-        cv2.namedWindow("datavisu",cv2.WINDOW_AUTOSIZE)
+        cv2.namedWindow('predict',cv2.WINDOW_NORMAL)
+        cv2.namedWindow("Sliderfip",cv2.WINDOW_NORMAL)
+        cv2.namedWindow("datapredict",cv2.WINDOW_AUTOSIZE)
 
-        cv2.createTrackbar( 'Brightness','Sliderfi',0,100,nothing)
-        cv2.createTrackbar( 'Contrast','Sliderfi',50,100,nothing)
-        cv2.createTrackbar( 'Threshold','Sliderfi',int(thrprobaUIP*100),100,nothing)
-        cv2.createTrackbar( 'Flip','Sliderfi',slnt/2,slnt-2,nothings)
-        cv2.createTrackbar( 'All','Sliderfi',1,1,nothings)
-        cv2.createTrackbar( 'None','Sliderfi',0,1,nothings)
+        cv2.createTrackbar( 'Brightness','Sliderfip',0,100,nothing)
+        cv2.createTrackbar( 'Contrast','Sliderfip',50,100,nothing)
+        cv2.createTrackbar( 'Threshold','Sliderfip',int(thrprobaUIP*100),100,nothing)
+        cv2.createTrackbar( 'Flip','Sliderfip',slnt/2,slnt-2,nothings)
+        cv2.createTrackbar( 'All','Sliderfip',1,1,nothings)
+        cv2.createTrackbar( 'None','Sliderfip',0,1,nothings)
             
         viewasked={}
         for key1 in usedclassif:
 #            print key1
             viewasked[key1]=True
-            cv2.createTrackbar( key1,'Sliderfi',0,1,nothings)
+            cv2.createTrackbar( key1,'Sliderfip',0,1,nothings)
         nbdig=0
         numberentered={}
         initimg = np.zeros((dimtabx,dimtaby,3), np.uint8)
@@ -1595,13 +1627,13 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,tabroi,
         
             imgwip = np.zeros((200,200,3), np.uint8)  
                                  
-            cv2.setMouseCallback('imagepredict',draw_circle,img)
-            c = cv2.getTrackbarPos('Contrast','Sliderfi')
-            l = cv2.getTrackbarPos('Brightness','Sliderfi')
-            tl = cv2.getTrackbarPos('Threshold','Sliderfi')
-            fl = cv2.getTrackbarPos('Flip','Sliderfi')
-            allview = cv2.getTrackbarPos('All','Sliderfi')
-            noneview = cv2.getTrackbarPos('None','Sliderfi')
+            cv2.setMouseCallback('predict',draw_circle,img)
+            c = cv2.getTrackbarPos('Contrast','Sliderfip')
+            l = cv2.getTrackbarPos('Brightness','Sliderfip')
+            tl = cv2.getTrackbarPos('Threshold','Sliderfip')
+            fl = cv2.getTrackbarPos('Flip','Sliderfip')
+            allview = cv2.getTrackbarPos('All','Sliderfip')
+            noneview = cv2.getTrackbarPos('None','Sliderfip')
             
             key = cv2.waitKey(1000)
 #            if key != -1:
@@ -1629,18 +1661,18 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,tabroi,
                 if numberfinal>0:
                     writeslice(numberfinal,initimg)
                 else:
-                    cv2.rectangle(initimg, (5,60), (150,50), black, -1)
+                    cv2.rectangle(initimg, (5,10), (150,20), black, -1)
                     
             if nbdig>0 and key ==13 and numberfinal>0:
 #                    print numberfinal
                     numberfinal = min(slnt-1,numberfinal)
 #                    writeslice(numberfinal,initimg)
-                    cv2.rectangle(initimg, (5,60), (150,50), black, -1)
+                    cv2.rectangle(initimg, (5,10), (150,20), black, -1)
                     if corectnumber==0:
-                        cv2.setTrackbarPos('Flip','Sliderfi' ,numberfinal)
+                        cv2.setTrackbarPos('Flip','Sliderfip' ,numberfinal)
                         fl=numberfinal
                     else:
-                        cv2.setTrackbarPos('Flip','Sliderfi' ,numberfinal-1)
+                        cv2.setTrackbarPos('Flip','Sliderfip' ,numberfinal-1)
                         fl=numberfinal-1
                     
                     numberfinal=0
@@ -1648,21 +1680,21 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,tabroi,
                     numberentered={}
             if key==2424832:
                 fl=max(0,fl-1)
-                cv2.setTrackbarPos('Flip','Sliderfi' ,fl)
+                cv2.setTrackbarPos('Flip','Sliderfip' ,fl)
             if key==2555904:
                 fl=min(slnt-2,fl+1)
-                cv2.setTrackbarPos('Flip','Sliderfi' ,fl)
+                cv2.setTrackbarPos('Flip','Sliderfip' ,fl)
                 
             if allview==1:
                 for key2 in usedclassif:
-                    cv2.setTrackbarPos(key2,'Sliderfi' ,1)
-                cv2.setTrackbarPos('All','Sliderfi' ,0)
+                    cv2.setTrackbarPos(key2,'Sliderfip' ,1)
+                cv2.setTrackbarPos('All','Sliderfip' ,0)
             if noneview==1:
                 for key2 in usedclassif:
-                    cv2.setTrackbarPos(key2,'Sliderfi' ,0)
-                cv2.setTrackbarPos('None','Sliderfi' ,0)
+                    cv2.setTrackbarPos(key2,'Sliderfip' ,0)
+                cv2.setTrackbarPos('None','Sliderfip' ,0)
             for key2 in usedclassif:
-                s = cv2.getTrackbarPos(key2,'Sliderfi')
+                s = cv2.getTrackbarPos(key2,'Sliderfip')
                 if s==1:
                      viewasked[key2]=True               
                 else:
@@ -1670,16 +1702,19 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,tabroi,
             
             slicenumber=fl+corectnumber
             
-            imagel=os.path.join(pdirk,list_image[slicenumber])
-            img = cv2.imread(imagel,1)               
+#            imagel=os.path.join(pdirk,list_image[slicenumber])
+#            img = cv2.imread(imagel,1)  
+            img=tabscanroi[slicenumber] 
+            img=lumi(img,l)
+            img=contrasti(img,c) 
+            img = img.astype('float32')            
             img=cv2.resize(img,(dimtaby,dimtabx),interpolation=cv2.INTER_LINEAR)
+            img=normi(img)
 #            print img.shape
 #            print  initimg.shape
             img=cv2.add(img,initimg)
-
-            imglumi=lumi(img,l)
-            imcontrast=contrasti(imglumi,c)                
-            imcontrast=cv2.cvtColor(imcontrast,cv2.COLOR_BGR2RGB)
+               
+            img=cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
             drawok=False
             if slicenumber != slicenumberold:
                 slicenumberold=slicenumber
@@ -1699,7 +1734,7 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,tabroi,
                 cv2.imshow('wip',imgwip)
                 
                 imgn,datav= drawpatch(tl,dimtabx,dimtaby,slicenumber,viewasked,patch_list_cross_slice,
-                                                volumeroilocal,slnt,tabroi,num_class,tabscanLung)
+                                                volumeroilocal,slnt,tabroi,num_class,tabscanLung,scaleenh)
                                
                 cv2.putText(datav,'slice number :'+str(slicenumber),(10,210),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
                 cv2.putText(datav,'patient Name :'+tail,(10,220),cv2.FONT_HERSHEY_PLAIN,0.7,white,1)
@@ -1710,7 +1745,7 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,tabroi,
             imgngray = cv2.cvtColor(imgn,cv2.COLOR_BGR2GRAY)
             np.putmask(imgngray,imgngray>0,255)
             mask_inv = cv2.bitwise_not(imgngray)
-            outy=cv2.bitwise_and(imcontrast,imcontrast,mask=mask_inv)
+            outy=cv2.bitwise_and(img,img,mask=mask_inv)
             imgt=cv2.add(imgn,outy)
             dxrect=(dimtaby/2)
             cv2.rectangle(imgt,(dxrect,dimtabx-30),(dxrect+20,dimtabx-10),red,-1)
@@ -1720,28 +1755,28 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,tabroi,
                 cv2.putText(imgwip,'WIP',(10,10),cv2.FONT_HERSHEY_PLAIN,5,red,2,cv2.LINE_AA)
                 cv2.imshow('wip',imgwip)
 #                print 'retrieve patch asked'
-                imgtext= retrievepatch(ix,iy,slicenumber,dimtabx,dimtaby,patch_list_cross_slice)
+                imgtext= retrievepatch(ix,iy,slicenumber,dimtabx,dimtaby,patch_list_cross_slice,scaleenh)
                 patchi=False
                 cv2.destroyWindow("wip")
             imgtoshow=cv2.add(imgt,imgtext)
             imgtoshow=cv2.cvtColor(imgtoshow,cv2.COLOR_BGR2RGB)
 
-            imsstatus=cv2.getWindowProperty('Sliderfi', 0)
-            imistatus= cv2.getWindowProperty('imagepredict', 0)
-            imdstatus=cv2.getWindowProperty('datavisu', 0)
+            imsstatus=cv2.getWindowProperty('Sliderfip', 0)
+            imistatus= cv2.getWindowProperty('predict', 0)
+            imdstatus=cv2.getWindowProperty('datapredict', 0)
 #            print imsstatus,imistatus,imdstatus
             if (imdstatus==0) and (imsstatus==0) and (imistatus==0)  :
-                cv2.imshow('imagepredict',imgtoshow)
-                cv2.imshow('datavisu',datav)
+                cv2.imshow('predict',imgtoshow)
+                cv2.imshow('datapredict',datav)
             else:
                   quitl=True
 
             if quitl or cv2.waitKey(20) & 0xFF == 27 :
                 break
         quitl=False
-        cv2.destroyWindow("imagepredict")
-        cv2.destroyWindow("Sliderfi")
-        cv2.destroyWindow("datavisu")
+        cv2.destroyWindow("predict")
+        cv2.destroyWindow("Sliderfip")
+        cv2.destroyWindow("datapredict")
         return ''
     else:
         print 'error in the number of scan images compared to dicom numbering'
@@ -1919,9 +1954,10 @@ def visuarun(indata,path_patient):
             patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice"), "rb" ))
             thrprobaUIP=float(indata['thrprobaUIP'])
             cnnweigh=indata['picklein_file']
+            tabscanroi=pickle.load( open( os.path.join(path_data_dir,"tabscanroip"), "rb" ))
 #            print cnnweigh
             messageout=openfichier(viewstyle,datarep,patient_path_complet,thrprobaUIP,
-                                   patch_list_cross_slice,tabroi,cnnweigh,tabscanLung,viewstyle)
+                                   patch_list_cross_slice,tabroi,cnnweigh,tabscanLung,viewstyle,tabscanroi)
             
     elif viewstyle=='front view':
             datarep= pickle.load( open( os.path.join(path_data_dir,"datafront"), "rb" ))
@@ -1972,10 +2008,11 @@ def visuarun(indata,path_patient):
 #            patch_list_merge= pickle.load( open( os.path.join(path_data_dir,"patch_list_merge"), "rb" ))
 #            proba_merge= pickle.load( open( os.path.join(path_data_dir,"proba_merge"), "rb" ))
             patch_list_merge_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_merge_slice"), "rb" ))
+            tabscanroi=pickle.load( open( os.path.join(path_data_dir,"tabscanroip"), "rb" ))
 #            patch_list_cross_slice= pickle.load( open( os.path.join(path_data_dir,"patch_list_cross_slice"), "rb" ))
             cnnweigh=indata['picklein_file']
             messageout=openfichier(viewstyle,datarep,patient_path_complet,thrprobaUIP,
-                                   patch_list_merge_slice,tabroi,cnnweigh,tabscanLung,viewstyle)
+                                   patch_list_merge_slice,tabroi,cnnweigh,tabscanLung,viewstyle,tabscanroi)
     
     elif viewstyle=='front projected view':
             datarep= pickle.load( open( os.path.join(path_data_dir,"datacross"), "rb" ))
@@ -1984,8 +2021,9 @@ def visuarun(indata,path_patient):
             thrprobaUIP=float(indata['thrprobaUIP']) 
             cnnweigh=indata['picklein_file_front']
             tabscanLung= pickle.load( open( os.path.join(path_data_dir,"tabscanLung"), "rb" ))
+            tabscanroi=pickle.load( open( os.path.join(path_data_dir,"tabscanroip"), "rb" ))
             messageout=openfichier(viewstyle,datarep,patient_path_complet,thrprobaUIP,
-                                   patch_list_cross_slice_from_front,tabroi,cnnweigh,tabscanLung,viewstyle)
+                                   patch_list_cross_slice_from_front,tabroi,cnnweigh,tabscanLung,viewstyle,tabscanroi)
 #            thrprobaUIP=float(indata['thrprobaUIP'])
 #            tabfromfront= pickle.load( open( os.path.join(path_data_dir,"tabfromfront"), "rb" ))
 #            messageout=openfichierfrpr(path_patient,tabfromfront,thrprobaUIP)

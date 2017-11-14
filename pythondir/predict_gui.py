@@ -143,15 +143,15 @@ def predict(btn):
         app.show()        
         if len(message)>0:
             app.errorBox('error', message)
-            app.stop(Stop)
+            app.stop()
             initDraw()
         else:
-            app.stop(Stop)
+            app.stop()
             continuevisu=True
             visuDraw()
     else:
         app.errorBox('error', 'no patient selected for predict')
-        app.stop(Stop)
+        app.stop()
         initDraw()
 #        continuevisu=False
     goodir=False
@@ -176,12 +176,12 @@ def visualisation(btn):
     app.hide()
     visuarun(indata,lisdir)
 
-    app.stop(Stop)
+    app.stop()
     continuevisu=True
     visuDraw()
 
 def redraw(app):
-    app.stop(Stop)
+    app.stop()
     initDraw()
 
 def visuDrawl(btn):
@@ -201,7 +201,7 @@ def visuDrawl(btn):
          continuevisu=True
     else: 
         continuevisu=False
-    app.stop(Stop)
+    app.stop()
     visuDraw()
 
 
@@ -209,15 +209,16 @@ def checkStop():
     return app.yesNoBox("Confirm Exit", "Are you sure you want to exit the application?")
 
 def Stop():
-    return True
+    return app.yesNoBox("Confirm Exit", "Are you sure you want to exit the application?")
 
 def boutonStop(btn):
     global app
     ans= app.yesNoBox("Confirm Exit", "Are you sure you want to exit the application?")
     if ans:
-#        app.stop(Stop)
+        app.stop()
         sys.exit(1)
     else:
+        app.stop()
         redraw(app)
 
 def selection(btn):
@@ -236,14 +237,14 @@ def selection(btn):
     else:
         frontpredict=False
     continuevisu=True
-    app.stop(Stop)
+    app.stop()
     visuDraw()
 
 
 def gobackselection(btn):
     global continuevisu,app
     continuevisu=False
-    app.stop(Stop)
+    app.stop()
     visuDraw()
 
 
@@ -256,7 +257,7 @@ def selectPatientDir():
 #    print 'lisdir,pathPredict',lisdir,pathPredict
     if lisdir ==pathPredictModulepython:
         print 'exit'
-        app.stop(Stop)
+        app.stop()
         sys.exit(1)
 
     if os.path.exists(lisdir):
@@ -283,13 +284,13 @@ def selectPatientDir():
                     break
                    
     if pbg:
-        app.stop(Stop)
+        app.stop()
         goodir=True
         initDraw()
     else:
         lisdir=lisdirold
         app.errorBox('error', 'path for  patient not correct')
-        app.stop(Stop)
+        app.stop()
         goodir=False
         initDraw()
 
@@ -305,7 +306,7 @@ def presshelp(btn):
 
 def initDrawB(btn):
     global goodir,app
-    app.stop(Stop)
+    app.stop()
 #    print 'initDrawB'
     goodir=True
     initDraw()
@@ -328,7 +329,7 @@ def initDraw():
     app.setResizable(canResize=True)
     app.setBg("lightBlue")
     app.setFont(10)
-    app.setStopFunction(Stop)
+#    app.setStopFunction(Stop)
     app.addButton("HELP",  presshelp)
 
 #    app.addLabel("top", "Select patient directory:", 0, 0)
@@ -574,3 +575,5 @@ continuevisu=False
 listannotated=[]
 goodir=False
 initDraw()
+app.stop()
+sys.exit(1)

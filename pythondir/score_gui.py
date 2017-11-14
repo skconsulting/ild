@@ -10,7 +10,7 @@ version 1.5
 #from param_pix_p import *
 #from tdGenePredictGui import predictrun
 from modulescore import visuarun,lisdirprocess,predictmodule
-from param_pix_s import source
+from param_pix_s import source 
 
 from appJar import gui
 import os
@@ -90,10 +90,10 @@ else:
     print 'first time'
     lisdir=os.environ['USERPROFILE']
 
-    thrpatch= 0.90
+    thrpatch= 0.95
     thrproba=0.7
-    picklein_file= "set0_c08"
-    picklein_file_front= "set0_f08"
+    picklein_file= "set0_c0"
+    picklein_file_front= "set0_f0"
     subErosion = 15  # erosion factor for subpleura in mm
     limitHU=1700
     centerHU=-662
@@ -156,10 +156,10 @@ def predict(btn):
         app.show()        
         if len(message)>0:
             app.errorBox('error', message)
-            app.stop(Stop)
+            app.stop()
             initDraw()
         else:
-            app.stop(Stop)
+            app.stop()
             if allAsked:
                 continuevisu=False
                 initDraw()
@@ -168,7 +168,7 @@ def predict(btn):
                 visuDraw()
     else:
         app.errorBox('error', 'no patient selected for predict')
-        app.stop(Stop)
+        app.stop()
         initDraw()
 #        continuevisu=False
     goodir=False
@@ -236,15 +236,17 @@ def predictScore (btn):
     app.show()        
     if len(message)>0:
         app.errorBox('error', message)
-        app.stop(Stop)
+        app.stop()
         initDraw()
     else:
-        app.stop(Stop)
+        app.stop()
         if allAsked:
             continuevisu=False
+            app.stop()
             initDraw()
         else:
             continuevisu=True
+            app.stop()
             visuDraw()
 #    else:
 #        app.errorBox('error', 'no patient selected for predict')
@@ -273,12 +275,12 @@ def visualisation(btn):
     app.hide()
     visuarun(indata,lisdir)
 
-    app.stop(Stop)
+    app.stop()
     continuevisu=True
     visuDraw()
 
 def redraw(app):
-    app.stop(Stop)
+    app.stop()
     initDraw()
 
 def visuDrawl(btn):
@@ -298,7 +300,7 @@ def visuDrawl(btn):
          continuevisu=True
     else: 
         continuevisu=False
-    app.stop(Stop)
+    app.stop()
     visuDraw()
 
 
@@ -306,15 +308,17 @@ def checkStop():
     return app.yesNoBox("Confirm Exit", "Are you sure you want to exit the application?")
 
 def Stop():
+#    sys.exit(1)
     return True
 
 def boutonStop(btn):
     global app
     ans= app.yesNoBox("Confirm Exit", "Are you sure you want to exit the application?")
     if ans:
-        app.stop(Stop)
+        app.stop()
         sys.exit(1)
     else:
+        app.stop()
         redraw(app)
 
 def gscore(indata):
@@ -357,11 +361,11 @@ def gscore(indata):
         app.hide()
         visuarun(indata,lisdir)
 
-        app.stop(Stop)
+        app.stop()
         continuevisu=False
         initDraw()
     else:
-        app.stop(Stop)
+        app.stop()
         initDraw()
         
 def gscorec(btn):
@@ -396,14 +400,14 @@ def selection(btn):
     else:
         frontpredict=False
     continuevisu=True
-    app.stop(Stop)
+    app.stop()
     visuDraw()
 
 
 def gobackselection(btn):
     global continuevisu,app
     continuevisu=False
-    app.stop(Stop)
+    app.stop()
     visuDraw()
 
 
@@ -418,7 +422,7 @@ def selectPatientDir():
 
     if lisdir ==pathPredictModulepython:
         print 'exit'
-        app.stop(Stop)
+        app.stop()
         sys.exit(1)
 
     if os.path.exists(lisdir):
@@ -445,13 +449,13 @@ def selectPatientDir():
                     break
                    
     if pbg:
-        app.stop(Stop)
+        app.stop()
         goodir=True
         initDraw()
     else:
         lisdir=lisdirold
         app.errorBox('error', 'path for  patient not correct')
-        app.stop(Stop)
+        app.stop()
         goodir=False
         initDraw()
 
@@ -467,7 +471,7 @@ def presshelp(btn):
 
 def initDrawB(btn):
     global goodir,app
-    app.stop(Stop)
+    app.stop()
 #    print 'initDrawB'
     goodir=True
     initDraw()
@@ -489,7 +493,7 @@ def initDraw():
     app.setResizable(canResize=True)
     app.setBg("lightBlue")
     app.setFont(10)
-    app.setStopFunction(Stop)
+#    app.setStopFunction(Stop)
     app.addButton("HELP",  presshelp)
 
 #    app.addLabel("top", "Select patient directory:", 0, 0)
@@ -600,6 +604,8 @@ def visuDraw():
     paramdict=pickle.load(open( paramsaveDirf, "rb" ))
 
     app = gui("Visualization Score form","1000x600")
+#    app.setStopFunction(Stop)
+
     app.setResizable(canResize=True)
 
     app.setBg("lightBlue")
@@ -741,3 +747,5 @@ continuevisu=False
 listannotated=[]
 goodir=False
 initDraw()
+app.stop()
+sys.exit(1)
