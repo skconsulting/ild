@@ -94,6 +94,8 @@ def press(btn):
     indata['centerHU']=app.getEntry("centerHU")
     indata['limitHU']=app.getEntry("limitHU")
     indata['ForceGenerate']=app.getCheckBox("ForceGenerate")
+    indata['ImageTreatment']=app.getCheckBox("ImageTreatment")
+    
     indata['ll']=app.getListItems("list")
     
     if len(indata['ll'])>0:
@@ -280,6 +282,8 @@ def initDraw():
         app.addLabel("ForceGenerate","Tick to force re-generate all files:",row,0)
         app.addCheckBox("ForceGenerate",row,1)
         app.setCheckBox("ForceGenerate",ticked=False,callFunction=False)
+        app.addCheckBox("ImageTreatment",row,2)
+        app.setCheckBox("ImageTreatment",ticked=False,callFunction=False)
         row = app.getRow()
         app.addHorizontalSeparator( row,colour="red",colspan=2)
         row = app.getRow()

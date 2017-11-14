@@ -51,6 +51,7 @@ def roirun(indata,path_patient,lungask):
     centerHU=indata['centerHU'] 
     limitHU=indata['limitHU']
     ForceGenerate=indata['ForceGenerate']
+    ImageTreatment=indata['ImageTreatment']
 
     pos=str(listHug).find(' ROI!:')
     if pos >0:
@@ -61,7 +62,7 @@ def roirun(indata,path_patient,lungask):
 #    print 'listhug',listHug
 #    print 'indata',indata
 #    print 'path_patient',path_patient
-    messageout=openfichierroi(listHug,path_patient,centerHU,limitHU,lungask,ForceGenerate)
+    messageout=openfichierroi(listHug,path_patient,centerHU,limitHU,lungask,ForceGenerate,ImageTreatment)
     return messageout
 
 #

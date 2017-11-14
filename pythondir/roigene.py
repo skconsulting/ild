@@ -658,17 +658,27 @@ def lumi(tabi,r1):
     return tabi3
 
 
-def zoomfunction(im,z,px,py,dx):
+def zoomfunction(im,z,px,py,dx,algo):
     global fxs,x0new,y0new
 
     fxs=1+(z/50.0)
     if fxs !=1:
-#        print 'resize'
-        imgresize=cv2.resize(im,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
-    else:
-        imgresize=im
-    dimtabxn=imgresize.shape[0]
-    dimtabyn=imgresize.shape[1]
+            im=im.astype('float32')
+            if algo ==0:
+                  im=cv2.resize(im,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_NEAREST  )
+            elif algo==1:
+                  im=cv2.resize(im,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR )
+            elif algo==2:
+                im=cv2.resize(im,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_AREA  )
+            if algo ==3:
+                  im=cv2.resize(im,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_CUBIC )
+            elif algo==4:
+                im=cv2.resize(im,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LANCZOS4 )
+            im=normi(im)
+#        imgresize=cv2.resize(im,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
+
+    dimtabxn=im.shape[0]
+    dimtabyn=im.shape[1]
     px0=((dimtabxn-dx)/2)*px/50
     py0=((dimtabyn-dx)/2)*py/50
 
@@ -678,7 +688,7 @@ def zoomfunction(im,z,px,py,dx):
     x1=min(dimtabxn,x0+dx)
     y1=min(dimtabyn,y0+dx)
 
-    crop_img=imgresize[y0:y1,x0:x1]
+    crop_img=im[y0:y1,x0:x1]
 
     x0new=x0
     y0new=y0
@@ -686,7 +696,7 @@ def zoomfunction(im,z,px,py,dx):
     return crop_img
 
 
-def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName):
+def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName,debugenh):
     global quitl,scannumber,imagename,viewasked,pattern,patternerase
     quitl=False
 
@@ -694,9 +704,6 @@ def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName):
     patternerase='init'
 # 
     fl=slnt/2
-#     
-#    image=tabscanRoi[fl+1]
-#    print dimtabmenu
     cv2.namedWindow('imageRoi',cv2.WINDOW_NORMAL)
 #    cv2.resizeWindow('imageRoi', (dimtabxdef+2*dimtabmenu),dimtabx)
     cv2.resizeWindow('imageRoi', (dimtabnorm+dimtabmenur+dimtabmenul),dimtabnorm)
@@ -709,13 +716,16 @@ def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName):
     cv2.createTrackbar( 'Flip','SliderRoi',slnt/2,slnt-2,nothing)
 
     cv2.createTrackbar( 'Zoom','SliderRoi',0,100,nothing)
-    if debugenh==True:
-        cv2.createTrackbar( 'imh','SliderRoi',0,4,nothing)
-        cv2.createTrackbar( 'imh1','SliderRoi',0,5,nothing)
+    
     cv2.createTrackbar( 'Panx','SliderRoi',50,100,nothing)
     cv2.createTrackbar( 'Pany','SliderRoi',50,100,nothing)
     cv2.createTrackbar( 'All','SliderRoi',1,1,nothing)
     cv2.createTrackbar( 'None','SliderRoi',0,1,nothing)
+    if debugenh==True:
+        cv2.createTrackbar( 'smoo','SliderRoi',0,4,nothing)
+        cv2.createTrackbar( 'kerneli','SliderRoi',0,5,nothing)
+        cv2.createTrackbar( 'algo','SliderRoi',1,4,nothing)
+#        cv2.createTrackbar( 'floatf','SliderRoi',0,1,nothing)
     cv2.setMouseCallback("imageRoi", click_and_crop)
     viewasked={}
     for key1 in usedclassif:
@@ -753,28 +763,22 @@ def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName):
                 writeslice(numberfinal)
             else:
                 cv2.rectangle(menus, (5,440), (80,450), black, -1)
-#                cv2.rectangle(menus, (5,470), (80,460), black, -1)                      
-                
+                                   
         if key == ord("c"):
                 print 'completed'
                 completed(imagename,dirpath_patient,dirroi)
-
         elif key == ord("d"):
                 print 'delete entry'
                 suppress()
-
         elif key == ord("l"):
                 print 'delete last polygon'
                 dellast()
-
         elif key == ord("a"):
                 print 'delete all'
                 delall()
-
         elif key == ord("r"):
                 print 'reset'
                 reseted()
-
         elif key == ord("v"):
                 print 'visualize'
                 visua()
@@ -784,7 +788,9 @@ def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName):
         elif key == ord("f"):
                 print 'close polygon'
                 closepolygon()
-        
+        elif key == ord("h"):
+                print 'gene healthy'
+                genehealthy()      
         elif key == ord("q")  or quitl or cv2.waitKey(20) & 0xFF == 27 :
                print 'quit', quitl
                cv2.destroyAllWindows()
@@ -798,10 +804,23 @@ def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName):
         allview = cv2.getTrackbarPos('All','SliderRoi')
         noneview = cv2.getTrackbarPos('None','SliderRoi')
         if debugenh==True:
-            imh = cv2.getTrackbarPos('imh','SliderRoi')
-            imh1 = cv2.getTrackbarPos('imh1','SliderRoi')
+            smoo = cv2.getTrackbarPos('smoo','SliderRoi')
+            kerneli = cv2.getTrackbarPos('kerneli','SliderRoi')
+            algo = cv2.getTrackbarPos('algo','SliderRoi')
+#            floatf = cv2.getTrackbarPos('floatf','SliderRoi')
+        else:
+            algo=1
 
-        
+        if algo ==0:
+                  algot='NEAREST'
+        elif algo==1:
+                  algot='LINEAR'
+        elif algo==2:
+                algot='AREA'
+        if algo ==3:
+                  algot='CUBIC'
+        elif algo==4:
+                algot='LANCZOS4'
         if allview==1:
             for key2 in usedclassif:
                 cv2.setTrackbarPos(key2,'SliderRoi' ,1)
@@ -850,59 +869,14 @@ def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName):
         if (imsstatus==0) and (imistatus==0)  :
             scannumber=fl+1
             imagename=tabscanName[scannumber]
-            imageo1=tabscanRoi[scannumber]            
-            imglumi=lumi(imageo1,l)
+            image=tabscanRoi[scannumber]            
+            imglumi=lumi(image,l)
             image=contrasti(imglumi,c)
             
-            if debugenh==True:
-                image=image.astype('float32')
-                if imh1==0:
-                    kernel=(1,1)
-                elif imh1==1:
-                    kernel=(2,2)
-                elif imh1==2:
-                   kernel=(3,3)
-                elif imh1==3:
-                   kernel=(4,4)  
-                elif imh1==4:
-                   kernel=(5,5) 
-                elif imh1==5:
-                   kernel=(6,6) 
-                      
-                if imh==1:
-                    try:
-                        print 'blur',kernel
-                        image=cv2.blur(image,kernel)
-                    except:
-                            print 'blur not ok',kernel
-                elif imh==2:
-                    try:
-                       print 'medianBlur',kernel[0]
-                       image=cv2.medianBlur(image,kernel[0])
-                    except:
-                            print 'medianBlur not ok',kernel[0]
-     
-                elif imh==3:
-                    try:
-                       print 'bilateralFilter',kernel[0]
-                       image=cv2.bilateralFilter(image,kernel[0],75,75)
-                    except:
-                            print 'bilateralFilterk not ok',kernel[0]
-    
-                elif imh==4:
-                    try:
-                       print 'GaussianBlur',kernel
-                       image=cv2.GaussianBlur(image,kernel,0)  
-                    except:
-                            print 'GaussianBlur not ok',kernel
-                 
-
-                image=image.astype('uint8')
-                      
             image=cv2.cvtColor(image,cv2.COLOR_BGR2RGB)            
-            image=zoomfunction(image,z,px,py,dimtabxdef)
+            image=zoomfunction(image,z,px,py,dimtabxdef,algo)
             imagesv=images[scannumber]
-            imagesview=zoomfunction(imagesv,z,px,py,dimtabxdef)                            
+            imagesview=zoomfunction(imagesv,z,px,py,dimtabxdef,algo)                            
             imageview=cv2.add(image,imagesview)
             imageview=cv2.add(menus,imageview)
             
@@ -911,16 +885,74 @@ def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName):
                     try:
                         tbroiks=tabroifinal[key1][scannumber]
                         if tbroiks.max()>0:                        
-                            tabroifinalview=zoomfunction(tbroiks,z,px,py,dimtabxdef)
+                            tabroifinalview=zoomfunction(tbroiks,z,px,py,dimtabxdef,algo)
                             imageview=cv2.addWeighted(imageview,1,tabroifinalview,0.8,0)
                     except:
                       continue
-            imageview=cv2.resize(imageview,(dimtabnorm,dimtabnorm),interpolation=cv2.INTER_LINEAR )
+            imageview=imageview.astype('float32')
+            if algo ==0:
+                  print algot
+                  imageview=cv2.resize(imageview,(dimtabnorm,dimtabnorm),interpolation=cv2.INTER_NEAREST  )
+            elif algo==1:
+                  imageview=cv2.resize(imageview,(dimtabnorm,dimtabnorm),interpolation=cv2.INTER_LINEAR )
+                  if debugenh :
+                   print algot
+            elif algo==2:
+                imageview=cv2.resize(imageview,(dimtabnorm,dimtabnorm),interpolation=cv2.INTER_AREA  )
+                print algot
+            if algo ==3:
+                  imageview=cv2.resize(imageview,(dimtabnorm,dimtabnorm),interpolation=cv2.INTER_CUBIC )
+                  print algot
+            elif algo==4:
+                imageview=cv2.resize(imageview,(dimtabnorm,dimtabnorm),interpolation=cv2.INTER_LANCZOS4 )
+                print algot  
+                
+            if debugenh==True:
+                if kerneli==0:
+                    kernel=(1,1)
+                elif kerneli==1:
+                    kernel=(2,2)
+                elif kerneli==2:
+                   kernel=(3,3)
+                elif kerneli==3:
+                   kernel=(4,4)  
+                elif kerneli==4:
+                   kernel=(5,5) 
+                elif kerneli==5:
+                   kernel=(6,6) 
+                      
+                if smoo==1:
+                    try:
+                        print algot,'blur',kernel
+                        imageview=cv2.blur(imageview,kernel)
+                    except:
+                            print 'blur not ok',kernel
+                elif smoo==2:
+                    try:
+                       print algot,'medianBlur',kernel[0]
+                       imageview=cv2.medianBlur(imageview,kernel[0])
+                    except:
+                            print 'medianBlur not ok',kernel[0]
+     
+                elif smoo==3:
+                    try:
+                       print algot,'bilateralFilter',kernel[0]
+                       imageview=cv2.bilateralFilter(imageview,kernel[0],75,75)
+                    except:
+                            print 'bilateralFilterk not ok',kernel[0]
+    
+                elif smoo==4:
+                    try:
+                       print algot,'GaussianBlur',kernel
+                       imageview=cv2.GaussianBlur(imageview,kernel,0)  
+                    except:
+                            print 'GaussianBlur not ok',kernel   
+                                
+            imageview=normi(imageview)
             imageview=np.concatenate((imageview,menuright),axis=1)
             imageview=np.concatenate((menuleft,imageview),axis=1)
             imageview=cv2.cvtColor(imageview,cv2.COLOR_BGR2RGB)
             
-        
             cv2.imshow("imageRoi", imageview)
             cv2.waitKey(25)
         else:
@@ -1270,18 +1302,8 @@ def genebmplung(fn,tabscanScan,tabscanName,slnt,listsln,tabroifinal,volumeroi):
                 segmented_lungs_fill=np.zeros((slnt,dimtabx,dimtabx), np.uint8)
                 for i in listsln:
                     v=False
-#                    if i ==slnt/2:
-#                        v=True
-#                    else:
-#                        v=False
                     segmented_lungs_fill[i]=get_segmented_lungs(tabscanScan[i], v)
-
-
-            
-#            segmented_lungs_fill[50]=get_segmented_lungs(tabscanScan[50], True)
-#            segmented_lungs_fill[216]=get_segmented_lungs(tabscanScan[216], True)
-#            segmented_lungs_fill[380]=get_segmented_lungs(tabscanScan[380], True)
-           
+          
             for i in listsln:
                 
                 tabscanlung[i]=morph(segmented_lungs_fill[i],13)
@@ -1358,7 +1380,6 @@ def genebmp(fn,nosource,dirroit,centerHU,limitHU):
     FilesDCM =(os.path.join(fn,listdcm[0]))
     RefDs = dicom.read_file(FilesDCM,force=True)
     dsr= RefDs.pixel_array
-#    dimtabx= dsr.shape[0]
     
     dimtabx= dimtabxdef
     slnt=0
@@ -1378,7 +1399,6 @@ def genebmp(fn,nosource,dirroit,centerHU,limitHU):
     tabscanName = {}
     lbHU=centerHU-(1.0*limitHU/2.0)
     lhHU=centerHU+(1.0*limitHU/2.0)
-#    print lbHU,lhHU
     ll=len(listdcm)
     printProgressBar(0,ll , prefix = 'Progress:', suffix = 'Complete', length = 50)
     i=0
@@ -1386,7 +1406,6 @@ def genebmp(fn,nosource,dirroit,centerHU,limitHU):
         i+=1
         if i%10==0:
             printProgressBar(i + 1, ll, prefix = 'Progress:', suffix = 'Complete', length = 50)
-#        print l
         FilesDCM =(os.path.join(fn,l))
         RefDs = RefDs = dicom.read_file(FilesDCM,force=True)
         slicenumber=int(RefDs.InstanceNumber)
@@ -1398,11 +1417,7 @@ def genebmp(fn,nosource,dirroit,centerHU,limitHU):
         if slope != 1:
              dsr = slope * dsr.astype(np.float64)
              dsr = dsr.astype(np.int16)
-
         dsr += np.int16(intercept)       
-#        dsr=cv2.resize(dsr,(dimtabx,dimtabx),interpolation=cv2.INTER_CUBIC)
-#        dsr=cv2.resize(dsr,(dimtabx,dimtabx),interpolation=cv2.INTER_LANCZOS4)
-#        dsr=cv2.resize(dsr,(dimtabnorm,dimtabnorm),interpolation=cv2.INTER_LINEAR)
         if dsr.shape[0]!= dimtabx:
             dsr = dsr.astype('float32')
             dsr=cv2.resize(dsr,(dimtabx,dimtabx),interpolation=cv2.INTER_LINEAR)
@@ -1410,33 +1425,38 @@ def genebmp(fn,nosource,dirroit,centerHU,limitHU):
 
         endnumslice=l.find('.dcm')
         imgcoreScan=l[0:endnumslice]+'_'+str(slicenumber)+'.'+typei1
-#        imgcoreRoi=l[0:endnumslice]+'_'+str(slicenumber)+'.'+typei
-#        tabscan[slicenumber]=dsr 
         tabscanName[slicenumber]=imgcoreScan
-#        print dsr.min(),dsr.max()
-        lbHUt=lbHU
-        lhHUt=lhHU
+        tabscan[slicenumber]=dsr.copy()
         
+        lbHUt=lbHU
+        lhHUt=lhHU        
         np.putmask(dsr,dsr<lbHU,lbHUt)
         np.putmask(dsr,dsr>lhHU,lhHUt)
-#        print dsr.min(),dsr.max()
-        tabscan[slicenumber]=dsr.copy()
+
         dsrnormi=normi(dsr)
         dsrnormi=cv2.cvtColor(dsrnormi,cv2.COLOR_GRAY2RGB)
-
         bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
         roibmpfile=os.path.join(dirroit,imgcoreScan)
 
         t2='Prototype '
-        t1='Patient: '+tail1
+        t1='Patient: '+tail
         t0='CONFIDENTIAL'
         t3='Scan: '+str(slicenumber)
 
         t4=time.asctime()
         t5='CenterHU: '+str(int(centerHU))
         t6='LimitHU: +/-' +str(int(limitHU/2))
-        anoted_image=tagviews(dsrnormi,t0,dimtabx-300,dimtabx-10,t1,0,dimtabx-20,t2,dimtabx-350,dimtabx-10,
-                     t3,0,dimtabx-30,t4,0,dimtabx-10,t5,0,dimtabx-40,t6,0,dimtabx-50)
+    
+        anoted_image=tagviews(dsrnormi,
+                              t0,dimtabx-200,dimtabx-10,
+                              t1,0,dimtabx-21,
+                              t2,dimtabx-200,dimtabx-20,
+                              t3,0,dimtabx-32,
+                              t4,0,dimtabx-10,
+                              t5,0,dimtabx-43,
+                              t6,0,dimtabx-54)     
+        
+        
         anoted_image=cv2.cvtColor(anoted_image,cv2.COLOR_BGR2RGB)
         cv2.imwrite(bmpfile,anoted_image)
         tabscanRoi[slicenumber]=anoted_image
@@ -1649,7 +1669,7 @@ def initmenus(slnt,dirpath_patient):
     zoneverticalgauche=((0,0),(dimtabmenul,dimtabnorm))
     zoneverticaldroite=((dimtabnorm+dimtabmenur,0),(dimtabnorm+dimtabmenur+dimtabmenul,dimtabnorm))
 
-def openfichierroi(patient,patient_path_complet,centerHU,limitHU,lungask,ForceGenerate):
+def openfichierroi(patient,patient_path_complet,centerHU,limitHU,lungask,ForceGenerate,ImageTreatment):
     global dirpath_patient,dirroit,path_data_write,volumeroi,path_data_writefile,pixelSpacing
     global tabroifinal,dimtabx
     print 'load ',patient
@@ -1719,7 +1739,7 @@ def openfichierroi(patient,patient_path_complet,centerHU,limitHU,lungask,ForceGe
 #    plt.show()
 #    img.show()
 #    cv2.waitKey(0)
-    loop(slnt,dirsourcescan,dirpath_patient,dirroit,tabscanRoi,tabscanName)
+    loop(slnt,dirsourcescan,dirpath_patient,dirroit,tabscanRoi,tabscanName,ImageTreatment)
     return 'completed'
 
 
