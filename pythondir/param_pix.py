@@ -8,7 +8,7 @@ setdata='set0'
 
 #modelName='fcn8s'
 #modelName='unet'
-modelName='sk3'
+modelName='sk4'
 #modelName='alexnet'
 #modelName='vgg16
 #setdata='S2'
@@ -45,7 +45,8 @@ from keras.callbacks import ModelCheckpoint,ReduceLROnPlateau,CSVLogger,EarlySto
 from keras.utils import np_utils,layer_utils
 from keras.utils.data_utils import get_file
 from keras import backend as K
-K.set_image_dim_ordering('tf')
+#K.set_image_dim_ordering('th') #for patch
+K.set_image_dim_ordering('tf') #for pixel (for correct weighted loss function)
 
 #from __future__ import print_function
 from utils import fcn32_blank, fcn_32s_to_8s,prediction
@@ -66,7 +67,7 @@ image_cols = 512
 #image_cols = 96
 
 DIM_ORDERING=keras.backend.image_data_format()
-print DIM_ORDERING
+#print DIM_ORDERING
 
 num_bit=1
 learning_rate=1e-4
@@ -92,9 +93,9 @@ MIN_BOUND =minb
 MAX_BOUND = maxb
 #PIXEL_MEAN = 0.25
 PIXEL_MEAN = 0.92
+#PIXEL_MEAN = 0.52 #for ILD patch only
 
-print MIN_BOUND,MAX_BOUND
-
+print 'MIN_BOUND:',MIN_BOUND,'MAX_BOUND:',MAX_BOUND,'PIXEL_MEAN',PIXEL_MEAN
 
 scan_bmp='scan_bmp'
 transbmp='trans_bmp'
@@ -379,11 +380,14 @@ def dice_coef_loss(y_true, y_pred):
     return -dice_coef(y_true, y_pred)
 
 def evaluate(actual,pred,num_class):
+    print 'fscore'
     fscore = metrics.f1_score(actual, pred, average='weighted')
+    print 'accuracy'
     acc = metrics.accuracy_score(actual, pred)
     labl=[]
     for i in range(num_class):
         labl.append(i)
+    print 'cm'
     cm = metrics.confusion_matrix(actual,pred,labels=labl)
     return fscore, acc, cm
 
@@ -528,58 +532,6 @@ def VGG_16(num_class,num_bit,img_rows,img_cols):
     '''
     return model
 
-def sk1(num_class,num_bit,img_rows,img_cols,INP_SHAPE,dim_org):
-    
-    print 'sk1 with num_class :',num_class
-
-    padding='same'
-    kernel_size=(3,3)
-    model = Sequential()
-    model.add(Conv2D(16, kernel_size, input_shape=INP_SHAPE, padding='same', 
-                     activation='relu',data_format=dim_org, kernel_constraint=maxnorm(3)))
-    model.add(Dropout(0.2)) 
-    model.add(Conv2D(32, kernel_size,  padding='same', 
-                     activation='relu',data_format=dim_org, kernel_constraint=maxnorm(3)))
-#    model.add(Conv2D(32, kernel_size, activation='relu', padding=padding))
-#    model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Conv2D(num_class, kernel_size, activation='softmax',data_format=dim_org, padding=padding))
-     
-    return model
-
-def sk2(num_class,num_bit,img_rows,img_cols,INP_SHAPE,dim_org):
-    print INP_SHAPE
-
-    kernel_size=(3,3)
-    
-    print 'sk2 with num_class :',num_class
-    model = Sequential() 
-    model.add(Conv2D(16, kernel_size, input_shape=INP_SHAPE, padding='same', 
-                     activation='relu',data_format=dim_org, kernel_constraint=maxnorm(3)))
-
-#    model.add(MaxPooling2D(pool_size=(2, 2),data_format=dim_org))
-    model.add(Dropout(0.2)) 
-    model.add(Conv2D(32, kernel_size,  padding='same', 
-                     activation='relu',data_format=dim_org, kernel_constraint=maxnorm(3)))
-#    model.add(MaxPooling2D(pool_size=(2, 2),data_format=dim_org))
-    model.add(Dropout(0.2)) 
-    model.add(Conv2D(64, kernel_size,  padding='same', 
-                     activation='relu',data_format=dim_org, kernel_constraint=maxnorm(3)))
-    model.add(Dropout(0.2)) 
-#    model.add(Conv2D(128, kernel_size,  padding='same', 
-#                     activation='relu',data_format=dim_org, kernel_constraint=maxnorm(3)))
-#    model.add(Dropout(0.2)) 
-#    model.add(Conv2D(64, kernel_size,  padding='same', 
-#                     activation='relu',data_format=dim_org, kernel_constraint=maxnorm(3)))
-#    model.add(Dropout(0.2)) 
-#    model.add(Conv2D(32, kernel_size,  padding='same', 
-#                     activation='relu',data_format=dim_org, kernel_constraint=maxnorm(3)))
-#    model.add(MaxPooling2D(pool_size=(2, 2),data_format=dim_org))
-#    model.add(Dropout(0.2)) 
-    model.add(Conv2DTranspose(num_class, kernel_size, activation='softmax', 
-                     data_format=dim_org,padding='same')) 
-
- 
-    return model
 
 def sk3(num_class,num_bit,img_rows,img_cols,INP_SHAPE,dim_org):
     print INP_SHAPE
@@ -590,15 +542,17 @@ def sk3(num_class,num_bit,img_rows,img_cols,INP_SHAPE,dim_org):
     model = Sequential() 
     model.add(Conv2D(16, kernel_size, input_shape=INP_SHAPE, padding='same', 
                      activation='relu',data_format=dim_org, kernel_constraint=maxnorm(3)))
-    model.add(MaxPooling2D(pool_size=(2, 2),data_format=dim_org))
+    model.add(Conv2D(16, kernel_size, padding='same', 
+                     activation='relu',data_format=dim_org, kernel_constraint=maxnorm(3)))
+#    model.add(AveragePooling2D(pool_size=(2, 2),data_format=dim_org))
     model.add(Dropout(0.1)) 
     model.add(Conv2D(32, kernel_size,  padding='same', 
                      activation='relu',data_format=dim_org, kernel_constraint=maxnorm(3)))
-    model.add(MaxPooling2D(pool_size=(2, 2),data_format=dim_org))
+    model.add(AveragePooling2D(pool_size=(2, 2),data_format=dim_org))
     model.add(Dropout(0.2)) 
     model.add(Conv2D(64, kernel_size,  padding='same', 
                      activation='relu',data_format=dim_org, kernel_constraint=maxnorm(3)))
-    model.add(MaxPooling2D(pool_size=(2, 2),data_format=dim_org))
+    model.add(AveragePooling2D(pool_size=(2, 2),data_format=dim_org))
 #    model.add(Dropout(0.2)) 
 #    model.add(Conv2D(128, kernel_size,  padding='same', 
 #                     activation='relu',data_format=dim_org, kernel_constraint=maxnorm(3)))
@@ -614,12 +568,68 @@ def sk3(num_class,num_bit,img_rows,img_cols,INP_SHAPE,dim_org):
     model.add(Dropout(0.2)) 
     model.add(Conv2DTranspose(32, kernel_size,  padding='same', 
                      activation='relu',data_format=dim_org, kernel_constraint=maxnorm(3)))
-    model.add(UpSampling2D(size=(2, 2),data_format=dim_org))
+#    model.add(UpSampling2D(size=(2, 2),data_format=dim_org))
     model.add(Dropout(0.1)) 
     model.add(Conv2DTranspose(num_class, kernel_size, activation='softmax', 
                      data_format=dim_org,padding='same')) 
 
     return model
+
+
+def sk4(num_class,num_bit,img_rows,img_cols,INP_SHAPE,dim_org):
+    print INP_SHAPE
+
+    kernel_size=(3,3)
+    kernel_sizes=(3,3)
+    pool_siz=(2,2)
+#    padding='valid'
+    padding='same'
+    
+    print 'sk4 with num_class :',num_class
+    model = Sequential() 
+    model.add(Conv2D(32, kernel_sizes, input_shape=INP_SHAPE, padding=padding, 
+                      data_format=dim_org, kernel_constraint=maxnorm(3)))    
+    model.add(LeakyReLU(alpha=0.01))
+
+    model.add(Conv2D(64, kernel_size, padding=padding, 
+                data_format=dim_org, kernel_constraint=maxnorm(3)))
+    model.add(LeakyReLU(alpha=0.01))
+    model.add(AveragePooling2D(pool_size=pool_siz,data_format=dim_org))
+    model.add(Dropout(0.2)) 
+    
+    model.add(Conv2D(128, kernel_size, padding=padding, 
+                      data_format=dim_org, kernel_constraint=maxnorm(3)))
+    model.add(LeakyReLU(alpha=0.01))
+    model.add(AveragePooling2D(pool_size=pool_siz,data_format=dim_org))
+    model.add(Dropout(0.3)) 
+  
+    model.add(Conv2D(256, kernel_size,  padding=padding, 
+                      data_format=dim_org, kernel_constraint=maxnorm(3)))
+    model.add(LeakyReLU(alpha=0.01))
+    model.add(Dropout(0.5))      
+    
+    model.add(Conv2D(256, kernel_size,  padding=padding, 
+                     data_format=dim_org, kernel_constraint=maxnorm(3)))
+    model.add(LeakyReLU(alpha=0.01))
+    model.add(Dropout(0.5)) 
+    
+    model.add(Conv2D(128, kernel_size,  padding=padding, 
+                     data_format=dim_org, kernel_constraint=maxnorm(3)))
+    model.add(LeakyReLU(alpha=0.01))
+    model.add(UpSampling2D(size=pool_siz,data_format=dim_org))
+    model.add(Dropout(0.3)) 
+    
+    model.add(Conv2D(64, kernel_size,  padding=padding, 
+                     data_format=dim_org, kernel_constraint=maxnorm(3)))
+    model.add(LeakyReLU(alpha=0.01))
+    model.add(UpSampling2D(size=pool_siz,data_format=dim_org))
+    model.add(Dropout(0.2)) 
+    
+    model.add(Conv2D(num_class, kernel_sizes, activation='softmax', 
+                     data_format=dim_org,padding=padding)) 
+
+    return model
+
 
 
 def copy_mat_to_keras(kmodel, verbose=True):   
@@ -784,9 +794,15 @@ def get_model(num_class,num_bit,img_rows,img_cols,mat_t_k,weights,weightedl):
     if modelName == 'unet':
 #    unet
         model = get_unet(num_class,num_bit,img_rows,img_cols,INP_SHAPE,DIM_ORDERING,CONCAT_AXIS)
-        mloss = weighted_categorical_crossentropy(weights).myloss
-#        ncce = functools.partial(w_categorical_crossentropy, weights=weights)
-        model.compile(optimizer=Adam(lr=learning_rate), loss=mloss, metrics=['categorical_accuracy'])
+        
+        if weightedl:
+            print 'weighted loss'
+            mloss = weighted_categorical_crossentropy(weights).myloss
+            model.compile(optimizer=Adam(lr=learning_rate), loss=mloss, metrics=['categorical_accuracy'])
+        else:
+            model.compile(optimizer=Adam(lr=learning_rate), loss='categorical_crossentropy', metrics=['categorical_accuracy'])
+            print 'NO weighted loss'
+        
 #        model.compile(optimizer=Adam(lr=learning_rate), loss=mloss, metrics=['accuracy',single_class_accuracy(0)])
 #        model.compile(optimizer=Adam(lr=learning_rate), loss=ncce, metrics=['accuracy',single_class_accuracy(0)])
 #        model.compile(optimizer=Adam(lr=learning_rate), loss=ncce, metrics=['categorical_accuracy'])
@@ -874,9 +890,6 @@ def get_model(num_class,num_bit,img_rows,img_cols,mat_t_k,weights,weightedl):
         model.compile(optimizer=Adam(lr=learning_rate), loss=mloss, metrics=['categorical_accuracy'])
 #        model.compile(optimizer=Adam(lr=1e-4), loss='categorical_crossentropy', metrics=['categorical_accuracy'])
     elif  modelName == 'sk3':
-    #alexnet
-#        print weights
-#        print weights.shape
          
         model=sk3(num_class,num_bit,img_rows,img_cols,INP_SHAPE,DIM_ORDERING)
 #        weights = np.ones(512)
@@ -887,7 +900,17 @@ def get_model(num_class,num_bit,img_rows,img_cols,mat_t_k,weights,weightedl):
         else:
             model.compile(optimizer=Adam(lr=learning_rate), loss='categorical_crossentropy', metrics=['categorical_accuracy'])
             print 'NO weighted loss'
-
+    elif  modelName == 'sk4':
+         
+        model=sk4(num_class,num_bit,img_rows,img_cols,INP_SHAPE,DIM_ORDERING)
+#        weights = np.ones(512)
+        if weightedl:
+            print 'weighted loss'
+            mloss = weighted_categorical_crossentropy(weights).myloss
+            model.compile(optimizer=Adam(lr=learning_rate), loss=mloss, metrics=['categorical_accuracy'])
+        else:
+            model.compile(optimizer=Adam(lr=learning_rate), loss='categorical_crossentropy', metrics=['categorical_accuracy'])
+            print 'NO weighted loss'
         
         
 # 
@@ -917,10 +940,10 @@ if __name__ == "__main__":
    print 'model.predict(imarr).shape ',model.predict(imarr,verbose=1).shape
    model.summary()
    json_string = model.to_json()
-   pickle.dump(json_string,open( 'SK3CNN.h5', "wb"),protocol=-1)
+   pickle.dump(json_string,open( modelName+'CNN.h5', "wb"),protocol=-1)
    
    
-   
+   print modelName
    
 #   model_json=model.to_json()
 #   with open("model.json", "w") as json_file:

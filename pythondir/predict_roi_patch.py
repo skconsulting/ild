@@ -12,9 +12,9 @@ can be used for patch recosntructed images , only one image per data set
 
 from param_pix import classif,classifc
 from param_pix import black
-from param_pix import normi,get_model
-from param_pix import bmpname,image_rows,image_cols,num_bit
-from param_pix import sroi
+from param_pix import normi,get_model,colorimage
+from param_pix import image_rows,image_cols,num_bit
+from param_pix import sroi,source
 
 import cPickle as pickle
 
@@ -34,7 +34,7 @@ predict_source='predict_patc1'
 classifnotvisu=[]
 
 #pickel_train='pickle_lu_f6'
-pickel_train='best_wesk3'
+pickel_train='best_wesk4'
 #pickel_train='best_weunet'
 
 num_class=len(classif)
@@ -146,33 +146,36 @@ def visu(namedirtopcf,imgs_mask_test,num_list,dimtabx,dimtaby,tabscan,sroidir,Xp
 #        print type(imamax[0][0])
         imclass=np.bitwise_and(imamax,imclass)
 
-        imclassc = np.expand_dims(imclass,2)
-        imclassc=np.repeat(imclassc,3,axis=2) 
+#        imclassc = np.expand_dims(imclass,2)
+#        imclassc=np.repeat(imclassc,3,axis=2) 
 
-        for key,value in classif.items():
-            
-            if key not in classifnotvisu:
-                imcc=imclassc.copy()
-                bl=(value,value,value)
-                blc=[]
-                zz=classifc[key]
-#                print zz
-                for z in range(3):
-                    blc.append(int(zz[z]))
-#                print imcc[200][200][z]*0.5)
-#                print blc
-        
-#                print key,bl
+        for pat,value in classif.items():
+            imc=imclass.copy()
+            np.putmask(imc,imc!=value,black)
+            np.putmask(imc,imc==value,100)
+            imcc= colorimage(imc,classifc[pat])
+#            if key not in classifnotvisu:
+#                imcc=imclassc.copy()
+#                bl=(value,value,value)
+#                blc=[]
+#                zz=classifc[key]
+##                print zz
+#                for z in range(3):
+#                    blc.append(int(zz[z]))
+##                print imcc[200][200][z]*0.5)
+##                print blc
+#        
+##                print key,bl
+##                print imcc[200][200]
+#                np.putmask(imcc,imcc!=bl,black)
+##                print imcc[200][200]
+#    #        print 'im4',imclassc[200][200],imclassc.min(),imclassc.max(),type(imclassc[0][0][0]), np.unique(imclassc)
+#                np.putmask(imcc,imcc==bl,blc)
 #                print imcc[200][200]
-                np.putmask(imcc,imcc!=bl,black)
-#                print imcc[200][200]
-    #        print 'im4',imclassc[200][200],imclassc.min(),imclassc.max(),type(imclassc[0][0][0]), np.unique(imclassc)
-                np.putmask(imcc,imcc==bl,blc)
-#                print imcc[200][200]
-                if imcc.max()>0:
-                    patlist.append(key)               
-                imgs[i]=cv2.add(imgs[i],imcc)
-                for p in patlist:
+            if imcc.max()>0:
+                    patlist.append(pat)               
+            imgs[i]=cv2.add(imgs[i],imcc)
+            for p in patlist:
                     delx=int(dimtaby*0.6-120)
                     imgs[i]=tagviewn(imgs[i],p,delx,0)
 
@@ -183,46 +186,50 @@ def visu(namedirtopcf,imgs_mask_test,num_list,dimtabx,dimtaby,tabscan,sroidir,Xp
         print('-' * 30)
         print('Saving predicted masks to files...')
         print('-' * 30)
-        pred_dir = 'preds'
+#        pred_dir = 'preds'
         pred_dir=os.path.join(namedirtopcf,predict_result)
         if not os.path.exists(pred_dir):
             os.mkdir(pred_dir)
     print num_list
     for image, image_id in zip(imgs, num_list):
         img=tabroi[image_id]
-        print img.shape
-        print type(img[0][0])
-        imgrgb= cv2.cvtColor(img,cv2.COLOR_GRAY2RGB)
+#        print img.shape
+#        print type(img[0][0])
+#        imgrgb= cv2.cvtColor(img,cv2.COLOR_GRAY2RGB)
         imgn=normi(img)
-#        imgnc=cv2.resize(imgn,(dimtabx, dimtaby),interpolation=cv2.INTER_LINEAR)
-#        imgnc= cv2.cvtColor(imgn,cv2.COLOR_GRAY2RGB)
+##        imgnc=cv2.resize(imgn,(dimtabx, dimtaby),interpolation=cv2.INTER_LINEAR)
+##        imgnc= cv2.cvtColor(imgn,cv2.COLOR_GRAY2RGB)
         imgncolor = np.zeros((dimtabx, dimtaby,3), dtype=np.uint8)
         
-        for key,value in classif.items():
-                print key,value
-                imcc=imgrgb.copy()
-                print imcc.shape
-                print imcc[0][0]
-                bl=(value,value,value)
-                blc=[]
-                zz=classifc[key]
-#                print zz
-                for z in range(3):
-                    blc.append(int(zz[z]))
-                print bl, blc
-#                print imcc[200][200][z]*0.5)
-#                print blc
-        
-#                print key,bl
-#                print imcc[200][200]
-                np.putmask(imcc,imcc!=bl,black)
-#                imcc1=imcc.copy()
-#                print imcc[200][200]
-    #        print 'im4',imclassc[200][200],imclassc.min(),imclassc.max(),type(imclassc[0][0][0]), np.unique(imclassc)
-                np.putmask(imcc,imcc==bl,blc)
-#                imcc2=imcc.copy()
-#                print imcc[200][200]              
-                imgncolor=cv2.add(imgncolor,imcc)
+        for pat,value in classif.items():
+            imc=tabroi[image_id].copy()
+            np.putmask(imc,imc!=value,black)
+            np.putmask(imc,imc==value,100)
+            imgncolor+= colorimage(imc,classifc[pat])
+#                print key,value
+#                imcc=imgrgb.copy()
+#                print imcc.shape
+#                print imcc[0][0]
+#                bl=(value,value,value)
+#                blc=[]
+#                zz=classifc[key]
+##                print zz
+#                for z in range(3):
+#                    blc.append(int(zz[z]))
+#                print bl, blc
+##                print imcc[200][200][z]*0.5)
+##                print blc
+#        
+##                print key,bl
+##                print imcc[200][200]
+#                np.putmask(imcc,imcc!=bl,black)
+##                imcc1=imcc.copy()
+##                print imcc[200][200]
+#    #        print 'im4',imclassc[200][200],imclassc.min(),imclassc.max(),type(imclassc[0][0][0]), np.unique(imclassc)
+#                np.putmask(imcc,imcc==bl,blc)
+##                imcc2=imcc.copy()
+##                print imcc[200][200]              
+#                imgncolor=cv2.add(imgncolor,imcc)
 #        imgnc=np.repeat(imgn,3,axis=2) 
 #        print imgnc.shape,imgn.shap
 #                cv2.imshow('imgnc',imgnc)
@@ -246,7 +253,7 @@ def visu(namedirtopcf,imgs_mask_test,num_list,dimtabx,dimtaby,tabscan,sroidir,Xp
         plt.imshow( image )
         
         plt.subplot(1,3,3)
-        plt.title('source+predict')
+        plt.title('roi')
         plt.imshow( imgncolor )
 #        plt.imshow( imclassc, alpha=0.5 )
         imsave(os.path.join(pred_dir, str(image_id) + '.bmp'), image)
@@ -278,7 +285,7 @@ def loadmodel(num_class):
     weights=[]
 #    model = get_unet(num_class,image_rows,image_cols)
 #    model = get_model(num_class,image_rows,image_cols,weights)
-    model = get_model(num_class,num_bit,image_rows,image_cols,False,weights)
+    model = get_model(num_class,num_bit,image_rows,image_cols,False,weights,False)
 #    mloss = weighted_categorical_crossentropy(weights).myloss
 #    model.compile(optimizer=Adam(lr=1e-5), loss=mloss, metrics=['categorical_accuracy'])
 #    model.compile(optimizer=Adam(lr=1e-5), loss='categorical_crossentropy', metrics=['categorical_accuracy'])
@@ -307,7 +314,7 @@ for f in listdirc:
     print '-----------'
     numsliceok=[]
     namedirtopcf=os.path.join(namedirtopc,f)
-    scanbmp=os.path.join(namedirtopcf,bmpname)
+    scanbmp=os.path.join(namedirtopcf,source)
     sroidir=os.path.join(namedirtopcf,sroi)
     if not os.path.exists(sroidir):
         os.mkdir(sroidir)

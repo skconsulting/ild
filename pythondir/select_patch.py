@@ -2,15 +2,23 @@
 """
 Created on 07 july 2017
 class patches against probability
+DO NOT applies norming through norm
 @author: sylvain
 """
+import cPickle as pickle
 
-from param_pix import *
 import os
 import keras
 import numpy as np
+import matplotlib.pyplot as plt
 from keras import backend as K
-K.set_image_dim_ordering('tf')
+from keras.models import model_from_json
+
+from param_pix import norm,setdata,remove_folder
+
+
+K.set_image_dim_ordering('th')
+
 print 'NEW keras.backend.image_data_format :',keras.backend.image_data_format()
 print '-------------'
 nametophug='SOURCE_IMAGE'
@@ -21,9 +29,7 @@ nameHug='DUMMY' #name of top directory for patches pivkle from dicom
 subHUG='patchesref'#subdirectory from nameHug input pickle
 #subHUG='S3'#subdirectory from nameHug input pickle
 
-
 toppatch= 'classpatch' #name of top directory for image and label generation
-
 
 classifild ={
         'consolidation':0,
@@ -39,16 +45,14 @@ classifild ={
         'GGpret':9
         }
 
-
-
 cwd=os.getcwd()
 #
 (cwdtop,tail)=os.path.split(cwd)
 
 picklepatches='picklepatches' 
 weightildcnn='weightildcnn'
-pcross='set0_c2'
-pfront='set0_c2'
+pcross='set0_c0'
+pfront='set0_c0'
 modelArch='CNN.h5'
 pathmodelarch='modelArch'
 
@@ -84,48 +88,6 @@ if not os.path.isdir(picklepathdir):
 
 
 
-def geneaug(image,tt):
-    if tt==0:
-        imout=image
-    elif tt==1:
-    # 1 90 deg
-        imout = np.rot90(image)
-    elif tt==2:
-    #2 180 deg
-        imout = np.rot90(np.rot90(image))
-    elif tt==3:
-    #3 270 deg
-        imout = np.rot90(np.rot90(np.rot90(image)))
-    elif tt==4:
-    #4 flip fimage left-right
-            imout=np.fliplr(image)
-    elif tt==5:
-    #5 flip fimage left-right +rot 90
-        imout = np.rot90(np.fliplr(image))
-    elif tt==6:
-    #6 flip fimage left-right +rot 180
-        imout = np.rot90(np.rot90(np.fliplr(image)))
-    elif tt==7:
-    #7 flip fimage left-right +rot 270
-        imout = np.rot90(np.rot90(np.rot90(np.fliplr(image))))
-    elif tt==8:
-    # 8 flip fimage up-down
-        imout = imout=np.flipud(image)
-    elif tt==9:
-    #9 flip fimage up-down +rot90
-        imout = np.rot90(np.flipud(image))
-    elif tt==10:
-    #10 flip fimage up-down +rot180
-        imout = np.rot90(np.rot90(np.flipud(image)))
-    elif tt==11:
-    #11 flip fimage up-down +rot270
-        imout = np.rot90(np.rot90(np.rot90(np.flipud(image))))
-
-    return imout
-
-
-
-
 def genebmppatch(dirName,pat):
 
     """generate patches from dicom files and sroi"""
@@ -137,15 +99,21 @@ def genebmppatch(dirName,pat):
     patdic=[]
     patdicn=[]
 
+    dirName='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool/th0.95_TOPPATCH_all_2/picklepatches'
+
     patdir=os.path.join(dirName,pat)
+#    dirName='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool/th0.95_TOPPATCH_all_2/picklepatches'
     subd=os.listdir(patdir)
     for loca in subd:
         patsubdir=os.path.join(patdir,loca)
         listpickles=os.listdir(patsubdir)        
         for l in listpickles:
                 listscan=pickle.load(open(os.path.join(patsubdir,l),"rb"))
+#                print patsubdir,l
                 for num in range(len(listscan)):
-                    patscan=normHU(listscan[num])
+#                    print listscan[num].min(),listscan[num].max()
+                    patscan=norm(listscan[num])
+#                    print patscan.min(),patscan.max()
                     patdicn.append(patscan)
                     patdic.append(listscan[num])
     return patdic,patdicn
@@ -153,60 +121,15 @@ def genebmppatch(dirName,pat):
 
 
 
-
-
-def preparroi(namedirtopcf,tabscan,tabsroi):
-    (top,tail)=os.path.split(namedirtopcf)
-    pathpicklepat=os.path.join(picklepathdir,tail)
-    if not os.path.exists (pathpicklepat):
-                os.mkdir(pathpicklepat)
-    
-    for num in range(slnt):
-        patchpicklenamepatient=str(num)+'_'+patchpicklename   
-        pathpicklepatfile=os.path.join(pathpicklepat,patchpicklenamepatient)
-        scan_list=[]
-        mask_list=[]
-        scan_list.append(tabscan[num] ) 
-#        print tabscan[0].shape,tabscan[0].min(),tabscan[0].max()
-#        maski= tabsroi[num].copy()    
-#        np.putmask(maski,maski>0,classif['healthy'])
-
-        mask_list.append(tabsroi[num])
-#        print tabsroi[num].min(),tabsroi[num].max(),np.unique(tabsroi[num])
-#        oooo
-#        if num==3:
-##            o=normi(maski)
-#            n=normi(tabscan[num] )
-#            x=normi(tabsroi[num])
-##            f=normi(tabroif)
-#            cv2.imshow('maski',x)
-#            cv2.imshow('datascan[num] ',n)
-##            cv2.imshow('tabroix',x)
-##            cv2.imshow('tabroif',f)
-##            cv2.imwrite('a.bmp',o)
-##            cv2.imwrite('b.bmp',x)
-##            cv2.imwrite('c.bmp',tabscan[num])
-#            cv2.waitKey(0)
-#            cv2.destroyAllWindows()
-            
-        patpickle=(scan_list,mask_list)
-#        print len(scan_list)
-        pickle.dump(patpickle, open(pathpicklepatfile, "wb"),protocol=-1)
-
 def ILDCNNpredict(patch_list,model):
     print ('Predict started ....')
 
     X0=len(patch_list)
-    # adding a singleton dimension and rescale to [0,1]
-    
-    # look if the predict source is empty
-    # predict and store  classification and probabilities if not empty
+
     if X0 > 0:
-        pa = np.asarray(patch_list)
-#        print pa.shape
-        pa1 = np.expand_dims(patch_list, 1)
-#        print pa1.shape
-        proba = model.predict_proba(pa1, batch_size=100,verbose=1)
+
+        pa = np.expand_dims(patch_list, 1)
+        proba = model.predict_proba(pa, batch_size=500,verbose=1)
 
     else:
         print (' no patch in selected slice')
@@ -225,6 +148,7 @@ def modelCompilation(t,picklein_file,picklein_file_front,setdata):
     dirpickleArchsc=os.path.join(dirpickleArchs,modelArch)
 
     json_string=pickle.load( open(dirpickleArchsc, "rb"))
+#    print dirpickleArchsc
     model = model_from_json(json_string)
     model.compile(optimizer='Adam', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
 #        model.compile()
@@ -239,7 +163,7 @@ def modelCompilation(t,picklein_file,picklein_file_front,setdata):
         modelpath = os.path.join(picklein_file_front, lismodel[0])
 
     if os.path.exists(modelpath):
-
+        print 'weight exist',modelpath
         model.load_weights(modelpath)  
         
         return model
@@ -253,9 +177,9 @@ listpat=[]
 #    'back_ground':0,
 #        'healthy':1,    
 #        'ground_glass':2}
-classifused=classif
-classinsource =[name for name in os.listdir(namedirtopcpickle) if name in classifused]
-classinsource.remove('back_ground')
+#classifused=classif
+classinsource =[name for name in os.listdir(namedirtopcpickle) if name in classifild]
+#classinsource.remove('back_ground')
 print classinsource,namedirtopcpickle
 
 patdic={}
@@ -266,12 +190,15 @@ for pat in classinsource:
     thpat[pat]=0.8
     
 thpat['air_trapping']=0.9
-thpat['healthy']=0.95
-thpat['bronchiectasis']=0.6
+thpat['healthy']=0.9
+thpat['bronchiectasis']=0.9
 thpat['consolidation']=0.9
-thpat['ground_glass']=0.6
-thpat['HC']=0.6
-thpat['reticulation']=0.6
+thpat['cysts']=0.9
+thpat['GGpret']=0.9
+thpat['ground_glass']=0.9
+thpat['HC']=0.9
+thpat['micronodules']=0.9
+thpat['reticulation']=0.9
 initpatn=0
 finalpatn=0
 patnumberinit={}
@@ -283,14 +210,23 @@ for pat in classinsource:
     propatab=[]
     print 'work on :',pat, 'number',str(cp)
     tabscan,tabscann=genebmppatch(namedirtopcpickle,pat)
+    #tabsacn: no norm, tabscann: norm
     patnumberinit[pat]=len(tabscan)
     initpatn=initpatn+len(tabscan)
-#    print 'number of patches for pattern :',pat,':',len(tabscan)
+    print 'number of patches for pattern :',pat,':',len(tabscan)
+    
     probapat=ILDCNNpredict(tabscann,model)
-    cpp=np.amax(probapat, axis=-1)
-    cpr=np.argmax(probapat,axis=-1)
-#    cpp=np.amax(probapat)
-    """
+#    print probapat.shape
+    cpp=np.amax(probapat ,axis=-1)
+    cpr=np.argmax(probapat,axis=-1 )
+#    print probapat[0]
+#    print cpp[0]
+#    print cpr[0]
+#    ooo
+#    probapat=100*probapat
+#    probapat=probapat.astype('uint')
+##    cpp=np.amax(probapat)
+    
     plt.figure(figsize = (4, 3))
 #    print 'imamax min max',imamax.min(), imamax.max(),imamax[100][200]
     plt.hist(cpr.flatten(), bins=50, color='c')
@@ -302,7 +238,10 @@ for pat in classinsource:
     plt.xlabel("proba")
     plt.ylabel("Frequency")
     plt.show()
-    """ 
+#    print cpp[10]
+#    print cpr[10]
+#    print probapat[10]
+    
     for image, proba in zip(tabscan, probapat):
         cpr=np.argmax(proba)
         cpp=np.amax(proba)
@@ -330,8 +269,10 @@ for pat in classinsource:
 #    print len(lp)
 #    print lp[0].min(),lp[0].max()
 #    ooo
+print '-------------------'
 print 'init number of patches :',initpatn
 print 'final number of patches :',finalpatn
+print '-------------------'
 for pat in classinsource: 
    print pat ,':', thpat[pat],'init:', patnumberinit[pat],'final:',patnumberfinal[pat]
    

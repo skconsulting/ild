@@ -4,28 +4,28 @@ Created on Tue May 02 15:04:39 2017
 @author: sylvain
 """
 
-from param_pix import get_model,image_rows,image_cols,num_bit,evaluate
+from param_pix import get_model,image_rows,image_cols,num_bit,evaluate,fidclass,classif
 
 import datetime
 import os
 import cPickle as pickle
 import numpy as np
 import keras
-import pandas as pd
+#import pandas as pd
 
 import matplotlib.pyplot as plt
 from keras.callbacks import ModelCheckpoint,ReduceLROnPlateau,CSVLogger,EarlyStopping
 from keras import backend as K
 K.set_image_dim_ordering('tf')
 
-nepochs=5
+nepochs=500
 nameHug='TRAIN_SET'
 subHug='pickle_train_set'
-extension='p'
+extension='q'
 #nameHug='CHU'
 #nameHug='DUMMY'
 dataindir='V'
-
+batch_size=4
 
 pickle_store_ext= 'pickle'
 
@@ -82,7 +82,7 @@ def load_weight(numpidir):
             clas_weigh_l.append(class_weights[i])
     print 'weights for classes:'
     for i in range (0,num_class):
-                    print i, clas_weigh_l[i]
+                    print i, fidclass(i,classif),clas_weigh_l[i]
     class_weights_r=np.array(clas_weigh_l)
 
     return num_class,class_weights_r,class_weights
@@ -123,10 +123,11 @@ def train():
     
 
     num_class,class_weights_r,class_weights = load_weight(pickel_dirsource)
+
     print('Creating and compiling model...')
     print('-'*30)
     
-    model = get_model(num_class,num_bit,image_rows,image_cols,False,class_weights_r)
+    model = get_model(num_class,num_bit,image_rows,image_cols,False,class_weights_r,False)
 
     listmodel=[name for name in os.listdir(pickel_dirout) if name.find('weights')==0]
     if len(listmodel)>0:
@@ -145,10 +146,10 @@ def train():
     today = str('m'+str(t.month)+'_d'+str(t.day)+'_y'+str(t.year)+'_'+str(t.hour)+'h_'+str(t.minute)+'m')
     rese=os.path.join(pickel_dirout,str(today)+'_e.csv')
 
-    early_stopping=EarlyStopping(monitor='val_loss', patience=150, verbose=1,min_delta=0.005,mode='min')                                     
+    early_stopping=EarlyStopping(monitor='val_loss', patience=20, verbose=1,min_delta=0.005,mode='auto')                                     
     reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2,
-                                              patience=50, min_lr=1e-5,verbose=1)#init 5
-    model_checkpoint = ModelCheckpoint(os.path.join(pickel_dirout,'weights_'+today+'.{epoch:02d}-{val_loss:.2f}.hdf5'), 
+                                              patience=5, min_lr=1e-6,verbose=1)#init 5
+    model_checkpoint = ModelCheckpoint(os.path.join(pickel_dirout,'weights_'+today+'.{epoch:02d}-{val_loss:.3f}.hdf5'), 
                                 monitor='val_loss', save_best_only=True,save_weights_only=True) 
     csv_logger = CSVLogger(rese,append=True)
     
@@ -211,8 +212,8 @@ def train():
         ooo
 
   
-    history= model.fit(X_train, y_train, batch_size=1, epochs=nepochs, verbose =1,
-                      validation_data=(X_test,y_test), shuffle=True,
+    history= model.fit(X_train, y_train, batch_size=batch_size, epochs=nepochs, verbose =1,
+                      validation_data=(X_test,y_test), shuffle=False,
                       callbacks=[model_checkpoint,reduce_lr,csv_logger,early_stopping]  )
     print('Predict model...')
     print('-'*30)
@@ -236,7 +237,7 @@ def train():
     filew.write('  confusion matrix\n')
     n= cm.shape[0]
     for cmi in range (0,n):     
-                    filew.write('  ')
+#                    filew.write('  ')
                     for j in range (0,n):
                         filew.write(str(cm[cmi][j])+' ')
                     filew.write('\n')

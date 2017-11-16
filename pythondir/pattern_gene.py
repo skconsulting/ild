@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """
 Created on Sat Jun 17 11:16:58 2017
-generator of images and label step 1
+generator of images and label 
+step 1
 @author: sylvain
 """
 import os
@@ -11,7 +12,7 @@ import time
 import shutil
 import numpy as np
 import random
-from param_pix import image_rows,image_cols,typei,typeibmp,sroi,bmpname,classif
+from param_pix import image_rows,image_cols,typeibmp,sroi,source,classif,MAX_BOUND
 from param_pix import normi,norm,remove_folder,classifc,fidclass,red
 
 nametopHug='SOURCE_IMAGE'
@@ -25,7 +26,7 @@ subHUG='classpatch'#subdirectory from nameHug input pickle
 
 toppatchtop='IMAGEDIR'
 toppatch= 'TOPPATCH' #name of top directory for image and label generation
-subtop_patch='0'#subdirectory for top patch
+subtop_patch='1'#subdirectory for top patch
 
 lpatch=True #to generate images from  lung patch (True) or geometrical
 col = False # to generate color patterns (True), NOT TESTED
@@ -229,13 +230,13 @@ def geneaug(image,tt):
         imout=image
     elif tt==1:
     # 1 90 deg
-        imout = np.rot90(image)
+        imout = np.rot90(image,1)
     elif tt==2:
     #2 180 deg
-        imout = np.rot90(np.rot90(image))
+        imout = np.rot90( image,2)
     elif tt==3:
     #3 270 deg
-        imout = np.rot90(np.rot90(np.rot90(image)))
+        imout = np.rot90(image,3)
     elif tt==4:
     #4 flip fimage left-right
             imout=np.fliplr(image)
@@ -244,23 +245,11 @@ def geneaug(image,tt):
         imout = np.rot90(np.fliplr(image))
     elif tt==6:
     #6 flip fimage left-right +rot 180
-        imout = np.rot90(np.rot90(np.fliplr(image)))
+        imout = np.rot90(np.fliplr(image),2)
     elif tt==7:
     #7 flip fimage left-right +rot 270
-        imout = np.rot90(np.rot90(np.rot90(np.fliplr(image))))
-    elif tt==8:
-    # 8 flip fimage up-down
-        imout = imout=np.flipud(image)
-    elif tt==9:
-    #9 flip fimage up-down +rot90
-        imout = np.rot90(np.flipud(image))
-    elif tt==10:
-    #10 flip fimage up-down +rot180
-        imout = np.rot90(np.rot90(np.flipud(image)))
-    elif tt==11:
-    #11 flip fimage up-down +rot270
-        imout = np.rot90(np.rot90(np.rot90(np.flipud(image))))
-
+        imout = np.rot90(np.fliplr(image),3)
+  
     return imout
 
 
@@ -273,7 +262,8 @@ def genebmppatch(dirName,slnt,contenupat):
     (top,tail)=os.path.split(dirName)
 #    global constPixelSpacing, dimtabx,dimtaby
     #directory for patches
-    bmp_dir = os.path.join(top, bmpname)
+    bmp_dir = os.path.join(top, source)
+#    print 'bmp_dir',bmp_dir
     
     remove_folder(bmp_dir)
     os.mkdir(bmp_dir)
@@ -284,11 +274,12 @@ def genebmppatch(dirName,slnt,contenupat):
     os.mkdir(sroidir)
 
     img=np.zeros((slnt,image_rows,image_cols),np.int16)
-    np.putmask(img,img==0,-1000)
+    np.putmask(img,img==0,MAX_BOUND)#MAX_BOUND is the label for outside lung area
     mask=np.zeros((slnt,image_rows,image_cols),np.uint8)
     maskw=np.zeros((slnt,image_rows,image_cols,3),np.uint8)
     patdic={}
     print 'contenupat',contenupat
+
     for pat in contenupat:
         patdic[pat]=[]
 
@@ -318,15 +309,18 @@ def genebmppatch(dirName,slnt,contenupat):
             while j <image_cols: 
 #                indexpat=(i+j)%len(listpat)
                 indexpat = random.randint(0, len(listpat)-1)
-                indexaug = random.randint(0, 11)
+                indexaug = random.randint(0, 7)
 #                print indexaug
 #                print indexpat
                 pat=fidclass(indexpat,classif)
+#                print 'pat generated',pat,indexpat
                 if indexpat>0:
                     numi = random.randint(0, len(patdic[pat])-1)
                     patch_t_w=patdic[pat][numi]
                     pat_t_w_a=geneaug(patch_t_w,indexaug)
                     img[s][j:j+dimpavy,i:i+dimpavx]=pat_t_w_a
+                    #img: no norm
+                    
 #                    print patch_t_w.shape, patch_t_w.min(),patch_t_w.max()
 #                    print pat_t_w_a.shape, pat_t_w_a.min(),pat_t_w_a.max()
 #                    print img[s][j:j+dimpavy,i:i+dimpavx].shape,img[s][j:j+dimpavy,i:i+dimpavx].min(),img[s][j:j+dimpavy,i:i+dimpavx].max()
@@ -337,7 +331,9 @@ def genebmppatch(dirName,slnt,contenupat):
                 j+=dimpavy
             i+=dimpavx
 #        print 'number of classes :',len( np.unique(mask[s]))
-        dsrforimage=normi(img[s])
+        
+#        print img[s].min(),img[s].max()
+        dsrforimage=normi(norm(img[s]))
         imgcoredeb='img_'+str(s)+'.'+typeibmp             
         bmpfiled=os.path.join(bmp_dir,imgcoredeb)
         if num_bit ==3:
@@ -365,30 +361,7 @@ def preparroi(namedirtopcf,tabscan,tabsroi):
     for num in range(slnt):
         patchpicklenamepatient=str(num)+'_'+patchpicklename   
         pathpicklepatfile=os.path.join(pathpicklepat,patchpicklenamepatient)
-#        scan_list=[]
-#        mask_list=[]
-#        scan_list.append(norm(tabscan[num]) ) 
-##        print tabscan[0].shape,tabscan[0].min(),tabscan[0].max()
-##        maski= tabsroi[num].copy()    
-##        np.putmask(maski,maski>0,classif['healthy'])
-#
-#        mask_list.append(tabsroi[num])
-#        print tabsroi[num].min(),tabsroi[num].max(),np.unique(tabsroi[num])
-#        oooo
-#        if num==3:
-##            o=normi(maski)
-#            n=normi(tabscan[num] )
-#            x=normi(tabsroi[num])
-##            f=normi(tabroif)
-#            cv2.imshow('maski',x)
-#            cv2.imshow('datascan[num] ',n)
-##            cv2.imshow('tabroix',x)
-##            cv2.imshow('tabroif',f)
-##            cv2.imwrite('a.bmp',o)
-##            cv2.imwrite('b.bmp',x)
-##            cv2.imwrite('c.bmp',tabscan[num])
-#            cv2.waitKey(0)
-#            cv2.destroyAllWindows()
+
             
         patpickle=(norm(tabscan[num]),tabsroi[num])
 #        print len(scan_list)
@@ -412,12 +385,8 @@ else:
     sroidir=os.path.join(namedirtopc,sroi)
     remove_folder(sroidir)
     os.mkdir(sroidir)
-    print sroidir
-    
-#    classifused={
-#    'back_ground':0,
-#        'healthy':1,    
-#        'ground_glass':2}
+    print 'path for sroidir',sroidir
+
     classifused=classif
     tabscan,tabsroi=genebmppatch(namedirtopcpickle,slnt,classifused)
     namedirtopcf=namedirtopc

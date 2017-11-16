@@ -44,11 +44,11 @@ extendirdummy=namesubdummy
 toppatch= 'TOPPATCH' #for scan classified ROI
 #extendir='ILD_TXT'  #for scan classified ROI
 #extendir='ILD0'  #for scan classified ROI
-extendir='0'  #for scan classified ROI
+extendir='1'  #for scan classified ROI
 #extendir='UIP2'  #for scan classified ROI
 
 pickel_dirsource='TRAIN_SET/pickle_train_set' #path for data fort training
-pickel_dirsourcenum='p' #extensioon for path for data for training
+pickel_dirsourcenum='q' #extensioon for path for data for training
 
 
 ##############################################################
@@ -109,23 +109,6 @@ def get_class_weights(y):
 
 #remove_folder(pickle_dir)
 
-def readclassesdummy(lisdummy,indexdummy,indexaug):
-
-    patpick=os.path.join(pathdummy,lisdummy[indexdummy])
-    readpkl=pickle.load(open(patpick, "rb"))
-                                            
-    scanr=readpkl[0][0]
-    scan=geneaug(scanr,indexaug)
-    maskr=readpkl[1][0]
-    mask=geneaug(maskr,indexaug)
-#    cv2.imshow(str(indexdummy)+'maskdummy',normi(mask))
-#    cv2.waitKey(0)
-#    cv2.destroyAllWindows()
-    scanm=norm(scan)
-
-    return scanm, mask   
-
-
 
 def readclasses(lisscan,picklepathdir,indexpat,indexaug):
         
@@ -136,11 +119,6 @@ def readclasses(lisscan,picklepathdir,indexpat,indexaug):
     scan=geneaug(scanr,indexaug)
     maskr=readpkl[1]
     mask=geneaug(maskr,indexaug)
-#    cv2.imshow(str(indexpat)+'mask',normi(mask))
-#    cv2.imshow(str(indexpat)+'scan',normi(scan))
-#    cv2.waitKey(0)
-#    cv2.destroyAllWindows()
-#    scanm=norm(scan)
 
     return scan, mask  
 
@@ -164,30 +142,12 @@ def numbclasses(y):
 
 def readclasses2(num_classes,X_traini,y_traini,X_testi,y_testi):
 
-    
-    
+       
     X_train = np.asarray(np.expand_dims(X_traini,3)) 
-
     X_test = np.asarray(np.expand_dims(X_testi,3))  
-
 
     y_train = np.array(y_traini)
     y_test = np.array(y_testi)
-#    print X_train.shape
-#    print y_train.shape
-#    print y_train[3].min(),y_train[3].max()
-#    o=normi(X_train[3])
-#    x=normi(y_train[3])
-#    print x.min(),x.max()
-###            f=normi(tabroif)
-#    cv2.imshow('X_train',o)
-#    cv2.imshow('y_train',x)
-###            cv2.imshow('tabroif',f)
-#    cv2.imwrite('a.bmp',o)
-#    cv2.imwrite('b.bmp',x)
-#    cv2.imwrite('c.bmp',y_train[3])
-#    cv2.waitKey(0)
-#    cv2.destroyAllWindows()
 
     lytrain=y_train.shape[0]
     lytest=y_test.shape[0]
@@ -199,40 +159,16 @@ def readclasses2(num_classes,X_traini,y_traini,X_testi,y_testi):
     
     for i in range (lytrain):
         for j in range (0,image_rows):
-#            print 'y_train[i][j]',y_train[i][j]
-#            print y_train[i][j].shape
             
             ytrainr[i][j] = np_utils.to_categorical(y_train[i][j], num_classes)
-#            print 'ytrainr[i][j]',ytrainr[i][j]
+
 
     for i in range (lytest):
         for j in range (0,image_rows):
             ytestr[i][j] = np_utils.to_categorical(y_test[i][j], num_classes)
-  
-    """
-    for i in range (lytrain):
-#        yt=y_train[i].reshape(image_rows*image_cols)
-        yt=y_train[i]
-
-#        print yt.shape
-        ytrainr[i]=np_utils.to_categorical(yt, num_classes)
-    for i in range (lytest):
-#        yt=y_train[i].reshape(image_rows*image_cols)
-        yt=y_train[i]
-        print 'yt.shape',yt.shape
-        ytestr[i]=np_utils.to_categorical(yt, num_classes)
-        print 'ytestr[i].shape',ytestr[i].shape
-    
-    print ytrainr.shape
-    print ytestr.shape
-#    ooo
-    """
-#    print 'ytestr[i].shape',ytestr[0].shape
-#    print 'ytestr[i].shape',ytestr[0][100][100]
-        
     
     return X_train, X_test, ytrainr, ytestr  
-#    return X_train, X_test, y_train, y_test   
+
 
 
 #start main
@@ -241,13 +177,13 @@ def geneaug(image,tt):
         imout=image
     elif tt==1:
     # 1 90 deg
-        imout = np.rot90(image)
+        imout = np.rot90(image,1)
     elif tt==2:
     #2 180 deg
-        imout = np.rot90(np.rot90(image))
+        imout = np.rot90( image,2)
     elif tt==3:
     #3 270 deg
-        imout = np.rot90(np.rot90(np.rot90(image)))
+        imout = np.rot90(image,3)
     elif tt==4:
     #4 flip fimage left-right
             imout=np.fliplr(image)
@@ -256,24 +192,13 @@ def geneaug(image,tt):
         imout = np.rot90(np.fliplr(image))
     elif tt==6:
     #6 flip fimage left-right +rot 180
-        imout = np.rot90(np.rot90(np.fliplr(image)))
+        imout = np.rot90(np.fliplr(image),2)
     elif tt==7:
     #7 flip fimage left-right +rot 270
-        imout = np.rot90(np.rot90(np.rot90(np.fliplr(image))))
-    elif tt==8:
-    # 8 flip fimage up-down
-        imout = imout=np.flipud(image)
-    elif tt==9:
-    #9 flip fimage up-down +rot90
-        imout = np.rot90(np.flipud(image))
-    elif tt==10:
-    #10 flip fimage up-down +rot180
-        imout = np.rot90(np.rot90(np.flipud(image)))
-    elif tt==11:
-    #11 flip fimage up-down +rot270
-        imout = np.rot90(np.rot90(np.rot90(np.flipud(image))))
-
+        imout = np.rot90(np.fliplr(image),3)
+  
     return imout
+
 
 
 ###########################################################"
@@ -285,25 +210,6 @@ print '-----------'
 print'number of scan images in scan:', numscan
 print '-----------'
 
-#listscaninroi={}
-#
-#indexpatc={}
-#for j in listroi:
-#        indexpatc[j]=0
-#
-#totalimages=0
-
-#
-#for c in listroi:
-#    listscaninroi[c]=os.listdir(os.path.join(picklepathdir,c))
-#    numberscan=len(listscaninroi[c])
-#    if numberscan>maximage:
-#        maximage=numberscan
-#        ptmax=c
-#    totalimages+=numberscan
-#    
-#print 'number total of scan images:',totalimages
-#print 'maximum data in one pat:',maximage,' in ',ptmax
 print '-----------'
 patch_list=[]
 label_list=[]
@@ -311,7 +217,7 @@ label_list=[]
 for numgen in range(pklnum):
       
         indexpat=random.randint(0, numscan-1)
-        indexaug = random.randint(0, 11)
+        indexaug = random.randint(0, 7)
 
 #        print numgen ,indexpat,numscan
         scan,mask=readclasses(lisscan,picklepathdir,indexpat,indexaug)  
@@ -320,7 +226,6 @@ for numgen in range(pklnum):
     
 print 'number of data',len(patch_list)
 print '-----------'
-
 
 X_train, X_test, y_train, y_test = train_test_split(patch_list,
                                         label_list,test_size=perval)
@@ -340,7 +245,6 @@ for key,value in class_weights.items():
    print key, fidclass (key,classif), value
 print('-' * 30)
 
-
 X_train, X_test, y_train, y_test= readclasses2(num_classes,X_train,y_train,X_test,y_test)
 
 print 'shape X_train :',X_train.shape
@@ -348,6 +252,7 @@ print 'shape X_test :',X_test.shape
 print 'shape y_train :',y_train.shape
 print 'shape y_test :',y_test.shape
 print '-----------'
+print X_train.min(),X_train.max(),np.mean(X_train)
 diri=os.path.join(pickle_dir,validationdir)
 remove_folder(diri)
 os.mkdir(diri)
