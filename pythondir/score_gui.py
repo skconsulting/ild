@@ -242,11 +242,11 @@ def predictScore (btn):
         app.stop()
         if allAsked:
             continuevisu=False
-            app.stop()
+#            app.stop()
             initDraw()
         else:
             continuevisu=True
-            app.stop()
+#            app.stop()
             visuDraw()
 #    else:
 #        app.errorBox('error', 'no patient selected for predict')

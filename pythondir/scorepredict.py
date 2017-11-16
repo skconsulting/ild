@@ -35,6 +35,7 @@ import os
 import cv2
 import dicom
 import copy
+import sys
 from skimage import measure, morphology
 from skimage.segmentation import clear_border
 from skimage.morphology import  disk, binary_erosion, binary_closing
@@ -43,6 +44,7 @@ from skimage.measure import label,regionprops
 from scipy import ndimage as ndi
 from itertools import product
 import cPickle as pickle
+import matplotlib.pyplot as plt
 
 #import keras
 from keras.models import load_model
@@ -559,16 +561,13 @@ def ILDCNNpredict(patch_list,model):
     for fil in patch_list:
               dataset_list.append(fil[3])
     X0=len(dataset_list)
-    # adding a singleton dimension and rescale to [0,1]
-    pa = np.asarray(np.expand_dims(dataset_list, 1))
-    # look if the predict source is empty
-    # predict and store  classification and probabilities if not empty
-    if X0 > 0:
+    if X0 > 0:      
+        pa = np.expand_dims(dataset_list, 1)
         proba = model.predict_proba(pa, batch_size=500,verbose=1)
 
     else:
         print (' no patch in selected slice')
-        proba = ()
+        proba = []
     print 'number of patches', len(pa)
 
     return proba
@@ -1173,7 +1172,7 @@ def generoi(dirf,tabroi,dimtabx,dimtaby,slnroi,tabscanName,dirroit,tabscanroi,ta
             fer.write('no lung for: '+str(numslice)+'\n')
             print ('no lung for: '+str(numslice))
         tabroi[numslice]=np.bitwise_and(maskRoi,maskLung)   
-
+        
         maskRoi1Not=np.bitwise_not(maskRoi1)       
         tablung=np.bitwise_and(maskLung, maskRoi1Not)
         np.putmask(tablung,tablung>0,classif['healthy']+1) 

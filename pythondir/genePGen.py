@@ -14,7 +14,7 @@ from param_pix_t import dimpavx,dimpavy,typei,typei1,avgPixelSpacing,thrpatch,lu
 from param_pix_t import remove_folder,normi,genelabelloc,totalpat,totalnbpat,fidclass
 from param_pix_t import white
 from param_pix_t import patchpicklename,scan_bmp,lungmask,lungmask1,lungmaskbmp,sroi,patchesdirname
-from param_pix_t import imagedirname,picklepath,patchfile,source,perrorfile,plabelfile,locabg
+from param_pix_t import imagedirname,picklepath,patchfile,source,perrorfile,plabelfile,locabg,reservedword
 
 import cPickle as pickle
 import cv2
@@ -31,13 +31,13 @@ import scipy.misc
 #global directory for scan file
 topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 namedirHUG = 'HUG'
-#subHUG='ILD_TXT'
-subHUG='ILD105'
+subHUG='ILD_TXT'
+subHUG='ILD23'
 
 toppatch= 'TOPPATCH'
 #extension for output dir
 extendir='all'
-#extendir1='0'
+extendir1='2'
 extendir1='essai'
 
 #labelEnh=('consolidation','reticulation,air_trapping','bronchiectasis','cysts')
@@ -92,7 +92,7 @@ if not os.path.isdir(picklepathdir):
     os.mkdir(picklepathdir)
 
 listHug= [ name for name in os.listdir(namedirtopc) if os.path.isdir(os.path.join(namedirtopc, name)) and \
-            name not in alreadyDone]
+            name not in alreadyDone and name not in reservedword]
 print 'list of patients :',listHug
 
 eferror=os.path.join(patchtoppath,perrorfile)
@@ -253,7 +253,7 @@ def genebmp(dirName,slnt,dimtabx,dimtaby):
 #            dsr = dsr.astype('int16')
             dsr = dsr.astype('float32')
 #            print 'start resize'
-            dsr=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_CUBIC)
+            dsr=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
 #            print 'end resize'
 #            dsr = scipy.ndimage.interpolation.zoom(dsr, fxs, mode='nearest')
 #        imgresize=dsr
@@ -295,7 +295,7 @@ def genebmp(dirName,slnt,dimtabx,dimtaby):
                 imgcore=imgcoredeb+typei
                 bmpfile=os.path.join(lung_bmp_dir,imgcore)
                 dsr=normi(dsr)
-                dsrresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_CUBIC)
+                dsrresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
                 tabslung[scanNumber]=dsrresize
                 cv2.imwrite (bmpfile, dsrresize)
 
@@ -464,7 +464,8 @@ def pavs (namedirtopcf,label,loca,slnt,numslice,namescan):
              mfl.close()
              stww=stw+'.'+typei
              flw=os.path.join(jpegpath,stww)
-             scipy.misc.imsave(flw, tabfc)
+#             scipy.misc.imsave(flw, tabfc)
+             cv2.imwrite (flw, tabfc)
 #             print 'pathpicklepatfile',pathpicklepatfile
 #             print patpickle
              pickle.dump(patpickle, open(pathpicklepatfile, "wb"),protocol=-1)
@@ -634,7 +635,8 @@ def genebackground(namedir):
     
 
 
-listdirc= (os.listdir(namedirtopc))
+listdirc=[name for name in os.walk(namedirtopc).next()[1] if name not in reservedword]
+
 npat=0
  
 for f in listdirc:
