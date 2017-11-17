@@ -18,7 +18,7 @@ from param_pix_s import reportdir,reportfile
 
 from param_pix_s import classifc,classifdict,usedclassifdict,oldFormat
 
-from param_pix_s import maxproba,excluvisu,fidclass,rsliceNum,evaluate,evaluatef
+from param_pix_s import maxproba,excluvisu,fidclass,rsliceNum,evaluatef
 
 from param_pix_s import normi
 from scorepredict import predictrun
@@ -309,19 +309,20 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,slnt,tabro
             proba=ll[1]
 
             prec, mprobai = maxproba(proba)
+            if mprobai <th :
+                    classlabel='healthy'
+            else:
+                    classlabel=fidclass(prec,classif)
 
-            classlabel=fidclass(prec,classif)
-            classcolor=classifc[classlabel]
-
-            if mprobai >th and classlabel not in excluvisu:
-
+            if classlabel not in excluvisu:
+                
                 if classlabel not in listlabel:
                     listlabel.append(classlabel)
-         
+
                 cv2.rectangle(imgpatch,(xpat,ypat),(xpat+dimpavxr-1,ypat+dimpavyr-1),classif[classlabel]+1,-1)
 
                 if va[classlabel]==True:
-                    cv2.rectangle(imgn,(xpat,ypat),(xpat+dimpavxr,ypat+dimpavyr),classcolor,1)
+                    cv2.rectangle(imgn,(xpat,ypat),(xpat+dimpavxr,ypat+dimpavyr),classifc[classlabel],1)
 
                 if lvexist:
                     imgray=np.copy(imgpatch)
@@ -756,16 +757,19 @@ def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
                     proba=ll[1]
         
                     prec, mprobai = maxproba(proba)
+                    if mprobai <th:
+                        classlabel='healthy'
+                    else:
+                        classlabel=fidclass(prec,classif)
         
-                    classlabel=fidclass(prec,classif)
-        
-                    if mprobai >th and classlabel not in excluvisu:
+                    if classlabel not in excluvisu:
+                        
                         cv2.rectangle(imgpatch,(xpat,ypat),(xpat+dimpavx-1,ypat+dimpavy-1),classif[classlabel]+1,-1)
                         imgray=np.copy(imgpatch)
                         np.putmask(imgray,imgray>0,255)
                         mask=np.bitwise_not(imgray)
-#                        print slicenumber, imgpatch.shape
-#                        print patchdict[slicenumber].shape
+    #                        print slicenumber, imgpatch.shape
+    #                        print patchdict[slicenumber].shape
                         patchdict[slicenumber]=cv2.bitwise_and(patchdict[slicenumber],patchdict[slicenumber],mask=mask)
                         patchdict[slicenumber]=cv2.bitwise_or(imgpatch,patchdict[slicenumber])
 
@@ -918,14 +922,11 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,tabroi,
         fld = cv2.getTrackbarPos('Flip','Sliderfis')
         allview = cv2.getTrackbarPos('All','Sliderfis')
         noneview = cv2.getTrackbarPos('None','Sliderfis')
-#        algo = cv2.getTrackbarPos('algo','Sliderfis')
-        algo =0
 
         fl=slnroi[fld]
         key = cv2.waitKey(1000)
 #            if key != -1:
-#                print key
-            
+#                print key            
         if key >47 and key<58:
             numberfinal=0
             knum=key-48
@@ -1003,12 +1004,7 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,tabroi,
         img=lumi(img,l)
         img=contrasti(img,c)    
         img = img.astype('float32')
-        if algo==0:           
-            img=cv2.resize(img,(dimtaby,dimtabx),interpolation=cv2.INTER_LINEAR)
-        elif algo==1:
-             img=cv2.resize(img,(dimtaby,dimtabx),interpolation=cv2.INTER_CUBIC)
-        elif algo==2:
-             img=cv2.resize(img,(dimtaby,dimtabx),interpolation=cv2.INTER_LANCZOS4)
+        img=cv2.resize(img,(dimtaby,dimtabx),interpolation=cv2.INTER_CUBIC)
         img=normi(img)    
 #            print img.shape
 #            print  initimg.shape

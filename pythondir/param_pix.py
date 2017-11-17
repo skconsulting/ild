@@ -337,6 +337,9 @@ def normalize(image):
     image1= (image - MIN_BOUND) / (MAX_BOUND - MIN_BOUND)
     image1[image1>1] = 1.
     image1[image1<0] = 0.
+#    print 'bound', MIN_BOUND,MAX_BOUND
+#    print 'image source',image.min(),image.max()
+#    print 'image res',image1.min(),image1.max()
     return image1
 
 def zero_center(image):

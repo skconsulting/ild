@@ -25,19 +25,19 @@ print ' keras.backend.image_data_format :',keras.backend.image_data_format()
 nameHug='IMAGEDIR'
 
 toppatch= 'TOPROI' #for scan classified ROI
-extendir='g'  #for scan classified ROI
+extendir='T_2'  #for scan classified ROI
 #extendir='0'  #for scan classified ROI
 
 nametop='TRAIN_SET'
 pickel_top='pickle' #path to get input data
 pickel_ext='train_set'  #path to get input data
-pickel_ext_set='q'  #path to get input data
+pickel_ext_set='2'  #path to get input data
 
-trainSetSize=30# default 200 , number of images for each epoch
-nb_epoch=10 # default 30 number of epoch for each set
-batch_size= 4#default 2 batch size (gpu ram dependant)
-turnNumber=10 #number of turn of trainset size
-numgen=-1   #to restart after crash
+trainSetSize=216# default 220 , number of images for each epoch, multiple of batch_size
+nb_epoch=30 # default 30 number of epoch for each set
+batch_size= 4#default 2 batch size (gpu ram dependant) 8 for sk3, 6 for unet, 4 for sk4
+turnNumber=22 #number of turn of trainset size
+numgen=107  #to restart after crash -1 means start new
 calculate=True #to be put to False for actual training
 calculate=False #to be put to False for actual training
 
@@ -72,12 +72,13 @@ def caltime(i):
         return str(nbdays)+'d '+str(nbheure)+'h ' +str(nbmin)+'m '+str(nbsecond)+'s'
     
 toe=2.03
-toe=0.45 #ské2
+toe=113 #sk4
+print 'number of numgen for 1 turn:',1.0*trainSetSize/batch_size
 print 'evaluation time:'
-print 'time for one image :',str(toe)+'s'
-print 'time for one set:',caltime(int(toe*trainSetSize))
-print 'time for one turn :',caltime(int(toe*trainSetSize*nb_epoch))
-print 'total time for ',turnNumber,' turns :',caltime(int(toe*trainSetSize*nb_epoch*turnNumber))
+print 'time for one epoch :',str(toe)+'s'
+#print 'time for one set:',caltime(int(toe*nb_epoch))
+print 'time for one turn :',caltime(int(toe*nb_epoch))
+print 'total time for ',turnNumber,' turns :',caltime(int(toe*nb_epoch*turnNumber))
 
 ##############################################################
 validationdir='V' #validation set directory
@@ -183,13 +184,13 @@ def geneaug(image,tt):
         imout=image
     elif tt==1:
     # 1 90 deg
-        imout = np.rot90(image)
+        imout = np.rot90(image,1)
     elif tt==2:
     #2 180 deg
-        imout = np.rot90(np.rot90(image))
+        imout = np.rot90( image,2)
     elif tt==3:
     #3 270 deg
-        imout = np.rot90(np.rot90(np.rot90(image)))
+        imout = np.rot90(image,3)
     elif tt==4:
     #4 flip fimage left-right
             imout=np.fliplr(image)
@@ -198,23 +199,11 @@ def geneaug(image,tt):
         imout = np.rot90(np.fliplr(image))
     elif tt==6:
     #6 flip fimage left-right +rot 180
-        imout = np.rot90(np.rot90(np.fliplr(image)))
+        imout = np.rot90(np.fliplr(image),2)
     elif tt==7:
     #7 flip fimage left-right +rot 270
-        imout = np.rot90(np.rot90(np.rot90(np.fliplr(image))))
-    elif tt==8:
-    # 8 flip fimage up-down
-        imout = imout=np.flipud(image)
-    elif tt==9:
-    #9 flip fimage up-down +rot90
-        imout = np.rot90(np.flipud(image))
-    elif tt==10:
-    #10 flip fimage up-down +rot180
-        imout = np.rot90(np.rot90(np.flipud(image)))
-    elif tt==11:
-    #11 flip fimage up-down +rot270
-        imout = np.rot90(np.rot90(np.rot90(np.flipud(image))))
-
+        imout = np.rot90(np.fliplr(image),3)
+  
     return imout
 
 def readclasses(pat,namepat,indexpat,indexaug):
@@ -268,7 +257,7 @@ def gen_random_image(numclass,listroi,listscaninroi,indexpatc):
 
     indexpatc[pat]=indexpat+1
 
-    indexaug = random.randint(0, 11)
+    indexaug = random.randint(0, 7)
 #    print '\n'
 #    print numgen ,pat,indexpat,numberscan
     scan,mask=readclasses(pat,listscaninroi[pat],indexpat,indexaug)  
@@ -382,7 +371,7 @@ def train():
     print 'image number of rows :',img_rows
     print 'image number of columns :',img_cols
     print 'image width:', num_bit  
-    
+    print ( 'number of numgen for 1 turn:',str(1.0*trainSetSize/batch_size) )
     print 'number of validation images:', num_images
     print 'maximum data in one pat:',maximage,' in ',ptmax
     print 'number of classes:', num_class
@@ -405,7 +394,7 @@ def train():
     filew.write ('image number of rows :'+str(img_rows)+'\n')
     filew.write ('image number of columns :'+str(img_cols)+'\n')
     filew.write ( 'image width:'+ str(num_bit) +'\n')
-    
+    filew.write ( 'number of numgen for 1 turn:'+str(1.0*trainSetSize/batch_size)+'\n')
     filew.write ( 'number of validation images:'+ str(num_images)+'\n')
     filew.write ( 'maximum data in one pat:'+str(maximage)+' in '+ptmax+'\n')
     filew.write ('number of classes:'+ str(num_class)+'\n')
@@ -445,6 +434,7 @@ def train():
         init_epoch_i_p=i*nb_epoch
         todayn = 'month:'+str(tn.month)+'-day:'+str(tn.day)+'-year:'+str(tn.year)+' - '+str(tn.hour)+'h'+str(tn.minute)+'m'
         filew=open (todayf,'a')
+        filew.write('start turn: '+ str(i)+'\n')
         filew.write('start epoch  :'+str(init_epoch_i_p)+ ' at '+todayn+' for max epoch: '+str(nb_epoch_i_p)+'\n')
         filew.write('------------------------------------------\n')
         filew.close()
@@ -458,11 +448,12 @@ def train():
                 validation_data=(x_val,y_val),
                 verbose=2,
                 callbacks=[model_checkpoint,reduce_lr,csv_logger,early_stopping] ,
-                max_queue_size=trainSetSize)   
+                max_queue_size=batch_size)   
 
         tn = datetime.datetime.now()
         todayn = 'month:'+str(tn.month)+'-day:'+str(tn.day)+'-year:'+str(tn.year)+' - '+str(tn.hour)+'h'+str(tn.minute)+'m'
         filew=open (todayf,'a')
+        filew.write('end turn: '+ str(i)+'\n')
         filew.write('end epoch  :'+str(nb_epoch_i_p)+ ' at '+todayn+' for max epoch: '+str(turnNumber*nb_epoch)+'\n')
         filew.write('for restart  :'+str(numgen)+'\n')
         print('end epoch  :'+str(nb_epoch_i_p)+ ' at '+todayn+' for max epoch: '+str(turnNumber*nb_epoch)+'\n')    

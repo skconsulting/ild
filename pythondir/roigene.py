@@ -697,6 +697,7 @@ def zoomfunction(im,z,px,py,dx,algo):
 
 
 def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName,debugenh):
+
     global quitl,scannumber,imagename,viewasked,pattern,patternerase
     quitl=False
 
@@ -724,7 +725,7 @@ def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName,debugenh):
     if debugenh==True:
         cv2.createTrackbar( 'smoo','SliderRoi',0,4,nothing)
         cv2.createTrackbar( 'kerneli','SliderRoi',0,5,nothing)
-        cv2.createTrackbar( 'algo','SliderRoi',1,4,nothing)
+        cv2.createTrackbar( 'algo','SliderRoi',3,4,nothing)
 #        cv2.createTrackbar( 'floatf','SliderRoi',0,1,nothing)
     cv2.setMouseCallback("imageRoi", click_and_crop)
     viewasked={}
@@ -809,7 +810,7 @@ def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName,debugenh):
             algo = cv2.getTrackbarPos('algo','SliderRoi')
 #            floatf = cv2.getTrackbarPos('floatf','SliderRoi')
         else:
-            algo=1
+            algo=3
 
         if algo ==0:
                   algot='NEAREST'
