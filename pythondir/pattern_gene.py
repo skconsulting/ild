@@ -13,7 +13,7 @@ import shutil
 import numpy as np
 import random
 from param_pix import image_rows,image_cols,typeibmp,sroi,source,classif,MAX_BOUND
-from param_pix import normi,norm,remove_folder,classifc,fidclass,red
+from param_pix import normi,norm,remove_folder,classifc,fidclass
 
 nametopHug='SOURCE_IMAGE'
 nameHug='DUMMY' #name of top directory for patches pivkle from dicom
@@ -78,152 +78,7 @@ def show_image(im, name='image'):
     cv2.waitKey(0)
     cv2.destroyAllWindows()
     
-def genebmp(dirName,slnt,col):
-    """generate patches from dicom files and sroi"""
-    print ('generate geometric images and label files in :',dirName)
-#    (topb,tailb)=os.path.split(dirName)
-#    global constPixelSpacing, dimtabx,dimtaby
-    #directory for patches
-    bmp_dir = os.path.join(dirName, bmpname)
-    remove_folder(bmp_dir)
-    os.mkdir(bmp_dir)
-    sroidir=os.path.join(dirName,sroi)
-    if os.path.exists(sroidir):
-        shutil.rmtree(sroidir)
-        time.sleep(1)
-    os.mkdir(sroidir)
-    if num_bit==3:
-         img=np.zeros((slnt,image_rows,image_cols,3),np.uint8)
-    else:
-        img=np.zeros((slnt,image_rows,image_cols),np.uint8)
-    mask=np.zeros((slnt,image_rows,image_cols),np.uint8)
-    
-#    os.listdir(lung_dir)
-    for s in range(slnt):
-        if col:
-#            print(filename)
-            dark_color0 = random.randint(0, 100)
-            dark_color1 = random.randint(0, 100)
-            dark_color2 = random.randint(0, 100)
-            img[s,:, :, 0] = dark_color0
-            img[s,:, :, 1] = dark_color1
-            img[s,:, :, 2] = dark_color2
-        
-            # Object
-            light_color0 = random.randint(dark_color0+1, 255)
-            light_color1 = random.randint(dark_color1+1, 255)
-            light_color2 = random.randint(dark_color2+1, 255)
-            center_0 = random.randint(0, image_rows)
-            center_1 = random.randint(0, image_cols)
-            r1 = random.randint(10, 56)
-            r2 = random.randint(10, 56)
-            cv2.ellipse(img[s], (center_0, center_1), (r1, r2), 0, 0, 360, (light_color0, light_color1, light_color2), -1)
-            cv2.ellipse(mask[s], (center_0, center_1), (r1, r2), 0, 0, 360, 255, -1)
-           
-    # White noise
-            density = random.uniform(0, 0.1)
-            for i in range(image_rows):
-                for j in range(image_cols):
-                    if random.random() < density:
-                        img[s,i, j, 0] = random.randint(0, 255)
-                        img[s,i, j, 1] = random.randint(0, 255)
-                        img[s,i, j, 2] = random.randint(0, 255)
-        else:
-            if randomdim:
-                nc=0
-                while nc<2*numfig:
-                    if num_bit==3:
-                        color=red
-                    else:
-                        color=255
-                    imgt=np.zeros((image_rows,image_cols,num_bit),np.uint8)
-                    maskt=np.zeros((image_rows,image_cols),np.uint8)
-                    center_0 = random.randint(0, image_rows)
-                    center_1 = random.randint(0, image_cols)
-                    
-                    if nc%2==0:
-                        r1 = random.randint(2, 50)
-                        r2 = random.randint(2, 50)
-                        cv2.ellipse(imgt, (center_0, center_1), (r1, r2), 0, 0, 360, color, -1)
-                        cv2.ellipse(maskt, (center_0, center_1), (r1, r2), 0, 0, 360, 1, -1)
-                    else:
-                        r1 = random.randint(2, 50)
-                        r2 = random.randint(2, 50)
-                        cv2.rectangle(imgt, (center_0, center_1), (center_0+r1, center_1+r2), color, -1)
-                        cv2.rectangle(maskt, (center_0, center_1),  (center_0+r1, center_1+r2), 2, -1)
-    
-                    ms=mask[s].copy()
-                    mt=np.copy(maskt)
-                    np.putmask(ms,ms>0,255) 
-                    np.putmask(mt,mt>0,255)
-                    xori=cv2.bitwise_and(mt,ms)
-    
-    #                print xori.max()
-                    if xori.max()==0:
-                         img[s]=cv2.add(imgt,img[s])
-                         mask[s]=cv2.add(maskt,mask[s])
-                         nc+=1
-            else:
-                nc=0
-                while nc<2*numfig:
-                    if num_bit==3:
-                            color=red
-                    else:
-                            color=255
-                    imgt=np.zeros((image_rows,image_cols,num_bit),np.uint8)
-                    maskt=np.zeros((image_rows,image_cols),np.uint8)
-                    center_0 = random.randint(0, image_rows)
-                    center_1 = random.randint(0, image_cols)
-                    r1 = random.randint(2,10)
-                    r2 =random.randint(2,10)
-                    if nc%2==0:
-                        
-                        cv2.ellipse(imgt, (center_0, center_1), (r1, r2), 0, 0, 360, color, -1)
-                        cv2.ellipse(maskt, (center_0, center_1), (r1, r2), 0, 0, 360, 1, -1)
-                    else:
-                       
-                        cv2.rectangle(imgt, (center_0, center_1), (center_0+r1, center_1+r2), color, -1)
-                        cv2.rectangle(maskt, (center_0, center_1),  (center_0+r1, center_1+r2), 2, -1)
-                    
-                    ms=mask[s].copy()
-                    mt=np.copy(maskt)
-                    np.putmask(ms,ms>0,255) 
-                    np.putmask(mt,mt>0,255)
-                    xori=cv2.bitwise_and(mt,ms)
-        
-        #                print xori.max()
-                    if xori.max()==0:
-                             img[s]=cv2.add(imgt,img[s])
-                             mask[s]=cv2.add(maskt,mask[s])
-                             nc+=1
-#                     print 'overlapp'
-                     
-                    
-#                print nc
-#                cv2.imshow('img'+str(nc),img[s])
-#                cv2.imshow('xori',normi(xori))
-#                cv2.imshow('maskt',normi(maskt))
-#                cv2.imshow('mask',normi(mask[s]))
-#                cv2.waitKey(0)
-#                cv2.destroyAllWindows()
-               
-#        print 'number of figures:',nc  
-#        print img.shape
-        dsrforimage=normi(img[s])
-        imgcoredeb='img_'+str(s)+'.'+typeibmp             
-        bmpfiled=os.path.join(bmp_dir,imgcoredeb)
-        if num_bit ==3:
-            dsrforimage=cv2.cvtColor(dsrforimage,cv2.COLOR_RGB2BGR)
-        cv2.imwrite (bmpfiled, dsrforimage)
-    #            print imgcoresroi,bmpfileroi   
-        imgcoresroi='mask_'+str(s)+'.'+typeibmp
-        bmpfileroi=os.path.join(sroidir,imgcoresroi)
-#            print imgcoresroi,bmpfileroi
-        dsrforimage=normi(mask[s])
-        dsrforimage=cv2.cvtColor(dsrforimage,cv2.COLOR_GRAY2BGR)                     
-        cv2.imwrite (bmpfileroi, dsrforimage)
 
-    return img,mask
 
 def geneaug(image,tt):
     if tt==0:
@@ -333,11 +188,11 @@ def genebmppatch(dirName,slnt,contenupat):
 #        print 'number of classes :',len( np.unique(mask[s]))
         
 #        print img[s].min(),img[s].max()
-        dsrforimage=normi(norm(img[s]))
+        dsrforimage=normi(img[s])
         imgcoredeb='img_'+str(s)+'.'+typeibmp             
         bmpfiled=os.path.join(bmp_dir,imgcoredeb)
-        if num_bit ==3:
-            dsrforimage=cv2.cvtColor(dsrforimage,cv2.COLOR_RGB2BGR)
+#        if num_bit ==3:
+#            dsrforimage=cv2.cvtColor(dsrforimage,cv2.COLOR_RGB2BGR)
         cv2.imwrite (bmpfiled, dsrforimage)
     #            print imgcoresroi,bmpfileroi   
         imgcoresroi='mask_'+str(s)+'.'+typeibmp
@@ -370,25 +225,16 @@ def preparroi(namedirtopcf,tabscan,tabsroi):
 
 listpat=[]
 
-if not lpatch:
-        sroidir=os.path.join(namedirtopc,sroi)
-        if not os.path.exists(namedirtopc):
-            os.mkdir(namedirtopc)
-        if os.path.exists(sroidir):
-            remove_folder(sroidir)
-        os.mkdir(sroidir)
-        tabscan,tabsroi=genebmp(namedirtopc,slnt,col)    
-        preparroi(namedirtopc,tabscan,tabsroi)
-        
-else:
-    print 'based on patches'
-    sroidir=os.path.join(namedirtopc,sroi)
-    remove_folder(sroidir)
-    os.mkdir(sroidir)
-    print 'path for sroidir',sroidir
 
-    classifused=classif
-    tabscan,tabsroi=genebmppatch(namedirtopcpickle,slnt,classifused)
-    namedirtopcf=namedirtopc
-    preparroi(namedirtopc,tabscan,tabsroi)
+print 'based on patches'
+sroidir=os.path.join(namedirtopc,sroi)
+#    print sroidir
+remove_folder(sroidir)
+os.mkdir(sroidir)
+print 'path for sroidir',sroidir
+
+classifused=classif
+tabscan,tabsroi=genebmppatch(namedirtopcpickle,slnt,classifused)
+namedirtopcf=namedirtopc
+preparroi(namedirtopc,tabscan,tabsroi)
     

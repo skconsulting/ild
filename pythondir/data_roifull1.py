@@ -3,7 +3,7 @@
 Created on Tue May 02 15:03:33 2017
 
 @author: sylvain
-generate data from dicom images for segmentation roi 
+generate data from dicom images for segmentation roi , include normalization
 
 -1st step
 
@@ -35,16 +35,16 @@ from itertools import product
 
 #path for images source
 nametop='SOURCE_IMAGE'
-#nameHug='HUG'
+nameHug='HUG'
 #nameHug='CHU'
-nameHug='CHU2'
+#nameHug='CHU'
 #nameHug='REFVAL'
 #subHUG='ILD6'
-#subHUG='ILD_TXT'
+subHUG='ILD_TXT'
 #subHUG='ILD208'
 #subHUG='UIP4'
 #subHUG='UIP6'
-subHUG='UIP'
+#subHUG='UIP'
 #subHUG='GF'
 
 
@@ -54,7 +54,7 @@ imagedir='IMAGEDIR'
 #toppatch= 'TOPVAL'
 toppatch= 'TOPROI'
 
-extendir='2'
+extendir='3'
 #extendir='3'
 
 ###############################################################

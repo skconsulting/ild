@@ -31,15 +31,15 @@ perval = 0.2 #percentage for validation
 
 nametopdummy='DUMMY' # name of top directory for dummy images with patches
 toppatchdummy= 'TOPPATCH' #for dummy scan with patches
-namesubdummy='lu_training' #for dummy scan with patches
-nsubsubdummy='lu_f'  #for dummy scan with patches
+#namesubdummy='lu_training' #for dummy scan with patches
+#nsubsubdummy='lu_f'  #for dummy scan with patches
 dummyinclude=False #to add patch roi after each set of pattern
 
 nameHug='IMAGEDIR'
 #nameHug='CHU'
 #nameHug='DUMMY'
 
-extendirdummy=namesubdummy
+#extendirdummy=namesubdummy
 
 toppatch= 'TOPPATCH' #for scan classified ROI
 #extendir='ILD_TXT'  #for scan classified ROI
@@ -71,9 +71,9 @@ pickel_dirsource=pickel_dirsource+'_'+pickel_dirsourcenum+extendir2
 pickle_dir=os.path.join(cwdtop,pickel_dirsource)
 print 'path to write data for training',pickle_dir
 
-
-remove_folder(pickle_dir)
-os.mkdir(pickle_dir)
+if not os.path.exists(pickle_dir):
+#    remove_folder(pickle_dir)
+    os.mkdir(pickle_dir)
 
 
 path_HUG=os.path.join(cwdtop,nameHug)

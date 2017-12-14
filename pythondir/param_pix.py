@@ -870,28 +870,7 @@ def get_model(num_class,num_bit,img_rows,img_cols,mat_t_k,weights,weightedl):
         mloss = weighted_categorical_crossentropy(weights).myloss
         model.compile(optimizer=Adam(lr=1e-5), loss=mloss, metrics=['categorical_accuracy'])
         
-    elif  modelName == 'sk1':
-    #alexnet
-#        print weights
-#        print weights.shape
-#        mloss = w_categorical_crossentropy(np.ones((num_class, num_class)))
-
-
-        model=sk1(num_class,num_bit,img_rows,img_cols,INP_SHAPE,DIM_ORDERING)
-#        weights = np.ones(512)
-        mloss = weighted_categorical_crossentropy(weights).myloss
-        
-        model.compile(optimizer=Adam(lr=learning_rate), loss=mloss, metrics=['categorical_accuracy'])
-    elif  modelName == 'sk2':
-    #alexnet
-#        print weights
-#        print weights.shape
-        model=sk2(num_class,num_bit,img_rows,img_cols,INP_SHAPE,DIM_ORDERING)
-#        weights = np.ones(512)
-        mloss = weighted_categorical_crossentropy(weights).myloss
-        
-        model.compile(optimizer=Adam(lr=learning_rate), loss=mloss, metrics=['categorical_accuracy'])
-#        model.compile(optimizer=Adam(lr=1e-4), loss='categorical_crossentropy', metrics=['categorical_accuracy'])
+    
     elif  modelName == 'sk3':
          
         model=sk3(num_class,num_bit,img_rows,img_cols,INP_SHAPE,DIM_ORDERING)
@@ -909,9 +888,17 @@ def get_model(num_class,num_bit,img_rows,img_cols,mat_t_k,weights,weightedl):
 #        weights = np.ones(512)
         if weightedl:
             print 'weighted loss'
+#            for layer in model.layers[:28]:
+#                layer.trainable = False
+#            for layer in model.layers[0:3]:
+#                layer.trainable = True
             mloss = weighted_categorical_crossentropy(weights).myloss
             model.compile(optimizer=Adam(lr=learning_rate), loss=mloss, metrics=['categorical_accuracy'])
         else:
+#            for layer in model.layers[:28]:
+#                layer.trainable = False
+#            for layer in model.layers[0:3]:
+#                layer.trainable = True
             model.compile(optimizer=Adam(lr=learning_rate), loss='categorical_crossentropy', metrics=['categorical_accuracy'])
             print 'NO weighted loss'
         
@@ -922,7 +909,15 @@ def get_model(num_class,num_bit,img_rows,img_cols,mat_t_k,weights,weightedl):
 #    model.compile(optimizer=Adam(lr=learning_rate), loss='categorical_crossentropy', metrics=['categorical_accuracy'])
     
 #    model.compile(optimizer=SGD(lr=learning_rate, momentum=0.9), loss='categorical_crossentropy', metrics=['accuracy'])
-    print 'las model layer',model.layers[-1].output_shape #== (None, 16, 16, 21)
+    
+    for i, layer in enumerate(model.layers):
+        print(i, layer.name)
+   
+# we chose to train the top 2 inception blocks, i.e. we will freeze
+# the first 249 layers and unfreeze the rest:
+#    
+
+    print 'last model layer',model.layers[-1].output_shape #== (None, 16, 16, 21)
     return model
 
 if __name__ == "__main__":
@@ -932,6 +927,7 @@ if __name__ == "__main__":
    num_class=11
    weightedl=False
    model=get_model(num_class,num_bit,image_size,image_size,False,weights,weightedl)
+   model.summary()
    print model.layers[-1].output_shape #== (None, 16, 16, 21)
    DIM_ORDERING=keras.backend.image_data_format()
    if DIM_ORDERING == 'channels_first':
@@ -941,7 +937,7 @@ if __name__ == "__main__":
    imarr = np.expand_dims(imarr, axis=0)
    print 'imarr.shape',imarr.shape
    print 'model.predict(imarr).shape ',model.predict(imarr,verbose=1).shape
-   model.summary()
+   
    json_string = model.to_json()
    pickle.dump(json_string,open( modelName+'CNN.h5', "wb"),protocol=-1)
    

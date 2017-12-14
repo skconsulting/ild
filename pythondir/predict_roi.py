@@ -9,9 +9,9 @@ predict images in predict_source, with weights in pickle_train
 #from __future__ import print_function
 
 from param_pix import classif,classifc
-from param_pix import white,black
+from param_pix import white
 from param_pix import normi,remove_folder,norm,rsliceNum,preprocess_batch,get_model
-from param_pix import scan_bmp,lungmask,lungmask1,lung_namebmp,image_rows,image_cols,typei,num_bit
+from param_pix import scan_bmp,lungmask,lungmask1,lung_namebmp,image_rows,image_cols,typei,num_bit,modelName
 from param_pix import sroi,source,MAX_BOUND,typei1
 
 import cPickle as pickle
@@ -23,19 +23,19 @@ import os
 #from skimage.io import imsave
 predict_source_TOP='PREDICT'
 predict_source='predict_new' #path for images to  predict 
-predict_source='predict_chu' #path for images to  predict 
+#predict_source='predict_chu' #path for images to  predict 
 
 
 pickle_dir_model_top='TRAIN_SET'
-pickle_dir_modelp='pickle_train_set_2'#path for class weight
-pickel_train='pickle' #path for weights
+pickle_dir_modelp='pickle_train_set_3'#path for class weight
+pickel_train='pickle_sk4' #path for weights
 
 classifnotvisu=['back_ground','healthy']
 
-thrproba=0.
+thrproba=0.5
 ldummy=False
 
-attn=0.4 #attenuation color
+attn=0.3 #attenuation color
 if ldummy:
     print 'mode dummy'
 cwd=os.getcwd()
@@ -188,7 +188,7 @@ def visu(namedirtopcf,imgs_mask_test,num_list,dimtabx,dimtaby,tabscan,sroidir,ta
             imgnc=normi(tabscan[slicenumber])
         imgnc= cv2.cvtColor(imgnc,cv2.COLOR_RGB2BGR)
 #        imgs[num] = cv2.cvtColor(imgs[num] ,cv2.COLOR_RGB2BGR)
-        image2=cv2.add(imgnc,imgs[num])
+        image2=cv2.addWeighted(imgnc,1,imgs[num],attn,0)
 		
         plt.figure(figsize = (10, 7))
 		
@@ -207,7 +207,7 @@ def visu(namedirtopcf,imgs_mask_test,num_list,dimtabx,dimtaby,tabscan,sroidir,ta
         plt.show()
 #        image2= cv2.cvtColor(image2,cv2.COLOR_RGB2BGR)
         image2= cv2.cvtColor(image2,cv2.COLOR_RGB2BGR)
-        cv2.imwrite(os.path.join(pred_dir, str(slicenumber) + '.bmp'), image2)
+        cv2.imwrite(os.path.join(pred_dir, modelName+'_'+str(slicenumber) + '.bmp'), image2)
     
  
 
@@ -352,10 +352,15 @@ def preparscan(tabscan,tabslung):
         tablc=tabl.astype(np.int16)
  
         np.putmask(tablc,tablc==0,MAX_BOUND)
+#        np.putmask(tablc,tablc==0,0)
+
         np.putmask(tablc,tablc==255,0)
-#        print type(taba[0][0]),taba.min(),taba.max()
-#        print type(tablc[0][0]),tablc.min(),tablc.max()
+                
+
+        print type(taba[0][0]),taba.min(),taba.max(),taba[228][350]
+        print type(tablc[0][0]),tablc.min(),tablc.max(),tablc[228][350]
         tabab=taba+tablc
+        print type(tabab[0][0]),tabab.min(),tabab.max(),tabab[228][350]
         tababn=norm(tabab)
 
         scan_list.append(tababn)
@@ -544,7 +549,7 @@ for f in listdirc:
     
     
     imamax=np.amax(imgs_mask_test[0], axis=2)
-#    print 'imamax min max',imamax.min(), imamax.max(),imamax[100][200]
+    print 'imamax min max',imamax.min(), imamax.max(),imamax[100][200]
     plt.hist(imamax.flatten(), bins=80, color='c')
     plt.xlabel("proba")
     plt.ylabel("Frequency")

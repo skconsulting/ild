@@ -34,7 +34,8 @@ predict_source='predict_patc1'
 classifnotvisu=[]
 
 #pickel_train='pickle_lu_f6'
-pickel_train='best_wesk4'
+#pickel_train='best_wesk4'
+pickel_train='pickle_train_set_3/pickle_sk4'
 #pickel_train='best_weunet'
 
 num_class=len(classif)
@@ -55,6 +56,8 @@ namedirtopc=os.path.join(namedirtopc,predict_source)
 
 pickle_dir_train=os.path.join(cwdtop,trainsettop)
 pickle_dir_train=os.path.join(pickle_dir_train,pickel_train)
+print 'pickle source weight',pickle_dir_train
+
 
 predict_result='predict_result'
 

@@ -33,11 +33,11 @@ pickel_top='pickle' #path to get input data
 pickel_ext='train_set'  #path to get input data
 pickel_ext_set='2'  #path to get input data
 
-trainSetSize=216# default 220 , number of images for each epoch, multiple of batch_size
-nb_epoch=30 # default 30 number of epoch for each set
+trainSetSize=4752# default 220 , number of images for each epoch, multiple of batch_size
+nb_epoch=35 # default 30 number of epoch for each set
 batch_size= 4#default 2 batch size (gpu ram dependant) 8 for sk3, 6 for unet, 4 for sk4
-turnNumber=22 #number of turn of trainset size
-numgen=107  #to restart after crash -1 means start new
+turnNumber=1 #22 number of turn of trainset size 216
+numgen=-1  #to restart after crash -1 means start new
 calculate=True #to be put to False for actual training
 calculate=False #to be put to False for actual training
 
@@ -283,8 +283,8 @@ def batch_generator(batch_size,numclass,num_classes,listroi,listscaninroi,indexp
 def train():
     global classnumber,numgen
     print('-'*30)
-    print('Loading train data...')
-    print('-'*30)
+#    print('Loading train data...')
+#    print('-'*30)
     tn = datetime.datetime.now()
     todayf ='f'+'_'+str(tn.month)+'_'+str(tn.day)+'_'+str(tn.year)+'_'+str(tn.hour)+'_'+str(tn.minute)+'stat.txt'
     todayf=os.path.join(pickle_store,todayf)
@@ -303,6 +303,7 @@ def train():
     weightedloss=True
     model = get_model(num_class,num_bit,image_rows,image_cols,False,weights,weightedloss)
     
+
     numpidirval =os.path.join(pickle_dir,validationdir)
     x_val, y_val, num_class,img_rows,img_cols,num_images = load_train_val(numpidirval)
 #    print img_rows
@@ -322,6 +323,7 @@ def train():
     else:
          print 'first training to be run'
          filew.write ('first training to be run\n')
+    model.summary()
     today = str('m'+str(t.month)+'_d'+str(t.day)+'_y'+str(t.year)+'_'+str(t.hour)+'h_'+str(t.minute)+'m')
     rese=os.path.join(pickle_store,str(today)+'_e.csv')
     listroi=[name for name in os.listdir(picklepathdir)]
@@ -416,10 +418,10 @@ def train():
         return
     
     
-    early_stopping=EarlyStopping(monitor='val_loss', patience=150, verbose=1,min_delta=0.005,mode='min')                                     
-    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2,
-                                              patience=50, min_lr=1e-5,verbose=1)#init 5
-    model_checkpoint = ModelCheckpoint(os.path.join(pickle_store,'weights_'+today+'.{epoch:02d}-{val_loss:.2f}.hdf5'), 
+    early_stopping=EarlyStopping(monitor='val_loss', patience=20, verbose=1,min_delta=0.01,mode='auto')                                     
+    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.4,
+                                              patience=5, min_lr=5e-6,verbose=1)#init 5
+    model_checkpoint = ModelCheckpoint(os.path.join(pickle_store,'weights_'+today+'.{epoch:02d}-{val_loss:.3f}.hdf5'), 
                                 monitor='val_loss', save_best_only=True,save_weights_only=True)        
 
     csv_logger = CSVLogger(rese,append=True)
@@ -437,8 +439,20 @@ def train():
         filew.write('start turn: '+ str(i)+'\n')
         filew.write('start epoch  :'+str(init_epoch_i_p)+ ' at '+todayn+' for max epoch: '+str(nb_epoch_i_p)+'\n')
         filew.write('------------------------------------------\n')
+        model = get_model(num_class,num_bit,image_rows,image_cols,False,weights,weightedloss)
+        listmodel=[name for name in os.listdir(pickle_store) if name.find('weights')==0]
+        if len(listmodel)>0:
+             print 'load weight found from last training'
+             filew.write ('load weight found from last training\n')
+             namelastc=load_model_set(pickle_store,filew)         
+             model.load_weights(namelastc)  
+        else:
+             print 'first training to be run'
+             filew.write ('first training to be run\n')
+                
         filew.close()
         print('-'*30)
+        
         history = model.fit_generator(
         generator=batch_generator(batch_size,numclass,num_class,listroi,listscaninroi,indexpatc),
                 epochs=nb_epoch_i_p,
@@ -449,7 +463,7 @@ def train():
                 verbose=2,
                 callbacks=[model_checkpoint,reduce_lr,csv_logger,early_stopping] ,
                 max_queue_size=batch_size)   
-
+        
         tn = datetime.datetime.now()
         todayn = 'month:'+str(tn.month)+'-day:'+str(tn.day)+'-year:'+str(tn.year)+' - '+str(tn.hour)+'h'+str(tn.minute)+'m'
         filew=open (todayf,'a')
