@@ -66,7 +66,7 @@ def get_Obj(obj):
 
 def get_model(input_shape, output_shape, params,filew,patch_dir_store):
     print input_shape,output_shape
-     
+    pool_siz=(2,2)
     num_class=output_shape[-1]
 
     dimpx=input_shape[-1]
@@ -79,28 +79,33 @@ def get_model(input_shape, output_shape, params,filew,patch_dir_store):
     model = Sequential() 
     model.add(Conv2D(32, kernel_size, input_shape=INP_SHAPE, padding='valid', 
                       data_format=dim_org, kernel_constraint=maxnorm(3)))    
-    model.add(LeakyReLU(alpha=.01))   # add an advanced activation
+    model.add(LeakyReLU(alpha=params['a']))
 #    model.add(Dropout(0.1)) 
     model.add(Conv2D(64, kernel_size, padding='valid', 
                 data_format=dim_org, kernel_constraint=maxnorm(3)))
-    model.add(LeakyReLU(alpha=.01))   # add an advanced activation
+    model.add(LeakyReLU(alpha=params['a']))
 #    model.add(Dropout(0.2)) 
     model.add(Conv2D(128, kernel_size, padding='valid', 
                       data_format=dim_org, kernel_constraint=maxnorm(3)))
-    model.add(LeakyReLU(alpha=.01))   # add an advanced activation
+    model.add(LeakyReLU(alpha=params['a']))
     model.add(Dropout(0.3)) 
   
     model.add(Conv2D(256, kernel_size,  padding='valid', 
                       data_format=dim_org, kernel_constraint=maxnorm(3)))
-    model.add(LeakyReLU(alpha=.01))   # add an advanced activation    
-    model.add(AveragePooling2D(pool_size=(2, 2),data_format=dim_org))
+    model.add(LeakyReLU(alpha=params['a']))
+    if params['pt'] == 'Avg':
+        model.add(AveragePooling2D(pool_size=pool_siz,data_format=dim_org))
+    elif params['pt'] == 'Max':
+        model.add(MaxPooling2D(pool_size=pool_siz,data_format=dim_org))
+    else:
+        sys.exit("Wrong type of Pooling layer")
     model.add(Dropout(0.5)) 
     
     model.add(Flatten())
 #    model.add(Dropout(0.25)) 
     
     model.add(Dense(1000))
-    model.add(LeakyReLU(alpha=.01))  
+    model.add(LeakyReLU(alpha=params['a']))
     model.add(Dropout(0.5)) 
     
 #    model.add(Dense(1000))
@@ -292,6 +297,7 @@ def train(x_train, y_train, x_val, y_val, params,eferror,patch_dir_store):
     print('[Optimizer] \t\t->\t'+ params['opt'])
     print('[Objective] \t\t->\t'+ get_Obj(params['obj']))
     print('[Results filename] \t->\t'+str(params['res_alias']+parameters_str+'.txt'))
+    print('[val_data] \t\t->\t'+ str(params['val_data']))
     
     
     filew.write('[Dropout Param] \t->\t'+str(params['do'])+'\n')
@@ -306,6 +312,7 @@ def train(x_train, y_train, x_val, y_val, params,eferror,patch_dir_store):
     filew.write('[Optimizer] \t\t->\t'+ params['opt']+'\n')
     filew.write('[Objective] \t\t->\t'+ get_Obj(params['obj'])+'\n')
     filew.write('[Results filename] \t->\t'+str(params['res_alias']+parameters_str+'.txt')+'\n')
+    filew.write('[val_data] \t\t->\t'+ str(params['val_data'])+'\n')
     
 
 
@@ -318,11 +325,13 @@ def train(x_train, y_train, x_val, y_val, params,eferror,patch_dir_store):
         print('[New Data Shape]\t->\tX: '+str(x_train.shape))
 
     print 'x_shape is: ', x_train.shape
-    print 'x_val is: ', x_val.shape
-    print ('x min max is : '+ str(x_train.min())+' '+str(x_train.max()))
+    if  params['val_data']:
+        print 'x_val is: ', x_val.shape
+    print ('x min max mean is : '+ str(x_train.min())+' '+str(x_train.max())+' '+str(np.mean(x_train)))
     filew.write('x_shape is : '+ str(x_train.shape)+'\n')
-    filew.write( 'x_val is: '+ str(x_val.shape)+'\n')
-    filew.write('x min max is : '+ str(x_train.min())+' '+str(x_train.max())+'\n')
+    if  params['val_data']:
+        filew.write( 'x_val is: '+ str(x_val.shape)+'\n')
+    filew.write('x min max mean is : '+ str(x_train.min())+' '+str(x_train.max())+' '+str(np.mean(x_train))+'\n')
     
     listmodel=[name for name in os.listdir(patch_dir_store) if name.find('weights')==0]
 #    model = get_model(x_train.shape, y_train.shape, params)
@@ -368,37 +377,70 @@ def train(x_train, y_train, x_val, y_val, params,eferror,patch_dir_store):
     filew.write ('starting the loop of training with number of patience = '+ str(params['patience'])+'\n')
     filew.write('started at :'+todayn)
 
-    early_stopping=EarlyStopping(monitor='val_loss', patience=20, verbose=1,min_delta=0.0,mode='auto')                     
-    model_checkpoint = ModelCheckpoint(os.path.join(patch_dir_store,'weights_'+today+'.{epoch:02d}-{val_loss:.2f}.hdf5'), 
+    early_stopping=EarlyStopping(monitor='val_loss', patience=30, verbose=1,min_delta=0.001,mode='auto')                     
+    model_checkpoint = ModelCheckpoint(os.path.join(patch_dir_store,'weights_'+today+'.{epoch:02d}-{val_loss:.3f}.hdf5'), 
                                 monitor='val_loss', save_best_only=True,save_weights_only=True)       
-    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2,
-                      patience=5, min_lr=1e-6,verbose=1)
+    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5,
+                      patience=7, min_lr=5e-6,verbose=1)
     csv_logger = CSVLogger(rese,append=True)
     filew.close()
-    model.fit(x_train, y_train, batch_size=500, epochs=nb_epoch_i_p, verbose =2,
-#                      validation_data=(x_val,y_val),
-                    validation_split=0.1,
-                      callbacks=[model_checkpoint,reduce_lr,csv_logger,early_stopping]  )
+    
+    if params['val_data']:
+        model.fit(x_train, y_train, batch_size=500, epochs=nb_epoch_i_p, verbose =2,
+                          validation_data=(x_val,y_val),
+                          callbacks=[model_checkpoint,reduce_lr,csv_logger,early_stopping]  )
+    else:
+            
+        model.fit(x_train, y_train, batch_size=500, epochs=nb_epoch_i_p, verbose =2,
+                        validation_split=0.1,
+                          callbacks=[model_checkpoint,reduce_lr,csv_logger,early_stopping]  )
         # Evaluate models
+    
+    
     filew = open(eferror, 'a')
     
     print 'predict model'
     namelastc=load_model_set(patch_dir_store) 
     print 'load weight found from last training',namelastc
     filew.write('load weight found from last training\n'+namelastc+'\n')
-#         model= load_model(namelastc)
     model.load_weights(namelastc)
+       
+    if  params['val_data']:
+        #if validation data provided
+        y_score = model.predict(x_val, batch_size=1050)
+        fscore, acc, cm = H.evaluate(np.argmax(y_val, axis=1), np.argmax(y_score, axis=1))
+        print('Val F-score: '+str(fscore)+'\tVal acc: '+str(acc))
+        print cm
+        print '---------------'
+        t = datetime.datetime.now()
+        todayn = str('m'+str(t.month)+'_d'+str(t.day)+'_y'+str(t.year)+'_'+str(t.hour)+'h_'+str(t.minute)+'m'+'\n')
+        filew.write('  finished at :'+todayn)
+        filew.write('  f-score is : '+ str(fscore)+'\n')
+        filew.write('  accuray is : '+ str(acc)+'\n')
+        filew.write('  confusion matrix\n')
+        n= cm.shape[0]
+        for cmi in range (0,n): 
+    
+    #        filew.write('  ')
+            for j in range (0,n):
+                filew.write(str(cm[cmi][j])+' ')
+            filew.write('\n')
+        
+        filew.write('------------------------------------------\n')
+        
+    
+    num_class=y_train.shape[-1]
+    valset='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool/th0.95_pickle_val_set0_0'
+    print('validation set '+str(valset))
+    filew.write('validation set '+str(valset)+'\n')
+    (x_val, y_val)= H.load_data_val(valset, num_class)
     y_score = model.predict(x_val, batch_size=1050)
-
     fscore, acc, cm = H.evaluate(np.argmax(y_val, axis=1), np.argmax(y_score, axis=1))
     print('Val F-score: '+str(fscore)+'\tVal acc: '+str(acc))
     print cm
-
     print '---------------'
     t = datetime.datetime.now()
-#    todayn = str(tn.month)+'-'+str(tn.day)+'-'+str(tn.year)+' - '+str(tn.hour)+'h '+str(tn.minute)+'m'+'\n'
     todayn = str('m'+str(t.month)+'_d'+str(t.day)+'_y'+str(t.year)+'_'+str(t.hour)+'h_'+str(t.minute)+'m'+'\n')
-
     filew.write('  finished at :'+todayn)
     filew.write('  f-score is : '+ str(fscore)+'\n')
     filew.write('  accuray is : '+ str(acc)+'\n')

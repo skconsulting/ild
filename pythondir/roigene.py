@@ -7,7 +7,7 @@ Version 1.5
 06 September 2017
 """
 #from param_pix_r import *
-from param_pix_r import path_data,dimtabmenul,dimtabmenur,dimtabnorm,dimtabxdef,debugenh
+from param_pix_r import path_data,dimtabmenul,dimtabmenur,dimtabnorm,dimtabxdef
 from param_pix_r import typei1,typei,typei2
 from param_pix_r import source_name,scan_bmp,roi_name,imageDepth,lung_mask_bmp,lung_mask_bmp1,lung_mask,lung_mask1
 from param_pix_r import white,black,red,yellow
@@ -147,7 +147,7 @@ def click_and_crop(event, x, y, flags, param):
                     patternerase=''
                     pattern=key1
                     viewasked[key1]=True
-                    cv2.setTrackbarPos(key1,'SliderRoi' ,1)
+                    cv2.setTrackbarPos(key1,'SliderRoi1' ,1)
                     cv2.rectangle(menus, (200,0), (210,10), classifc[pattern], -1)
                     cv2.rectangle(menus, (212,0), (511,12), black, -1)
                     cv2.putText(menus,addt+key1,(215,10),cv2.FONT_HERSHEY_PLAIN,1.0,classifc[key1],1 )
@@ -225,6 +225,8 @@ def click_and_crop(event, x, y, flags, param):
 #                print x,y,xnew,ynew,fxs,x0new
                 numeropoly=tabroinumber[pattern][scannumber]
                 tabroi[pattern][scannumber][numeropoly].append((xnew, ynew))
+#                print pattern,numeropoly
+#                print tabroi[pattern][scannumber][numeropoly]
                 cv2.rectangle(images[scannumber], (xnew,ynew),
                               (xnew,ynew), classifc[pattern], 1)
 
@@ -248,7 +250,7 @@ def closepolygon():
         else:
             'wait for new point'
         cv2.rectangle(menus, (150,12), (511,52), black, -1)
-        cv2.putText(menus,'polygone closed',(215,20),cv2.FONT_HERSHEY_PLAIN,1.0,white,1 )
+        cv2.putText(menus,'polygone closed',(215,30),cv2.FONT_HERSHEY_PLAIN,1.0,white,1 )
 
 def suppress():
     global menus,scannumber
@@ -263,7 +265,7 @@ def suppress():
                      (tabroi[pattern][scannumber][numeropoly][l+1][0],tabroi[pattern][scannumber][numeropoly][l+1][1]), classifc[pattern], 1)
             l+=1
     cv2.rectangle(menus, (150,12), (511,52), black, -1)
-    cv2.putText(menus,'delete last entry',(215,20),cv2.FONT_HERSHEY_PLAIN,1.0,white,1 )
+    cv2.putText(menus,'delete last entry',(215,30),cv2.FONT_HERSHEY_PLAIN,1.0,white,1 )
 
 def genehealthy():
     global pattern,tabroifinal,volumeroi,path_data_writefile,path_data_write
@@ -374,9 +376,9 @@ def completed(imagename,dirpath_patient,dirroit):
         cv2.imwrite(imgcoreRoi,mroi)
         
         for key in usedclassif :
-
+            if key !='erase':
                 numeropoly=tabroinumber[key][scannumber]
-#                print '0'
+#                print tabroinumber['erase'][scannumber]
                 for n in range (0,numeropoly+1):
                     if len(tabroi[key][scannumber][n])>0:
                         for l in range(0,len(tabroi[key][scannumber][n])-1):
@@ -424,6 +426,8 @@ def completed(imagename,dirpath_patient,dirroit):
                                          
                         if os.path.exists(imgcoreScan):
                             cv2.putText(menus,'ROI '+' slice:'+str(scannumber)+' overwritten',(150,30),cv2.FONT_HERSHEY_PLAIN,1.0,white,1 )
+                        else:
+                            cv2.putText(menus,'New Slice ROI stored'+str(scannumber),(150,30),cv2.FONT_HERSHEY_PLAIN,1.0,white,1 )
     
                         ldrroi=os.listdir(dirroi)
     
@@ -443,11 +447,10 @@ def completed(imagename,dirpath_patient,dirroit):
     
                         if area>0:
     
-                            volumeroi[scannumber][key]=area  
-    
+                            volumeroi[scannumber][key]=area      
                             pickle.dump(volumeroi, open(path_data_writefile, "wb" ),protocol=-1)
     
-                        cv2.putText(menus,'Slice ROI stored',(215,20),cv2.FONT_HERSHEY_PLAIN,1.0,white,1 )
+#                        cv2.putText(menus,'Slice ROI stored',(150,30),cv2.FONT_HERSHEY_PLAIN,1.0,white,1 )
     
                         mroi=cv2.imread(imgcoreRoi,1)    
                         ctkey=drawcontours(tabtowrite,key)
@@ -456,7 +459,13 @@ def completed(imagename,dirpath_patient,dirroit):
                         cv2.imwrite(imgcoreRoi,mroiaroi)
                 except:
                             continue
-        
+        numeropoly=tabroinumber['erase'][scannumber]
+#                print tabroinumber['erase'][scannumber]
+        for n in range (0,numeropoly+1):
+            tabroi['erase'][scannumber][n]=[]
+
+        tabroinumber['erase'][scannumber]=0
+            
         images[scannumber]=np.zeros((dimtabx,dimtabx,3), np.uint8)
     else:
         print 'this is erase'        
@@ -519,11 +528,12 @@ def completed(imagename,dirpath_patient,dirroit):
         cv2.putText(menus,'Slice ROI stored',(215,20),cv2.FONT_HERSHEY_PLAIN,1.0,white,1 )
         
         mroi=cv2.imread(imgcoreRoi,1)
-#        mroi=cv2.resize(mroi,(dimtabx,dimtabx),interpolation=cv2.INTER_CUBIC)  
+        mroi=cv2.resize(mroi,(dimtabx,dimtabx),interpolation=cv2.INTER_CUBIC)  
 
         np.putmask(mroi,mroi==classifc[patternerase],0)
         ctkey=drawcontours(tabtowrite,patternerase)
 #        mroiaroi=cv2.add(mroi,ctkey)
+#        print mroi.shape,ctkey.shape
         mroiaroi=contour5(mroi,ctkey,key)
 
         cv2.imwrite(imgcoreRoi,mroiaroi)
@@ -551,7 +561,7 @@ def visua():
     cv2.putText(menus,' Visualization ROI',(150,30),cv2.FONT_HERSHEY_PLAIN,1.0,white,1 )
 
 def eraseroi(imagename,dirpath_patient,dirroit):
-#    print 'this is erase roi',pattern
+    print 'this is erase roi',pattern
     global tabroifinal,volumeroi,path_data_writefile,path_data_write
     if len(pattern)>0:
         closepolygon()
@@ -696,7 +706,7 @@ def zoomfunction(im,z,px,py,dx,algo):
     return crop_img
 
 
-def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName,debugenh):
+def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName,imagetreat):
 
     global quitl,scannumber,imagename,viewasked,pattern,patternerase
     quitl=False
@@ -709,30 +719,31 @@ def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName,debugenh):
 #    cv2.resizeWindow('imageRoi', (dimtabxdef+2*dimtabmenu),dimtabx)
     cv2.resizeWindow('imageRoi', (dimtabnorm+dimtabmenur+dimtabmenul),dimtabnorm)
 
-    cv2.namedWindow("SliderRoi",cv2.WINDOW_NORMAL)
-    cv2.resizeWindow('SliderRoi', 300,1000)
+    cv2.namedWindow("SliderRoi1",cv2.WINDOW_NORMAL)
+#    cv2.resizeWindow('SliderRoi1', 300,1000)
 
-    cv2.createTrackbar( 'Brightness','SliderRoi',0,100,nothing)
-    cv2.createTrackbar( 'Contrast','SliderRoi',50,100,nothing)
-    cv2.createTrackbar( 'Flip','SliderRoi',slnt/2,slnt-2,nothing)
+    cv2.createTrackbar( 'Brightness','SliderRoi1',0,100,nothing)
+    cv2.createTrackbar( 'Contrast','SliderRoi1',50,100,nothing)
+    cv2.createTrackbar( 'Flip','SliderRoi1',slnt/2,slnt-2,nothing)
 
-    cv2.createTrackbar( 'Zoom','SliderRoi',0,100,nothing)
+    cv2.createTrackbar( 'Zoom','SliderRoi1',0,100,nothing)
     
-    cv2.createTrackbar( 'Panx','SliderRoi',50,100,nothing)
-    cv2.createTrackbar( 'Pany','SliderRoi',50,100,nothing)
-    cv2.createTrackbar( 'All','SliderRoi',1,1,nothing)
-    cv2.createTrackbar( 'None','SliderRoi',0,1,nothing)
-    if debugenh==True:
-        cv2.createTrackbar( 'smoo','SliderRoi',0,4,nothing)
-        cv2.createTrackbar( 'kerneli','SliderRoi',0,5,nothing)
-        cv2.createTrackbar( 'algo','SliderRoi',3,4,nothing)
-#        cv2.createTrackbar( 'floatf','SliderRoi',0,1,nothing)
+    cv2.createTrackbar( 'Panx','SliderRoi1',50,100,nothing)
+    cv2.createTrackbar( 'Pany','SliderRoi1',50,100,nothing)
+    cv2.createTrackbar( 'All','SliderRoi1',1,1,nothing)
+    cv2.createTrackbar( 'None','SliderRoi1',0,1,nothing)
+    cv2.createTrackbar( 'Transp','SliderRoi1',5,10,nothing)
+    if imagetreat==True:
+        cv2.createTrackbar( 'smoo','SliderRoi1',0,4,nothing)
+        cv2.createTrackbar( 'kerneli','SliderRoi1',0,5,nothing)
+        cv2.createTrackbar( 'algo','SliderRoi1',3,4,nothing)
+#        cv2.createTrackbar( 'floatf','SliderRoi1',0,1,nothing)
     cv2.setMouseCallback("imageRoi", click_and_crop)
     viewasked={}
     for key1 in usedclassif:
 #            print key1
             viewasked[key1]=True
-            cv2.createTrackbar( key1,'SliderRoi',0,1,nothing,)
+            cv2.createTrackbar( key1,'SliderRoi1',0,1,nothing,)
 
     nbdig=0
     numberentered={}
@@ -796,19 +807,20 @@ def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName,debugenh):
                print 'quit', quitl
                cv2.destroyAllWindows()
                break
-        c = cv2.getTrackbarPos('Contrast','SliderRoi')
-        l = cv2.getTrackbarPos('Brightness','SliderRoi')
-        fl = cv2.getTrackbarPos('Flip','SliderRoi')
-        z = cv2.getTrackbarPos('Zoom','SliderRoi')
-        px = cv2.getTrackbarPos('Panx','SliderRoi')
-        py = cv2.getTrackbarPos('Pany','SliderRoi')
-        allview = cv2.getTrackbarPos('All','SliderRoi')
-        noneview = cv2.getTrackbarPos('None','SliderRoi')
-        if debugenh==True:
-            smoo = cv2.getTrackbarPos('smoo','SliderRoi')
-            kerneli = cv2.getTrackbarPos('kerneli','SliderRoi')
-            algo = cv2.getTrackbarPos('algo','SliderRoi')
-#            floatf = cv2.getTrackbarPos('floatf','SliderRoi')
+        c = cv2.getTrackbarPos('Contrast','SliderRoi1')
+        l = cv2.getTrackbarPos('Brightness','SliderRoi1')
+        tr = cv2.getTrackbarPos('Transp','SliderRoi1')
+        fl = cv2.getTrackbarPos('Flip','SliderRoi1')
+        z = cv2.getTrackbarPos('Zoom','SliderRoi1')
+        px = cv2.getTrackbarPos('Panx','SliderRoi1')
+        py = cv2.getTrackbarPos('Pany','SliderRoi1')
+        allview = cv2.getTrackbarPos('All','SliderRoi1')
+        noneview = cv2.getTrackbarPos('None','SliderRoi1')
+        if imagetreat==True:
+            smoo = cv2.getTrackbarPos('smoo','SliderRoi1')
+            kerneli = cv2.getTrackbarPos('kerneli','SliderRoi1')
+            algo = cv2.getTrackbarPos('algo','SliderRoi1')
+#            floatf = cv2.getTrackbarPos('floatf','SliderRoi1')
         else:
             algo=3
 
@@ -824,19 +836,19 @@ def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName,debugenh):
                 algot='LANCZOS4'
         if allview==1:
             for key2 in usedclassif:
-                cv2.setTrackbarPos(key2,'SliderRoi' ,1)
-            cv2.setTrackbarPos('All','SliderRoi' ,0)
-            cv2.setTrackbarPos('lung','SliderRoi' ,0)
+                cv2.setTrackbarPos(key2,'SliderRoi1' ,1)
+            cv2.setTrackbarPos('All','SliderRoi1' ,0)
+            cv2.setTrackbarPos('lung','SliderRoi1' ,0)
         if noneview==1:
             for key2 in usedclassif:
-                cv2.setTrackbarPos(key2,'SliderRoi' ,0)
-            cv2.setTrackbarPos('None','SliderRoi' ,0)
+                cv2.setTrackbarPos(key2,'SliderRoi1' ,0)
+            cv2.setTrackbarPos('None','SliderRoi1' ,0)
                 
         for key2 in usedclassif:
 #            print patternerase
             if pattern==key2 or patternerase==key2:
-                cv2.setTrackbarPos(key2,'SliderRoi' ,1)
-            s = cv2.getTrackbarPos(key2,'SliderRoi')
+                cv2.setTrackbarPos(key2,'SliderRoi1' ,1)
+            s = cv2.getTrackbarPos(key2,'SliderRoi1')
             
             if s==0:
 #            print key
@@ -850,7 +862,7 @@ def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName,debugenh):
                     
                     numberfinal=min(numberfinal,slnt-1)
                     writeslice(numberfinal)
-                    cv2.setTrackbarPos('Flip','SliderRoi' ,numberfinal-1)
+                    cv2.setTrackbarPos('Flip','SliderRoi1' ,numberfinal-1)
 
                     cv2.rectangle(menus, (5,440), (80,450), black, -1)
                     numberfinal=0
@@ -860,13 +872,13 @@ def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName,debugenh):
 #        cv2.setTrackbarPos('Flip','Slider2' ,5)
         if key==2424832:
                 fl=max(0,fl-1)
-                cv2.setTrackbarPos('Flip','SliderRoi' ,fl)
+                cv2.setTrackbarPos('Flip','SliderRoi1' ,fl)
         if key==2555904:
                 fl=min(slnt-2,fl+1)
-                cv2.setTrackbarPos('Flip','SliderRoi' ,fl)
+                cv2.setTrackbarPos('Flip','SliderRoi1' ,fl)
         
         imsstatus=cv2.getWindowProperty('imageRoi', 0)
-        imistatus= cv2.getWindowProperty('SliderRoi', 0)
+        imistatus= cv2.getWindowProperty('SliderRoi1', 0)
         if (imsstatus==0) and (imistatus==0)  :
             scannumber=fl+1
             imagename=tabscanName[scannumber]
@@ -887,28 +899,27 @@ def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName,debugenh):
                         tbroiks=tabroifinal[key1][scannumber]
                         if tbroiks.max()>0:                        
                             tabroifinalview=zoomfunction(tbroiks,z,px,py,dimtabxdef,algo)
-                            imageview=cv2.addWeighted(imageview,1,tabroifinalview,0.8,0)
+                            imageview=cv2.addWeighted(imageview,1,tabroifinalview,tr/10.,0)
                     except:
                       continue
             imageview=imageview.astype('float32')
             if algo ==0:
-                  print algot
+                  if imagetreat :   print algot
                   imageview=cv2.resize(imageview,(dimtabnorm,dimtabnorm),interpolation=cv2.INTER_NEAREST  )
             elif algo==1:
                   imageview=cv2.resize(imageview,(dimtabnorm,dimtabnorm),interpolation=cv2.INTER_LINEAR )
-                  if debugenh :
-                   print algot
+                  if imagetreat :   print algot
             elif algo==2:
                 imageview=cv2.resize(imageview,(dimtabnorm,dimtabnorm),interpolation=cv2.INTER_AREA  )
-                print algot
+                if imagetreat :   print algot
             if algo ==3:
                   imageview=cv2.resize(imageview,(dimtabnorm,dimtabnorm),interpolation=cv2.INTER_CUBIC )
-                  print algot
+                  if imagetreat :   print algot
             elif algo==4:
                 imageview=cv2.resize(imageview,(dimtabnorm,dimtabnorm),interpolation=cv2.INTER_LANCZOS4 )
-                print algot  
+                if imagetreat :   print algot 
                 
-            if debugenh==True:
+            if imagetreat==True:
                 if kerneli==0:
                     kernel=(1,1)
                 elif kerneli==1:
@@ -948,7 +959,8 @@ def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName,debugenh):
                        imageview=cv2.GaussianBlur(imageview,kernel,0)  
                     except:
                             print 'GaussianBlur not ok',kernel   
-                                
+            imageview=np.clip(imageview,0,255)    
+#            np.putmask(imageview,imageview>255,255)                
             imageview=normi(imageview)
             imageview=np.concatenate((imageview,menuright),axis=1)
             imageview=np.concatenate((menuleft,imageview),axis=1)
@@ -1440,7 +1452,7 @@ def genebmp(fn,nosource,dirroit,centerHU,limitHU):
         roibmpfile=os.path.join(dirroit,imgcoreScan)
 
         t2='Prototype '
-        t1='Patient: '+tail
+        t1='Patient: '+tail1
         t0='CONFIDENTIAL'
         t3='Scan: '+str(slicenumber)
 

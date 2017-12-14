@@ -29,9 +29,6 @@ dimtabxdef=512
 dimtabmenul=225
 dimtabmenur=250
 
-debugenh=True
-#debugenh=False
-
 
 source_name='source'
 roi_name='sroi'
@@ -232,16 +229,20 @@ def remove_folder(path):
 
 def normi(tabi):
      """ normalise patches"""
-     max_val=float(np.max(tabi))
-     min_val=float(np.min(tabi))
+     tabi1=tabi.astype('float32')
+     max_val=np.max(tabi1)
+     min_val=np.min(tabi1)
+#     print 'min max orig',min_val,max_val,max_val-min_val
      mm=max_val-min_val
      if mm ==0:
          mm=1
      
 #     print 'tabi1',min_val, max_val,imageDepth/float(max_val)
-     tabi2=(tabi.astype('float32')-min_val)*(255./mm)
-     tabi2=tabi2.astype('uint8')
-     return tabi2
+     tabi2=(tabi1-min_val)*(255./mm)
+#     print 'min max 1',tabi2.min(),tabi2.max()
+     tabi3=tabi2.astype('uint8')
+#     print 'min max 2',tabi2.min(),tabi2.max()
+     return tabi3
  
 def fidclass(numero,classn):
     """return class from number"""

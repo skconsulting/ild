@@ -3,9 +3,9 @@
 V1.0 Created on Sun Apr 05 09:52:27 2017
 
 @author: sylvain Kritter 
-Version 1.5 
+Version 1.7
 
-06 September 2017
+04 December 2017
 """
 #from param_pix_r import *
 #from moduleroigui import *
@@ -94,7 +94,9 @@ def press(btn):
     indata['centerHU']=app.getEntry("centerHU")
     indata['limitHU']=app.getEntry("limitHU")
     indata['ForceGenerate']=app.getCheckBox("ForceGenerate")
-    indata['ImageTreatment']=app.getCheckBox("ImageTreatment")
+#    indata['ImageTreatment']=app.getCheckBox("ImageTreatment")
+    indata['ImageTreatment']=False
+
     
     indata['ll']=app.getListItems("list")
     
@@ -283,8 +285,8 @@ def initDraw():
         app.addLabel("ForceGenerate","Tick to force re-generate all files:",row,0)
         app.addCheckBox("ForceGenerate",row,1)
         app.setCheckBox("ForceGenerate",ticked=False,callFunction=False)
-        app.addCheckBox("ImageTreatment",row,2)
-        app.setCheckBox("ImageTreatment",ticked=False,callFunction=False)
+#        app.addCheckBox("ImageTreatment",row,2)
+#        app.setCheckBox("ImageTreatment",ticked=False,callFunction=False)
         row = app.getRow()
         app.addHorizontalSeparator( row,colour="red",colspan=2)
         row = app.getRow()
@@ -293,7 +295,6 @@ def initDraw():
         
         app.addButton("Generate Lung_Mask",  presslung,row,1)
         row = app.getRow()
-
         app.addButton("check volume",  checkvolume,row,1)
 
 #        app.addHorizontalSeparator( colour="red",colspan=2)

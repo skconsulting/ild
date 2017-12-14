@@ -23,7 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 For more information please read the README file. The files can also
 be found at: https://github.com/intact-project/ild-cnn
 '''
-from param_pix_t import thrpatch
+from param_pix_t import thrpatch,usedclassif
 #from keras.models import load_model
 #from keras.models import model_from_json
 import ild_helpers as H
@@ -56,9 +56,9 @@ train_params = {
      'obj': args.obj if args.obj else 'ce',            # Minimization Objective: mse, ce
      'patience' : args.pat if args.pat else 200,       # Patience parameter for early stoping 200
      'tolerance': args.tol if args.tol else 1.005,     # Tolerance parameter for early stoping [default: 1.005, checks if > 0.5%]
-     'res_alias': args.csv if args.csv else 'res' + str(today)     # csv results filename alias
+     'res_alias': args.csv if args.csv else 'res' + str(today),     # csv results filename alias
+     'val_data': args.val if args.val else False     # validation data provided  (True) or 10% of training set
 }
-
 
 topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 
@@ -66,9 +66,11 @@ topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 pickel_dirsource_root='pickle'
 pickel_dirsource_e='train' #path for data fort training
 pickel_dirsourcenum='set0' #extensioon for path for data for training
-extendir1='0'
+extendir1='7'
 extendir2=''
 #########################################################################################
+num_class= len(usedclassif)
+
 
 pickleStore='pickle'
 if len (extendir2)>0:
@@ -96,7 +98,11 @@ errorfile.write('weight dir store : '+patch_dir_store+'\n') #path with weights a
 errorfile.write('--------------------\n')
 errorfile.close()
 
-(X_train, y_train), (X_val, y_val)= H.load_data(patch_dir)
+if train_params['val_data']:
+    (X_train, y_train), (X_val, y_val)= H.load_data(patch_dir,num_class)
+
+else:
+     (X_train, y_train), (X_val, y_val)= H.load_data_train(patch_dir,num_class)
 
 # train a CNN model
 model = CNN.train(X_train, y_train, X_val, y_val, train_params,eferror,patch_dir_store)

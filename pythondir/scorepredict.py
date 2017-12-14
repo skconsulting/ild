@@ -8,7 +8,7 @@ version 1.5
 '''
 #from param_pix_p import *
 from param_pix_s import scan_bmp,avgPixelSpacing,dimpavx,dimpavy,dirpickleArch,modelArch,surfelemp
-from param_pix_s import typei,typei1
+from param_pix_s import typei,typei1,excluvisu
 from param_pix_s import white,yellow,red
 
 from param_pix_s import lung_namebmp,jpegpath,lungmask,lungmask1
@@ -35,7 +35,7 @@ import os
 import cv2
 import dicom
 import copy
-import sys
+#import sys
 from skimage import measure, morphology
 from skimage.segmentation import clear_border
 from skimage.morphology import  disk, binary_erosion, binary_closing
@@ -44,7 +44,7 @@ from skimage.measure import label,regionprops
 from scipy import ndimage as ndi
 from itertools import product
 import cPickle as pickle
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 #import keras
 from keras.models import load_model
@@ -564,11 +564,26 @@ def ILDCNNpredict(patch_list,model):
     if X0 > 0:      
         pa = np.expand_dims(dataset_list, 1)
         proba = model.predict_proba(pa, batch_size=500,verbose=1)
+        pru= np.unique(np.argmax(proba,axis=1))
+        print pru
+#        print proba.shape
+#        for i in range(proba.shape[0]):
+#            if np.argmax(proba[i])>4:
+#                print proba[i]
+#                print np.argmax(proba[i])
+##            print np.unique(np.argmax(proba[i]))
+##            print np.unique(np.argmax(proba,axis=0))
+#        sys.exit(1)
+        
 
     else:
         print (' no patch in selected slice')
         proba = []
     print 'number of patches', len(pa)
+    print (' predicted patterns:')
+    for i in range(len(pru)):
+        print  pru[i], usedclassif[pru[i]]
+#    sys.exit(1)
 
     return proba
 
@@ -1053,17 +1068,7 @@ def genepatchlistslice(patch_list_cross,proba_cross,lissln,dimtabx,dimtaby):
             if sln ==i:
                 t=((xpat,ypat),proba_cross[ii])
                 res[sln].append(t)                
-#                tabpatch = np.zeros((dimtabx, dimtaby), np.uint8)
-    
-#                tabpatch[ypat:ypat + dimpavy, xpat:xpat + dimpavx] = 1
-#                tabsubpl = np.bitwise_and(subpleurmask[i], tabpatch)
-#                np.putmask(tabsubpl, tabsubpl > 0, 1)
-#
-#                area = tabsubpl.sum()
-#                targ = float(area) / pxy    
-#
-#                if targ > thrpatch:
-#                        ressub[i].append(t)  
+
             ii+=1                   
     return res
 
@@ -1209,15 +1214,23 @@ def generoi(dirf,tabroi,dimtabx,dimtaby,slnroi,tabscanName,dirroit,tabscanroi,ta
                         
                         if pat not in listroi[numslice] and area>1:
                             listroi[numslice].append(pat)
-                        np.putmask(img, img >0, 100)
-                        ctkey=drawcontours2(img,pat,dimtabx,dimtaby)
-                        ctkeym=ctkey.copy()
-                        ctkeym=cv2.cvtColor(ctkeym,cv2.COLOR_RGB2GRAY)
-                        ctkeym=cv2.cvtColor(ctkeym,cv2.COLOR_GRAY2RGB)                       
-                        np.putmask(anoted_image, ctkeym >0, 0)
-                        anoted_image=cv2.add(anoted_image,ctkey)
-                        anoted_image=tagviewct(anoted_image,pat,200,10)  
-                        tabscanroi[numslice]=anoted_image
+                        if pat not in excluvisu:
+                                np.putmask(img, img >0, 100)
+#                                ctkey=drawcontours2(img,pat,dimtabx,dimtaby)
+#                                ctkeym=ctkey.copy()
+#                                ctkeym=cv2.cvtColor(ctkeym,cv2.COLOR_RGB2GRAY)
+#                                ctkeym=cv2.cvtColor(ctkeym,cv2.COLOR_GRAY2RGB)                       
+#                                np.putmask(anoted_image, ctkeym >0, 0)
+        #                        anoted_image=cv2.add(anoted_image,ctkey)
+                                
+                                
+        #                        imgcolor=cv2.cvtColor(img,cv2.COLOR_GRAY2RGB)  
+                                colorlung=colorimage(img,classifc[pat])
+        
+                                anoted_image=cv2.addWeighted(anoted_image,1,colorlung,0.3,0)
+        
+                                anoted_image=tagviewct(anoted_image,pat,200,10)  
+                                tabscanroi[numslice]=anoted_image
                                                
                 else:
                     volumeroi[numslice][pat]=0 
@@ -1348,7 +1361,7 @@ def predictrun(indata,path_patient):
             pickle.dump(crosscompleted, open( os.path.join(path_data_write,"crosscompleteds"), "wb" ),protocol=-1)
             frontcompleted=False
             pickle.dump(frontcompleted, open( os.path.join(path_data_write,"frontcompleteds"), "wb" ),protocol=-1)
-            print 'source',source
+#            print 'source',source
 #            return ''
             tabscanName={}
             tabscanroi={}

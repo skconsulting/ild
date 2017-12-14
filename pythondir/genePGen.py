@@ -32,13 +32,13 @@ import scipy.misc
 topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 namedirHUG = 'HUG'
 subHUG='ILD_TXT'
-subHUG='ILD23'
+#subHUG='ILD23'
 
 toppatch= 'TOPPATCH'
 #extension for output dir
 extendir='all'
-extendir1='2'
-extendir1='essai'
+extendir1='5'
+#extendir1='essai'
 
 #labelEnh=('consolidation','reticulation,air_trapping','bronchiectasis','cysts')
 labelEnh=()
@@ -667,8 +667,7 @@ for f in listdirc:
     listsliceok=[]
     posp=f.find('.',0)
     posu=f.find('_',0)
-   
-    
+       
     pathpatchfilecomplet=os.path.join(namedirtopcf,patchfile)
 #    pathpatchfilecomplet=unicode(pathpatchfilecomplet)
 #    print type(pathpatchfilecomplet)
@@ -719,7 +718,6 @@ for f in listdirc:
 #                print('l1',l,'c1:',c)
                 if l.find(c,0)==0:
 #                    print('debut l',l,'c:',c)
-
 
                     pathl=os.path.join(pathpatchfilecomplet,l)
                     tabcff = np.loadtxt(pathl,dtype='f')

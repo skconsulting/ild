@@ -12,7 +12,7 @@ from param_pix_s2 import typei,typei1
 from param_pix_s2 import white,yellow,MAX_BOUND
 
 from param_pix_s2 import lung_namebmp,lungmask,lungmask1
-from param_pix_s2 import fidclass,pxy
+from param_pix_s2 import fidclass,pxy,excluvisu
 #from param_pix_p import classifc,classif,excluvisu,usedclassif
 from param_pix_s2 import classifc
 
@@ -189,7 +189,7 @@ def largest_label_volume(im, bg=-1):
     else:
         return None
 
-def segment_lung_mask(image, slnt ,fill_lung_structures=True):
+def segment_lung_mask(image, slnt ,srd,fill_lung_structures=True):
     print 'start generation'
 
     binary_image = np.array(image > -350, dtype=np.int8)+1 # initial 320 350 
@@ -220,6 +220,14 @@ def segment_lung_mask(image, slnt ,fill_lung_structures=True):
 
     binary_image -= 1 #Make the image actual binary
     binary_image = 1-binary_image # Invert it, lungs are now 1
+    if srd: 
+        ke=5
+        kernele=np.ones((ke,ke),np.uint8)
+        kerneld=np.ones((ke,ke),np.uint8)
+    
+        for i in range (image.shape[0]):
+            binary_image[i]= cv2.dilate(binary_image[i].astype('uint8'),kerneld,iterations = 5)
+            binary_image[i] = cv2.erode(binary_image[i].astype('uint8'),kernele,iterations = 5)
 
     # Remove other air pockets insided body
     labels = measure.label(binary_image, background=0)
@@ -355,13 +363,17 @@ def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan,listsln,tabscanName
         else:
                 print 'no lung scan in dcm'
                 tabscan1 = np.zeros((slnt,dimtaby,dimtabx), np.int16)
-    
-                segmented_lungs_fill,ok = segment_lung_mask(tabscanScan,slnt, True)
+                srd=False
+                segmented_lungs_fill,ok = segment_lung_mask(tabscanScan,slnt, srd,True)
+                if ok== False:
+                    srd=True
+                    segmented_lungs_fill,ok = segment_lung_mask(tabscanScan,slnt, srd,True)
+#                    segmented_lungs_fill,ok = segment_lung_mask(tabscanScan,slnt, True)
                 if ok== False:
                     print 'use 2nd algorihm'
                     segmented_lungs_fill=np.zeros((slnt,dimtabx,dimtabx), np.uint8)
                     for i in listsln:
-                        segmented_lungs_fill[i]=get_segmented_lungs(tabscanScan[i], False)
+                        segmented_lungs_fill[i]=get_segmented_lungs(tabscanScan[i])
     #            print segmented_lungs_fill.shape
                 for i in listsln:
                     
@@ -1119,21 +1131,34 @@ def generoi(dirf,tabroi,dimtabx,dimtaby,slnroi,tabscanName,dirroit,tabscanroi,ta
                             if pat not in listroi[numslice] and area>0.1:
                                 listroi[numslice].append(pat)
 #                            img=cv2.cvtColor(img,cv2.COLOR_GRAY2BGR)
-
+                        if pat not in excluvisu and pat !='healthy':
                             np.putmask(img, img >0, 100)
-                            ctkey=drawcontours2(img,pat,dimtabx,dimtaby) 
-                            ctkeym=ctkey.copy()
-                            ctkeym=cv2.cvtColor(ctkeym,cv2.COLOR_RGB2GRAY)
-                            ctkeym=cv2.cvtColor(ctkeym,cv2.COLOR_GRAY2RGB)                       
-                            np.putmask(anoted_image, ctkeym >0, 0)
-                            anoted_image=cv2.add(anoted_image,ctkey)
-                            anoted_image=tagviewct(anoted_image,pat,200,10)                                           
+ 
+                            colorlung=colorimage(img,classifc[pat])
+    
+                            anoted_image=cv2.addWeighted(anoted_image,1,colorlung,0.3,0)
+    
+                            anoted_image=tagviewct(anoted_image,pat,200,10)  
+                            tabscanroi[numslice]=anoted_image
+                            
+                            
+                            
+                            
+                            
+                            
+#                            ctkey=drawcontours2(img,pat,dimtabx,dimtaby) 
+#                            ctkeym=ctkey.copy()
+#                            ctkeym=cv2.cvtColor(ctkeym,cv2.COLOR_RGB2GRAY)
+#                            ctkeym=cv2.cvtColor(ctkeym,cv2.COLOR_GRAY2RGB)                       
+#                            np.putmask(anoted_image, ctkeym >0, 0)
+#                            anoted_image=cv2.add(anoted_image,ctkey)
+#                            anoted_image=tagviewct(anoted_image,pat,200,10)                                           
                     else:
                         volumeroi[numslice][pat]=0    
             anoted_image=cv2.cvtColor(anoted_image,cv2.COLOR_RGB2BGR)
             cv2.imwrite(roibmpfile,anoted_image)
                       
-    return tabroi,volumeroi,slnroi,listroi
+    return tabroi,volumeroi,slnroi,listroi,tabscanroi
 
 def preparscan(tabscan,tabslung,numsliceok):
 #    (top,tail)=os.path.split(namedirtopcf)
@@ -1349,7 +1374,7 @@ def predictrun(indata,path_patient):
                 tabscanLung,tabrange=genebmplung(dirf,lungmaski,slnt,dimtabx,dimtabx,tabscanScan,lissln,tabscanName)
                 slnroi=[]
                 tabroi=np.zeros((slnt,dimtaby,dimtabx), np.uint8) 
-                tabroi,volumeroi,slnroi,listroi=generoi(dirf,tabroi,dimtabx,dimtabx,slnroi,
+                tabroi,volumeroi,slnroi,listroi,tabscanroi=generoi(dirf,tabroi,dimtabx,dimtabx,slnroi,
                                             tabscanName,dirroi,tabscanroi,tabscanLung,PixelSpacing,slnt)   
 
                 datacross=(slnt,slicepitch,lissln,setref, thrproba,PixelSpacing)

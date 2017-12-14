@@ -28,7 +28,7 @@ import random
 topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 toppatch= 'TOPPATCH'
 extendir='all'
-extendir0='0'
+extendir0='5'
 #extendir0='essai'
 
 extendir1=''
@@ -37,7 +37,7 @@ extendir1=''
 pickel_dirsource_root='pickle'
 pickel_dirsource_e='train' #path for data fort training
 pickel_dirsourcenum=setdata #extensioon for path for data for training
-extendir2='0'
+extendir2='6'
 #extendir2='essai'
 extendir3=extendir1
 
@@ -83,10 +83,10 @@ if not os.path.isdir(patch_dirsource):
 print '--------------------------------'
 
 ###############################################################
-remove_folder(patch_dir)
-os.mkdir(patch_dir)
+if not os.path.exists(patch_dir):
+    os.mkdir(patch_dir)
 eferror=os.path.join(patch_dir,perrorfile)
-errorfile = open(eferror, 'w')
+errorfile = open(eferror, 'a')
 tn = datetime.datetime.now()
 todayn = str(tn.month)+'-'+str(tn.day)+'-'+str(tn.year)+' - '+str(tn.hour)+'h '+str(tn.minute)+'m'+'\n'
 errorfile.write('started at :'+todayn)
@@ -255,8 +255,11 @@ def genf(features_train,labels_train,maxl):
     for j in usedclassifFinal:
         indexpatc[j]=0
     for aug in range(augf):
-            for numgen in range(maxl*numclass):    
+            for numgen in range(maxl*numclass): 
+#            for numgen in range(20):    
+
                     pat =usedclassifFinal[numgen%numclass]
+#                    print pat,numgen%numclass
                     numberscan=len(features_train[pat])
 #                    print pat,len(features_train[pat])
                     if  pat in hugeClass:
@@ -276,7 +279,19 @@ def genf(features_train,labels_train,maxl):
                     mask=classif[pat]
                     feature.append(scan)
                     label.append(mask)
+                    if numgen%numclass==0:
+                        pat='healthy'
+                        numberscan=len(features_train[pat])
+                        indexpat =  random.randint(0, numberscan-1)   
+                        indexaug = random.randint(0, 7)
+                        scan=geneaug(features_train[pat][indexpat],indexaug)
+                        mask=classif[pat]
+                        feature.append(scan)
+                        label.append(mask)
+#                        print mask,numgen
+                    
     print 'max index',patmax,maxindex
+
     return feature,label
 
                 

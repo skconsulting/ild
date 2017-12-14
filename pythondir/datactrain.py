@@ -1,7 +1,7 @@
 # coding: utf-8
 '''create dataset from patches for training, all patches with augmentation
 support Hu
-includes back_ground
+
 version 1.0
 second step
 S. Kritter
@@ -10,7 +10,7 @@ S. Kritter
  
 from param_pix_t import classif,usedclassif
 from param_pix_t import thrpatch,setdata
-from param_pix_t import remove_folder,norm
+from param_pix_t import norm
 from param_pix_t import picklepath,perrorfile
 
 import datetime
@@ -29,7 +29,7 @@ from random import shuffle
 topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 toppatch= 'TOPPATCH'
 extendir='all'
-extendir0='0'
+extendir0='5'
 #extendir0='essai'
 
 extendir1=''
@@ -38,7 +38,7 @@ extendir1=''
 pickel_dirsource_root='pickle'
 pickel_dirsource_e='train' #path for data fort training
 pickel_dirsourcenum=setdata #extensioon for path for data for training
-extendir2='1'
+extendir2='7'
 #extendir2='essai'
 extendir3=extendir1
 
@@ -87,7 +87,7 @@ print '--------------------------------'
 if not os.path.exists(patch_dir):
     os.mkdir(patch_dir)
 eferror=os.path.join(patch_dir,perrorfile)
-errorfile = open(eferror, 'w')
+errorfile = open(eferror, 'a')
 tn = datetime.datetime.now()
 todayn = str(tn.month)+'-'+str(tn.day)+'-'+str(tn.year)+' - '+str(tn.hour)+'h '+str(tn.minute)+'m'+'\n'
 errorfile.write('started at :'+todayn)
@@ -123,16 +123,10 @@ print '----------'
 
 usedclassifFinal=[f for f in usedclassif if f in category_list]
 
-# print what we have as categories and in used one
-print ('all actual classes:',usedclassifFinal)
-
-numclass= len (usedclassifFinal)
-print 'number of classes:', numclass
-print '----------'
-
 # go through all categories to calculate the number of patches per class
 #
 for category in usedclassifFinal:
+    print category
     category_dir = os.path.join(patch_dirsource, category)
 #    print  'the path into the categories is: ', category_dir
     sub_categories_dir_list = (os.listdir(category_dir))
@@ -140,11 +134,19 @@ for category in usedclassifFinal:
     for subCategory in sub_categories_dir_list:
         subCategory_dir = os.path.join(category_dir, subCategory)
 #        print  'the path into the sub categories is: ',subCategory_dir
-        #print subCategory_dir
+#        print subCategory_dir
         image_files = [name for name in os.listdir(subCategory_dir) if name.find('.pkl') > 0 ]
         for filei in image_files:
                 patclass[category]=patclass[category]+pickle.load(open(os.path.join(subCategory_dir,filei),'rb'))
         classNumberInit[category]=len(patclass[category])
+    if classNumberInit[category]==0:
+            print category, 'is empty'
+            usedclassifFinal.remove(category)
+
+print ('all non empty actual classes:',usedclassifFinal)
+numclass= len (usedclassifFinal)
+print 'number of classes:', numclass
+print '----------'
 
 
 total=0
@@ -268,6 +270,7 @@ def genf(features_train,labels_train,maxl):
 #                    print pat,indexpat,indexaug
                     
                     mask=classif[pat]
+#                    print pat,mask
                     tt=(scan,mask)
                     featurelab.append(tt)
 #                    feature.append(scan)
@@ -349,9 +352,8 @@ pickle.dump(X_train, open( os.path.join(patch_dir,"X_train.pkl"), "wb" ),protoco
 pickle.dump(y_train, open( os.path.join(patch_dir,"y_train.pkl"), "wb" ),protocol=-1)
 
 
-
-
 recuperated_X_train = pickle.load( open( os.path.join(patch_dir,"X_train.pkl"), "rb" ) )
 min_val=np.min(recuperated_X_train)
 max_val=np.max(recuperated_X_train)
-print 'recuperated_X_train', min_val, max_val
+mean_val=np.mean(recuperated_X_train)
+print 'recuperated_X_train', min_val, max_val,mean_val

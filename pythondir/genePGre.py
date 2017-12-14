@@ -24,7 +24,7 @@ import os
 import numpy as np
 import datetime
 #import scipy as sp
-import scipy.misc
+#import scipy.misc
 import dicom
 #import PIL
 import copy
@@ -36,14 +36,14 @@ import cPickle as pickle
 #global directory for scan file
 topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 #namedirHUG = 'CHU'
-namedirHUG = 'CHU2'
+namedirHUG = 'CHU'
 #namedirHUG = 'REFVAL'
 
 
 #subdir for roi in text
 subHUG='UIP'
 #subHUG='UIP'
-subHUG='UIPTR14'
+#subHUG='UIPTR14'
 
 #global directory for output patches file
 toppatch= 'TOPPATCH'
@@ -51,8 +51,8 @@ toppatch= 'TOPPATCH'
 extendir='all'
 #extendir='essai1'
 #extension1 for output dir
-extendir1='4'
-extendir1='essai'
+extendir1='5'
+#extendir1='essai'
 
 
 alreadyDone =[ 'S107260', 'S139370', 'S139430', 'S139431', 'S145210', 

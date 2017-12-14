@@ -18,7 +18,7 @@ from param_pix_s import reportdir,reportfile
 
 from param_pix_s import classifc,classifdict,usedclassifdict,oldFormat
 
-from param_pix_s import maxproba,excluvisu,fidclass,rsliceNum,evaluatef
+from param_pix_s import maxproba,fidclass,rsliceNum,evaluatef
 
 from param_pix_s import normi
 from scorepredict import predictrun
@@ -309,27 +309,27 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,slnt,tabro
             proba=ll[1]
 
             prec, mprobai = maxproba(proba)
+           
             if mprobai <th :
                     classlabel='healthy'
             else:
                     classlabel=fidclass(prec,classif)
-
-            if classlabel not in excluvisu:
                 
-                if classlabel not in listlabel:
-                    listlabel.append(classlabel)
+            if classlabel not in listlabel:
+                listlabel.append(classlabel)
+#                    print listlabel,proba
 
-                cv2.rectangle(imgpatch,(xpat,ypat),(xpat+dimpavxr-1,ypat+dimpavyr-1),classif[classlabel]+1,-1)
+            cv2.rectangle(imgpatch,(xpat,ypat),(xpat+dimpavxr-1,ypat+dimpavyr-1),classif[classlabel]+1,-1)
 
-                if va[classlabel]==True:
-                    cv2.rectangle(imgn,(xpat,ypat),(xpat+dimpavxr,ypat+dimpavyr),classifc[classlabel],1)
+            if va[classlabel]==True:
+                cv2.rectangle(imgn,(xpat,ypat),(xpat+dimpavxr,ypat+dimpavyr),classifc[classlabel],1)
 
-                if lvexist:
-                    imgray=np.copy(imgpatch)
-                    np.putmask(imgray,imgray>0,255)
-                    mask=np.bitwise_not(imgray)
-                    patchdict=cv2.bitwise_and(patchdict,patchdict,mask=mask)
-                    patchdict=cv2.bitwise_or(imgpatch,patchdict)
+            if lvexist:
+                imgray=np.copy(imgpatch)
+                np.putmask(imgray,imgray>0,255)
+                mask=np.bitwise_not(imgray)
+                patchdict=cv2.bitwise_and(patchdict,patchdict,mask=mask)
+                patchdict=cv2.bitwise_or(imgpatch,patchdict)
 
     volroi={}
     volpat={}
@@ -667,7 +667,7 @@ def wrresu(f,cm,obj,refmax,listroi):
     for pat in usedclassif:   
             cpa=classif[pat]        
             precision[pat],recall[pat],fscore[pat], spc[pat],npv[pat],volpat[pat],volroi[pat]=cals(cm,pat)
-            if pat in listroi:
+            if cm[classif[pat]].sum()>0:
                 numberp+=1
                 tpaverage+=cm[cpa][cpa]
                 cpp+=cm[:,classif[pat]].sum()
@@ -681,8 +681,8 @@ def wrresu(f,cm,obj,refmax,listroi):
            
             spci=int(round(spc[pat]*100,0))
             npvi=int(round(npv[pat]*100,0))     
-            if precisioni+recalli+fscorei>0:
-                f.write('%14s'%pat+'%6s'%precisioni+
+#            if precisioni+recalli+fscorei>0:
+            f.write('%14s'%pat+'%6s'%precisioni+
                         '%9s'%recalli+'%10s'%fscorei+
                         '%10s'%spci+'%9s'%npvi+'\n')
     f.write('\n')
@@ -761,42 +761,20 @@ def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
                         classlabel='healthy'
                     else:
                         classlabel=fidclass(prec,classif)
-        
-                    if classlabel not in excluvisu:
                         
-                        cv2.rectangle(imgpatch,(xpat,ypat),(xpat+dimpavx-1,ypat+dimpavy-1),classif[classlabel]+1,-1)
-                        imgray=np.copy(imgpatch)
-                        np.putmask(imgray,imgray>0,255)
-                        mask=np.bitwise_not(imgray)
-    #                        print slicenumber, imgpatch.shape
-    #                        print patchdict[slicenumber].shape
-                        patchdict[slicenumber]=cv2.bitwise_and(patchdict[slicenumber],patchdict[slicenumber],mask=mask)
-                        patchdict[slicenumber]=cv2.bitwise_or(imgpatch,patchdict[slicenumber])
-
-            
-            
+                    cv2.rectangle(imgpatch,(xpat,ypat),(xpat+dimpavx-1,ypat+dimpavy-1),classif[classlabel]+1,-1)
+                    imgray=np.copy(imgpatch)
+                    np.putmask(imgray,imgray>0,255)
+                    mask=np.bitwise_not(imgray)
+#                        print slicenumber, imgpatch.shape
+#                        print patchdict[slicenumber].shape
+                    patchdict[slicenumber]=cv2.bitwise_and(patchdict[slicenumber],patchdict[slicenumber],mask=mask)
+                    patchdict[slicenumber]=cv2.bitwise_or(imgpatch,patchdict[slicenumber])
             tablung1=np.copy(tabscanLung[slicenumber])
             np.putmask(tablung1,tablung1>0,255)
-            
-            
+                       
             predictpatu[slroi]=np.bitwise_and(tablung1, patchdict[slicenumber]) 
-            referencepatu[slroi]=np.bitwise_and(tablung1, tabroi[slicenumber])
-#            print '1',referencepatu.shape
-#            print '1',predictpatu.shape
-#            print '1',tablung1.shape
-            
-#            mask=patchdict[slicenumber].copy()
-#            tabxorig=patchdict[slicenumber].copy()
-#            np.putmask(mask,mask>0,255)
-#            tabxn=np.bitwise_not(mask)   
-#            tablung=np.copy(tabscanLung[slicenumber])       
-#            tablung=np.bitwise_and(tablung, tabxn)
-#            np.putmask(tablung,tablung>0,classif['healthy']+1)
-#     
-##            predictpatu[slroi]=np.bitwise_or(tabxorig,tablung)
-#            referencepatu[slroi]=np.copy(tabroi[slicenumber])
-#           
-        
+            referencepatu[slroi]=np.bitwise_and(tablung1, tabroi[slicenumber])  
             
             referencepat= referencepatu[slroi].flatten()
             predictpat=  predictpatu[slroi].flatten() 
@@ -1005,6 +983,7 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,tabroi,
         img=contrasti(img,c)    
         img = img.astype('float32')
         img=cv2.resize(img,(dimtaby,dimtabx),interpolation=cv2.INTER_CUBIC)
+        img=np.clip(img,0,255)
         img=normi(img)    
 #            print img.shape
 #            print  initimg.shape

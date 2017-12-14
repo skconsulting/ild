@@ -31,10 +31,27 @@ print ' keras.backend.image_data_format :',keras.backend.image_data_format()
 oldFormat=False #for compatibility with old format
 
 writeFile=False
+#
+#MIN_BOUND = -1000.0
+#MAX_BOUND = 400.0
+#PIXEL_MEAN = 0.25
 
-MIN_BOUND = -1000.0
-MAX_BOUND = 400.0
-PIXEL_MEAN = 0.25
+limitHU=1700.0
+centerHU=-662.0
+
+minb=centerHU-(limitHU/2)
+maxb=centerHU+(limitHU/2)
+
+#MIN_BOUND = -1000.0
+#MAX_BOUND = 400.0
+
+MIN_BOUND =minb
+MAX_BOUND = maxb
+#PIXEL_MEAN = 0.25
+PIXEL_MEAN = 0.92
+
+print MIN_BOUND,MAX_BOUND
+
 
 dimpavx=16
 dimpavy=16
@@ -183,9 +200,10 @@ classifdict['set0'] ={
          'consolidation':7,
         'micronodules':8,
         'air_trapping':9,
-        'GGpret':10
-
+        'GGpret':10,
+        'lung':11
         }
+
 usedclassifdict['set0'] = [
         'healthy',   
         'ground_glass',
@@ -196,9 +214,9 @@ usedclassifdict['set0'] = [
         'consolidation',
         'micronodules',
         'air_trapping',
-        'GGpret'
-        
+        'GGpret'        
         ]
+
 derivedpatdict['set0']=[
         'GGpret',
         ]
@@ -220,15 +238,15 @@ classifdict['sk0'] ={
         }
 usedclassifdict['sk0'] = [
         'back_ground',
-        'healthy',   
-        'ground_glass',
-        'HC',
-        'reticulation',
-        'bronchiectasis',
-        'cysts',
         'consolidation',
+        'HC',
+        'ground_glass',
+        'healthy',   
         'micronodules',
+        'reticulation',
         'air_trapping',
+        'cysts',
+        'bronchiectasis',
         'GGpret'       
         ]
 derivedpatdict['sk0']=[
@@ -236,7 +254,38 @@ derivedpatdict['sk0']=[
         'GGpret',
 
         ]
+classifdict['unet'] ={        
+        'back_ground':0,
+        'healthy':1,    
+        'ground_glass':2,
+        'HC':3,
+        'reticulation':4,
+        'bronchiectasis':5,
+        'cysts':6,
+         'consolidation':7,
+        'micronodules':8,
+        'air_trapping':9,
+        'GGpret':10,
+        'lung':11
+        }
+usedclassifdict['unet'] = [
+        'back_ground',
+        'consolidation',
+        'HC',
+        'ground_glass',
+        'healthy',   
+        'micronodules',
+        'reticulation',
+        'air_trapping',
+        'cysts',
+        'bronchiectasis',
+        'GGpret'       
+        ]
+derivedpatdict['unet']=[
 
+        'GGpret',
+
+        ]
 ##set1
 
 ##set1

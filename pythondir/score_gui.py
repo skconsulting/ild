@@ -280,7 +280,7 @@ def visualisation(btn):
     visuDraw()
 
 def redraw(app):
-    app.stop()
+#    app.stop()
     initDraw()
 
 def visuDrawl(btn):
@@ -308,6 +308,7 @@ def checkStop():
     return app.yesNoBox("Confirm Exit", "Are you sure you want to exit the application?")
 
 def Stop():
+#    print 'stop'
 #    sys.exit(1)
     return True
 
@@ -315,8 +316,10 @@ def boutonStop(btn):
     global app
     ans= app.yesNoBox("Confirm Exit", "Are you sure you want to exit the application?")
     if ans:
+        print 'yes'
         app.stop()
-        sys.exit(1)
+        print 'after yes'
+#        sys.exit(1)
     else:
         app.stop()
         redraw(app)
@@ -493,13 +496,16 @@ def initDraw():
     app.setResizable(canResize=True)
     app.setBg("lightBlue")
     app.setFont(10)
-#    app.setStopFunction(Stop)
     app.addButton("HELP",  presshelp)
+    
+
 
 #    app.addLabel("top", "Select patient directory:", 0, 0)
+#    """
     if not goodir: selectPatientDir()
 
     if goodir:
+#        app.setStopFunction(checkStop)
         app.addLabel("path_patientt", "path_patient",colspan=2)
         app.addLabel("path_patient", lisdir,colspan=2)
         app.setLabelBg("path_patient", "Blue")
@@ -595,8 +601,11 @@ def initDraw():
 #        app.addButton("Global Score Front Projected", row,1, gscore)
 #        app.addButton("Global Score Merge", row,2, gscore)
         app.addHorizontalSeparator( colour="red")
+#        """
     app.addButton("Quit",  boutonStop)
+#    print 'run'
     app.go()
+#    print "quit inside"
 
 def visuDraw():
     global app
@@ -747,5 +756,6 @@ continuevisu=False
 listannotated=[]
 goodir=False
 initDraw()
-app.stop()
-sys.exit(1)
+print 'quit'
+#app.stop()
+#sys.exit(1)

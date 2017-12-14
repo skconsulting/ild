@@ -51,7 +51,9 @@ def roirun(indata,path_patient,lungask):
     centerHU=indata['centerHU'] 
     limitHU=indata['limitHU']
     ForceGenerate=indata['ForceGenerate']
-    ImageTreatment=indata['ImageTreatment']
+#    ImageTreatment=indata['ImageTreatment']
+    ImageTreatment=False
+
 
     pos=str(listHug).find(' ROI!:')
     if pos >0:

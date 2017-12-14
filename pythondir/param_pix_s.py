@@ -45,6 +45,7 @@ MIN_BOUND =minb
 MAX_BOUND = maxb
 PIXEL_MEAN = 0.52
 
+print 'MIN_BOUND:',MIN_BOUND,'MAX_BOUND:',MAX_BOUND,'PIXEL_MEAN',PIXEL_MEAN
 
 dimpavx=16
 dimpavy=16
@@ -110,8 +111,8 @@ typei2='png'
 #volumeroifile='volumeroi'
 #volumeroifilep='volumeroip'
 
-#excluvisu=['healthy']
-excluvisu=['']
+excluvisu=['healthy']
+#excluvisu=['']
 
 bmpname='scan_bmp'
 
