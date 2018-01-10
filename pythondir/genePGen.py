@@ -3,8 +3,8 @@
 """
 Top file to generate patches from DICOM database Geneva with HU
 this is cross view only
+NO norm is applied
 no support of superimposed patterns
-include back-ground
 first step
 
 version 1.0
@@ -23,7 +23,7 @@ import dicom
 import numpy as np
 import os
 
-import scipy.misc
+#import scipy.misc
 
 #general parameters and file, directory names
 #######################################################
@@ -32,12 +32,12 @@ import scipy.misc
 topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 namedirHUG = 'HUG'
 subHUG='ILD_TXT'
-#subHUG='ILD23'
+#subHUG='ILDa'
 
 toppatch= 'TOPPATCH'
 #extension for output dir
 extendir='all'
-extendir1='5'
+extendir1='GEN0'
 #extendir1='essai'
 
 #labelEnh=('consolidation','reticulation,air_trapping','bronchiectasis','cysts')
@@ -170,7 +170,9 @@ def genepara(namedirtopcf):
     dsr= dsr-dsr.min()
     dsr=dsr.astype('uint16')
 #    dsrresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
-    dsrresize = scipy.ndimage.interpolation.zoom(dsr, fxs, mode='nearest')
+#    dsrresize = scipy.ndimage.interpolation.zoom(dsr, fxs, mode='nearest')
+    dsrresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
+
 
     dimtabx=int(dsrresize.shape[0])
     dimtaby=int(dsrresize.shape[1])
@@ -233,6 +235,7 @@ def genebmp(dirName,slnt,dimtabx,dimtaby):
             FilesDCM =(os.path.join(dirName,filename))
             RefDs = dicom.read_file(FilesDCM,force=True)
             dsr= RefDs.pixel_array
+
             
             dsr=dsr.astype('int16')
             fxs=float(RefDs.PixelSpacing[0])/avgPixelSpacing
@@ -248,16 +251,22 @@ def genebmp(dirName,slnt,dimtabx,dimtaby):
             if slope != 1:
                 dsr = slope * dsr.astype(np.float64)
                 dsr = dsr.astype(np.int16)
-
             dsr += np.int16(intercept)
 #            dsr = dsr.astype('int16')
             dsr = dsr.astype('float32')
+#            print dsr.min(),dsr.max()
+            dsrmin= dsr.min()
+            dsrmax= dsr.max()
 #            print 'start resize'
             dsr=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
+#            print dsr.min(),dsr.max()
+            dsr=np.clip(dsr,dsrmin,dsrmax)
 #            print 'end resize'
 #            dsr = scipy.ndimage.interpolation.zoom(dsr, fxs, mode='nearest')
 #        imgresize=dsr
             dsr=dsr.astype('int16')
+#            print dsr.min(),dsr.max()
+
 #            print dsr.mean()/(16*16)
 #                        print dsr.min(),dsr.max(),dsr.shape
 #            dsr=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)          

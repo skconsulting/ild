@@ -16,7 +16,7 @@ from param_pix_t import derivedpatall,classifc,usedclassifall,classifall
 from param_pix_t import dimpavx,dimpavy,typei,typei1,avgPixelSpacing,thrpatch,perrorfile,plabelfile,pxy
 from param_pix_t import remove_folder,normi,genelabelloc,totalpat,totalnbpat,fidclass,rsliceNum
 from param_pix_t import white
-from param_pix_t import patchpicklename,scan_bmp,lungmask,lungmask1,sroi,patchesdirname
+from param_pix_t import patchpicklename,scan_bmp,lungmask,lungmask1,sroi,patchesdirname,derivedpat
 from param_pix_t import imagedirname,picklepath,source,lungmaskbmp,layertokeep,reservedword,augmentation
 import os
 #import sys
@@ -36,22 +36,26 @@ import cPickle as pickle
 #global directory for scan file
 topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 #namedirHUG = 'CHU'
-namedirHUG = 'CHU'
-#namedirHUG = 'REFVAL'
+#namedirHUG = 'CHU'
+namedirHUG = 'REFVALnew'
 
 
 #subdir for roi in text
-subHUG='UIP'
+#subHUG='UIP'
 #subHUG='UIP'
 #subHUG='UIPTR14'
+subHUG='UIPJC'
+#subHUG='UIPJCAN'
+
 
 #global directory for output patches file
 toppatch= 'TOPPATCH'
 #extension for output dir
-extendir='all'
+extendir='JC'
+#extendir='all'
 #extendir='essai1'
 #extension1 for output dir
-extendir1='5'
+extendir1='0'
 #extendir1='essai'
 
 
@@ -246,9 +250,12 @@ def genebmp(dirName, sou,tabscanName,fxs,listsln,listroi):
                 dsr += np.int16(intercept)
 #                dsr = dsr.astype('int16')
                 dsr = dsr.astype('float32')
+                dsrmin= dsr.min()
+                dsrmax=dsr.max()
         
-#                dsr=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
                 dsr=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
+#                dsr=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_CUBIC)
+                dsr=np.clip(dsr,dsrmin,dsrmax)
 
 #                dsr = scipy.ndimage.interpolation.zoom(dsr, fxs, mode='nearest')
 #        imgresize=dsr
@@ -447,7 +454,7 @@ def contour2(im,l):
     im2,contours0, hierarchy = cv2.findContours(thresh,cv2.RETR_TREE,\
         cv2.CHAIN_APPROX_SIMPLE)
     contours = [cv2.approxPolyDP(cnt, 0, True) for cnt in contours0]
-    cv2.drawContours(vis,contours,-1,col,1,cv2.LINE_AA)
+    cv2.drawContours(vis,contours,-1,col,-1,cv2.LINE_AA)
     return vis
 
 def pavs (dirName,pat,slnt,dimtabx,dimtaby,tabscanName,listroi):
@@ -495,7 +502,7 @@ def pavs (dirName,pat,slnt,dimtabx,dimtaby,tabscanName,listroi):
            if vis.sum()>0:
 
                 _tabsroi = np.copy(tabsroi[scannumb])
-                imn=cv2.add(vis,_tabsroi)
+                imn=cv2.addWeighted(vis,0.5,_tabsroi,1,0)
                 imn=tagview(imn,pat,0,100)
                 tabsroi[scannumb]=imn
                 imn = cv2.cvtColor(imn, cv2.COLOR_BGR2RGB)
@@ -766,7 +773,8 @@ for f in listdirc:
         if i != 'back_ground':
             tabroipat[i],tabsroi,a,listroi=genebmp(namedirtopcf, i,tabscanName,fxs,listsln,listroi)
 
-    for i in derivedpatall:
+#    for i in derivedpatall:
+    for i in  derivedpat:
 #        i='HCpret'
         tabroipat[i]=np.zeros((slnt,dimtabx,dimtaby),np.uint8)
         tabroipat[i]=calnewpat(namedirtopcf,i,slnt,dimtabx,dimtaby,tabscanName)

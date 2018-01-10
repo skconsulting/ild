@@ -19,7 +19,7 @@ pickel_dirsource_th='0.95'
 pickel_dirsource_root='pickle'
 pickel_dirsource_e='train' #path for data fort training
 pickel_dirsourcenum='set1' #extensioon for path for data for training
-extendir1='0'
+extendir1='1'
 extendir2=''
 ##########################################################################
 
@@ -81,8 +81,8 @@ with open(filei, 'rb') as csvfile:
 #    print reader
     for row in reader:
 #        print row
-        categorical_accuracy.append([float(row['categorical_accuracy'])])
-        val_accuracy.append([float(row['val_categorical_accuracy'])])
+        categorical_accuracy.append([float(row['dice_coef'])])
+        val_accuracy.append([float(row['val_dice_coef'])])
         lr.append([float(row['lr'])])
         train_loss.append([float(row['loss'])])
         val_loss.append([float(row['val_loss'])])
@@ -95,7 +95,7 @@ print '--------------'
 print 'Current Last Epoch: ',row['epoch'][0:4]
 print 'loss      ','val_loss  ','lr      ', 'train_acc','val_acc'
 print ( row['loss'][0:6],row['val_loss'][0:6],'%0.2e'% lrf,
-        row['categorical_accuracy'][0:4],row['val_categorical_accuracy'][0:4])
+        row['dice_coef'][0:4],row['val_dice_coef'][0:4])
 print '--------------'
 
 # plotting

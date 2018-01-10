@@ -1,29 +1,5 @@
-'''
-This is a part of the supplementary material uploaded along with
-the manuscript:
-
-    "Lung Pattern Classification for Interstitial Lung Diseases Using a Deep Convolutional Neural Network"
-    M. Anthimopoulos, S. Christodoulidis, L. Ebner, A. Christe and S. Mougiakakou
-    IEEE Transactions on Medical Imaging (2016)
-    http://dx.doi.org/10.1109/TMI.2016.2535865
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-For more information please read the README file. The files can also
-be found at: https://github.com/intact-project/ild-cnn
-'''
-from param_pix_t import thrpatch,usedclassif
+# coding: utf-8
+from param_pix_t import thrpatch,classif
 #from keras.models import load_model
 #from keras.models import model_from_json
 import ild_helpers as H
@@ -33,7 +9,8 @@ import keras
 from keras import backend as K
 K.set_image_dim_ordering('th')
 print 'NEW keras.backend.image_data_format :',keras.backend.image_data_format()
-
+# channel first = theano = samples, channels, rows, cols). 
+import sys
 import datetime
 t = datetime.datetime.now()
 today = str('_m'+str(t.month)+'_d'+str(t.day)+'_y'+str(t.year)+'_'+str(t.hour)+'h_'+str(t.minute)+'m')
@@ -57,7 +34,7 @@ train_params = {
      'patience' : args.pat if args.pat else 200,       # Patience parameter for early stoping 200
      'tolerance': args.tol if args.tol else 1.005,     # Tolerance parameter for early stoping [default: 1.005, checks if > 0.5%]
      'res_alias': args.csv if args.csv else 'res' + str(today),     # csv results filename alias
-     'val_data': args.val if args.val else False     # validation data provided  (True) or 10% of training set
+     'val_data': args.val if args.val else True     # validation data provided  (True) or 10% of training set (False)
 }
 
 topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
@@ -65,20 +42,29 @@ topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 #path with data for training
 pickel_dirsource_root='pickle'
 pickel_dirsource_e='train' #path for data fort training
-pickel_dirsourcenum='set0' #extensioon for path for data for training
-extendir1='7'
+pickel_dirsourcenum='set1' #extensioon for path for data for training
+extendir1='0'
 extendir2=''
-#########################################################################################
-num_class= len(usedclassif)
 
+valset='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool/th0.95_pickle_val_set1_0'
+if not os.path.exists(valset):
+    print 'valset doesnot exist: ',valset
+    sys.exit()
+
+
+#########################################################################################
+num_class= len(classif)
+print 'number of classes', num_class
 
 pickleStore='pickle'
 if len (extendir2)>0:
     extendir2='_'+extendir2
 
 pickel_dirsource='th'+str(thrpatch)+'_'+pickel_dirsource_root+'_'+pickel_dirsource_e+'_'+pickel_dirsourcenum+'_'+extendir1+extendir2
-
 patch_dir=os.path.join(topdir,pickel_dirsource)
+if not os.path.exists(patch_dir):
+    print 'pickel_dirsource doesnot exist: ',patch_dir
+    sys.exit()
 patch_dir_store=os.path.join(patch_dir,pickleStore)
 
 print 'patch dir source : ',patch_dir #path with data for training
@@ -93,6 +79,7 @@ tn = datetime.datetime.now()
 todayn = str(tn.month)+'-'+str(tn.day)+'-'+str(tn.year)+' - '+str(tn.hour)+'h '+str(tn.minute)+'m'+'\n'
 errorfile.write('started ' +pickel_dirsource+' at :'+todayn)
 errorfile.write('--------------------\n')
+errorfile.write( 'number of classes'+str(num_class)+'\n')
 errorfile.write('patch dir source : '+patch_dir+'\n') #path with data for training
 errorfile.write('weight dir store : '+patch_dir_store+'\n') #path with weights after training
 errorfile.write('--------------------\n')
@@ -105,7 +92,7 @@ else:
      (X_train, y_train), (X_val, y_val)= H.load_data_train(patch_dir,num_class)
 
 # train a CNN model
-model = CNN.train(X_train, y_train, X_val, y_val, train_params,eferror,patch_dir_store)
+model = CNN.train(X_train, y_train, X_val, y_val, train_params,eferror,patch_dir_store,valset)
 
 errorfile = open(eferror, 'a')
 t = datetime.datetime.now()

@@ -17,6 +17,8 @@ import shutil
 import time
 import keras
 import theano
+import random
+import cv2
 
 from keras import backend as K
 K.set_image_dim_ordering('th')
@@ -25,24 +27,36 @@ print keras.__version__
 print theano.__version__
 print ' keras.backend.image_data_format :',keras.backend.image_data_format()
 ######################################################################
-setdata='set0'
+setdata='set1'
 thrpatch = 0.95 #patch overlapp tolerance
 ######################################################
 writeFile=False
-"""
-MIN_BOUND = -1000.0
-MAX_BOUND = 400.0
-PIXEL_MEAN = 0.25
-"""
-learning_rate=1e-4
-limitHU=1700.0
-centerHU=-662.0
+#"""
+#MIN_BOUND = -1000.0
+#MAX_BOUND = 400.0
+#PIXEL_MEAN = 0.25
 
-minb=centerHU-(limitHU/2)
-maxb=centerHU+(limitHU/2)
+learning_rate=1e-4
+#CHU
+#limitHU=1700.0
+#centerHU=-662.0
+
+#minb=centerHU-(limitHU/2)
+#maxb=centerHU+(limitHU/2)
+
+#minb=-1024.0
+#maxb=2000.0
+
+minb=-1024.0
+maxb=400.
+
 MIN_BOUND =minb
 MAX_BOUND = maxb
-PIXEL_MEAN = 0.52
+
+#PIXEL_MEAN = 0.288702558038
+PIXEL_MEAN = 0.286751202638
+#PIXEL_MEAN = 0.
+print minb,maxb,PIXEL_MEAN
 
 dimpavx=16
 dimpavy=16
@@ -77,7 +91,6 @@ patchesdirname = 'patches'#define the name of directory for patches
 picklepath = 'picklepatches'#define the name of directory for pickle patch
 imagedirname='patches_jpeg' #define the name for jpeg files
 patchfile='patchfile' #name to put 
-
 
 scan_bmp='scan_bmp'
 transbmp='trans_bmp'
@@ -122,6 +135,8 @@ highgrey=(240,240,240)
 #cwd=os.getcwd()
 #(cwdtop,tail)=os.path.split(cwd)
 #dirpickle=os.path.join(cwdtop,path_pickle)
+notToAug=['HC','reticulation','bronchiectasis','GGpret']
+notToAug=[]
 
 usedclassifall = [
         'back_ground',
@@ -202,12 +217,9 @@ if setdata=='set0':
         'GGpret'
         ]
     derivedpat=[
-        'HCpret',
-        'HCpbro',
-        'GGpbro',
-        'GGpret',
-        'bropret'
+        'GGpret'
         ]
+    
 elif setdata=='set0p':
     classif ={
             'back_ground':0,
@@ -250,28 +262,39 @@ elif setdata=='set1':
         'HC':1,
         'ground_glass':2,
         'healthy':3,
-        'reticulation':4,
-        'air_trapping':5,        
+        'micronodules':4,
+        'reticulation':5,
         'bronchiectasis':6,
-        'GGpret':7,
-        'lung':8
+        'emphysema':7,
+        'GGpret':8,
+        'lung':9
         }
     usedclassif = [
         'consolidation',
         'HC',
         'ground_glass',
         'healthy',
+        'micronodules',
         'reticulation',
-        'air_trapping',
         'bronchiectasis',
-        'GGpret'
+        'emphysema',
+        'GGpret',
+        'lung'
         ]
     derivedpat=[
-        'HCpret',
-        'HCpbro',
-        'GGpbro',
-        'GGpret',
-        'bropret'
+        'GGpret'
+        ]
+elif setdata=='setr':
+    classif ={
+        'reticulation':0,
+        'ground_glass':1,
+        'healthy':2,
+        'GGpret':3,
+        'lung':4
+        }
+
+    derivedpat=[
+        'GGpret'
         ]
 elif setdata=='set1p':
     classif ={
@@ -563,6 +586,7 @@ def normalize(image):
     image1= (image - MIN_BOUND) / (MAX_BOUND - MIN_BOUND)
     image1[image1>1] = 1.
     image1[image1<0] = 0.
+
     return image1
 
 def zero_center(image):
@@ -761,5 +785,162 @@ def totalnbpat (patchtoppath,picklepathdir):
                 filepwt1.write(k+' : '+str(v)+'\n')
         filepwt1.write('----------\n')
     filepwt1.close()
+
+def geneshiftv(img,s):
+    if s!=0:
+        shap=img.shape[0]
+        shi=int(shap*s/100.)
+        tr=np.roll(img,shi,axis=0)
+        if shi>0:
+            remp=img[0]
+            for i in range (shi):
+                tr[i]=remp
+        else:
+            remp=img[-1]
+            for i in range (-shi):
+#                print i,img.shape[0]
+                tr[img.shape[0]-i-1]=remp
+    else:
+        tr=img
+    return tr
+
+def geneshifth(img,s):
+    if s!=0:
+        shap=img.shape[1]
+        shi=int(shap*s/100.)
+        tr=np.roll(img,shi,axis=1)       
+        if shi>0:
+            remp=img[:,0]
+            for i in range (shi):
+                tr[:,i]=remp
+        else:
+            remp=img[:,-1]
+            for i in range (-shi):
+                tr[:,img.shape[1]-i-1]=remp    
+    else:
+                tr=img
+    return tr
+
+def generesize(img,r):
+    if r !=0:
+        shapx=img.shape[1]
+        shapy=img.shape[0]  
+        types=type(img[0][0])
+        imgc=img.copy().astype('float64')
+        imgr=cv2.resize(imgc,None,fx=(100+r)/100.,fy=(100+r)/100.,interpolation=cv2.INTER_LINEAR)  
+        imgr=imgr.astype(types)
+        newshapex=imgr.shape[1]
+        newshapey=imgr.shape[0]
+
+        valcor=(imgc[0][0] +imgc[0][shapx-1]+imgc[shapy-1][0]+imgc[shapy-1][shapx-1])/4.
+    
+        if newshapex>shapx:
+            dx=int(newshapex-shapx)/2
+            dy=int(newshapey-shapy)/2
+            imgrf=imgr[dy:dy+shapy,dx:dx+shapx]
+        else:
+            dx=int(shapx-newshapex)/2
+            dy=int(shapy-newshapey)/2
+            imgrf=np.zeros((shapy,shapx),types)
+            np.putmask(imgrf,imgrf==0,valcor)
+            imgrf[dy:dy+newshapey,dx:dx+newshapex]=imgr
+    else:
+            imgrf=img
+    return imgrf
+
+def generot(image,tt):
+    if tt==0:
+        imout=image
+    elif tt==1:
+    # 1 90 deg
+        imout = np.rot90(image,1)
+    elif tt==2:
+    #2 180 deg
+        imout = np.rot90( image,2)
+    elif tt==3:
+    #3 270 deg
+        imout = np.rot90(image,3)
+    elif tt==4:
+    #4 flip fimage left-right
+            imout=np.fliplr(image)
+    elif tt==5:
+    #5 flip fimage left-right +rot 90
+        imout = np.rot90(np.fliplr(image))
+    elif tt==6:
+    #6 flip fimage left-right +rot 180
+        imout = np.rot90(np.fliplr(image),2)
+    elif tt==7:
+    #7 flip fimage left-right +rot 270
+        imout = np.rot90(np.fliplr(image),3)
+    return imout
+
+
+def genescaleint(img,s):
+    if s!=0:
+        minint=-1.
+        maxint=1.
+        types=type(img[0][0])
+        acts=s*(maxint-minint)/100.0
+        imgc=img.copy().astype('float32')    
+        imgr=imgc+acts
+        imgr=np.clip(imgr,minint,maxint)
+        imgr=imgr.astype(types)
+    else:
+        imgr=img
+    return imgr
+
+
+def genesmultint(img,s):
+    if s!=0:
+        minint=-1.
+        maxint=1.
+        
+        types=type(img[0][0])
+        acts=(100+s)/100.0
+        imgc=img.copy().astype('float32')    
+        imgr=imgc*acts
+        imgr=np.clip(imgr,minint,maxint)
+        imgr=imgr.astype(types)
+    else:
+        imgr=img
+    return imgr
+
+
+def geneaug(img,scaleint,multint,rotimg,resiz,shiftv,shifth):
+    
+    imgr=geneshifth(img,shifth)
+    imgr=geneshiftv(imgr,shiftv)
+    imgr=generot(imgr,rotimg)
+    imgr=generesize(imgr,resiz)
+    imgr=genesmultint(imgr,multint)
+    imgr=genescaleint(imgr,scaleint)
+
+    return imgr
+    
+
+def generandom(maxscaleint,maxmultint,maxrot,maxresize,maxshiftv,maxshifth,keepaenh):
+    
+    scaleint = random.randint(-100, 100)
+    scaleint =keepaenh*maxscaleint*scaleint/100.
+    
+    multint = random.randint(-100, 100)
+    multint =keepaenh*maxmultint*multint/100.
+    
+    rotimg = random.randint(0, maxrot)
+    
+    resiz = random.randint(-100,100)
+    resiz =keepaenh*maxresize*resiz/100.
+    
+    shiftv = random.randint(-100, 100)
+    shiftv =keepaenh*maxshiftv*shiftv/100.
+
+    
+    shifth = random.randint(-100, 100)
+    shifth =keepaenh*maxshifth*shifth/100.
+
+    return scaleint,multint,rotimg,resiz,shiftv,shifth
+
+
+
 ###############
     

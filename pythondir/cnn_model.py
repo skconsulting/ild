@@ -1,33 +1,4 @@
-'''
-This is a part of the supplementary material uploaded along with 
-the manuscript:
-
-    "Lung Pattern Classification for Interstitial Lung Diseases Using a Deep Convolutional Neural Network"
-    M. Anthimopoulos, S. Christodoulidis, L. Ebner, A. Christe and S. Mougiakakou
-    IEEE Transactions on Medical Imaging (2016)
-    http://dx.doi.org/10.1109/TMI.2016.2535865
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-For more information please read the README file. The files can also 
-be found at: https://github.com/intact-project/ild-cnn
-
-modified by S. Kritter
-version 1.1
-28 july 2017
-
-'''
+# -*- coding: utf-8 -*-
 # debug
 # from ipdb import set_trace as bp
 from param_pix_t import modelname,learning_rate
@@ -47,10 +18,12 @@ from keras.layers.advanced_activations import LeakyReLU
 from keras.layers.core import Dense, Dropout, Flatten
 from keras.models import load_model
 from keras.callbacks import ModelCheckpoint,ReduceLROnPlateau,CSVLogger,EarlyStopping
-from keras.models import model_from_json
+#from keras.models import model_from_json
 from keras.optimizers import Adam
+from keras import backend as K
+from keras.models import Model
 
-
+from keras.layers import Input, concatenate,  Conv2DTranspose,UpSampling2D
 
 def get_FeatureMaps(L, policy, constant=17):
     return {
@@ -64,68 +37,171 @@ def get_Obj(obj):
         'ce': 'categorical_crossentropy',
     }[obj]
 
-def get_model(input_shape, output_shape, params,filew,patch_dir_store):
-    print input_shape,output_shape
-    pool_siz=(2,2)
+def dice_coef(y_true, y_pred):
+    smooth = 1.
+    y_true_f = K.flatten(y_true)
+    y_pred_f = K.flatten(y_pred)
+    intersection = K.sum(y_true_f * y_pred_f)
+    return (2. * intersection + smooth) / (K.sum(y_true_f) + K.sum(y_pred_f) + smooth)
+
+
+def dice_coef_loss(y_true, y_pred):
+    return -dice_coef(y_true, y_pred)
+
+
+
+
+def get_modelunet(input_shape, output_shape, params,filew,patch_dir_store):
     num_class=output_shape[-1]
-
+    
     dimpx=input_shape[-1]
-
-    INP_SHAPE = (1, dimpx, dimpx)
     dim_org=keras.backend.image_data_format()
+    INP_SHAPE = (1, dimpx, dimpx)
     kernel_size=(2,2)
+    pool_siz=(2,2)
+#    inputs = Input((img_rows, img_cols, 1))
+    inputs = Input(INP_SHAPE)
+    conv1 = Conv2D(32, kernel_size, activation='relu', padding='same',data_format=dim_org)(inputs)
+    conv1 = Conv2D(32, kernel_size, activation='relu', padding='same',data_format=dim_org)(conv1)
+    pool1 = MaxPooling2D(pool_size=pool_siz)(conv1)
+    conv2 = Conv2D(64, kernel_size, activation='relu', padding='same',data_format=dim_org)(pool1)
+    conv2 = Conv2D(64, kernel_size, activation='relu', padding='same',data_format=dim_org)(conv2)
+    pool2 = MaxPooling2D(pool_size=pool_siz)(conv2)
+    conv3 = Conv2D(128, kernel_size, activation='relu', padding='same',data_format=dim_org)(pool2)
+    conv3 = Conv2D(128, kernel_size, activation='relu', padding='same',data_format=dim_org)(conv3)
+    pool3 = MaxPooling2D(pool_size=pool_siz)(conv3)
+    conv4 = Conv2D(256, kernel_size, activation='relu', padding='same',data_format=dim_org)(pool3)
+    conv4 = Conv2D(256, kernel_size, activation='relu', padding='same',data_format=dim_org)(conv4)
+    pool4 = MaxPooling2D(pool_size=pool_siz)(conv4)
+    conv5 = Conv2D(512, kernel_size, activation='relu', padding='same',data_format=dim_org)(pool4)
+    conv5 = Conv2D(512, kernel_size, activation='relu', padding='same',data_format=dim_org)(conv5)
+#    up6 = concatenate([UpSampling2D(size=(2, 2),data_format=dim_org)(conv5), conv4],axis=1)
+    up6 = concatenate([Conv2DTranspose(256, (2, 2), strides=(2, 2), padding='valid',data_format=dim_org)(conv5), conv4], axis=1)
+    conv6 = Conv2D(256, kernel_size, activation='relu', padding='same',data_format=dim_org)(up6)
+    conv6 = Conv2D(256, kernel_size, activation='relu', padding='same',data_format=dim_org)(conv6)
+    up7 = concatenate([Conv2DTranspose(128, (2, 2), strides=(2, 2), padding='valid',data_format=dim_org)(conv6), conv3], axis=1)
+#    up7 = concatenate([UpSampling2D(size=(2, 2),data_format=dim_org)(conv6), conv3], axis=1)
+
+    conv7 = Conv2D(128, kernel_size, activation='relu', padding='same',data_format=dim_org)(up7)
+    conv7 = Conv2D(128, kernel_size, activation='relu', padding='same',data_format=dim_org)(conv7)
+    up8 = concatenate([Conv2DTranspose(64, (2, 2), strides=(2, 2), padding='valid',data_format=dim_org)(conv7), conv2], axis=1)
+#    up8 = concatenate([UpSampling2D(size=(2, 2),data_format=dim_org)(conv7), conv2], axis=1)
+
+    conv8 = Conv2D(64, kernel_size, activation='relu', padding='same',data_format=dim_org)(up8)
+    conv8 = Conv2D(64, kernel_size, activation='relu', padding='same',data_format=dim_org)(conv8)
+    up9 = concatenate([Conv2DTranspose(32, (2, 2), strides=(2, 2), padding='valid',data_format=dim_org)(conv8), conv1], axis=1)
+#    up9 = concatenate([UpSampling2D(size=(2, 2),data_format=dim_org)(conv8), conv1], axis=1)
+
+    conv9 = Conv2D(32, kernel_size, activation='relu', padding='same',data_format=dim_org)(up9)
+    conv9 = Conv2D(32, kernel_size, activation='relu', padding='same',data_format=dim_org)(conv9)
+#    conv10 = Conv2D(num_class, (1, 1), activation='relu',data_format=dim_org)(conv9)
     
-    print 'sk3 with num_class :',num_class
-    model = Sequential() 
-    model.add(Conv2D(32, kernel_size, input_shape=INP_SHAPE, padding='valid', 
-                      data_format=dim_org, kernel_constraint=maxnorm(3)))    
-    model.add(LeakyReLU(alpha=params['a']))
-#    model.add(Dropout(0.1)) 
-    model.add(Conv2D(64, kernel_size, padding='valid', 
-                data_format=dim_org, kernel_constraint=maxnorm(3)))
-    model.add(LeakyReLU(alpha=params['a']))
-#    model.add(Dropout(0.2)) 
-    model.add(Conv2D(128, kernel_size, padding='valid', 
-                      data_format=dim_org, kernel_constraint=maxnorm(3)))
-    model.add(LeakyReLU(alpha=params['a']))
-    model.add(Dropout(0.3)) 
-  
-    model.add(Conv2D(256, kernel_size,  padding='valid', 
-                      data_format=dim_org, kernel_constraint=maxnorm(3)))
-    model.add(LeakyReLU(alpha=params['a']))
-    if params['pt'] == 'Avg':
-        model.add(AveragePooling2D(pool_size=pool_siz,data_format=dim_org))
-    elif params['pt'] == 'Max':
-        model.add(MaxPooling2D(pool_size=pool_siz,data_format=dim_org))
-    else:
-        sys.exit("Wrong type of Pooling layer")
-    model.add(Dropout(0.5)) 
-    
-    model.add(Flatten())
-#    model.add(Dropout(0.25)) 
-    
-    model.add(Dense(1000))
-    model.add(LeakyReLU(alpha=params['a']))
-    model.add(Dropout(0.5)) 
-    
-#    model.add(Dense(1000))
-#    model.add(LeakyReLU(alpha=.01))  
-#    model.add(Dropout(0.5)) 
-    
-    model.add(Dense(num_class, activation='softmax'))
-   
- 
+    conv10 =Flatten()(conv9)
+    conv11= Dense(1000)(conv10)
+    conv12= LeakyReLU(alpha=params['a'])(conv11)
+    conv13= Dropout(0.5)(conv12)     
+    conv14=  Dense(num_class, activation='softmax')(conv13)
+
+    model = Model(inputs=[inputs], outputs=[conv14])
+
+#    model.compile(optimizer=Adam(lr=1e-5), loss=dice_coef_loss, metrics=[dice_coef])
     model.compile(optimizer=Adam(lr=learning_rate), loss='categorical_crossentropy', metrics=['categorical_accuracy'])
     filew.write ('learning rate:'+str(learning_rate)+'\n')
     print ('learning rate:'+str(learning_rate))
     json_string = model.to_json()
     pickle.dump(json_string, open(os.path.join(patch_dir_store,modelname), "wb"),protocol=-1)
     orig_stdout = sys.stdout
-    f = open('modelnex.txt', 'w')
+    f = open(os.path.join(patch_dir_store,'modelnexunet.txt'), 'w')
     sys.stdout = f
     print(model.summary())
     sys.stdout = orig_stdout
     f.close()
+    print model.layers[-1].output_shape #== (None, 16, 16, 21)
+    return model
+
+
+def get_model(input_shape, output_shape, params,filew,patch_dir_store):
+    print 'input shape:',input_shape,'output shape:',output_shape
+   
+    num_class=output_shape[-1]
+    
+    dimpx=input_shape[-1]
+
+    INP_SHAPE = (1, dimpx, dimpx)
+    dim_org=keras.backend.image_data_format()
+    kernel_size=(2,2)
+    pool_siz=(2,2)
+#    paddingv='valid'#'same'
+    paddingv='same'
+
+    maxnormv=3
+    startnum=32
+    coef={}
+    coef[0]=startnum
+    for i in range(1,4):
+        coef[i]=coef[i-1]*2
+        print i,coef[i]
+
+    print 'sk5 with num_class :',num_class
+    model = Sequential() 
+    model.add(Conv2D(coef[0], kernel_size, input_shape=INP_SHAPE, padding=paddingv, 
+                      data_format=dim_org, kernel_constraint=maxnorm(maxnormv)))   
+    model.add(LeakyReLU(alpha=params['a']))
+    model.add(Conv2D(coef[0], kernel_size, input_shape=INP_SHAPE, padding=paddingv, 
+                      data_format=dim_org, kernel_constraint=maxnorm(maxnormv)))  
+    model.add(LeakyReLU(alpha=params['a']))
+    model.add(AveragePooling2D(pool_size=pool_siz,data_format=dim_org))
+    model.add(Dropout(0.25)) 
+    
+    model.add(Conv2D(coef[1], kernel_size, padding=paddingv, 
+                data_format=dim_org, kernel_constraint=maxnorm(maxnormv)))
+    model.add(LeakyReLU(alpha=params['a']))  
+    model.add(Conv2D(coef[1], kernel_size, padding=paddingv, 
+                data_format=dim_org, kernel_constraint=maxnorm(maxnormv)))
+    model.add(LeakyReLU(alpha=params['a']))  
+    model.add(AveragePooling2D(pool_size=pool_siz,data_format=dim_org))
+    model.add(Dropout(0.25)) 
+
+    model.add(Conv2D(coef[2], kernel_size, input_shape=INP_SHAPE, padding=paddingv, 
+                      data_format=dim_org, kernel_constraint=maxnorm(maxnormv)))   
+    model.add(LeakyReLU(alpha=params['a']))
+    model.add(Conv2D(coef[2], kernel_size, input_shape=INP_SHAPE, padding=paddingv, 
+                      data_format=dim_org, kernel_constraint=maxnorm(maxnormv)))  
+    model.add(LeakyReLU(alpha=params['a']))
+    model.add(AveragePooling2D(pool_size=pool_siz,data_format=dim_org))
+    model.add(Dropout(0.25)) 
+    
+    model.add(Conv2D(coef[3], kernel_size, padding=paddingv, 
+                data_format=dim_org, kernel_constraint=maxnorm(maxnormv)))
+    model.add(LeakyReLU(alpha=params['a']))  
+    model.add(Conv2D(coef[3], kernel_size, padding=paddingv, 
+                data_format=dim_org, kernel_constraint=maxnorm(maxnormv)))
+    model.add(LeakyReLU(alpha=params['a']))  
+    model.add(AveragePooling2D(pool_size=pool_siz,data_format=dim_org))
+    model.add(Dropout(0.25)) 
+    
+    model.add(Flatten())
+    model.add(Dense(1000))
+    model.add(LeakyReLU(alpha=params['a']))
+#    model.add(Dropout(0.3)) 
+#    model.add(Dense(1000))
+#    model.add(LeakyReLU(alpha=params['a']))
+    model.add(Dropout(0.5)) 
+    
+    model.add(Dense(num_class, activation='softmax'))
+    
+    model.compile(optimizer=Adam(lr=learning_rate), loss='categorical_crossentropy', metrics=['categorical_accuracy'])
+    filew.write ('learning rate:'+str(learning_rate)+'\n')
+    print ('learning rate:'+str(learning_rate))
+    json_string = model.to_json()
+    pickle.dump(json_string, open(os.path.join(patch_dir_store,modelname), "wb"),protocol=-1)
+    orig_stdout = sys.stdout
+    f = open(os.path.join(patch_dir_store,'modelsk5.txt'), 'w')
+    sys.stdout = f
+    print(model.summary())
+    sys.stdout = orig_stdout
+    f.close()
+    print model.layers[-1].output_shape #== (None, 16, 16, 21)
     return model
 
 
@@ -268,7 +344,7 @@ def load_model_set(pickle_dir_train):
     return namelastc
 
 
-def train(x_train, y_train, x_val, y_val, params,eferror,patch_dir_store):
+def train(x_train, y_train, x_val, y_val, params,eferror,patch_dir_store,valset):
     ''' TODO: documentation '''
 
     filew = open(eferror, 'a')
@@ -377,23 +453,28 @@ def train(x_train, y_train, x_val, y_val, params,eferror,patch_dir_store):
     filew.write ('starting the loop of training with number of patience = '+ str(params['patience'])+'\n')
     filew.write('started at :'+todayn)
 
-    early_stopping=EarlyStopping(monitor='val_loss', patience=30, verbose=1,min_delta=0.001,mode='auto')                     
+    early_stopping=EarlyStopping(monitor='val_loss', patience=20, verbose=1,min_delta=0.01,mode='auto')                     
     model_checkpoint = ModelCheckpoint(os.path.join(patch_dir_store,'weights_'+today+'.{epoch:02d}-{val_loss:.3f}.hdf5'), 
                                 monitor='val_loss', save_best_only=True,save_weights_only=True)       
     reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5,
-                      patience=7, min_lr=5e-6,verbose=1)
+                      patience=8, min_lr=5e-6,verbose=1)
     csv_logger = CSVLogger(rese,append=True)
     filew.close()
-    
+    batch_size=500
+    number_of_unique_sample= x_train.shape[0]
+
+    steps_per_epoch=number_of_unique_sample/batch_size
     if params['val_data']:
-        model.fit(x_train, y_train, batch_size=500, epochs=nb_epoch_i_p, verbose =2,
-                          validation_data=(x_val,y_val),
+        print 'using valdata'
+
+        model.fit(x_train, y_train, batch_size=batch_size, epochs=nb_epoch_i_p, verbose =2,
+                          validation_data=(x_val,y_val),shuffle=True, 
                           callbacks=[model_checkpoint,reduce_lr,csv_logger,early_stopping]  )
     else:
-            
-        model.fit(x_train, y_train, batch_size=500, epochs=nb_epoch_i_p, verbose =2,
-                        validation_split=0.1,
-                          callbacks=[model_checkpoint,reduce_lr,csv_logger,early_stopping]  )
+        print '10% train data as val data'
+        model.fit(x_train, y_train, batch_size=batch_size, epochs=nb_epoch_i_p, verbose =2,
+                        validation_split=0.1,shuffle=True, 
+                         callbacks=[model_checkpoint,reduce_lr,csv_logger,early_stopping]  )
         # Evaluate models
     
     
@@ -430,7 +511,7 @@ def train(x_train, y_train, x_val, y_val, params,eferror,patch_dir_store):
         
     
     num_class=y_train.shape[-1]
-    valset='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool/th0.95_pickle_val_set0_0'
+#    valset='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool/th0.95_pickle_val_set1_r0'
     print('validation set '+str(valset))
     filew.write('validation set '+str(valset)+'\n')
     (x_val, y_val)= H.load_data_val(valset, num_class)

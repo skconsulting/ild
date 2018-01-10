@@ -687,7 +687,7 @@ def delall():
 
 def writeslice(num):
 #    print 'write',num
-    cv2.rectangle(menus, (5,440), (80,450), red, -1)
+    cv2.rectangle(menus, (5,435), (90,450), red, -1)
     cv2.putText(menus,'Slice: '+str(num),(5,450),cv2.FONT_HERSHEY_PLAIN,1.0,white,1 )
 
 def contrasti(im,r):
@@ -812,7 +812,7 @@ def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName,imagetreat):
             if numberfinal>0:
                 writeslice(numberfinal)
             else:
-                cv2.rectangle(menus, (5,440), (80,450), black, -1)
+                cv2.rectangle(menus, (5,435), (90,450), black, -1)
                                    
         if key == ord("c"):
                 print 'completed'
@@ -901,8 +901,7 @@ def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName,imagetreat):
                     numberfinal=min(numberfinal,slnt-1)
                     writeslice(numberfinal)
                     cv2.setTrackbarPos('Flip','SliderRoi1' ,numberfinal-1)
-
-                    cv2.rectangle(menus, (5,440), (80,450), black, -1)
+                    cv2.rectangle(menus, (5,435), (90,450), black, -1)
                     numberfinal=0
                     nbdig=0
                 numberentered={}
@@ -1522,25 +1521,16 @@ def nothing(x):
 
 def fillslices():
     global listroislides
-#    print "this is fillslices"
-    print listroislides
-    listroislides.sort()
-    print listroislides
     listroislides=list(set(listroislides))
     listroislides.sort()
-    print listroislides
     pickle.dump(listroislides, open(os.path.join(path_data_write,'listroislidesr'), "wb" ),protocol=-1) 
     n=0
     cv2.rectangle(menuright, (5, 382),(dimtabmenur,680), black, -1)
     for key2 in listroislides:
         n+=1
-        print key2,n,key2%2
         xr=5
         yr=400
-        if key2%2==0:
-            cv2.putText(menuright,str(key2),(xr,yr+25*n),cv2.FONT_HERSHEY_SIMPLEX,0.8,white,2 )
-        else:
-            cv2.putText(menuright,str(key2),(xr+80,yr+25*(n-1)),cv2.FONT_HERSHEY_SIMPLEX,0.8,white,2 )   
+        cv2.putText(menuright,str(key2),(xr+80*(n%3),yr+25*(n/3)),cv2.FONT_HERSHEY_SIMPLEX,0.8,white,2 )   
 #            n-=1
 
 def fillpattern(scannumber):
