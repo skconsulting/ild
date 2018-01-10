@@ -357,6 +357,7 @@ def genehealthy():
 
 def completed(imagename,dirpath_patient,dirroit):
     global scannumber,pixelSpacing,volumeroi,patternerase,tabroifinal,path_data_writefile,path_data_write
+    global listroislides,lung_maskf
 
 #    print 'completed start'
     closepolygon()
@@ -405,7 +406,13 @@ def completed(imagename,dirpath_patient,dirroit):
                     imagemax= cv2.countNonZero(imgray)
     
                     if imagemax>0:  
-    
+                        if key !='lung':
+                            listroislides.append(scannumber)
+                            listroislides.sort()
+                            listroislides=list(set(listroislides))
+                            fillslices()
+#                            print listroislides
+                            
                         posext=imagename.find('.'+typei1)
                         imgcoreScans=imagename[0:posext]+'.'+typei1
     #                    imgcoreRois=imagename[0:posext]+'.'+typei
@@ -539,6 +546,24 @@ def completed(imagename,dirpath_patient,dirroit):
         cv2.imwrite(imgcoreRoi,mroiaroi)
     
         images[scannumber]=np.zeros((dimtabx,dimtabx,3), np.uint8)
+        eraselist=True
+        for key in usedclassif  :
+            if key !='lung':
+                try:
+#                    print key,tabroifinal[key][scannumber].max()
+                    if tabroifinal[key][scannumber].max() >0:
+                     eraselist=False
+                except:
+                    continue
+
+        if eraselist:
+            if key !='lung':
+#            print listroislides
+                listroislides.remove(scannumber)
+                fillslices()
+            
+            
+            
         
         
 def visua():
@@ -561,9 +586,10 @@ def visua():
     cv2.putText(menus,' Visualization ROI',(150,30),cv2.FONT_HERSHEY_PLAIN,1.0,white,1 )
 
 def eraseroi(imagename,dirpath_patient,dirroit):
+
     print 'this is erase roi',pattern
-    global tabroifinal,volumeroi,path_data_writefile,path_data_write
-    if len(pattern)>0:
+    global tabroifinal,volumeroi,path_data_writefile,path_data_write,listroislides,lung_maskf
+    if len(pattern)>0 and pattern!='init':
         closepolygon()
         delall()
         tabroifinal[pattern][scannumber]=np.zeros((dimtabx,dimtabx,3), np.uint8)
@@ -580,12 +606,24 @@ def eraseroi(imagename,dirpath_patient,dirroit):
             cv2.putText(menus,'ROI '+pattern+' slice:'+str(scannumber)+' erased',(150,30),cv2.FONT_HERSHEY_PLAIN,1.0,white,1 )
             volumeroi[scannumber][pattern]=0
             pickle.dump(volumeroi, open(path_data_writefile, "wb" ),protocol=-1)
+            eraselist=True
+            for key in usedclassif  :
+                if key !='lung':
+                    try:
+                        if tabroifinal[key][scannumber].max() >0:
+                         eraselist=False
+                    except:
+                        continue
+                if eraselist:
+                    if key !='lung':
+                        listroislides.remove(scannumber)
+                        fillslices()
         else:
             cv2.rectangle(menus, (150,12), (511,52), black, -1)
             cv2.putText(menus,'ROI '+pattern+' slice:'+str(scannumber)+' not exist',(150,30),cv2.FONT_HERSHEY_PLAIN,1.0,white,1 )
     else:
         cv2.putText(menus,' no pattern defined',(150,30),cv2.FONT_HERSHEY_PLAIN,1.0,white,1 )
-
+    
 def reseted():
 #    global viewasked
     for key in usedclassif:
@@ -708,7 +746,7 @@ def zoomfunction(im,z,px,py,dx,algo):
 
 def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName,imagetreat):
 
-    global quitl,scannumber,imagename,viewasked,pattern,patternerase
+    global quitl,scannumber,imagename,viewasked,pattern,patternerase,listroislides
     quitl=False
 
     pattern='init'
@@ -747,7 +785,7 @@ def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName,imagetreat):
 
     nbdig=0
     numberentered={}
-
+    numberfinal=0
     while True:    
         
         key = cv2.waitKey(1000)
@@ -897,7 +935,7 @@ def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName,imagetreat):
                 if viewasked[key1]:
                     try:
                         tbroiks=tabroifinal[key1][scannumber]
-                        if tbroiks.max()>0:                        
+                        if tbroiks.max()>0:        
                             tabroifinalview=zoomfunction(tbroiks,z,px,py,dimtabxdef,algo)
                             imageview=cv2.addWeighted(imageview,1,tabroifinalview,tr/10.,0)
                     except:
@@ -960,7 +998,8 @@ def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName,imagetreat):
                     except:
                             print 'GaussianBlur not ok',kernel   
             imageview=np.clip(imageview,0,255)    
-#            np.putmask(imageview,imageview>255,255)                
+#            np.putmask(imageview,imageview>255,255)  
+            fillpattern(scannumber)             
             imageview=normi(imageview)
             imageview=np.concatenate((imageview,menuright),axis=1)
             imageview=np.concatenate((menuleft,imageview),axis=1)
@@ -1475,11 +1514,54 @@ def genebmp(fn,nosource,dirroit,centerHU,limitHU):
         tabscanRoi[slicenumber]=anoted_image
         cv2.imwrite(roibmpfile,anoted_image)
 
-    return slnt,tabscan,listsln,pixelSpacing,tabscanName,dimtabx,tabscanRoi
+    return slnt,tabscan,listsln,pixelSpacing,tabscanName,dimtabx,tabscanRoi,lung_maskf,lung_mask_bmpf
 
 def nothing(x):
     pass
 
+
+def fillslices():
+    global listroislides
+#    print "this is fillslices"
+    print listroislides
+    listroislides.sort()
+    print listroislides
+    listroislides=list(set(listroislides))
+    listroislides.sort()
+    print listroislides
+    pickle.dump(listroislides, open(os.path.join(path_data_write,'listroislidesr'), "wb" ),protocol=-1) 
+    n=0
+    cv2.rectangle(menuright, (5, 382),(dimtabmenur,680), black, -1)
+    for key2 in listroislides:
+        n+=1
+        print key2,n,key2%2
+        xr=5
+        yr=400
+        if key2%2==0:
+            cv2.putText(menuright,str(key2),(xr,yr+25*n),cv2.FONT_HERSHEY_SIMPLEX,0.8,white,2 )
+        else:
+            cv2.putText(menuright,str(key2),(xr+80,yr+25*(n-1)),cv2.FONT_HERSHEY_SIMPLEX,0.8,white,2 )   
+#            n-=1
+
+def fillpattern(scannumber):
+    global listroislides
+#    print "this is fillpatterns"
+    listpat=[]
+    xr=5
+    yr=720
+    for key in classif:
+        try:      
+            if tabroifinal[key][scannumber].max() >0:
+                listpat.append(key)
+        except:
+                    continue
+    cv2.rectangle(menuright, (5, 715),(dimtabmenur,dimtabnorm), black, -1)
+    n=0
+    listpat.sort()
+    for key2 in listpat:
+        n+=1
+        cv2.putText(menuright,key2,(xr,yr+25*n),cv2.FONT_HERSHEY_SIMPLEX,0.8,classifc[key2],2 )
+        
 def menudraw(slnt):
     global refPt, cropping,pattern,x0,y0,quitl,tabroi,tabroifinal,menuleft,menuright,images
     global posxdel,posydel,posxquit,posyquit,posxdellast,posydellast,posxdelall,posydelall
@@ -1487,6 +1569,9 @@ def menudraw(slnt):
     global posxeraseroi,posyeraseroi,posxlastp,posylastp,posxgeneh,posygeneh
 #    posrc=0
     corectx=dimtabnorm+dimtabmenul
+    cv2.putText(menuright,'slices with roi:',(5,375),cv2.FONT_HERSHEY_SIMPLEX,0.8,white,2 )  
+    cv2.putText(menuright,'rois in slice:',(5,710),cv2.FONT_HERSHEY_SIMPLEX,0.8,white,2 )  
+    fillslices()
     for key1,value1 in classif.items():
         tabroi[key1]={}
 #        tabroifinal[key1]={}
@@ -1564,7 +1649,7 @@ def menudraw(slnt):
     posxgeneh+=corectx
     
     posxquit=posxinit
-    posyquit=450
+    posyquit=250
     cv2.rectangle(menuright, (posxquit,posyquit),(posxquit+20,posyquit+20), red, -1)
     cv2.putText(menuright,'(q) quit',(posxdelt-70, posyquit+20),cv2.FONT_HERSHEY_SIMPLEX,fontsize,red,fontw )
     posxquit+=corectx
@@ -1583,6 +1668,7 @@ def drawcontours2(im,pat,dimtabx,dimtaby):
 #
 def populate(pp,lissln,slnt,pixelSpacing,tabscanName):
     print 'start populate'
+    listroislides=[]
     pathroi=os.path.join(pp,roi_name)
     volumeroi={}
     tabroifinal={}
@@ -1614,6 +1700,7 @@ def populate(pp,lissln,slnt,pixelSpacing,tabscanName):
         if os.path.exists(dirroi):
 #            print 'exist', dirroi
             listroi =[name for name in  os.listdir(dirroi) if name.lower().find('.'+typei1)>0 ]
+#            print listroi
             if len(listroi)>0:
                 for roiimage in listroi:
                      
@@ -1631,6 +1718,10 @@ def populate(pp,lissln,slnt,pixelSpacing,tabscanName):
                          os.remove(img)
                         
                     if imageroi.max() >0:
+                        if key !='lung':
+                            listroislides.append(slicenumber)
+                            listroislides.sort()
+
     #                    tabroifinal[key]=np.zeros((slnt,dimtabx,dimtaby,3), np.uint8)
                         tabroifinal[key][slicenumber]=imageroi
                                       
@@ -1662,7 +1753,7 @@ def populate(pp,lissln,slnt,pixelSpacing,tabscanName):
                         cv2.imwrite(sroiname,anoted_image)
                               
 
-    return tabroifinal,volumeroi
+    return tabroifinal,volumeroi,listroislides
 
 def initmenus(slnt,dirpath_patient):
     global menuright,menuleft,imageview,zoneverticalgauche,zoneverticaldroite,images,menus
@@ -1684,7 +1775,7 @@ def initmenus(slnt,dirpath_patient):
 
 def openfichierroi(patient,patient_path_complet,centerHU,limitHU,lungask,ForceGenerate,ImageTreatment):
     global dirpath_patient,dirroit,path_data_write,volumeroi,path_data_writefile,pixelSpacing
-    global tabroifinal,dimtabx
+    global tabroifinal,dimtabx,listroislides,lung_maskf,lung_mask_bmpf
     print 'load ',patient
     imwait=np.zeros((200,200,3),np.uint8)
     cv2.putText(imwait,'In Progress',(50, 50),cv2.FONT_HERSHEY_PLAIN,1,white,1 )
@@ -1715,22 +1806,50 @@ def openfichierroi(patient,patient_path_complet,centerHU,limitHU,lungask,ForceGe
         limitHU1=pickle.load( open(os.path.join(path_data_write,'limitHUr'), "rb" ))
         
     if centerHU1==centerHU and limitHU1==limitHU and not ForceGenerate:
-        print 'no need to regenerate'
-        slnt=pickle.load( open(os.path.join(path_data_write,'slntr'), "rb" ))
-        tabscanScan=pickle.load( open(os.path.join(path_data_write,'tabscanScanr'), "rb" ))
-        tabscanName=pickle.load( open(os.path.join(path_data_write,'tabscanNamer'), "rb" ))
-        listsln=pickle.load( open(os.path.join(path_data_write,'listslnr'), "rb" ))
-        tabroifinal=pickle.load( open(os.path.join(path_data_write,'tabroifinalr'), "rb" ))
-        pixelSpacing=pickle.load( open(os.path.join(path_data_write,'pixelSpacingr'), "rb" ))
-        tabscanRoi=pickle.load( open(os.path.join(path_data_write,'tabscanRoir'), "rb" ))
-        volumeroi=pickle.load( open(os.path.join(path_data_write,'volumeroir'), "rb" ))
-        dimtabx=pickle.load( open(os.path.join(path_data_write,'dimtabxr'), "rb" ))
-        print 'end load'
+        try:
+            print 'no need to regenerate'
+            slnt=pickle.load( open(os.path.join(path_data_write,'slntr'), "rb" ))
+            tabscanScan=pickle.load( open(os.path.join(path_data_write,'tabscanScanr'), "rb" ))
+            tabscanName=pickle.load( open(os.path.join(path_data_write,'tabscanNamer'), "rb" ))
+            listsln=pickle.load( open(os.path.join(path_data_write,'listslnr'), "rb" ))
+            tabroifinal=pickle.load( open(os.path.join(path_data_write,'tabroifinalr'), "rb" ))
+            pixelSpacing=pickle.load( open(os.path.join(path_data_write,'pixelSpacingr'), "rb" ))
+            tabscanRoi=pickle.load( open(os.path.join(path_data_write,'tabscanRoir'), "rb" ))
+            volumeroi=pickle.load( open(os.path.join(path_data_write,'volumeroir'), "rb" ))
+            dimtabx=pickle.load( open(os.path.join(path_data_write,'dimtabxr'), "rb" ))
+            tabscanRoi=pickle.load( open(os.path.join(path_data_write,'tabscanRoir'), "rb" ))
+            listroislides=pickle.load( open(os.path.join(path_data_write,'listroislidesr'), "rb" ))
+            lung_maskf=pickle.load( open(os.path.join(path_data_write,'lung_maskfr'), "rb" ))
+            lung_mask_bmpf=pickle.load( open(os.path.join(path_data_write,'lung_mask_bmpfr'), "rb" ))
+            print 'end load'
+        except:
+            print 'force generate'
+            slnt,tabscanScan,listsln,pixelSpacing,tabscanName,dimtabx,tabscanRoi,lung_maskf,lung_mask_bmpf=genebmp(dirsource,nosource,dirroit,centerHU,limitHU)  
+            tabroifinal,volumeroi,listroislides=populate(dirpath_patient,listsln,slnt,pixelSpacing,tabscanName)
+            pickle.dump(tabscanRoi, open(os.path.join(path_data_write,'tabscanRoir'), "wb" ),protocol=-1) 
+            pickle.dump(lung_maskf, open(os.path.join(path_data_write,'lung_maskfr'), "wb" ),protocol=-1) 
+            pickle.dump(lung_mask_bmpf, open(os.path.join(path_data_write,'lung_mask_bmpfr'), "wb" ),protocol=-1) 
+
+            pickle.dump(listroislides, open(os.path.join(path_data_write,'listroislidesr'), "wb" ),protocol=-1) 
+            pickle.dump(dimtabx, open(os.path.join(path_data_write,'dimtabxr'), "wb" ),protocol=-1) 
+            pickle.dump(centerHU, open(os.path.join(path_data_write,'centerHUr'), "wb" ),protocol=-1) 
+            pickle.dump(limitHU, open(os.path.join(path_data_write,'limitHUr'), "wb" ),protocol=-1) 
+            pickle.dump(slnt, open(os.path.join(path_data_write,'slntr'), "wb" ),protocol=-1) 
+            pickle.dump(tabscanScan, open(os.path.join(path_data_write,'tabscanScanr'), "wb" ),protocol=-1) 
+            pickle.dump(tabscanName, open(os.path.join(path_data_write,'tabscanNamer'), "wb" ),protocol=-1) 
+            pickle.dump(listsln, open(os.path.join(path_data_write,'listslnr'), "wb" ),protocol=-1) 
+            pickle.dump(tabroifinal, open(os.path.join(path_data_write,'tabroifinalr'), "wb" ),protocol=-1) 
+            pickle.dump(pixelSpacing, open(os.path.join(path_data_write,'pixelSpacingr'), "wb" ),protocol=-1)
+            pickle.dump(volumeroi, open(os.path.join(path_data_write,'volumeroir'), "wb" ),protocol=-1)
+            
     else:
         print 'generate'
-        slnt,tabscanScan,listsln,pixelSpacing,tabscanName,dimtabx,tabscanRoi=genebmp(dirsource,nosource,dirroit,centerHU,limitHU)  
-        tabroifinal,volumeroi=populate(dirpath_patient,listsln,slnt,pixelSpacing,tabscanName)
+        slnt,tabscanScan,listsln,pixelSpacing,tabscanName,dimtabx,tabscanRoi,lung_maskf,lung_mask_bmpf=genebmp(dirsource,nosource,dirroit,centerHU,limitHU)  
+        tabroifinal,volumeroi,listroislides=populate(dirpath_patient,listsln,slnt,pixelSpacing,tabscanName)
+        pickle.dump(lung_mask_bmpf, open(os.path.join(path_data_write,'lung_mask_bmpfr'), "wb" ),protocol=-1)
+        pickle.dump(lung_maskf, open(os.path.join(path_data_write,'lung_maskfr'), "wb" ),protocol=-1) 
         pickle.dump(tabscanRoi, open(os.path.join(path_data_write,'tabscanRoir'), "wb" ),protocol=-1) 
+        pickle.dump(listroislides, open(os.path.join(path_data_write,'listroislidesr'), "wb" ),protocol=-1) 
         pickle.dump(dimtabx, open(os.path.join(path_data_write,'dimtabxr'), "wb" ),protocol=-1) 
         pickle.dump(centerHU, open(os.path.join(path_data_write,'centerHUr'), "wb" ),protocol=-1) 
         pickle.dump(limitHU, open(os.path.join(path_data_write,'limitHUr'), "wb" ),protocol=-1) 
@@ -1741,10 +1860,11 @@ def openfichierroi(patient,patient_path_complet,centerHU,limitHU,lungask,ForceGe
         pickle.dump(tabroifinal, open(os.path.join(path_data_write,'tabroifinalr'), "wb" ),protocol=-1) 
         pickle.dump(pixelSpacing, open(os.path.join(path_data_write,'pixelSpacingr'), "wb" ),protocol=-1)
         pickle.dump(volumeroi, open(os.path.join(path_data_write,'volumeroir'), "wb" ),protocol=-1)
-        
+
     dirsourcescan=os.path.join(dirsource,scan_bmp)
     if lungask:
         tabroifinal,volumeroi=genebmplung(dirsource,tabscanScan,tabscanName,slnt,listsln,tabroifinal,volumeroi)
+#    print listroislides
     initmenus(slnt,dirpath_patient)  
     cv2.destroyWindow('wait')  
 #    img=Image.fromarray(normi(tabscanScan[260]), 'RGB')
