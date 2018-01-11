@@ -2,7 +2,7 @@
 """
 Created on Tue Mar 28 16:48:43 2017
 author: sylvain Kritter 
-Version 1.8
+Version 1.9
 
 11 January 2018
 """
@@ -112,8 +112,8 @@ def click_and_crop(event, x, y, flags, param):
     global quitl,pattern,dirpath_patient,dirroit,zoneverticalgauche,zoneverticaldroite
     global posxdel,menus,posydel,posyquit,posxquit,posxdellast,posydellast,posxdelall,posydelall
     global posxcomp,posycomp,imagename,posxreset,posyreset,posxvisua,posyvisua,posxeraseroi,posyeraseroi,posxlastp
-    global posylastp,scannumber,patternerase,posxgeneh,posygeneh
-    global fxs,x0new,y0new,viewasked
+    global posylastp,scannumber,patternerase,posxgeneh,posygeneh,posxgenem,posygenem
+    global fxs,x0new,y0new,viewasked,posxgenep,posygenep,scanp,scanm
 #    print 'patern',pattern
 
 
@@ -169,11 +169,25 @@ def click_and_crop(event, x, y, flags, param):
         if x>posxdel and x<posxdel+20 and y>posydel and y< posydel+20:
             print 'this is suppress'
             suppress()
+#            print x,y,posxdel,posydel
             labelfound=True
 
-        if x>posxquit-20 and x<posxquit+20 and y>posyquit-20 and y< posyquit+20:
+        if x>posxquit-10 and x<posxquit+20 and y>posyquit and y< posyquit+20:
             print 'this is quit'
+#            print y, posyquit,posygenep
             quitl=True
+            labelfound=True
+#        print posxgenep,posxgenep+20,posygenep,posygenep+20,x,y
+        if x>posxgenep and x<posxgenep+20 and y>posygenep and y< posygenep+20:
+            print 'this is scan+'
+#            print y, posyquit,posygenep
+            scanp=True
+            labelfound=True
+            
+        if x>posxgenem and x<posxgenem+20 and y>posygenem and y< posygenem+20:
+            print 'this is scan-'
+#            print y, posyquit,posygenep
+            scanm=True
             labelfound=True
 #        print posxdellast,posydellast
         if x>posxdellast and x<posxdellast+20 and y>posydellast and y< posydellast+20:
@@ -745,8 +759,10 @@ def zoomfunction(im,z,px,py,dx,algo):
 
 def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName,imagetreat):
 
-    global quitl,scannumber,imagename,viewasked,pattern,patternerase,listroislides
+    global quitl,scannumber,imagename,viewasked,pattern,patternerase,listroislides,scanp,scanm
     quitl=False
+    scanp=False
+    scanm=False
 
     pattern='init'
     patternerase='init'
@@ -789,8 +805,8 @@ def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName,imagetreat):
         
         key = cv2.waitKey(1000)
 #        key = cv2.waitKey(1000) & 0xFF
-#        if key != -1:
-#            print key
+        if key != -1:
+            print key
         if key >47 and key<58:
             numberfinal=0
             knum=key-48
@@ -906,12 +922,15 @@ def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName,imagetreat):
                 numberentered={}
 #        print fl
 #        cv2.setTrackbarPos('Flip','Slider2' ,5)
-        if key==2424832:
+            
+        if key==2424832 or scanm or key==60:
                 fl=max(0,fl-1)
                 cv2.setTrackbarPos('Flip','SliderRoi1' ,fl)
-        if key==2555904:
+                scanm=False
+        if key==2555904 or scanp or key==62:
                 fl=min(slnt-2,fl+1)
                 cv2.setTrackbarPos('Flip','SliderRoi1' ,fl)
+                scanp=False
         
         imsstatus=cv2.getWindowProperty('imageRoi', 0)
         imistatus= cv2.getWindowProperty('SliderRoi1', 0)
@@ -1524,11 +1543,11 @@ def fillslices():
     listroislides.sort()
     pickle.dump(listroislides, open(os.path.join(path_data_write,'listroislidesr'), "wb" ),protocol=-1) 
     n=0
-    cv2.rectangle(menuright, (5, 382),(dimtabmenur,680), black, -1)
+    cv2.rectangle(menuright, (5, 330),(dimtabmenur,680), black, -1)
     for key2 in listroislides:
         n+=1
         xr=5
-        yr=400
+        yr=350
         cv2.putText(menuright,str(key2),(xr+80*(n%3),yr+25*(n/3)),cv2.FONT_HERSHEY_SIMPLEX,0.8,white,2 )   
 #            n-=1
 
@@ -1555,10 +1574,10 @@ def menudraw(slnt):
     global refPt, cropping,pattern,x0,y0,quitl,tabroi,tabroifinal,menuleft,menuright,images
     global posxdel,posydel,posxquit,posyquit,posxdellast,posydellast,posxdelall,posydelall
     global posxcomp,posycomp,posxreset,posyreset,posxvisua,posyvisua
-    global posxeraseroi,posyeraseroi,posxlastp,posylastp,posxgeneh,posygeneh
+    global posxeraseroi,posyeraseroi,posxlastp,posylastp,posxgeneh,posygeneh,posxgenep,posygenep,posxgenem,posygenem
 #    posrc=0
     corectx=dimtabnorm+dimtabmenul
-    cv2.putText(menuright,'slices with roi:',(5,375),cv2.FONT_HERSHEY_SIMPLEX,0.8,white,2 )  
+    cv2.putText(menuright,'slices with roi:',(5,325),cv2.FONT_HERSHEY_SIMPLEX,0.8,white,2 )  
     cv2.putText(menuright,'rois in slice:',(5,710),cv2.FONT_HERSHEY_SIMPLEX,0.8,white,2 )  
     fillslices()
     for key1,value1 in classif.items():
@@ -1635,14 +1654,28 @@ def menudraw(slnt):
     posygeneh=215
     cv2.rectangle(menuright, (posxgeneh,posygeneh),(posxgeneh+20,posygeneh+20), white, -1)
     cv2.putText(menuright,'(h) gene Healthy',(posxdelt-155, posygeneh+20),cv2.FONT_HERSHEY_SIMPLEX,fontsize,white,fontw )
-    posxgeneh+=corectx
+    posxgeneh+=corectx   
     
-    posxquit=posxinit
-    posyquit=250
-    cv2.rectangle(menuright, (posxquit,posyquit),(posxquit+20,posyquit+20), red, -1)
-    cv2.putText(menuright,'(q) quit',(posxdelt-70, posyquit+20),cv2.FONT_HERSHEY_SIMPLEX,fontsize,red,fontw )
-    posxquit+=corectx
+    posxgenep=posxinit
+    posygenep=250
+    cv2.rectangle(menuright, (posxgenep,posygenep),(posxgenep+20,posygenep+20), white, -1)
+    cv2.putText(menuright,'(>)+',(posxdelt-2, posygenep+20),cv2.FONT_HERSHEY_SIMPLEX,fontsize,white,fontw )
+    posxgenep+=corectx
     
+    
+    posxgenem=posxinit-150
+    posygenem=250
+    cv2.rectangle(menuright, (posxgenem,posygenem),(posxgenem+20,posygenem+20), white, -1)
+    cv2.putText(menuright,'(<)-',(posxdelt-150, posygenem+20),cv2.FONT_HERSHEY_SIMPLEX,fontsize,white,fontw )
+    posxgenem+=corectx
+    
+    cv2.rectangle(menuright, (0,posygenem-6),(dimtabmenur,posygenem-5), yellow, -1)
+    
+    posxquit=10
+    posyquit=dimtabnorm-50
+    cv2.rectangle(menuleft, (posxquit,posyquit),(posxquit+20,posyquit+20), red, -1)
+    cv2.putText(menuleft,'(q) quit',(posxdelt-70, posyquit+20),cv2.FONT_HERSHEY_SIMPLEX,fontsize,red,fontw )
+    cv2.rectangle(menuleft, (0,posyquit-6),(dimtabmenur,posyquit-5), yellow, -1)
     
 def drawcontours2(im,pat,dimtabx,dimtaby):
 #    print 'contour',pat
