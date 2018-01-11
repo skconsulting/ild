@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 """
 Created on Tue Mar 28 16:48:43 2017
-@author: sylvain Kritter 
-Version 1.5 
+author: sylvain Kritter 
+Version 1.8
 
-06 September 2017
+11 January 2018
 """
 #from param_pix_r import *
 from param_pix_r import path_data,dimtabmenul,dimtabmenur,dimtabnorm,dimtabxdef
@@ -34,8 +34,7 @@ from skimage.morphology import  disk, binary_erosion, binary_closing
 from skimage.filters import roberts
 
 from scipy import ndimage as ndi
-
-
+######################################################################################
 
 pattern=''
 
@@ -1499,9 +1498,9 @@ def genebmp(fn,nosource,dirroit,centerHU,limitHU):
         t6='LimitHU: +/-' +str(int(limitHU/2))
     
         anoted_image=tagviews(dsrnormi,
-                              t0,dimtabx-200,dimtabx-10,
+                              t0,dimtabx-100,dimtabx-10,
                               t1,0,dimtabx-21,
-                              t2,dimtabx-200,dimtabx-20,
+                              t2,dimtabx-100,dimtabx-20,
                               t3,0,dimtabx-32,
                               t4,0,dimtabx-10,
                               t5,0,dimtabx-43,
@@ -1797,7 +1796,7 @@ def openfichierroi(patient,patient_path_complet,centerHU,limitHU,lungask,ForceGe
         
     if centerHU1==centerHU and limitHU1==limitHU and not ForceGenerate:
         try:
-            print 'no need to regenerate'
+#            print 'no need to regenerate'
             slnt=pickle.load( open(os.path.join(path_data_write,'slntr'), "rb" ))
             tabscanScan=pickle.load( open(os.path.join(path_data_write,'tabscanScanr'), "rb" ))
             tabscanName=pickle.load( open(os.path.join(path_data_write,'tabscanNamer'), "rb" ))
@@ -1813,7 +1812,7 @@ def openfichierroi(patient,patient_path_complet,centerHU,limitHU,lungask,ForceGe
             lung_mask_bmpf=pickle.load( open(os.path.join(path_data_write,'lung_mask_bmpfr'), "rb" ))
             print 'end load'
         except:
-            print 'force generate'
+            print 'generate'
             slnt,tabscanScan,listsln,pixelSpacing,tabscanName,dimtabx,tabscanRoi,lung_maskf,lung_mask_bmpf=genebmp(dirsource,nosource,dirroit,centerHU,limitHU)  
             tabroifinal,volumeroi,listroislides=populate(dirpath_patient,listsln,slnt,pixelSpacing,tabscanName)
             pickle.dump(tabscanRoi, open(os.path.join(path_data_write,'tabscanRoir'), "wb" ),protocol=-1) 
