@@ -12,7 +12,7 @@ version 1.0
 from param_pix_t import classifall,usedclassifall,classifc
 from param_pix_t import dimpavx,dimpavy,typei,typei1,avgPixelSpacing,thrpatch,lungmaskbmp1
 from param_pix_t import remove_folder,normi,genelabelloc,totalpat,totalnbpat,fidclass
-from param_pix_t import white
+from param_pix_t import white,medianblur
 from param_pix_t import patchpicklename,scan_bmp,lungmask,lungmask1,lungmaskbmp,sroi,patchesdirname
 from param_pix_t import imagedirname,picklepath,patchfile,source,perrorfile,plabelfile,locabg,reservedword
 
@@ -37,7 +37,7 @@ subHUG='ILD_TXT'
 toppatch= 'TOPPATCH'
 #extension for output dir
 extendir='all'
-extendir1='GEN0'
+extendir1='HUGa'
 #extendir1='essai'
 
 #labelEnh=('consolidation','reticulation,air_trapping','bronchiectasis','cysts')
@@ -101,6 +101,13 @@ errorfile.write('---------------\n')
 tn = datetime.datetime.now()
 todayn = str(tn.month)+'-'+str(tn.day)+'-'+str(tn.year)+' - '+str(tn.hour)+'h '+str(tn.minute)+'m'+'\n'
 errorfile.write('started ' +namedirHUG+' '+subHUG+' at :'+todayn)
+errorfile.write('--------------------------------\n')
+
+if medianblur:
+    errorfile.write('median blur\n')
+else:
+    errorfile.write('NO median blur\n')
+
 errorfile.write('--------------------------------\n')
 errorfile.write('source directory '+namedirtopc+'\n')
 errorfile.write('th : '+ str(thrpatch)+'\n')
@@ -253,6 +260,9 @@ def genebmp(dirName,slnt,dimtabx,dimtaby):
                 dsr = dsr.astype(np.int16)
             dsr += np.int16(intercept)
 #            dsr = dsr.astype('int16')
+            
+            if medianblur:
+                dsr=cv2.medianBlur(dsr,3)
             dsr = dsr.astype('float32')
 #            print dsr.min(),dsr.max()
             dsrmin= dsr.min()

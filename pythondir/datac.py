@@ -50,16 +50,16 @@ extendir2='0'
 #extendir2='essai'
 extendir3=extendir1
 
-augf=5#augmentation factor default 3
-test_size=0.1 #split test training percent
+augf=7#augmentation factor default 3
+test_size=0.2 #split test training percent
 
 #all in percent
 maxshiftv=0
 maxshifth=0
 maxrot=7
 maxresize=0
-maxscaleint=20
-maxmultint=20
+maxscaleint=0
+maxmultint=10
 ########################################################################
 ######################  end ############################################
 ########################################################################
@@ -283,8 +283,10 @@ def genf(features_train,labels_train,maxl,auga):
                 else:
                     if pat in notToAug:
                         keepaenh=0
+#                        print pat, ' NO augmentation'
                     else:
                         keepaenh=1
+#                        print pat, ' augmentation'
                     if not auga:
                         keepaenh=0
                     scaleint,multint,rotimg,resiz,shiftv,shifth=generandom(maxscaleint,
@@ -304,8 +306,10 @@ def genf(features_train,labels_train,maxl,auga):
                         numpat[pat]+=1
                         if pat in notToAug:
                             keepaenh=0
+#                            print pat, ' NO augmentation'
                         else:
                             keepaenh=1
+#                            print pat, ' augmentation'
                         if not auga:
                             keepaenh=0
                         scaleint,multint,rotimg,resiz,shiftv,shifth=generandom(maxscaleint,
@@ -346,66 +350,6 @@ def genf(features_train,labels_train,maxl,auga):
     return feature,label,numpat
 
 
-def genfold(features_train,labels_train,maxl,auga):
-    feature=[]
-    label=[]
-    indexpatc={}
-    maxindex=0
-#    print numclass,maxl
-    for j in usedclassifFinal:
-        indexpatc[j]=0
-    for aug in range(augf):
-            for numgen in range(maxl*numclass): 
-#            for numgen in range(20):    
-
-                    pat =usedclassifFinal[numgen%numclass]
-#                    print pat,numgen%numclass
-                    numberscan=len(features_train[pat])
-#                    print pat,len(features_train[pat])
-                    if  pat in hugeClass:
-                         indexpatc[pat] =  random.randint(0, numberscan-1)                       
-                    else:                                                   
-                        indexpatc[pat] =  indexpatc[pat]%numberscan
-                        if indexpatc[pat]>maxindex:
-                            maxindex=indexpatc[pat]
-                            patmax=pat
-                    
-                    indexpat=indexpatc[pat]
-                    indexpatc[pat]=indexpatc[pat]+1 
-                    if pat in notToAug:
-                        keepaenh=0
-                    else:
-                        keepaenh=1
-                    if not auga:
-                        keepaenh=0
-                    scaleint,multint,rotimg,resiz,shiftv,shifth=generandom(maxscaleint,maxmultint,maxrot,maxresize,maxshiftv,maxshifth,keepaenh)
-#                    print scaleint,multint,rotimg,resiz,shiftv,shifth
-                    scan=geneaug(features_train[pat][indexpat],scaleint,multint,rotimg,resiz,shiftv,shifth)
-#                    indexaug = random.randint(0, 7)
-#                    scan=geneaug(features_train[pat][indexpat],indexaug)
-#                    print pat,indexpat,indexaug
-                    
-                    mask=classif[pat]
-                    feature.append(scan)
-                    label.append(mask)
-                    if numgen%numclass==0:
-                        pat='healthy'
-                        numberscan=len(features_train[pat])
-                        indexpat =  random.randint(0, numberscan-1)
-                        if pat in notToAug:
-                            keepaenh=0
-                        else:
-                            keepaenh=1
-                        scaleint,multint,rotimg,resiz,shiftv,shifth=generandom(maxscaleint,maxmultint,maxrot,maxresize,maxshiftv,maxshifth,keepaenh)
-                        scan=geneaug(features_train[pat][indexpat],scaleint,multint,rotimg,resiz,shiftv,shifth)
-                        mask=classif[pat]
-                        feature.append(scan)
-                        label.append(mask)
-#                        print mask,numgen
-                    
-    print 'max index',patmax,maxindex
-
-    return feature,label
 
                 
 ####################################################################################

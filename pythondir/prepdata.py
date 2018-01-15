@@ -14,7 +14,7 @@ only one validation set for all training sets
 from param_pix import cwdtop,image_rows,image_cols
 
 from param_pix import remove_folder,normi,fidclass
-from param_pix import classif
+from param_pix import classif,generandom,geneaug
 
 import cPickle as pickle
 #import cv2
@@ -25,27 +25,37 @@ import numpy as np
 import os
 import random
 import sys
-import shutil
+#import shutil
 #import math
-#import cv2
+import cv2
 import keras
 print ' keras.backend.image_data_format :',keras.backend.image_data_format()
 #######################################################################################################
 
 nameHug='IMAGEDIR'
 toppatch= 'TOPROI' #for scan classified ROI
-extendir='2'  #for scan classified ROI
-#extendir='essai'  #for scan classified ROI
+extendir='0'  #for scan classified ROI
+#extendir='ILD6'  #for scan classified ROI
 rand=False # False means no random but all, only when valshare =100
-valshare=5 #percentage for validation set
+valshare=10 #percentage for validation set
 numturn=1#number of turn for validation
 pickel_dirsource_root='TRAIN_SET' #path for data fort training
 pickel_dirsource='pickle' #path for data fort training
 pickel_dirsourcenum='train_set' #extensioon for path for data for training
-extendir2='2'
+#extendir2='0'
+extendir2='ild6'
 calculOnly=True
 calculOnly=False
 bigpat='healthy'
+
+#all in percent
+maxshiftv=5
+maxshifth=5
+maxrot=7 #7
+maxresize=10
+maxscaleint=20
+maxmultint=20
+notToAug=['']
 ##############################################################
 validationdir='V'
 #sepextend2='ROI'
@@ -64,35 +74,35 @@ if not os.path.exists(pickle_dir):
 path_HUG=os.path.join(cwdtop,nameHug)
 patchesdirnametop = toppatch+'_'+extendir
 patchtoppath=os.path.join(path_HUG,patchesdirnametop)
-patchesdirnametopt = toppatch+'_T_'+extendir
-patchesdirnametopv = toppatch+'_V_'+extendir
-patchtoppatht=os.path.join(path_HUG,patchesdirnametopt)
-patchtoppathv=os.path.join(path_HUG,patchesdirnametopv)
+#patchesdirnametopt = toppatch+'_T_'+extendir
+#patchesdirnametopv = toppatch+'_V_'+extendir
+#patchtoppatht=os.path.join(path_HUG,patchesdirnametopt)
+#patchtoppathv=os.path.join(path_HUG,patchesdirnametopv)
 
-remove_folder(patchtoppatht)
-os.mkdir(patchtoppatht)
-remove_folder(patchtoppathv)
-os.mkdir(patchtoppathv)
+#remove_folder(patchtoppatht)
+#os.mkdir(patchtoppatht)
+#remove_folder(patchtoppathv)
+#os.mkdir(patchtoppathv)
 
 print 'work on :',patchtoppath , 'for scan data input '
-print 'creation :',patchtoppatht , 'for training data input'
-print 'creation :',patchtoppathv , 'for valid data input'
+#print 'creation :',patchtoppatht , 'for training data input'
+#print 'creation :',patchtoppathv , 'for valid data input'
 
 patchpicklename='picklepatches.pkl'
 roipicklepath = 'roipicklepatches'
 picklepatches='picklepatches'
 picklepathdir =os.path.join(patchtoppath,roipicklepath) # path scan classified by ROI
-picklepathdirt =os.path.join(patchtoppatht,roipicklepath) # path scan classified by ROI for training
-picklepathdirv =os.path.join(patchtoppathv,roipicklepath) # path scan classified by ROI for vali
+#picklepathdirt =os.path.join(patchtoppatht,roipicklepath) # path scan classified by ROI for training
+#picklepathdirv =os.path.join(patchtoppathv,roipicklepath) # path scan classified by ROI for vali
 print 'source',picklepathdir
-print 'destination training',picklepathdirt
-print 'destination validation',picklepathdirv
+#print 'destination training',picklepathdirt
+#print 'destination validation',picklepathdirv
 
 
-remove_folder(picklepathdirt)
-remove_folder(picklepathdirv)
-os.mkdir(picklepathdirv)
-shutil.copytree(picklepathdir, picklepathdirt)
+#remove_folder(picklepathdirt)
+#remove_folder(picklepathdirv)
+#os.mkdir(picklepathdirv)
+#shutil.copytree(picklepathdir, picklepathdirt)
         
 def get_class_weights(y):
     counter = collections.Counter(y)
@@ -115,46 +125,36 @@ def numbclasses(y):
     
     return class_weights
 
-def geneaug(image,tt):
-    if tt==0:
-        imout=image
-    elif tt==1:
-    # 1 90 deg
-        imout = np.rot90(image,1)
-    elif tt==2:
-    #2 180 deg
-        imout = np.rot90( image,2)
-    elif tt==3:
-    #3 270 deg
-        imout = np.rot90(image,3)
-    elif tt==4:
-    #4 flip fimage left-right
-            imout=np.fliplr(image)
-    elif tt==5:
-    #5 flip fimage left-right +rot 90
-        imout = np.rot90(np.fliplr(image))
-    elif tt==6:
-    #6 flip fimage left-right +rot 180
-        imout = np.rot90(np.fliplr(image),2)
-    elif tt==7:
-    #7 flip fimage left-right +rot 270
-        imout = np.rot90(np.fliplr(image),3)
-  
-    return imout
 
+def readclasses(ls,indexpat,scaleint,multint,rotimg,resiz,shiftv,shifth):
 
-def readclasses(pat,namepat,indexpat,indexaug):
+    readpkl=pickle.load(open( ls[indexpat], "rb" ))
 
-    patpick=os.path.join(picklepathdirv,pat)
-    patpick=os.path.join(patpick,namepat[indexpat])
-#    print patpick
-    readpkl=pickle.load(open(patpick, "rb"))
     scanr=readpkl[0]
-
-    scan=geneaug(scanr,indexaug)
+    scan=geneaug(scanr,scaleint,multint,rotimg,resiz,shiftv,shifth,False)
     maskr=readpkl[1]
+    mask=geneaug(maskr,0,0,rotimg,resiz,shiftv,shifth,True)
+    minr=maskr.min()
+    manr=maskr.max()
+    minm=mask.min()
+    manm=mask.max()
 
-    mask=geneaug(maskr,indexaug)
+    mansr=scanr.max()
+    mansm=scan.max()
+    if manm==0 or manr==0:
+        print 'error label nul'
+        sys.exit()
+    if mansr==0 or mansm==0:
+        print 'error scan nul'
+        sys.exit()
+    if minr != minm or manr!=manm or manr==0 or manm==0:
+        print 'error label'
+        print minr,minm,manr,manm,ls[indexpat]
+#        cv2.imwrite('images.bmp',normi(scanr))
+#        cv2.imwrite('imaget.bmp',normi(scan))
+#        cv2.imwrite('labels.bmp',normi( maskr))
+#        cv2.imwrite('labelt.bmp',normi( mask))
+        sys.exit()
 
     return scan, mask  
 
@@ -181,18 +181,28 @@ def readclasses2(num_classes,X_testi,y_testi):
     return  X_test,  ytestr  
 
     
-def batch_generator(numsamples,listroi,ls,numgenerate,numgeneratef):
+def batch_generator(numsamples,listroi,ls,numgenerate,numgeneratef,augm,te,classnumber):
         image_list = []
         mask_list = []
 #        numgen=0
-        print 'generation of images for validation'
+        print 'generation of images for ',te, 'number of samples: ',numsamples
         for numgen in range(numsamples):
             for pat in listroi:
-                indexaug = random.randint(0, 7)
+                if pat in notToAug:
+                    keepaenh=0
+                else:
+                    keepaenh=1
+                if not augm:
+                    keepaenh=0                 
+                scaleint,multint,rotimg,resiz,shiftv,shifth=generandom(maxscaleint,
+                            maxmultint,maxrot,maxresize,maxshiftv,maxshifth,keepaenh)
                 numgeneratef[pat]+=1
-                numberscan=classnumber[pat] 
-                n=numgenerate[pat]
-                img,mask=readclasses(pat,ls[pat],n,indexaug) 
+                numberscan=classnumber[pat]
+                indexpat=numgenerate[pat]
+                img,mask=readclasses(ls[pat],indexpat,scaleint,multint,rotimg,resiz,shiftv,shifth) 
+                if  img.max() ==0:
+                    print ('error')
+                    sys.exit()
                 numgenerate[pat]=(numgenerate[pat]+1)%numberscan
 #                print numgen, pat,n,ls[pat]
                 image_list.append(img)
@@ -213,85 +223,113 @@ num_classes=len(classif)
 print '-----------'
 print'number of classes in setdata:', num_classes
 print '-----------'
+print listroi
 
 listscaninroi={}
 listscaninroisub={}
-classnumber={}
+classnumberval={}
+classnumbertrain={}
 
 listtoroi=[]
 totalimages=0
 totalimagesval=0
+totalimagestrain=0
 maximage=0
-maximages=0
+maximageval=0
+maximagetrain=0
 
 for c in listroi:
     print 'work on ',c
-    dirsource=os.path.join(picklepathdir,c)
-    dirdestval=os.path.join(picklepathdirv,c)
-    dirdesttrain=os.path.join(picklepathdirt,c)
-    remove_folder(dirdestval)
-    os.mkdir(dirdestval)
-    
-    listscaninroi[c]=os.listdir(os.path.join(picklepathdir,c)) 
-    numberscanorig=len(listscaninroi[c])  
+    dirsource=os.path.join(picklepathdir,c)    
+    listscaninroi[c]=os.listdir(dirsource) 
+    numberscanorig=len(listscaninroi[c]) 
+    for u in range(0,numberscanorig):
+        listscaninroi[c][u]=os.path.join(dirsource,listscaninroi[c][u])
     totalimages+=numberscanorig
-    if numberscanorig>maximages:
-        maximages=numberscanorig
-    
-    num_to_select=len(listscaninroi[c])
-#    print c,listscaninroi[c],num_to_select
+    if numberscanorig>maximage:
+        maximage=numberscanorig
+        maximagesc=c
 
-    num_to_select=max(valshare*num_to_select/100,2)
-#    print c,num_to_select
+    num_to_select=max(valshare*numberscanorig/100,2)
     listscaninroisub[c]= random.sample(listscaninroi[c], num_to_select)
 #    print c,listscaninroisub[c],num_to_select
+
     for p in listscaninroisub[c]:
-#        print p
-        fdestval=os.path.join(dirdestval,p)        
-        fsource=os.path.join(dirsource,p)
-        ftrain=os.path.join(dirdesttrain,p)
-        shutil.copy(fsource,fdestval)
-        os.remove(ftrain)
-    numberscan=len(listscaninroisub[c])
-    classnumber[c]=numberscan
-#    print c,numberscan
-    if numberscan>maximage:
+        listscaninroi[c].remove(p)
+
+    classnumberval[c]=len(listscaninroisub[c])
+
+    if classnumberval[c]>maximageval:
         if c !=bigpat:
-            maximage=numberscan
-            ptmax=c
-    totalimagesval+=numberscan
- 
+            maximageval=classnumberval[c]
+            ptmaxval=c
+    totalimagesval+=classnumberval[c]
+    
+    classnumbertrain[c]=len(listscaninroi[c])
+#    print c,numberscan
+    if classnumbertrain[c]>maximagetrain:
+        if c !=bigpat:
+            maximagetrain=classnumbertrain[c]
+            ptmaxtrain=c
+    totalimagestrain+=classnumbertrain[c]
+    
  
 print 'number total of scan images:',totalimages
-print 'maximum data in one pat in source:',maximages
+print 'maximum data in one pat in source:',maximage,' in: ',maximagesc
 print 'number total of scan images in validation:',totalimagesval
 print 'number of turns:',numturn
-print 'maximum data in one pat in val:',maximage,' in ',ptmax
+print 'maximum data in one pat in val:',maximageval,' in ',ptmaxval
+print 'number total of scan images in training:',totalimagestrain
+print 'maximum data in one pat in train:',maximagetrain,' in ',ptmaxtrain
 print '-----------'
-numgenerate={}
-numgeneratef={}
-print 'number of images per pattern:'
+
+#print 'val', listscaninroisub['air_trapping']
+#print 'test',listscaninroi['air_trapping']
+numgenerateval={}
+numgeneratevalf={}
+
+numgeneratetrain={}
+numgeneratetrainf={}
+print 'number of images per pattern in validation:'
 for pat in listroi:
-    numgenerate[pat]=0
-    numgeneratef[pat]=0
-    print pat,classnumber[pat]
+    numgenerateval[pat]=0
+    numgeneratevalf[pat]=0
+    print pat,classnumberval[pat]
 print '-----------'
-numsamples=maximage*numturn
-image_list,mask_list,numgeneratef =  batch_generator(numsamples,listroi,listscaninroisub,numgenerate,numgeneratef)
-#print len(mask_list)
+print 'number of images per pattern in training:'
+for pat in listroi:
+    numgeneratetrain[pat]=0
+    numgeneratetrainf[pat]=0
+    print pat,classnumbertrain[pat]
+print '-----------'
+
+#validation"
+numsamples=maximageval*numturn
+image_list,mask_list,numgeneratevalf =  batch_generator(numsamples,listroi,listscaninroisub,
+                                                      numgenerateval,numgeneratevalf,False,'validation',classnumberval)
+X_test,  Y_test  =readclasses2(num_classes,image_list,mask_list)
+print 'number of images validation generated',len(X_test)
+for pat in listroi:
+    print pat,numgeneratevalf[pat]
+print 'which is :',valshare,'% of ',totalimages,'multiplied by number of classes and number of turns:',maximage*numclass*numturn
+print '-----------'
+
+#train
+numsamples=maximagetrain*numturn
+image_list,mask_list,numgeneratetrainf =  batch_generator(numsamples,listroi,listscaninroi,
+                                                          numgeneratetrain,numgeneratetrainf,True,'training',classnumbertrain)
 class_weights=numbclasses(mask_list)
 #print class_weights
-X_test,  Y_test  =readclasses2(num_classes,image_list,mask_list)
-print 'number of images generated',len(X_test)
+X_train,  Y_train  =readclasses2(num_classes,image_list,mask_list)
+print 'number of images training generated',len(X_train)
+
 for pat in listroi:
-    print pat,numgeneratef[pat]
+    print pat,numgeneratetrainf[pat]
+print 'which is :',100-valshare,'% of ',totalimages,'multiplied by number of classes and number of turns:',maximagetrain*numclass*numturn
 
-
-
-print 'which is :',valshare,'% of ',totalimages,'multiplied by number of classes and number of turns:',maximage*numclass*numturn
 if calculOnly==True:
     sys.exit()
-
+print '-----------'
 print 'weights:'
 setvalue=[]
 for key,value in class_weights.items():
@@ -308,25 +346,27 @@ for key,value in class_weights.items():
    print key, fidclass (key,classif), value;
 print('-' * 30)
 
-#X_test, Y_test= readclasses2(num_classes,x_test,y_test)
-
-print 'shape y_train :',X_test.shape
+print 'shape X_test :',X_test.shape
 print 'shape y_test :',Y_test.shape
+print 'shape X_train :',X_train.shape
+print 'shape Y_train :',Y_train.shape
 print '-----------'
 diri=os.path.join(pickle_dir,validationdir)
 remove_folder(diri)
 os.mkdir(diri)
 pickle.dump(X_test, open( os.path.join(diri,"X_test.pkl"), "wb" ),protocol=-1)
 pickle.dump(Y_test, open( os.path.join(diri,"Y_test.pkl"), "wb" ),protocol=-1)
+pickle.dump(X_train, open( os.path.join(diri,"X_train.pkl"), "wb" ),protocol=-1)
+pickle.dump(Y_train, open( os.path.join(diri,"Y_train.pkl"), "wb" ),protocol=-1)
 pickle.dump(class_weights, open( os.path.join(pickle_dir,"class_weights.pkl"), "wb" ),protocol=-1)
 #print class_weights
 
 debug=True
 if debug:
-        print 'debug'
+        print 'debug test'
         xt=  pickle.load(open( os.path.join(diri,"X_test.pkl"), "rb" ))        
         yt= pickle.load(open( os.path.join(diri,"Y_test.pkl"), "rb" ))
-        print 'xt', xt.shape
+        
         DIM_ORDERING=keras.backend.image_data_format()
         print DIM_ORDERING
         if DIM_ORDERING == 'channels_first':
@@ -341,7 +381,7 @@ if debug:
         for i in range(3):
             numtosee=i
             print 'numtosee',numtosee
-            print 'xt', xt.shape
+            print 'xtest shape', xt.shape
             print 'type xt', type(xt[numtosee][0][0])
             print 'xt min max',xt.min(),xt.max()
             print 'xt[0][0][0]',xt[numtosee][0][0]
@@ -350,8 +390,8 @@ if debug:
         
             print 'yt[0][0][0]',yt[numtosee][0][0]
             print 'yt[0][350][160]',yt[numtosee][ycol][xcol]
-            print 'xt min max', xt[numtosee].min(), xt[numtosee].max()
-            print 'yt min max',yt[numtosee].min(), yt[numtosee].max()
+            print 'xt numtosee min max', xt[numtosee].min(), xt[numtosee].max()
+            print 'yt numtosee min max',yt[numtosee].min(), yt[numtosee].max()
 #            print xt[numtosee][:,:,0].shape
 #            cv2.imwrite(str(i)+'image.bmp',normi(xt[numtosee][:,:,0]))
 #            cv2.imwrite(str(i)+'label.bmp',normi( np.argmax(yt[numtosee],axis=2)))
@@ -367,3 +407,48 @@ if debug:
             plt.title(str(i)+'label')
             plt.imshow( np.argmax(yt[numtosee],axis=2) )
             plt.show()
+        print 'debug train'
+        xt=  pickle.load(open( os.path.join(diri,"X_train.pkl"), "rb" ))        
+        yt= pickle.load(open( os.path.join(diri,"Y_train.pkl"), "rb" ))
+        DIM_ORDERING=keras.backend.image_data_format()
+        print DIM_ORDERING
+        if DIM_ORDERING == 'channels_first':
+            xt=np.squeeze(xt,1)
+            yt=np.moveaxis(yt,1,-1)
+        else:
+            xt=np.squeeze(xt,-1)
+        print 'xt', xt.shape
+                   
+        xcol=30
+        ycol=20
+        for i in range(3):
+            numtosee=i
+            print 'numtosee',numtosee
+            print 'xt train', xt.shape
+            print 'type xt', type(xt[numtosee][0][0])
+            print 'xt min max',xt.min(),xt.max()
+            print 'xt[0][0][0]',xt[numtosee][0][0]
+            print 'xt[0][350][160]',xt[numtosee][ycol][xcol]
+            print 'yt', yt.shape
+        
+            print 'yt[0][0][0]',yt[numtosee][0][0]
+            print 'yt[0][350][160]',yt[numtosee][ycol][xcol]
+            print 'xt numtosee  min max', xt[numtosee].min(), xt[numtosee].max()
+            print 'yt numtosee min max',yt[numtosee].min(), yt[numtosee].max()
+#            print xt[numtosee][:,:,0].shape
+            if  xt[numtosee].max()==0:
+                cv2.imwrite(str(i)+'image.bmp',normi(xt[numtosee]))
+                cv2.imwrite(str(i)+'label.bmp',normi( np.argmax(yt[numtosee],axis=2)))
+            plt.figure(figsize = (5, 5))
+            #    plt.subplot(1,3,1)
+            #    plt.title('image')
+            
+            #    plt.imshow( np.asarray(crpim) )
+            plt.subplot(1,2,1)
+            plt.title(str(i)+'image')
+            plt.imshow( normi(xt[numtosee]).astype(np.uint8) )
+            plt.subplot(1,2,2)
+            plt.title(str(i)+'label')
+            plt.imshow( np.argmax(yt[numtosee],axis=2) )
+            plt.show()
+            

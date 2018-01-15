@@ -4,7 +4,7 @@ Created on Tue May 02 15:04:39 2017
 
 @author: sylvain
 """
-setdata='set0'
+setdata='set1'
 
 #modelName='fcn8s'
 #modelName='unet'
@@ -28,6 +28,7 @@ import sys
 import time
 from itertools import product
 import functools
+import random
 import cv2
 
 import keras
@@ -79,20 +80,26 @@ front_enabled=False #defined if front predict is enabled or not
 cwd=os.getcwd()
 #
 (cwdtop,tail)=os.path.split(cwd)
+#
+#limitHU=1700.0
+#centerHU=-662.0
 
-limitHU=1700.0
-centerHU=-662.0
+limitHU=1424.0
+centerHU=-312.0
 
+#
 minb=centerHU-(limitHU/2)
 maxb=centerHU+(limitHU/2)
 
+#minb=-1024.0
+#maxb=400.
 #MIN_BOUND = -1000.0
 #MAX_BOUND = 400.0
 
 MIN_BOUND =minb
 MAX_BOUND = maxb
 #PIXEL_MEAN = 0.25
-PIXEL_MEAN = 0.92
+PIXEL_MEAN = 0.87#0.8681 for next
 #PIXEL_MEAN = 0.52 #for ILD patch only
 
 print 'MIN_BOUND:',MIN_BOUND,'MAX_BOUND:',MAX_BOUND,'PIXEL_MEAN',PIXEL_MEAN
@@ -151,23 +158,28 @@ if setdata=='set0':
         'air_trapping':9,
         'GGpret':10
         } 
-        
-    usedclassif=[
-        'healthy',    
-        'ground_glass',
-        'HC',
-        'reticulation',
-        'bronchiectasis',
-        'cysts',
-         'consolidation',
-        'micronodules',
-        'air_trapping',
-        'GGpret'
-        ]
+ 
     derivedpat=[
         'GGpret',
         ]
     
+elif setdata=='set1':   
+     classif ={
+        'back_ground':0,
+        'consolidation':1,
+        'HC':2,
+        'ground_glass':3,
+        'healthy':4,
+        'micronodules':5,
+        'reticulation':6,
+        'bronchiectasis':7,
+        'emphysema':8,
+        'GGpret':9
+        } 
+
+     derivedpat=[
+        'GGpret'
+        ]
     
 elif setdata=='ILD1':
 #ILD1
@@ -243,10 +255,10 @@ else:
 print '---------------'
 hugeClass=['healthy','back_ground']
 hugeClass=[]
-notusedclassif=[]
-for i in classif:
-    if i not in usedclassif:
-        notusedclassif.append(i)
+#notusedclassif=[]
+#for i in classif:
+#    if i not in usedclassif:
+#        notusedclassif.append(i)
 
 classifnotvisu=['back_ground','healthy',]
 classifnotvisu=['back_ground']
@@ -357,6 +369,162 @@ def normHU(image): #normalize HU images
     image1[image1<0] = 0.
     image2=image1 - PIXEL_MEAN
     return image2
+
+def geneshiftv(img,s):
+    if s!=0:
+        shap=img.shape[0]
+        shi=int(shap*s/100.)
+        tr=np.roll(img,shi,axis=0)
+        if shi>0:
+            remp=img[0]
+            for i in range (shi):
+                tr[i]=remp
+        else:
+            remp=img[-1]
+            for i in range (-shi):
+                tr[img.shape[0]-i-1]=remp
+    else:
+        tr=img
+    return tr
+
+def geneshifth(img,s):
+    if s!=0:
+        shap=img.shape[1]
+        shi=int(shap*s/100.)
+        tr=np.roll(img,shi,axis=1)       
+        if shi>0:
+            remp=img[:,0]
+            for i in range (shi):
+                tr[:,i]=remp
+        else:
+            remp=img[:,-1]
+            for i in range (-shi):
+                tr[:,img.shape[1]-i-1]=remp    
+    else:
+                tr=img
+    return tr
+
+def generesize(img,r,nearest):
+    if r !=0:
+        shapx=img.shape[1]
+        shapy=img.shape[0]  
+        types=type(img[0][0])
+        imgc=img.copy().astype('float64')
+        if nearest:
+            imgr=cv2.resize(imgc,None,fx=(100+r)/100.,fy=(100+r)/100.,interpolation=cv2.INTER_NEAREST)  
+        else:
+            imgr=cv2.resize(imgc,None,fx=(100+r)/100.,fy=(100+r)/100.,interpolation=cv2.INTER_LINEAR)  
+        imgr=imgr.astype(types)
+        newshapex=imgr.shape[1]
+        newshapey=imgr.shape[0]
+        valcor=(imgc[0][0] +imgc[0][shapx-1]+imgc[shapy-1][0]+imgc[shapy-1][shapx-1])/4.
+    
+        if newshapex>shapx:
+            dx=int(newshapex-shapx)/2
+            dy=int(newshapey-shapy)/2
+            imgrf=imgr[dy:dy+shapy,dx:dx+shapx]
+        else:
+            dx=int(shapx-newshapex)/2
+            dy=int(shapy-newshapey)/2
+            imgrf=np.zeros((shapy,shapx),types)
+            np.putmask(imgrf,imgrf==0,valcor)
+            imgrf[dy:dy+newshapey,dx:dx+newshapex]=imgr
+    else:
+            imgrf=img
+    return imgrf
+
+def generot(image,tt):
+    if tt==0:
+        imout=image
+    elif tt==1:
+    # 1 90 deg
+        imout = np.rot90(image,1)
+    elif tt==2:
+    #2 180 deg
+        imout = np.rot90( image,2)
+    elif tt==3:
+    #3 270 deg
+        imout = np.rot90(image,3)
+    elif tt==4:
+    #4 flip fimage left-right
+            imout=np.fliplr(image)
+    elif tt==5:
+    #5 flip fimage left-right +rot 90
+        imout = np.rot90(np.fliplr(image))
+    elif tt==6:
+    #6 flip fimage left-right +rot 180
+        imout = np.rot90(np.fliplr(image),2)
+    elif tt==7:
+    #7 flip fimage left-right +rot 270
+        imout = np.rot90(np.fliplr(image),3)
+    return imout
+
+
+def genescaleint(img,s):
+    if s!=0:
+        minint=-1.
+        maxint=1.
+        types=type(img[0][0])
+        acts=s*(maxint-minint)/100.0
+        imgc=img.copy().astype('float64')    
+        imgr=imgc+acts
+        imgr=np.clip(imgr,minint,maxint)
+        imgr=imgr.astype(types)
+    else:
+        imgr=img
+    return imgr
+
+
+def genesmultint(img,s):
+    if s!=0:
+        minint=-1.
+        maxint=1.      
+        types=type(img[0][0])
+        acts=(100+s)/100.0
+        imgc=img.copy().astype('float64')    
+        imgr=imgc*acts
+        imgr=np.clip(imgr,minint,maxint)
+        imgr=imgr.astype(types)
+    else:
+        imgr=img
+    return imgr
+
+
+def geneaug(img,scaleint,multint,rotimg,resiz,shiftv,shifth,nearest):
+    
+    imgr=geneshifth(img,shifth)
+    imgr=geneshiftv(imgr,shiftv)
+    imgr=generot(imgr,rotimg)
+    imgr=generesize(imgr,resiz,nearest)
+    imgr=genesmultint(imgr,multint)
+    imgr=genescaleint(imgr,scaleint)
+
+    return imgr
+    
+
+def generandom(maxscaleint,maxmultint,maxrot,maxresize,maxshiftv,maxshifth,keepaenh):
+    
+    scaleint = random.randint(-100, 100)
+    scaleint =keepaenh*maxscaleint*scaleint/100.
+    
+    multint = random.randint(-100, 100)
+    multint =keepaenh*maxmultint*multint/100.
+    
+    rotimg = random.randint(0, maxrot)
+    
+    resiz = random.randint(-100,100)
+    resiz =keepaenh*maxresize*resiz/100.
+    
+    shiftv = random.randint(-100, 100)
+    shiftv =keepaenh*maxshiftv*shiftv/100.
+
+    
+    shifth = random.randint(-100, 100)
+    shifth =keepaenh*maxshifth*shifth/100.
+
+    return scaleint,multint,rotimg,resiz,shiftv,shifth
+
+
 
 def preprocess_batch(batch):
     batch=batch.astype(np.float32)
@@ -587,47 +755,89 @@ def sk4(num_class,num_bit,img_rows,img_cols,INP_SHAPE,dim_org):
     pool_siz=(2,2)
 #    padding='valid'
     padding='same'
+    maxnormv=3
+    startnum=32
+    coef={}
+    coef[0]=startnum
+    for i in range(1,4):
+        coef[i]=coef[i-1]*2
+        print i,coef[i]
     
     print 'sk4 with num_class :',num_class
     model = Sequential() 
-    model.add(Conv2D(32, kernel_sizes, input_shape=INP_SHAPE, padding=padding, 
-                      data_format=dim_org, kernel_constraint=maxnorm(3)))    
+    
+    model.add(Conv2D(coef[0], kernel_sizes, input_shape=INP_SHAPE, padding=padding, 
+                      data_format=dim_org, kernel_constraint=maxnorm(maxnormv)))    
     model.add(LeakyReLU(alpha=0.01))
+    model.add(Conv2D(coef[0], kernel_sizes, input_shape=INP_SHAPE, padding=padding, 
+                      data_format=dim_org, kernel_constraint=maxnorm(maxnormv)))    
+    model.add(LeakyReLU(alpha=0.01))
+    model.add(AveragePooling2D(pool_size=pool_siz,data_format=dim_org))
+    model.add(Dropout(0.25)) 
+    
+    model.add(Conv2D(coef[1], kernel_size, padding=padding, 
+                data_format=dim_org, kernel_constraint=maxnorm(maxnormv)))
+    model.add(LeakyReLU(alpha=0.01))
+    model.add(Conv2D(coef[1], kernel_size, padding=padding, 
+                data_format=dim_org, kernel_constraint=maxnorm(maxnormv)))
+    model.add(LeakyReLU(alpha=0.01))
+    model.add(AveragePooling2D(pool_size=pool_siz,data_format=dim_org))
+    model.add(Dropout(0.25)) 
+    
+    model.add(Conv2D(coef[2], kernel_size, padding=padding, 
+                data_format=dim_org, kernel_constraint=maxnorm(maxnormv)))
+    model.add(LeakyReLU(alpha=0.01))
+    model.add(Conv2D(coef[2], kernel_size, padding=padding, 
+                data_format=dim_org, kernel_constraint=maxnorm(maxnormv)))
+    model.add(LeakyReLU(alpha=0.01))
+    model.add(AveragePooling2D(pool_size=pool_siz,data_format=dim_org))
+    model.add(Dropout(0.25)) 
+    
+    model.add(Conv2D(coef[3], kernel_size, padding=padding, 
+                data_format=dim_org, kernel_constraint=maxnorm(maxnormv)))
+    model.add(LeakyReLU(alpha=0.01))
+    model.add(Conv2D(coef[3], kernel_size, padding=padding, 
+                data_format=dim_org, kernel_constraint=maxnorm(maxnormv)))
+    model.add(LeakyReLU(alpha=0.01))
+#    model.add(AveragePooling2D(pool_size=pool_siz,data_format=dim_org))
+    model.add(Dropout(0.25)) 
+    
+#    model.add(Conv2D(coef[3], kernel_size, padding=padding, 
+#                data_format=dim_org, kernel_constraint=maxnorm(maxnormv)))
+#    model.add(LeakyReLU(alpha=0.01))
+#    model.add(Conv2D(coef[3], kernel_size, padding=padding, 
+#                data_format=dim_org, kernel_constraint=maxnorm(maxnormv)))
+#    model.add(LeakyReLU(alpha=0.01))
+#    model.add(UpSampling2D(size=pool_siz,data_format=dim_org))
+#    model.add(Dropout(0.25)) 
+    
+    model.add(Conv2D(coef[2], kernel_size, padding=padding, 
+                data_format=dim_org, kernel_constraint=maxnorm(maxnormv)))
+    model.add(LeakyReLU(alpha=0.01))
+    model.add(Conv2D(coef[2], kernel_size, padding=padding, 
+                data_format=dim_org, kernel_constraint=maxnorm(maxnormv)))
+    model.add(LeakyReLU(alpha=0.01))
+    model.add(Dropout(0.25)) 
+    model.add(UpSampling2D(size=pool_siz,data_format=dim_org))
+    
+    model.add(Conv2D(coef[1], kernel_size, padding=padding, 
+                data_format=dim_org, kernel_constraint=maxnorm(maxnormv)))
+    model.add(LeakyReLU(alpha=0.01))
+    model.add(Conv2D(coef[1], kernel_size, padding=padding, 
+                data_format=dim_org, kernel_constraint=maxnorm(maxnormv)))
+    model.add(LeakyReLU(alpha=0.01))
+    model.add(Dropout(0.25)) 
+    model.add(UpSampling2D(size=pool_siz,data_format=dim_org))
+    
+    model.add(Conv2D(coef[0], kernel_size, padding=padding, 
+                data_format=dim_org, kernel_constraint=maxnorm(maxnormv)))
+    model.add(LeakyReLU(alpha=0.01))
+    model.add(Conv2D(coef[0], kernel_size, padding=padding, 
+                data_format=dim_org, kernel_constraint=maxnorm(maxnormv)))
+    model.add(LeakyReLU(alpha=0.01))
+    model.add(Dropout(0.25)) 
+    model.add(UpSampling2D(size=pool_siz,data_format=dim_org))
 
-    model.add(Conv2D(64, kernel_size, padding=padding, 
-                data_format=dim_org, kernel_constraint=maxnorm(3)))
-    model.add(LeakyReLU(alpha=0.01))
-    model.add(AveragePooling2D(pool_size=pool_siz,data_format=dim_org))
-    model.add(Dropout(0.2)) 
-    
-    model.add(Conv2D(128, kernel_size, padding=padding, 
-                      data_format=dim_org, kernel_constraint=maxnorm(3)))
-    model.add(LeakyReLU(alpha=0.01))
-    model.add(AveragePooling2D(pool_size=pool_siz,data_format=dim_org))
-    model.add(Dropout(0.3)) 
-  
-    model.add(Conv2D(256, kernel_size,  padding=padding, 
-                      data_format=dim_org, kernel_constraint=maxnorm(3)))
-    model.add(LeakyReLU(alpha=0.01))
-    model.add(Dropout(0.5))      
-    
-    model.add(Conv2D(256, kernel_size,  padding=padding, 
-                     data_format=dim_org, kernel_constraint=maxnorm(3)))
-    model.add(LeakyReLU(alpha=0.01))
-    model.add(Dropout(0.5)) 
-    
-    model.add(Conv2D(128, kernel_size,  padding=padding, 
-                     data_format=dim_org, kernel_constraint=maxnorm(3)))
-    model.add(LeakyReLU(alpha=0.01))
-    model.add(UpSampling2D(size=pool_siz,data_format=dim_org))
-    model.add(Dropout(0.3)) 
-    
-    model.add(Conv2D(64, kernel_size,  padding=padding, 
-                     data_format=dim_org, kernel_constraint=maxnorm(3)))
-    model.add(LeakyReLU(alpha=0.01))
-    model.add(UpSampling2D(size=pool_siz,data_format=dim_org))
-    model.add(Dropout(0.2)) 
-    
     model.add(Conv2D(num_class, kernel_sizes, activation='softmax', 
                      data_format=dim_org,padding=padding)) 
 
@@ -806,17 +1016,7 @@ def get_model(num_class,num_bit,img_rows,img_cols,mat_t_k,weights,weightedl):
             model.compile(optimizer=Adam(lr=learning_rate), loss='categorical_crossentropy', metrics=['categorical_accuracy'])
             print 'NO weighted loss'
         
-#        model.compile(optimizer=Adam(lr=learning_rate), loss=mloss, metrics=['accuracy',single_class_accuracy(0)])
-#        model.compile(optimizer=Adam(lr=learning_rate), loss=ncce, metrics=['accuracy',single_class_accuracy(0)])
-#        model.compile(optimizer=Adam(lr=learning_rate), loss=ncce, metrics=['categorical_accuracy'])
-
-
-#        model.compile(optimizer=Adam(lr=learning_rate), loss=mloss, metrics=['accuracy',squeezed_accuracy])
-
-
-#        model.compile(optimizer=Adam(lr=learning_rate), loss='categorical_crossentropy', metrics=['categorical_accuracy'])
-#        model.compile(optimizer=Adam(lr=learning_rate), loss=dice_coef_loss, metrics=[dice_coef])
-#        model.compile(optimizer=SGD(lr=learning_rate,decay=1e-6, momentum=0.9, nesterov=True), loss=mloss, metrics=['categorical_accuracy'])
+        model.compile(optimizer=SGD(lr=learning_rate,decay=1e-6, momentum=0.9, nesterov=True), loss=mloss, metrics=['categorical_accuracy'])
     elif  modelName == 'fcn8s':
     #fcn8s
         USETVG = True
@@ -882,8 +1082,8 @@ def get_model(num_class,num_bit,img_rows,img_cols,mat_t_k,weights,weightedl):
         else:
             model.compile(optimizer=Adam(lr=learning_rate), loss='categorical_crossentropy', metrics=['categorical_accuracy'])
             print 'NO weighted loss'
-    elif  modelName == 'sk4':
-         
+    
+    elif  modelName == 'sk4':        
         model=sk4(num_class,num_bit,img_rows,img_cols,INP_SHAPE,DIM_ORDERING)
 #        weights = np.ones(512)
         if weightedl:
@@ -897,8 +1097,8 @@ def get_model(num_class,num_bit,img_rows,img_cols,mat_t_k,weights,weightedl):
         else:
 #            for layer in model.layers[:28]:
 #                layer.trainable = False
-#            for layer in model.layers[0:3]:
-#                layer.trainable = True
+#            for layer in model.layers[11:25]:
+#                layer.trainable = False
             model.compile(optimizer=Adam(lr=learning_rate), loss='categorical_crossentropy', metrics=['categorical_accuracy'])
             print 'NO weighted loss'
         
@@ -928,7 +1128,7 @@ if __name__ == "__main__":
    weightedl=False
    model=get_model(num_class,num_bit,image_size,image_size,False,weights,weightedl)
    model.summary()
-   print model.layers[-1].output_shape #== (None, 16, 16, 21)
+   print 'last model shape', model.layers[-1].output_shape #== (None, 16, 16, 21)
    DIM_ORDERING=keras.backend.image_data_format()
    if DIM_ORDERING == 'channels_first':
         imarr = np.ones((num_bit,image_size,image_size))

@@ -31,6 +31,8 @@ setdata='set1'
 thrpatch = 0.95 #patch overlapp tolerance
 ######################################################
 writeFile=False
+medianblur=False
+average3=False
 #"""
 #MIN_BOUND = -1000.0
 #MAX_BOUND = 400.0
@@ -54,7 +56,7 @@ MIN_BOUND =minb
 MAX_BOUND = maxb
 
 #PIXEL_MEAN = 0.288702558038
-PIXEL_MEAN = 0.286751202638
+PIXEL_MEAN = 0.2725
 #PIXEL_MEAN = 0.
 print minb,maxb,PIXEL_MEAN
 
@@ -136,7 +138,16 @@ highgrey=(240,240,240)
 #(cwdtop,tail)=os.path.split(cwd)
 #dirpickle=os.path.join(cwdtop,path_pickle)
 notToAug=['HC','reticulation','bronchiectasis','GGpret']
-notToAug=[]
+notToAug=[ 'consolidation',
+        'HC',
+#        'ground_glass',
+        'healthy',
+        'micronodules',
+#        'reticulation',
+        'bronchiectasis',
+        'emphysema',
+#        'GGpret'
+        ]
 
 usedclassifall = [
         'back_ground',
@@ -269,18 +280,7 @@ elif setdata=='set1':
         'GGpret':8,
         'lung':9
         }
-    usedclassif = [
-        'consolidation',
-        'HC',
-        'ground_glass',
-        'healthy',
-        'micronodules',
-        'reticulation',
-        'bronchiectasis',
-        'emphysema',
-        'GGpret',
-        'lung'
-        ]
+
     derivedpat=[
         'GGpret'
         ]

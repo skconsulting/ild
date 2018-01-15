@@ -15,7 +15,7 @@ from param_pix import cwdtop,lungmask,lungmask1,lung_namebmp,image_rows,image_co
 from param_pix import sroi,source,scan_bmp ,derivedpat,layertokeep
 from param_pix import limitHU,centerHU,yellow
 from param_pix import remove_folder,normi,rsliceNum,norm,colorimage
-from param_pix import classifc,classif,usedclassif,MAX_BOUND
+from param_pix import classifc,classif,MAX_BOUND
 
 import cPickle as pickle
 import cv2
@@ -23,7 +23,7 @@ import dicom
 import numpy as np
 import os
 import datetime
-#import sys
+import sys
 import time
 from skimage import measure, morphology
 from skimage.segmentation import clear_border
@@ -35,17 +35,18 @@ from itertools import product
 
 #path for images source
 nametop='SOURCE_IMAGE'
-nameHug='HUG'
+#nameHug='HUG'
+#nameHug='CHU2new'
 #nameHug='CHU'
-#nameHug='CHU'
+nameHug='CHU2'
 #nameHug='REFVAL'
 #subHUG='ILD6'
-subHUG='ILD_TXT'
+#subHUG='ILD_TXT'
 #subHUG='ILD208'
 #subHUG='UIP4'
 #subHUG='UIP6'
-#subHUG='UIP'
-#subHUG='GF'
+subHUG='UIP'
+#subHUG='TR18'
 
 
 #path for image dir for CNN
@@ -54,8 +55,8 @@ imagedir='IMAGEDIR'
 #toppatch= 'TOPVAL'
 toppatch= 'TOPROI'
 
-extendir='3'
-#extendir='3'
+extendir='0'
+#extendir='ILD6'
 
 ###############################################################
 
@@ -559,7 +560,9 @@ def peparescan(numslice,tabs,tabl,datascan):
     
     tabslung=tabl.copy()
     scan=tabs.copy()
-
+    if scan.max() ==0:
+        print 'error',numslice
+        sys.exit()
     np.putmask(tabslung,tabslung>0,255)
     taba=cv2.bitwise_and(scan,scan,mask=tabslung)
 #    np.putmask(tabslung,tabslung>0,1)
@@ -693,7 +696,7 @@ def generoi(dirf,tabroi,dimtabx,dimtaby,slnroi,tabscanName,dirroit,tabscanroi,ta
 
     tabroipat={}    
     listroi={}
-    for pat in usedclassif:
+    for pat in classif:
 #        print pat,classif[pat]
         if pat !='back_ground':
             tabroipat[pat]=np.zeros((slnt,dimtabx,dimtaby),np.uint8)
@@ -713,7 +716,7 @@ def generoi(dirf,tabroi,dimtabx,dimtaby,slnroi,tabscanName,dirroit,tabscanroi,ta
                         slnroi.append(numslice)  
 #    print slnroi
     for numslice in slnroi:
-        for pat in usedclassif:
+        for pat in classif:
             if pat !='back_ground':
                 tab=np.copy(tabroipat[pat][numslice])
                 np.putmask(tabroi[numslice], tab > 0, 0)           
@@ -757,7 +760,7 @@ def generoi(dirf,tabroi,dimtabx,dimtaby,slnroi,tabscanName,dirroit,tabscanroi,ta
             anoted_image=tabscanroi[numslice]
             
             volumeroi[numslice]={}
-            for pat in usedclassif:
+            for pat in classif:
                 if pat !='back_ground':
 #                if pat =='ground_glass':
 
@@ -853,16 +856,18 @@ for f in listdirc:
     
     for numslice in slnroi:
         datascan,avgp=peparescan(numslice,tabscanScan[numslice],tabscanLung[numslice],datascan)
-    avg+=avgp
-    nump+=1
-    print 'calcul average pixel :',avgp,nump,1.0*avg/nump
+#        print numslice,np.mean(datascan[numslice])
+        avg+=avgp
+        nump+=1
+    if nump>0:
+        print 'calcul average pixel :',f,avg,nump,1.0*avg/nump
+    
 
     slntdict[f]=slnt
     for slic in range(slnt):
         listslicef[f][slic]={}
         for pat in classif:
             listslicef[f][slic][pat]=0
-    contenupat = [name for name in os.listdir(dirf) if name in usedclassif]
 #
     listpatf[f]=[]
 
@@ -884,19 +889,22 @@ for f in listdirc:
              if listslicef[f][i][pat] !=0:
                  print  f,i, pat, listslicef[f][i][pat]
                  totalnumperpat[pat]+=1
-                 
+print 'total calcul average pixel :',avgp,nump,1.0*avg/nump 
 tn = datetime.datetime.now()
 todayn = str(tn.month)+'-'+str(tn.day)+'-'+str(tn.year)+' - '+str(tn.hour)+'h '+str(tn.minute)+'m'+'\n'
 
 pathpatfile=os.path.join(patchtoppath,'listpat.txt')
-filetw = open(pathpatfile,"a")                       
+filetw = open(pathpatfile,"a")      
+              
 print '-----------------------------'
 print('TOP DIR: '+nameHug)
 
 print 'list of patterns :',listpat
 print '-----------------------------'
 
+filetw.write( '-----------------------------\n')
 filetw.write('started ' +nameHug+' '+subHUG+' at :'+todayn)
+filetw.write('total calcul average pixel: ' +str(avgp)+' number of images: '+str(nump)+' average: '+str(1.0*avg/nump)+'\n')            
 filetw.write('list of patterns :'+str(listpat)+'\n')       
 filetw.write( '-----------------------------\n')
 

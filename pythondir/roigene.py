@@ -1480,6 +1480,7 @@ def genebmp(fn,nosource,dirroit,centerHU,limitHU):
         slicenumber=int(RefDs.InstanceNumber)
         dsr= RefDs.pixel_array
         dsr = dsr.astype('int16')
+        dsrforpl = dsr.astype('int16')
         dsr[dsr == -2000] = 0
         intercept = RefDs.RescaleIntercept
         slope = RefDs.RescaleSlope
@@ -1498,7 +1499,27 @@ def genebmp(fn,nosource,dirroit,centerHU,limitHU):
         tabscan[slicenumber]=dsr.copy()
         
         lbHUt=lbHU
-        lhHUt=lhHU        
+        lhHUt=lhHU  
+        """
+        if slicenumber==221:
+            cv2.imwrite('o.bmp',normi(tabscan[220]))
+            imageview=cv2.medianBlur(tabscan[220],3)
+            ts10 = tabscan[220].astype('float32')
+            ts9 = tabscan[219].astype('float32')
+            ts11 = tabscan[221].astype('float32')
+            tabsp=(ts10+ts9+ts11)/3
+            tsbpd=ts10-tabsp
+            tabsp=tabsp.astype('int16')
+            tsbpd=tsbpd.astype('int16')
+            cv2.imwrite('f.bmp',normi(tabsp))
+            cv2.imwrite('d.bmp',normi(tsbpd))
+            showplot(tabsp)
+            showplot(ts10) 
+#            showplot(tabscan[9]) 
+            showplot(imageview) 
+            showplot(tsbpd)
+            ooo
+        """
         np.putmask(dsr,dsr<lbHU,lbHUt)
         np.putmask(dsr,dsr>lhHU,lhHUt)
 
@@ -1794,6 +1815,18 @@ def initmenus(slnt,dirpath_patient):
 
     zoneverticalgauche=((0,0),(dimtabmenul,dimtabnorm))
     zoneverticaldroite=((dimtabnorm+dimtabmenur,0),(dimtabnorm+dimtabmenur+dimtabmenul,dimtabnorm))
+def showplot (datascanp):
+    first_patient =datascanp
+#    first_patient_pixels = get_pixels_hu(first_patient)
+    plt.hist(first_patient.flatten(), bins=80, color='c')
+    plt.xlabel("Hounsfield Units (HU)")
+    plt.ylabel("Frequency")
+#    plt.show()
+    
+    # Show some slice in the middle
+#    plt.imshow(first_patient, cmap=plt.cm.gray)
+    plt.show()
+
 
 def openfichierroi(patient,patient_path_complet,centerHU,limitHU,lungask,ForceGenerate,ImageTreatment):
     global dirpath_patient,dirroit,path_data_write,volumeroi,path_data_writefile,pixelSpacing
@@ -1882,7 +1915,7 @@ def openfichierroi(patient,patient_path_complet,centerHU,limitHU,lungask,ForceGe
         pickle.dump(tabroifinal, open(os.path.join(path_data_write,'tabroifinalr'), "wb" ),protocol=-1) 
         pickle.dump(pixelSpacing, open(os.path.join(path_data_write,'pixelSpacingr'), "wb" ),protocol=-1)
         pickle.dump(volumeroi, open(os.path.join(path_data_write,'volumeroir'), "wb" ),protocol=-1)
-
+       
     dirsourcescan=os.path.join(dirsource,scan_bmp)
     if lungask:
         tabroifinal,volumeroi=genebmplung(dirsource,tabscanScan,tabscanName,slnt,listsln,tabroifinal,volumeroi)

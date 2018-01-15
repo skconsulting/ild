@@ -15,7 +15,7 @@ S. Kritter
 from param_pix_t import derivedpatall,classifc,usedclassifall,classifall
 from param_pix_t import dimpavx,dimpavy,typei,typei1,avgPixelSpacing,thrpatch,perrorfile,plabelfile,pxy
 from param_pix_t import remove_folder,normi,genelabelloc,totalpat,totalnbpat,fidclass,rsliceNum
-from param_pix_t import white
+from param_pix_t import white,medianblur,average3
 from param_pix_t import patchpicklename,scan_bmp,lungmask,lungmask1,sroi,patchesdirname,derivedpat
 from param_pix_t import imagedirname,picklepath,source,lungmaskbmp,layertokeep,reservedword,augmentation
 import os
@@ -36,15 +36,18 @@ import cPickle as pickle
 #global directory for scan file
 topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 #namedirHUG = 'CHU'
-#namedirHUG = 'CHU'
+#namedirHUG = 'CHU2'
 namedirHUG = 'REFVALnew'
+
+#namedirHUG = 'CHU2new'
+
 
 
 #subdir for roi in text
 #subHUG='UIP'
-#subHUG='UIP'
-#subHUG='UIPTR14'
-subHUG='UIPJC'
+subHUG='UIP0'
+#subHUG='ILD_TXT'
+#subHUG='UIPJC'
 #subHUG='UIPJCAN'
 
 
@@ -52,11 +55,14 @@ subHUG='UIPJC'
 toppatch= 'TOPPATCH'
 #extension for output dir
 extendir='JC'
-#extendir='all'
+extendir='all'
 #extendir='essai1'
+
 #extension1 for output dir
+#extendir1='0a'
+#extendir1='CHU2a'
+#extendir1='CHU2newa'
 extendir1='0'
-#extendir1='essai'
 
 
 alreadyDone =[ 'S107260', 'S139370', 'S139430', 'S139431', 'S145210', 
@@ -133,7 +139,15 @@ tn = datetime.datetime.now()
 todayn = str(tn.month)+'-'+str(tn.day)+'-'+str(tn.year)+' - '+str(tn.hour)+'h '+str(tn.minute)+'m'+'\n'
 errorfile.write('started ' +namedirHUG+' '+subHUG+' at :'+todayn)
 errorfile.write('--------------------------------\n')
-
+if medianblur:
+    errorfile.write('median blur\n')
+else:
+    errorfile.write('NO median blur\n')
+if average3:
+   errorfile.write('average3\n')
+else:
+    errorfile.write('NO average3\n')
+errorfile.write('--------------------------------\n')
 errorfile.write('source directory '+namedirtopc+'\n')
 errorfile.write('th : '+ str(thrpatch)+'\n')
 errorfile.write('name of directory for patches :'+ patchesdirnametop+'\n')
@@ -200,6 +214,8 @@ def genepara(namedirtopcf):
     slnt=slnt+1
     fxs=float(RefDs.PixelSpacing[0])/avgPixelSpacing
     dsr= RefDs.pixel_array
+    dimtabxo=dsr.shape[0]
+    dimtabyo=dsr.shape[1]
     dsr= dsr-dsr.min()
     dsr=dsr.astype('uint16')
     errorfile.write('patient shape  :'+str(dsr.shape[0])+'\n')
@@ -209,7 +225,7 @@ def genepara(namedirtopcf):
     dsrresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
     dimtabx=int(dsrresize.shape[0])
     dimtaby=int(dsrresize.shape[1])
-    return dimtabx,dimtaby,slnt,fxs,listsln
+    return dimtabxo,dimtabyo,dimtabx,dimtaby,slnt,fxs,listsln
 
 def tagviews(tab,text,x,y):
     """write simple text in image """
@@ -224,8 +240,9 @@ def genebmp(dirName, sou,tabscanName,fxs,listsln,listroi):
     dirFileP = os.path.join(dirName, sou)
     (top,tail)=os.path.split(dirName)
     listslnCopy=copy.copy(listsln)
-    
+    # for source scan
     if sou ==source:
+        tabscano=np.zeros((slnt,dimtabxo,dimtabyo),np.int16)
         tabscan=np.zeros((slnt,dimtabx,dimtaby),np.int16)
         dirFilePbmp=os.path.join(dirFileP,scan_bmp)
         remove_folder(dirFilePbmp)
@@ -248,27 +265,37 @@ def genebmp(dirName, sou,tabscanName,fxs,listsln,listroi):
                     dsr = slope * dsr.astype(np.float64)
                     dsr = dsr.astype(np.int16)
                 dsr += np.int16(intercept)
+                tabscano[scanNumber]=dsr 
+                tabscanName[scanNumber]=imgcoredeb
+
+                                           
+                
+        for scanNumber in range (1,slnt):
+            
+                tabscano[scanNumber]= tabscano[scanNumber].astype('float32')
+                if medianblur:
+                    tabscano[scanNumber]=cv2.medianBlur(tabscano[scanNumber],3)             
+                if average3:
+                    ts9 = tabscano[max(scanNumber-1,1)].astype('float32')
+                    ts11 = tabscano[min(scanNumber+1,slnt-1)].astype('float32')
+                    ts10= tabscano[scanNumber]
+                    tabscano[scanNumber]=(ts10+ts9+ts11)/3.
 #                dsr = dsr.astype('int16')
-                dsr = dsr.astype('float32')
-                dsrmin= dsr.min()
-                dsrmax=dsr.max()
+#                dsr = dsr.astype('float32')
+                dsrmin= tabscano[scanNumber].min()
+                dsrmax=tabscano[scanNumber].max()
         
-                dsr=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
+                tabscan[scanNumber]=cv2.resize(tabscano[scanNumber],None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
 #                dsr=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_CUBIC)
-                dsr=np.clip(dsr,dsrmin,dsrmax)
+                tabscan[scanNumber]=np.clip(tabscan[scanNumber],dsrmin,dsrmax)
 
 #                dsr = scipy.ndimage.interpolation.zoom(dsr, fxs, mode='nearest')
 #        imgresize=dsr
 #                print dsr.min(),dsr.max(),dsr.shape
-                dsr=dsr.astype('int16')
-#                print dsr.min(),dsr.max(),dsr.shape
-#                ooo
-                tabscan[scanNumber]=dsr.copy()  
-                dsrforimage=normi(dsr)
+                tabscan[scanNumber]=tabscan[scanNumber].astype('int16')
+                dsrforimage=normi(tabscan[scanNumber])
                                             
-                tabscanName[scanNumber]=imgcoredeb
-
-                imgcored=imgcoredeb+'.'+typei1
+                imgcored=tabscanName[scanNumber]+'.'+typei1
                 bmpfiled=os.path.join(dirFilePbmp,imgcored)
                 bmpfileroi=os.path.join(sroidir,imgcored)
 
@@ -280,7 +307,8 @@ def genebmp(dirName, sou,tabscanName,fxs,listsln,listroi):
                 cv2.imwrite (bmpfileroi, dsrforimage)
                 tabsroi[scanNumber]=dsrforimage
 
-                
+
+    # for lung
     elif sou == lungmask or sou == lungmask1 :
 
         dirFilePbmp=os.path.join(dirFileP,lungmaskbmp)
@@ -289,6 +317,7 @@ def genebmp(dirName, sou,tabscanName,fxs,listsln,listroi):
             os.mkdir(dirFilePbmp)
             
         fileList = [name for name in os.listdir(dirFilePbmp) if '.'+typei1 in name.lower()]
+
         if len(fileList)>0:
             for fil in fileList:
                 namefile=os.path.join(dirFilePbmp,fil)
@@ -330,16 +359,20 @@ def genebmp(dirName, sou,tabscanName,fxs,listsln,listroi):
     #                        np.putmask(dsrresizer,dsrresizer==1,0)
                             np.putmask(dsrresizer,dsrresizer>0,100)
                             tabscan[scanNumber]=dsrresizer
+            else:
+                 print 'no lung dcm'
         else:
               print 'lung  bmp complete' 
+    #for roi
     else:
         tabscan=np.zeros((slnt,dimtabx,dimtaby),np.uint8)
         if not os.path.exists(dirFileP):
             os.mkdir(dirFileP)
         if not forceDcm:
+            #not force roi from dcm
             fileList = [name for name in os.listdir(dirFileP) if '.'+typei1 in name.lower()]
             if len(fileList)>0:
-#                print 'roi in bmp'
+                print 'roi in bmp'
                 for fil in fileList:
                     namefile=os.path.join(dirFileP,fil)
                     img=cv2.imread(namefile,0)
@@ -361,9 +394,11 @@ def genebmp(dirName, sou,tabscanName,fxs,listsln,listroi):
                             dsrresizer=cv2.resize(img,(dimtabx,dimtabx),interpolation=cv2.INTER_LINEAR)
                             np.putmask(dsrresizer,dsrresizer>0,100)
                             tabscan[scanNumberr]=dsrresizer
-                                
+            else:
+                print 'no roi in bmp'                    
             fileList =[name for name in  os.listdir(dirFileP) if ".dcm" in name.lower()]
             if len(fileList)>0:
+                print ' roi in dcm'
                 for filename in fileList:
                     FilesDCM =(os.path.join(dirFileP,filename))
                     RefDs = dicom.read_file(FilesDCM,force=True)
@@ -388,7 +423,10 @@ def genebmp(dirName, sou,tabscanName,fxs,listsln,listroi):
                             np.putmask(dsrresizer,dsrresizer==1,0)
                             np.putmask(dsrresizer,dsrresizer>0,100)
                             tabscan[scanNumber]=dsrresizer   
+            else: 
+                print 'no roi in dcm'                
         else:
+        #force roi from dcm
                                     
             fileList =[name for name in  os.listdir(dirFileP) if ".dcm" in name.lower()]
             if len(fileList)>0:
@@ -492,10 +530,12 @@ def pavs (dirName,pat,slnt,dimtabx,dimtaby,tabscanName,listroi):
         os.remove(pathpicklepatfile)
 
     for scannumb in listroi:
+
        tabp = np.zeros((dimtabx, dimtaby), dtype='i')
        tabf=np.copy(tabroipat[pat][scannumb])
 
        tabfc=np.copy(tabf)
+       np.putmask(tabfc,tabfc>0,100)
        nbp=0
        if tabf.max()>0:
            vis=contour2(tabf,pat)
@@ -529,23 +569,32 @@ def pavs (dirName,pat,slnt,dimtabx,dimtaby,tabscanName,listroi):
                         targ=float(area)/pxy
 #                        if pat =='HCpret':
 #                            print targ
-
                         if targ >thrpatch:
                             imgray = _tabscan[j:j+dimpavy,i:i+dimpavx]
-
                             imagemax= cv2.countNonZero(imgray)
                             min_val, max_val, min_loc,max_loc = cv2.minMaxLoc(imgray)
 
                             if imagemax > 0 and max_val - min_val>2:
                                 nbp+=1
                                 patpickle.append(imgray)
+#                                if pat =='ground_glass':
+#                                    print i,j,pat,scannumb,imgray.min(),imgray.max(),type(imgray[0][0])
+#                                    cv2.imwrite('patch.bmp',normi(imgray))
+#                                    _tabscanu=_tabscan.copy()
+#                                    for k in range (0,16):
+#                                        for l in range(0,16):
+#                                          if k==0 or k ==15 or l ==0 or l ==15:  _tabscanu[j+k][i+l]=2000
+#                                    cv2.imwrite('scan.bmp',normi(_tabscanu))
+#                                    cv2.imwrite('roi.bmp',normi(tabf))
+#                                    ooo
 
+                                    
                                 x=0
                                 #we draw the rectange
                                 while x < dimpavx:
                                     y=0
                                     while y < dimpavy:
-                                        tabp[y+j][x+i]=150
+                                        tabp[y+j][x+i]=200
                                         if x == 0 or x == dimpavx-1 :
                                             y+=1
                                         else:
@@ -652,24 +701,20 @@ def calnewpat(dirName,pat,slnt,dimtabx,dimtaby,tabscanName):
             npd=os.path.join(namedirtopcf,pat)
             remove_folder(npd)
             os.mkdir(npd)
-#            npdbmp=os.path.join(npd,scan_bmp)
-#            os.mkdir(npdbmp)
-            
+          
             for i in range (0,slnt):
-                 if tab3[i].max()>0:
-#                    naf3=pat+'_'+str(i)+'.'+typei
+                 if tab3[i].max()>0:                 
+
                     naf3=tabscanName[i]+'.'+typei1
                     npdn3=os.path.join(npd,naf3)
                     imgc=colorimage(tab3[i],classifc[pat])
                     cv2.imwrite(npdn3,imgc)
                     
-#                    print 'pat2',pat2
                     if pat2 not in layertokeep:
 #                        print 'keptpat2',pat2
                         naf2=tabscanName[i]+'.'+typei1
                         npd2=os.path.join(namedirtopcf,pat2+'_m')
                         if not os.path.exists(npd2):
-#                            remove_folder(npd2)
                             os.mkdir(npd2)
                         npdn2=os.path.join(npd2,naf2)
                         imgc=colorimage(tab2[i],classifc[pat2])
@@ -747,7 +792,7 @@ for f in listdirc:
         remove_folder(sroidir)
         os.mkdir(sroidir)
 
-    dimtabx,dimtaby,slnt,fxs,listsln = genepara(namedirtopcf)
+    dimtabxo,dimtabyo,dimtabx,dimtaby,slnt,fxs,listsln = genepara(namedirtopcf)
 
     tabsroi=np.zeros((slnt,dimtabx,dimtaby,3),np.uint8)
     tabscan =np.zeros((slnt,dimtabx,dimtaby),np.uint16)
@@ -755,6 +800,7 @@ for f in listdirc:
     tabscanName={}
 
     tabscan,tabsroi,tabscanName,a=genebmp(namedirtopcf, source,tabscanName,fxs,listsln,listroi)
+
     if  os.path.exists(os.path.join(namedirtopcf, lungmask)):
         lugmaskt=lungmask
     elif  os.path.exists(os.path.join(namedirtopcf, lungmask1)):
@@ -771,7 +817,7 @@ for f in listdirc:
     contenudir = [name for name in os.listdir(namedirtopcf) if name in usedclassifall and name not in derivedpatall]
     for i in contenudir:
         if i != 'back_ground':
-            tabroipat[i],tabsroi,a,listroi=genebmp(namedirtopcf, i,tabscanName,fxs,listsln,listroi)
+            tabroipat[i],c,a,listroi=genebmp(namedirtopcf, i,tabscanName,fxs,listsln,listroi)
 
 #    for i in derivedpatall:
     for i in  derivedpat:
