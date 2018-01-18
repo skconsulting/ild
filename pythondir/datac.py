@@ -34,10 +34,20 @@ topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 
 extendir1=''
 patchesdirnametop=[]
-patchesdirnametop = ['th0.95_TOPPATCH_all_HUG']
+patchesdirnametop = ['th0.95_TOPPATCH_all_HUGr']
+
 patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU']
 patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2']
 patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new']
+
+patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHUmed']
+patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2med']
+patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2newmed']
+
+patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHUa']
+patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2a']
+patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2newa']
+
 #patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_JC_0']
 #print patchesdirnametop
 
@@ -46,12 +56,12 @@ patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new']
 pickel_dirsource_root='pickle'
 pickel_dirsource_e='train' #path for data fort training
 pickel_dirsourcenum=setdata #extensioon for path for data for training
-extendir2='0'
+extendir2='1'
 #extendir2='essai'
 extendir3=extendir1
 
-augf=7#augmentation factor default 3
-test_size=0.2 #split test training percent
+augf=5#augmentation factor default 3
+test_size=0 #split test training percent
 
 #all in percent
 maxshiftv=0
@@ -383,35 +393,44 @@ label_test={}
 feature_train ={}
 label_train={}
 print 'split data'
-for f in usedclassifFinal:
-    feature_train[f], feature_test[f], label_train[f], label_test[f] =  train_test_split(
+if test_size>0:
+    for f in usedclassifFinal:
+        feature_train[f], feature_test[f], label_train[f], label_test[f] =  train_test_split(
             feature_d[f],label_d[f],test_size=test_size)
+else:
+    for f in usedclassifFinal:
+        feature_train[f]=feature_d[f]
+        label_train[f]=label_d[f]
+         
 
 print 'after split '
 maxltraining=0
 maxltest=0
 errorfile = open(eferror, 'a')
+maxpatest=['None']
+maxpattrain=['None']
 
 for f in usedclassifFinal:
     ltrain=len(feature_train[f])
-    ltest=len(feature_test[f])
+    if test_size>0: ltest=len(feature_test[f])
     print 'training ',f,ltrain,len(label_train[f])
-    print 'test ',f,ltest,len(label_test[f])
+    if test_size>0: print 'test ',f,ltest,len(label_test[f])
     print '---'
     errorfile.write('split data training '+' '+f+' '+str(ltrain)+' '+str(len(label_train[f]))+'\n')   
-    errorfile.write('split data test '+' '+f+' '+str(ltest)+' '+str(len(label_test[f]))+'\n')   
+    if test_size>0: errorfile.write('split data test '+' '+f+' '+str(ltest)+' '+str(len(label_test[f]))+'\n')   
     errorfile.write('--\n')  
     if f not in hugeClass:
         if ltrain>maxltraining:
             maxltraining=ltrain
             maxpattrain=f
-        if ltest>maxltest:
-            maxltest=ltest
-            maxpatest=f
+        if test_size>0:
+            if ltest>maxltest:
+                maxltest=ltest
+                maxpatest=f
 print '------'
 errorfile.close()
 print 'max training',maxltraining, 'for: ',maxpattrain
-print 'max test',maxltest, 'for:', maxpatest
+if test_size>0: print 'max test',maxltest, 'for:', maxpatest
 
 print '----'
 features_train_f=[]
@@ -425,19 +444,20 @@ print 'after augmentation train'
 for f in usedclassifFinal:
     print f,numpat[f]
 print '----'
-print 'augmentation test'
-features_test_f,labels_test_f,numpat= genf(feature_test,label_test,maxltest,False)
-print '----'
-print 'after augmentation test'
-for f in usedclassifFinal:
-    print f,numpat[f]
+if test_size>0:
+    print 'augmentation test'
+    features_test_f,labels_test_f,numpat= genf(feature_test,label_test,maxltest,False)
+    print '----'
+    print 'after augmentation test'
+    for f in usedclassifFinal:
+        print f,numpat[f]
 print '----'
 print 'data training after augmentation ',len(features_train_f),len(labels_train_f)
-print 'data test after augmentation ',len(features_test_f),len(labels_test_f)
+if test_size>0: print 'data test after augmentation ',len(features_test_f),len(labels_test_f)
 print '----'
 errorfile = open(eferror, 'a')
 errorfile.write('data training after augmentation '+' '+str(len(features_train_f))+' '+str(len(labels_train_f))+'\n')   
-errorfile.write('data test after augmentation '+' '+str(len(features_test_f))+' '+str(len(labels_test_f))+'\n')   
+if test_size>0: errorfile.write('data test after augmentation '+' '+str(len(features_test_f))+' '+str(len(labels_test_f))+'\n')   
 errorfile.write('--------------------\n')    
 errorfile.close()
 
@@ -447,37 +467,39 @@ errorfile.write('Number of data and label \n')
 print ('Number of data and label ')
 print 'train',len(features_train_f),len(labels_train_f)
 errorfile.write('train '+' '+str(len(features_train_f))+' '+str(len(labels_train_f))+'\n')   
-print 'test',len(features_test_f),len(labels_test_f)
-errorfile.write('test '+' '+str(len(features_test_f))+' '+str(len(labels_test_f))+'\n')
+if test_size>0: print 'test',len(features_test_f),len(labels_test_f)
+if test_size>0: errorfile.write('test '+' '+str(len(features_test_f))+' '+str(len(labels_test_f))+'\n')
 print ('----')
 errorfile.write('--------------------\n')
 errorfile.close()
 # transform dataset list into numpy array
 X_train = np.array(features_train_f)
 y_train = np.array(labels_train_f)
-
-X_test = np.array(features_test_f)
-y_test = np.array(labels_test_f)
+if test_size>0:
+    X_test = np.array(features_test_f)
+    y_test = np.array(labels_test_f)
 
 print '-----------FINAL----------------'
 print ('Xtrain :',X_train.shape)
-print ('Xtest : ',X_test.shape)
+if test_size>0:
+    print ('Xtest : ',X_test.shape)
 print ('ytrain : ',y_train.shape)
 print 'ytrain min max', y_train.min(),y_train.max()
-print ('ytest : ',y_test.shape)
+if test_size>0:
+    print ('ytest : ',y_test.shape)
 errorfile = open(eferror, 'a')
 errorfile.write('Xtrain : '+' '+str(X_train.shape)+'\n')
-errorfile.write('Xtest : '+' '+str(X_test.shape)+'\n') 
+if test_size>0: errorfile.write('Xtest : '+' '+str(X_test.shape)+'\n') 
 errorfile.write('ytrain : '+' '+str(y_train.shape)+'\n') 
-errorfile.write('ytest : '+' '+str(y_test.shape)+'\n')   
+if test_size>0: errorfile.write('ytest : '+' '+str(y_test.shape)+'\n')   
 errorfile.write('--------------------\n')
 errorfile.close()
 
 pickle.dump(X_train, open( os.path.join(patch_dir,"X_train.pkl"), "wb" ),protocol=-1)
-pickle.dump(X_test, open( os.path.join(patch_dir,"X_val.pkl"), "wb" ),protocol=-1)
-
 pickle.dump(y_train, open( os.path.join(patch_dir,"y_train.pkl"), "wb" ),protocol=-1)
-pickle.dump(y_test, open( os.path.join(patch_dir,"y_val.pkl"), "wb" ),protocol=-1)
+if test_size>0:
+    pickle.dump(X_test, open( os.path.join(patch_dir,"X_val.pkl"), "wb" ),protocol=-1)
+    pickle.dump(y_test, open( os.path.join(patch_dir,"y_val.pkl"), "wb" ),protocol=-1)
 
 
 

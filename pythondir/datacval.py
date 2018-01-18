@@ -35,8 +35,8 @@ topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 ##extendir0='2'
 #extendir0='0'
 #define the name of directory for patches
-patchesdirnametop = ['th0.95_TOPPATCH_JC_0']
-#patchesdirnametop = ['th0.95_TOPPATCH_all_CHU2new']
+#patchesdirnametop = ['th0.95_TOPPATCH_JC_0']
+patchesdirnametop = ['th0.95_TOPPATCH_all_CHU2new']
 
 #patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_JC_0']
 #print patchesdirnametop
@@ -45,8 +45,9 @@ extendir1=''
 
 #define the directory to store data
 pickel_dirsource_root='pickle'
-pickel_dirsource_e='train' #path for data fort training
+#pickel_dirsource_e='train' #path for data fort training
 pickel_dirsource_e='val' #path for data fort training
+pickel_dirsource_e='essai' #path for data fort training
 
 pickel_dirsourcenum=setdata #extensioon for path for data for training
 #extendir2='2'
@@ -244,6 +245,12 @@ def genedata(category):
 
 
 def genf(features_train,labels_train,maxl):
+    errorfile = open(eferror, 'a')
+    errorfile.write(("%10s" %'pat')+
+                    ("%10s" %'min')+
+                    ("%10s" %'max')+
+                     ("%10s" %'average')+
+                      ("%10s" %'std')+'\n')
     feature=[]
     featurepat={}
     label=[]
@@ -284,6 +291,11 @@ def genf(features_train,labels_train,maxl):
                     label.append(mask)
             tabpat=np.array(featurepat[pat])
             print pat,tabpat.min(),tabpat.max(),np.mean(tabpat),np.std(tabpat)
+            errorfile.write(("%10s" % pat)+
+                    ("%10s" % str(tabpat.min()))+ 
+                    ("%10s" %str(tabpat.max()))+ 
+                    ("%10s" %str(round(np.mean(tabpat),3)))+
+                    ("%10s" %str(round(np.std(tabpat),3)))+'\n')
         else:
             print pat, 'no data'
     return feature,label,numpat
@@ -296,6 +308,7 @@ def genfold(features_train,labels_train,maxl):
     indexpatc={}
     maxindex=0
     totalpat={}
+
 #    print numclass,maxl
     for j in usedclassifFinal:
         indexpatc[j]=0

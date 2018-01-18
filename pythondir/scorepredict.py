@@ -158,9 +158,9 @@ def genebmp(fn,sou,nosource,centerHU, limitHU, tabscanName,tabscanroi):
         t5='CenterHU: '+str(int(centerHU))
         t6='LimitHU: +/-' +str(int(limitHU/2))   
         anoted_image=tagviews(imtowrite,
-                              t0,dimtabx-200,dimtaby-10,
+                              t0,dimtabx-150,dimtaby-10,
                               t1,0,dimtaby-21,
-                              t2,dimtabx-200,dimtaby-20,
+                              t2,dimtabx-150,dimtaby-20,
                               t3,0,dimtaby-32,
                               t4,0,dimtaby-10,
                               t5,0,dimtaby-43,
@@ -1185,7 +1185,7 @@ def generoi(dirf,tabroi,dimtabx,dimtaby,slnroi,tabscanName,dirroit,tabscanroi,ta
         
 #        if tabroi[numslice].max()>0:
 #                cv2.imshow(str(numslice)+' tabo',normi(tabroi[numslice])) 
-#                cv2.imshow(str(numslice)+' mask',normi(mask)) 
+#                cv2.imshow(str(numslice)+' maskLung',normi(maskLung)) 
 #                cv2.waitKey(0)
 #                cv2.destroyAllWindows()    
 #    cv2.imwrite('a225.bmp',10*tabroi[12])
@@ -1215,22 +1215,23 @@ def generoi(dirf,tabroi,dimtabx,dimtaby,slnroi,tabscanName,dirroit,tabscanroi,ta
                         if pat not in listroi[numslice] and area>1:
                             listroi[numslice].append(pat)
                         if pat not in excluvisu:
-                                np.putmask(img, img >0, 100)
+#                            print pat
+                            np.putmask(img, img >0, 100)
 #                                ctkey=drawcontours2(img,pat,dimtabx,dimtaby)
 #                                ctkeym=ctkey.copy()
 #                                ctkeym=cv2.cvtColor(ctkeym,cv2.COLOR_RGB2GRAY)
 #                                ctkeym=cv2.cvtColor(ctkeym,cv2.COLOR_GRAY2RGB)                       
 #                                np.putmask(anoted_image, ctkeym >0, 0)
-        #                        anoted_image=cv2.add(anoted_image,ctkey)
-                                
-                                
-        #                        imgcolor=cv2.cvtColor(img,cv2.COLOR_GRAY2RGB)  
-                                colorlung=colorimage(img,classifc[pat])
-        
-                                anoted_image=cv2.addWeighted(anoted_image,1,colorlung,0.3,0)
-        
-                                anoted_image=tagviewct(anoted_image,pat,200,10)  
-                                tabscanroi[numslice]=anoted_image
+    #                        anoted_image=cv2.add(anoted_image,ctkey)
+                            
+                            
+    #                        imgcolor=cv2.cvtColor(img,cv2.COLOR_GRAY2RGB)  
+                            colorlung=colorimage(img,classifc[pat])
+    
+                            anoted_image=cv2.addWeighted(anoted_image,1,colorlung,0.4,0)
+    
+                            anoted_image=tagviewct(anoted_image,pat,200,10)  
+#                                tabscanroi[numslice]=anoted_image
                                                
                 else:
                     volumeroi[numslice][pat]=0 
@@ -1386,14 +1387,12 @@ def predictrun(indata,path_patient):
                 dimtabx=datacross[1]
                 lissln=datacross[4]
                 slicepitch=datacross[3]
-
                 print 'end load'
             else:
                 print 'generate'
                 
                 tabscanScan,slnt,dimtabx,slicepitch,lissln,tabscanroi,tabscanName=genebmp(dirf,
-                        source,nosource, centerHU, limitHU,tabscanName,tabscanroi)
-                
+                        source,nosource, centerHU, limitHU,tabscanName,tabscanroi)               
                 tabscanLung,tabrange=genebmplung(dirf,lungmaski,slnt,dimtabx,dimtabx,tabscanScan,lissln,tabscanName)
                 datacross=(slnt,dimtabx,dimtabx,slicepitch,lissln,setref, thrproba, thrpatch)
                 

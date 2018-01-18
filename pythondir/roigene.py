@@ -4,7 +4,7 @@ Created on Tue Mar 28 16:48:43 2017
 author: sylvain Kritter 
 Version 1.9
 
-11 January 2018
+19 January 2018
 """
 #from param_pix_r import *
 from param_pix_r import path_data,dimtabmenul,dimtabmenur,dimtabnorm,dimtabxdef
@@ -26,7 +26,7 @@ import matplotlib.pyplot as plt
 from itertools import product
 
 from skimage import morphology
-
+#import sys
 
 from skimage.segmentation import clear_border
 from skimage.measure import label,regionprops
@@ -794,10 +794,11 @@ def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName,imagetreat):
     cv2.setMouseCallback("imageRoi", click_and_crop)
     viewasked={}
     for key1 in usedclassif:
+        if key1 !='erase':
 #            print key1
             viewasked[key1]=True
             cv2.createTrackbar( key1,'SliderRoi1',0,1,nothing,)
-
+    viewasked['erase']=True
     nbdig=0
     numberentered={}
     numberfinal=0
@@ -888,27 +889,30 @@ def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName,imagetreat):
         elif algo==4:
                 algot='LANCZOS4'
         if allview==1:
-            for key2 in usedclassif:
-                cv2.setTrackbarPos(key2,'SliderRoi1' ,1)
+            for key2 in usedclassif :
+                if key2 !='erase':
+                    cv2.setTrackbarPos(key2,'SliderRoi1' ,1)
             cv2.setTrackbarPos('All','SliderRoi1' ,0)
             cv2.setTrackbarPos('lung','SliderRoi1' ,0)
         if noneview==1:
             for key2 in usedclassif:
-                cv2.setTrackbarPos(key2,'SliderRoi1' ,0)
+                if key2 !='erase':
+                    cv2.setTrackbarPos(key2,'SliderRoi1' ,0)
             cv2.setTrackbarPos('None','SliderRoi1' ,0)
                 
         for key2 in usedclassif:
 #            print patternerase
-            if pattern==key2 or patternerase==key2:
-                cv2.setTrackbarPos(key2,'SliderRoi1' ,1)
-            s = cv2.getTrackbarPos(key2,'SliderRoi1')
-            
-            if s==0:
-#            print key
-                viewasked[key2]=False
-            else:
-                 viewasked[key2]=True        
-            
+            if key2 !='erase':
+                if pattern==key2 or patternerase==key2:
+                    cv2.setTrackbarPos(key2,'SliderRoi1' ,1)
+                s = cv2.getTrackbarPos(key2,'SliderRoi1')
+                
+                if s==0:
+    #            print key
+                    viewasked[key2]=False
+                else:
+                     viewasked[key2]=True        
+                
         if key ==13:
 #                print 'this is return'
                 if numberfinal>0:
@@ -937,7 +941,7 @@ def loop(slnt,pdirk,dirpath_patient,dirroi,tabscanRoi,tabscanName,imagetreat):
         if (imsstatus==0) and (imistatus==0)  :
             scannumber=fl+1
             imagename=tabscanName[scannumber]
-            image=tabscanRoi[scannumber]            
+            image=tabscanRoi[scannumber]  
             imglumi=lumi(image,l)
             image=contrasti(imglumi,c)
             
@@ -1393,7 +1397,7 @@ def genebmplung(fn,tabscanScan,tabscanName,slnt,listsln,tabroifinal,volumeroi):
 # Print iterations progress
 def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█'):
     """
-    Call in a loop to create terminal progress bar
+    Call  terminal progress bar
     @params:
         iteration   - Required  : current iteration (Int)
         total       - Required  : total iterations (Int)
@@ -1406,8 +1410,6 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
     percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
     filledLength = int(length * iteration // total)
     bar = fill * filledLength + '-' * (length - filledLength)
-    
-    
     
 #    print '\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix),  '\033[F'
     print '\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix),  '\033[4A' 
@@ -1468,6 +1470,8 @@ def genebmp(fn,nosource,dirroit,centerHU,limitHU):
     tabscanName = {}
     lbHU=centerHU-(1.0*limitHU/2.0)
     lhHU=centerHU+(1.0*limitHU/2.0)
+    lbHUt=lbHU
+    lhHUt=lhHU  
     ll=len(listdcm)
     printProgressBar(0,ll , prefix = 'Progress:', suffix = 'Complete', length = 50)
     i=0
@@ -1480,7 +1484,7 @@ def genebmp(fn,nosource,dirroit,centerHU,limitHU):
         slicenumber=int(RefDs.InstanceNumber)
         dsr= RefDs.pixel_array
         dsr = dsr.astype('int16')
-        dsrforpl = dsr.astype('int16')
+#        dsrforpl = dsr.astype('int16')
         dsr[dsr == -2000] = 0
         intercept = RefDs.RescaleIntercept
         slope = RefDs.RescaleSlope
@@ -1496,37 +1500,19 @@ def genebmp(fn,nosource,dirroit,centerHU,limitHU):
         endnumslice=l.find('.dcm')
         imgcoreScan=l[0:endnumslice]+'_'+str(slicenumber)+'.'+typei1
         tabscanName[slicenumber]=imgcoreScan
-        tabscan[slicenumber]=dsr.copy()
+        tabscan[slicenumber]=dsr
+
         
-        lbHUt=lbHU
-        lhHUt=lhHU  
-        """
-        if slicenumber==221:
-            cv2.imwrite('o.bmp',normi(tabscan[220]))
-            imageview=cv2.medianBlur(tabscan[220],3)
-            ts10 = tabscan[220].astype('float32')
-            ts9 = tabscan[219].astype('float32')
-            ts11 = tabscan[221].astype('float32')
-            tabsp=(ts10+ts9+ts11)/3
-            tsbpd=ts10-tabsp
-            tabsp=tabsp.astype('int16')
-            tsbpd=tsbpd.astype('int16')
-            cv2.imwrite('f.bmp',normi(tabsp))
-            cv2.imwrite('d.bmp',normi(tsbpd))
-            showplot(tabsp)
-            showplot(ts10) 
-#            showplot(tabscan[9]) 
-            showplot(imageview) 
-            showplot(tsbpd)
-            ooo
-        """
+    for slicenumber in listsln:    
+       
+        dsr = tabscan[slicenumber].copy()
         np.putmask(dsr,dsr<lbHU,lbHUt)
         np.putmask(dsr,dsr>lhHU,lhHUt)
 
         dsrnormi=normi(dsr)
         dsrnormi=cv2.cvtColor(dsrnormi,cv2.COLOR_GRAY2RGB)
-        bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
-        roibmpfile=os.path.join(dirroit,imgcoreScan)
+        bmpfile=os.path.join(fmbmpbmp,tabscanName[slicenumber])
+        roibmpfile=os.path.join(dirroit,tabscanName[slicenumber])
 
         t2='Prototype '
         t1='Patient: '+tail1
@@ -1535,7 +1521,7 @@ def genebmp(fn,nosource,dirroit,centerHU,limitHU):
 
         t4=time.asctime()
         t5='CenterHU: '+str(int(centerHU))
-        t6='LimitHU: +/-' +str(int(limitHU/2))
+        t6='LimitHU: +/-' +str(int(limitHU/2))       
     
         anoted_image=tagviews(dsrnormi,
                               t0,dimtabx-100,dimtabx-10,
@@ -1551,7 +1537,7 @@ def genebmp(fn,nosource,dirroit,centerHU,limitHU):
         cv2.imwrite(bmpfile,anoted_image)
         tabscanRoi[slicenumber]=anoted_image
         cv2.imwrite(roibmpfile,anoted_image)
-
+        
     return slnt,tabscan,listsln,pixelSpacing,tabscanName,dimtabx,tabscanRoi,lung_maskf,lung_mask_bmpf
 
 def nothing(x):
@@ -1748,7 +1734,7 @@ def populate(pp,lissln,slnt,pixelSpacing,tabscanName):
                 for roiimage in listroi:
                      
                     img=os.path.join(dirroi,roiimage)
-                    imageroi= cv2.imread(img,1)              
+                    imageroi= cv2.imread(img,1)   
                     imageroi=cv2.resize(imageroi,(dimtabx,dimtabx),interpolation=cv2.INTER_LINEAR)  
     
                     cdelimter='_'
@@ -1815,12 +1801,14 @@ def initmenus(slnt,dirpath_patient):
 
     zoneverticalgauche=((0,0),(dimtabmenul,dimtabnorm))
     zoneverticaldroite=((dimtabnorm+dimtabmenur,0),(dimtabnorm+dimtabmenur+dimtabmenul,dimtabnorm))
-def showplot (datascanp):
+def showplot (datascanp,bins,ti):
     first_patient =datascanp
+    print ti
 #    first_patient_pixels = get_pixels_hu(first_patient)
-    plt.hist(first_patient.flatten(), bins=80, color='c')
+    plt.hist(first_patient.flatten(), bins=bins, color='c' )
     plt.xlabel("Hounsfield Units (HU)")
     plt.ylabel("Frequency")
+
 #    plt.show()
     
     # Show some slice in the middle

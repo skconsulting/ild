@@ -33,7 +33,7 @@ import os
 import cv2
 import dicom
 import random
-
+import sys
 import shutil
 from skimage import measure, morphology
 from skimage.segmentation import clear_border
@@ -105,7 +105,7 @@ def genebmp(fn,sou,nosource,centerHU, limitHU,tabscanroi,tabscanName={}):
     dsr = dsr.astype('int16')
     fxs=float(RefDs.PixelSpacing[0])/avgPixelSpacing
 
-    imgresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_CUBIC)
+    imgresize=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
     dimtabx=imgresize.shape[0]
     dimtaby=imgresize.shape[1]
 #    print dimtabx, dimtaby
@@ -142,7 +142,7 @@ def genebmp(fn,sou,nosource,centerHU, limitHU,tabscanroi,tabscanName={}):
         
         dsr = dsr.astype('float32')
 #        
-        imgresize1=cv2.resize(dsr,(dimtabx,dimtaby),interpolation=cv2.INTER_CUBIC)
+        imgresize1=cv2.resize(dsr,(dimtabx,dimtaby),interpolation=cv2.INTER_LINEAR)
 
         imgresize = imgresize1.astype('int16')
         
@@ -172,9 +172,9 @@ def genebmp(fn,sou,nosource,centerHU, limitHU,tabscanroi,tabscanName={}):
         t6='LimitHU: +/-' +str(int(limitHU/2))
                 
         anoted_image=tagviews(imtowrite,
-                              t0,dimtabx-200,dimtaby-10,
+                              t0,dimtabx-150,dimtaby-10,
                               t1,0,dimtaby-21,
-                              t2,dimtabx-200,dimtaby-20,
+                              t2,dimtabx-150,dimtaby-20,
                               t3,0,dimtaby-32,
                               t4,0,dimtaby-10,
                               t5,0,dimtaby-43,
@@ -588,15 +588,16 @@ def ILDCNNpredict(patch_list,model):
               dataset_list.append(fil[3])
     X0=len(dataset_list)
     # adding a singleton dimension and rescale to [0,1]
-    pa = np.asarray(np.expand_dims(dataset_list, 1))
+    
     # look if the predict source is empty
     # predict and store  classification and probabilities if not empty
     if X0 > 0:
+        pa = np.expand_dims(dataset_list, 1)
         proba = model.predict_proba(pa, batch_size=500,verbose=1)
 
     else:
         print (' no patch in selected slice')
-        proba = ()
+        proba = []
     print 'number of patches', len(pa)
 
     return proba
@@ -675,7 +676,12 @@ def modelCompilation(t,picklein_file,picklein_file_front,setdata):
         dirpickleArchs=os.path.join(dirpickleArch,setdata)
         dirpickleArchsc=os.path.join(dirpickleArchs,modelArch)
     
-        json_string=pickle.load( open(dirpickleArchsc, "rb"))
+        try:
+            json_string=pickle.load( open(dirpickleArchsc, "rb"))
+        except:
+            print 'model file does not exist',dirpickleArchsc
+            sys.exit()
+                
         model = model_from_json(json_string)
         model.compile(optimizer='Adam', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
 #        model.compile()
@@ -1758,12 +1764,14 @@ def generoi(dirf,tabroi,dimtabx,tabscanLung,slnroi,dirroit,tabscanroi,tabscanNam
                     if area>0:
            
                         np.putmask(img, img >0, 100)
-                        ctkey=drawcontours2(img,pat,dimtabx,dimtabx)
-                        ctkeym=ctkey.copy()
-                        ctkeym=cv2.cvtColor(ctkeym,cv2.COLOR_RGB2GRAY)
-                        ctkeym=cv2.cvtColor(ctkeym,cv2.COLOR_GRAY2RGB)                       
-                        np.putmask(anoted_image, ctkeym >0, 0)
-                        anoted_image=cv2.add(anoted_image,ctkey)
+                        colorlung=colorimage(img,classifc[pat])
+                        anoted_image=cv2.addWeighted(anoted_image,1,colorlung,0.4,0)
+#                        ctkey=drawcontours2(img,pat,dimtabx,dimtabx)
+#                        ctkeym=ctkey.copy()
+#                        ctkeym=cv2.cvtColor(ctkeym,cv2.COLOR_RGB2GRAY)
+#                        ctkeym=cv2.cvtColor(ctkeym,cv2.COLOR_GRAY2RGB)                       
+#                        np.putmask(anoted_image, ctkeym >0, 0)
+#                        anoted_image=cv2.add(anoted_image,ctkey)
                         anoted_image=tagviewct(anoted_image,pat,200,10) 
                         
                 else:

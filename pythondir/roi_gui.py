@@ -5,7 +5,7 @@ V1.0 Created on Sun Apr 05 09:52:27 2017
 @author: sylvain Kritter 
 Version 1.9
 
-11 January 2018
+19 January 2018
 """
 #from param_pix_r import *
 #from moduleroigui import *
@@ -53,7 +53,7 @@ if not os.path.exists(pathRoiGenelocal):
 #workingdir= os.path.join(os.environ['USERPROFILE'],workdiruser)
 
 
-version ="1.8"
+version ="1.9"
 paramsave='data'
 source='source'
 paramname ='paramname.pkl'

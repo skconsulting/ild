@@ -43,14 +43,16 @@ topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 pickel_dirsource_root='pickle'
 pickel_dirsource_e='train' #path for data fort training
 pickel_dirsourcenum='set1' #extensioon for path for data for training
-extendir1='0'
+extendir1='1'
 extendir2=''
 
 valset='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool/th0.95_pickle_val_set1_0'
+print 'validation path'
+print valset
 if not os.path.exists(valset):
     print 'valset doesnot exist: ',valset
     sys.exit()
-
+actrain=True #put true to actually train, otherwise only predict
 
 #########################################################################################
 num_class= len(classif)
@@ -92,7 +94,7 @@ else:
      (X_train, y_train), (X_val, y_val)= H.load_data_train(patch_dir,num_class)
 
 # train a CNN model
-model = CNN.train(X_train, y_train, X_val, y_val, train_params,eferror,patch_dir_store,valset)
+model = CNN.train(X_train, y_train, X_val, y_val, train_params,eferror,patch_dir_store,valset,actrain)
 
 errorfile = open(eferror, 'a')
 t = datetime.datetime.now()

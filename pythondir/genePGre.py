@@ -15,7 +15,7 @@ S. Kritter
 from param_pix_t import derivedpatall,classifc,usedclassifall,classifall
 from param_pix_t import dimpavx,dimpavy,typei,typei1,avgPixelSpacing,thrpatch,perrorfile,plabelfile,pxy
 from param_pix_t import remove_folder,normi,genelabelloc,totalpat,totalnbpat,fidclass,rsliceNum
-from param_pix_t import white,medianblur,average3
+from param_pix_t import white,medianblur,average3,median3
 from param_pix_t import patchpicklename,scan_bmp,lungmask,lungmask1,sroi,patchesdirname,derivedpat
 from param_pix_t import imagedirname,picklepath,source,lungmaskbmp,layertokeep,reservedword,augmentation
 import os
@@ -35,7 +35,7 @@ import cPickle as pickle
 #######################################################
 #global directory for scan file
 topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
-#namedirHUG = 'CHU'
+namedirHUG = 'CHU2new'
 #namedirHUG = 'CHU2'
 namedirHUG = 'REFVALnew'
 
@@ -45,9 +45,9 @@ namedirHUG = 'REFVALnew'
 
 #subdir for roi in text
 #subHUG='UIP'
-subHUG='UIP0'
+#subHUG='UIP'
 #subHUG='ILD_TXT'
-#subHUG='UIPJC'
+subHUG='UIPJC'
 #subHUG='UIPJCAN'
 
 
@@ -55,14 +55,14 @@ subHUG='UIP0'
 toppatch= 'TOPPATCH'
 #extension for output dir
 extendir='JC'
-extendir='all'
+#extendir='all'
 #extendir='essai1'
 
 #extension1 for output dir
-#extendir1='0a'
+extendir1='0med'
 #extendir1='CHU2a'
 #extendir1='CHU2newa'
-extendir1='0'
+#extendir1='CHU2newmed'
 
 
 alreadyDone =[ 'S107260', 'S139370', 'S139430', 'S139431', 'S145210', 
@@ -147,6 +147,10 @@ if average3:
    errorfile.write('average3\n')
 else:
     errorfile.write('NO average3\n')
+if median3:
+   errorfile.write('median3\n')
+else:
+    errorfile.write('NO median3\n')
 errorfile.write('--------------------------------\n')
 errorfile.write('source directory '+namedirtopc+'\n')
 errorfile.write('th : '+ str(thrpatch)+'\n')
@@ -272,27 +276,41 @@ def genebmp(dirName, sou,tabscanName,fxs,listsln,listroi):
                 
         for scanNumber in range (1,slnt):
             
-                tabscano[scanNumber]= tabscano[scanNumber].astype('float32')
+                tabscanos= tabscano[scanNumber].astype('float32')
+                dtx=tabscanos.shape[0]
                 if medianblur:
-                    tabscano[scanNumber]=cv2.medianBlur(tabscano[scanNumber],3)             
+                    tabscanos=cv2.medianBlur(tabscanos,3)             
                 if average3:
                     ts9 = tabscano[max(scanNumber-1,1)].astype('float32')
                     ts11 = tabscano[min(scanNumber+1,slnt-1)].astype('float32')
-                    ts10= tabscano[scanNumber]
-                    tabscano[scanNumber]=(ts10+ts9+ts11)/3.
+ 
+                    tabscanos=(tabscanos+ts9+ts11)/3.
+                if median3:
+                    ts9 = tabscano[max(scanNumber-1,1)].astype('float32')
+                    ts11 = tabscano[min(scanNumber+1,slnt-1)].astype('float32')
+
+                    tmedian=np.median(np.dstack((ts9,tabscanos,ts11)),axis=2)
+                    tabsref = np.zeros((dtx,dtx),'float32')    
+                    dift=tabscanos-ts9
+                    dift1=ts11-tabscanos
+                    tmaxabs=np.maximum(abs(dift),abs(dift1))
+                    np.putmask(tabsref,tmaxabs<201,tabscanos)
+                    np.putmask(tabsref,tmaxabs>200,tmedian)
+                    tabscanos=tabsref
+
 #                dsr = dsr.astype('int16')
 #                dsr = dsr.astype('float32')
-                dsrmin= tabscano[scanNumber].min()
-                dsrmax=tabscano[scanNumber].max()
+                dsrmin= tabscanos.min()
+                dsrmax= tabscanos.max()
         
-                tabscan[scanNumber]=cv2.resize(tabscano[scanNumber],None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
+                tabscans=cv2.resize(tabscanos,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)
 #                dsr=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_CUBIC)
-                tabscan[scanNumber]=np.clip(tabscan[scanNumber],dsrmin,dsrmax)
+                tabscans=np.clip(tabscans,dsrmin,dsrmax)
 
 #                dsr = scipy.ndimage.interpolation.zoom(dsr, fxs, mode='nearest')
 #        imgresize=dsr
 #                print dsr.min(),dsr.max(),dsr.shape
-                tabscan[scanNumber]=tabscan[scanNumber].astype('int16')
+                tabscan[scanNumber]=tabscans.astype('int16')
                 dsrforimage=normi(tabscan[scanNumber])
                                             
                 imgcored=tabscanName[scanNumber]+'.'+typei1

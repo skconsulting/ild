@@ -31,10 +31,30 @@ print ' keras.backend.image_data_format :',keras.backend.image_data_format()
 oldFormat=False #for compatibility with old format
 
 writeFile=False
-
+ 
+"""
 MIN_BOUND = -1000.0
 MAX_BOUND = 400.0
 PIXEL_MEAN = 0.25
+"""
+#limitHU=1700.0
+#centerHU=-662.0
+limitHU=1424.0
+centerHU=-312.0
+PIXEL_MEAN = 0.2725
+
+#limitHU=1700.0
+#centerHU=-662.0
+#PIXEL_MEAN = 0.52
+
+minb=centerHU-(limitHU/2)
+maxb=centerHU+(limitHU/2)
+MIN_BOUND =minb
+MAX_BOUND = maxb
+
+PIXEL_MEAN = 0.2725
+
+print 'MIN_BOUND:',MIN_BOUND,'MAX_BOUND:',MAX_BOUND,'PIXEL_MEAN',PIXEL_MEAN
 
 dimpavx=16
 dimpavy=16
@@ -157,7 +177,10 @@ dirpickleArch=os.path.join(dirpickle,path_pickleArch)
 
 
 classifnotvisu=['healthy',]
-setdataref='set1'
+layertokeep= [
+        'bronchiectasis',
+        ]
+#setdataref='set1'
 
 classifdict={}
 usedclassifdict={}
@@ -191,11 +214,7 @@ usedclassifdict['set0'] = [
         'GGpret'
         ]
 derivedpatdict['set0']=[
-        'HCpret',
-        'HCpbro',
-        'GGpbro',
         'GGpret',
-        'bropret'
         ]
 
 classifdict['set0p'] ={
@@ -227,24 +246,23 @@ usedclassifdict['set0p'] = [
         'GGpret'
         ]
 derivedpatdict['set0p']=[
-        'HCpret',
-        'HCpbro',
-        'GGpbro',
         'GGpret',
-        'bropret'
+
         ]
 ##set1
 
 classifdict['set1'] ={
+        
         'consolidation':0,
         'HC':1,
         'ground_glass':2,
         'healthy':3,
-        'reticulation':4,
-        'air_trapping':5,
+        'micronodules':4,
+        'reticulation':5,
         'bronchiectasis':6,
-        'GGpret':7,
-        'lung':8
+        'emphysema':7,
+        'GGpret':8,
+        'lung':9
         }
 
 usedclassifdict['set1'] = [
@@ -252,18 +270,16 @@ usedclassifdict['set1'] = [
         'HC',
         'ground_glass',
         'healthy',
+        'micronodules',
         'reticulation',
-        'air_trapping',
         'bronchiectasis',
+        'emphysema',
         'GGpret'
         ]
 derivedpatdict['set1']=[
-        'HCpret',
-        'HCpbro',
-        'GGpbro',
         'GGpret',
-        'bropret'
         ]
+
 
 classifdict['set1p'] ={
        'back_ground':0,
@@ -290,11 +306,7 @@ usedclassifdict['set1p'] = [
         'GGpret'
         ]
 derivedpatdict['set1p']=[
-        'HCpret',
-        'HCpbro',
-        'GGpbro',
         'GGpret',
-        'bropret'
         ]
 
 classifdict['set2'] ={
@@ -322,11 +334,7 @@ usedclassifdict['set2'] = [
         'GGpret'
         ]
 derivedpatdict['set2']=[
-        'HCpret',
-        'HCpbro',
-        'GGpbro',
         'GGpret',
-        'bropret'
         ]
 #set2p###########################☻
 classifdict['set2p'] ={
@@ -356,11 +364,7 @@ usedclassifdict['set2p'] = [
         'GGpret'
         ]
 derivedpatdict['set2p']=[
-        'HCpret',
-        'HCpbro',
-        'GGpbro',
         'GGpret',
-        'bropret'
         ]
 
 classifc ={

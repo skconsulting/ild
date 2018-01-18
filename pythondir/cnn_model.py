@@ -344,7 +344,7 @@ def load_model_set(pickle_dir_train):
     return namelastc
 
 
-def train(x_train, y_train, x_val, y_val, params,eferror,patch_dir_store,valset):
+def train(x_train, y_train, x_val, y_val, params,eferror,patch_dir_store,valset,acttrain):
     ''' TODO: documentation '''
 
     filew = open(eferror, 'a')
@@ -440,41 +440,46 @@ def train(x_train, y_train, x_val, y_val, params,eferror,patch_dir_store,valset)
 #    model.summary()
     
     filew.write ('-----------------\n')
-    nb_epoch_i_p=params['patience']
-
-    # Open file to write the results
-    rese=os.path.join(patch_dir_store,params['res_alias']+parameters_str+'.csv')
-
-    print ('starting the loop of training with number of patience = ', params['patience'])
-    t = datetime.datetime.now()
-
-    todayn = str('m'+str(t.month)+'_d'+str(t.day)+'_y'+str(t.year)+'_'+str(t.hour)+'h_'+str(t.minute)+'m'+'\n')
-    today = str('m'+str(t.month)+'_d'+str(t.day)+'_y'+str(t.year)+'_'+str(t.hour)+'h_'+str(t.minute)+'m')
-    filew.write ('starting the loop of training with number of patience = '+ str(params['patience'])+'\n')
-    filew.write('started at :'+todayn)
-
-    early_stopping=EarlyStopping(monitor='val_loss', patience=20, verbose=1,min_delta=0.01,mode='auto')                     
-    model_checkpoint = ModelCheckpoint(os.path.join(patch_dir_store,'weights_'+today+'.{epoch:02d}-{val_loss:.3f}.hdf5'), 
-                                monitor='val_loss', save_best_only=True,save_weights_only=True)       
-    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5,
-                      patience=8, min_lr=5e-6,verbose=1)
-    csv_logger = CSVLogger(rese,append=True)
-    filew.close()
-    batch_size=500
-    number_of_unique_sample= x_train.shape[0]
-
-    steps_per_epoch=number_of_unique_sample/batch_size
-    if params['val_data']:
-        print 'using valdata'
-
-        model.fit(x_train, y_train, batch_size=batch_size, epochs=nb_epoch_i_p, verbose =2,
-                          validation_data=(x_val,y_val),shuffle=True, 
-                          callbacks=[model_checkpoint,reduce_lr,csv_logger,early_stopping]  )
+    if acttrain:
+        nb_epoch_i_p=params['patience']
+    
+        # Open file to write the results
+        rese=os.path.join(patch_dir_store,params['res_alias']+parameters_str+'.csv')
+    
+        print ('starting the loop of training with number of patience = ', params['patience'])
+        t = datetime.datetime.now()
+    
+        todayn = str('m'+str(t.month)+'_d'+str(t.day)+'_y'+str(t.year)+'_'+str(t.hour)+'h_'+str(t.minute)+'m'+'\n')
+        today = str('m'+str(t.month)+'_d'+str(t.day)+'_y'+str(t.year)+'_'+str(t.hour)+'h_'+str(t.minute)+'m')
+        filew.write ('starting the loop of training with number of patience = '+ str(params['patience'])+'\n')
+        filew.write('started at :'+todayn)
+    
+        early_stopping=EarlyStopping(monitor='val_loss', patience=20, verbose=1,min_delta=0.01,mode='auto')                     
+        model_checkpoint = ModelCheckpoint(os.path.join(patch_dir_store,'weights_'+today+'.{epoch:02d}-{val_loss:.3f}.hdf5'), 
+                                    monitor='val_loss', save_best_only=True,save_weights_only=True)       
+        reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5,
+                          patience=8, min_lr=5e-6,verbose=1)
+        csv_logger = CSVLogger(rese,append=True)
+        filew.close()
+        batch_size=500
+        number_of_unique_sample= x_train.shape[0]
+    
+        steps_per_epoch=number_of_unique_sample/batch_size
+        
+        if params['val_data']:
+            print 'using valdata'
+    
+            model.fit(x_train, y_train, batch_size=batch_size, epochs=nb_epoch_i_p, verbose =2,
+                              validation_data=(x_val,y_val),shuffle=True, 
+                              callbacks=[model_checkpoint,reduce_lr,csv_logger,early_stopping]  )
+        else:
+            print '10% train data as val data'
+            model.fit(x_train, y_train, batch_size=batch_size, epochs=nb_epoch_i_p, verbose =2,
+                            validation_split=0.1,shuffle=True, 
+                             callbacks=[model_checkpoint,reduce_lr,csv_logger,early_stopping]  )
     else:
-        print '10% train data as val data'
-        model.fit(x_train, y_train, batch_size=batch_size, epochs=nb_epoch_i_p, verbose =2,
-                        validation_split=0.1,shuffle=True, 
-                         callbacks=[model_checkpoint,reduce_lr,csv_logger,early_stopping]  )
+        filew.write ('no training\n')
+        filew.close()
         # Evaluate models
     
     

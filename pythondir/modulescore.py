@@ -20,7 +20,7 @@ from param_pix_s import classifc,classifdict,usedclassifdict,oldFormat
 
 from param_pix_s import maxproba,fidclass,rsliceNum,evaluatef
 
-from param_pix_s import normi
+from param_pix_s import normi,excluvisu
 from scorepredict import predictrun
 
 import cPickle as pickle
@@ -29,6 +29,7 @@ import cv2
 import numpy as np
 import datetime
 #import time
+import sys
 
 
 def lisdirprocess(d):
@@ -349,7 +350,11 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,slnt,tabro
         npv[pat]=0       
     
     tablung1=np.copy(tabscanLung[slicenumber])
-    patchdict=cv2.resize(patchdict,(tablung1.shape[0],tablung1.shape[1]),interpolation=cv2.INTER_LINEAR)
+#    print slicenumber
+#    print patchdict.min(),patchdict.max(),np.unique(patchdict)
+    
+    patchdict=cv2.resize(patchdict,(tablung1.shape[0],tablung1.shape[1]),interpolation=cv2.INTER_NEAREST)
+#    print patchdict.min(),patchdict.max(),np.unique(patchdict)
     np.putmask(tablung1,tablung1>0,255)
     predictpatu=np.bitwise_and(tablung1, patchdict) 
     referencepatroi= np.copy(tabroi[slicenumber])
@@ -766,8 +771,6 @@ def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
                     imgray=np.copy(imgpatch)
                     np.putmask(imgray,imgray>0,255)
                     mask=np.bitwise_not(imgray)
-#                        print slicenumber, imgpatch.shape
-#                        print patchdict[slicenumber].shape
                     patchdict[slicenumber]=cv2.bitwise_and(patchdict[slicenumber],patchdict[slicenumber],mask=mask)
                     patchdict[slicenumber]=cv2.bitwise_or(imgpatch,patchdict[slicenumber])
             tablung1=np.copy(tabscanLung[slicenumber])
@@ -800,7 +803,15 @@ def writeslice(num,menus):
 #        print 'write',num
         cv2.rectangle(menus, (5,10), (150,20), red, -1)
         cv2.putText(menus,'Slice to visualize: '+str(num),(5,20),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
-        
+    
+
+def colorimage(image,color):
+#    im=image.copy()
+    im = cv2.cvtColor(image,cv2.COLOR_GRAY2BGR)
+    np.putmask(im,im>0,color)
+    return im
+
+    
 def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,tabroi,
                 cnnweigh,tabscanLung,viewstyle,slnroi,tabscanroi):   
     global  quitl,dimtabx,dimtaby,patchi,ix,iy
@@ -872,6 +883,7 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,tabroi,
     cv2.createTrackbar( 'All','Sliderfis',1,1,nothings)
 #    cv2.createTrackbar( 'algo','Sliderfis',0,2,nothings)
     cv2.createTrackbar( 'None','Sliderfis',0,1,nothings)
+    cv2.createTrackbar( 'Transp','Sliderfis',5,10,nothing)
         
     viewasked={}
     for key1 in usedclassif:
@@ -890,7 +902,7 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,tabroi,
     datav = np.zeros((500,900,3), np.uint8) 
     imgtext = np.zeros((dimtabx,dimtaby,3), np.uint8)
     while(1):
-    
+        anoted_image = np.zeros((dimtabx,dimtaby,3), np.uint8)
         imgwip = np.zeros((200,200,3), np.uint8)  
                              
         cv2.setMouseCallback('score',draw_circle,img)
@@ -900,6 +912,7 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,tabroi,
         fld = cv2.getTrackbarPos('Flip','Sliderfis')
         allview = cv2.getTrackbarPos('All','Sliderfis')
         noneview = cv2.getTrackbarPos('None','Sliderfis')
+        tr = cv2.getTrackbarPos('Transp','Sliderfis')
 
         fl=slnroi[fld]
         key = cv2.waitKey(1000)
@@ -951,10 +964,10 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,tabroi,
             numberfinal=0
             nbdig=0
             numberentered={}
-        if key==2424832:
+        if key==2424832 or  key==60:
             fld=max(0,fld-1)
             cv2.setTrackbarPos('Flip','Sliderfis' ,fld)
-        if key==2555904:
+        if key==2555904 or  key==62:
             fld=min(lenlimage-1,fld+1)
             cv2.setTrackbarPos('Flip','Sliderfis' ,fld)
             
@@ -974,22 +987,29 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,tabroi,
                  viewasked[key2]=False
 
         slicenumber=fl
-#        print slicenumber
-        
-#        imagel=os.path.join(pdirk,list_image[slicenumber])
-#        img = cv2.imread(imagel,1) 
         img=tabscanroi[slicenumber] 
+        imgroi=tabroi[slicenumber]
+        imgroi=cv2.resize(imgroi,(dimtaby,dimtabx),interpolation=cv2.INTER_NEAREST)
+        imgroic=imgroi.copy()
+        for pat in usedclassif:
+            imgroic=imgroi.copy()
+            if pat not in excluvisu :
+                if imgroi.max()>0:                    
+                    np.putmask(imgroic, imgroic !=classif[pat]+1, 0)
+                    np.putmask(imgroic, imgroic ==classif[pat]+1, 200)
+                    if imgroic.max()>0:
+                        colorlung=colorimage(imgroic,classifc[pat])
+                        anoted_image=cv2.addWeighted(anoted_image,1,colorlung,0.3,0)
+
         img=lumi(img,l)
         img=contrasti(img,c)    
         img = img.astype('float32')
-        img=cv2.resize(img,(dimtaby,dimtabx),interpolation=cv2.INTER_CUBIC)
+        img=cv2.resize(img,(dimtaby,dimtabx),interpolation=cv2.INTER_LINEAR)
         img=np.clip(img,0,255)
         img=normi(img)    
-#            print img.shape
-#            print  initimg.shape
         img=cv2.add(img,initimg)
-                
-#        imcontrast=cv2.cvtColor(imcontrast,cv2.COLOR_BGR2RGB)
+        img=cv2.addWeighted(img,1,anoted_image,tr/10.,0)
+
         drawok=False
         if slicenumber != slicenumberold:
             slicenumberold=slicenumber

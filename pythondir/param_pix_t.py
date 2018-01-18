@@ -33,6 +33,7 @@ thrpatch = 0.95 #patch overlapp tolerance
 writeFile=False
 medianblur=False
 average3=False
+median3=True
 #"""
 #MIN_BOUND = -1000.0
 #MAX_BOUND = 400.0
@@ -51,12 +52,13 @@ learning_rate=1e-4
 
 minb=-1024.0
 maxb=400.
+PIXEL_MEAN = 0.2725
 
 MIN_BOUND =minb
 MAX_BOUND = maxb
 
 #PIXEL_MEAN = 0.288702558038
-PIXEL_MEAN = 0.2725
+
 #PIXEL_MEAN = 0.
 print minb,maxb,PIXEL_MEAN
 
@@ -567,6 +569,7 @@ def normi(tabi):
          mm=1
 #     print 'tabi1',min_val, max_val,imageDepth/float(max_val)
      tabi2=(tabi-min_val)*(255/mm)
+#     tabi2=np.clip(tabi2,0,255)
      tabi2=tabi2.astype('uint8')
      return tabi2
  

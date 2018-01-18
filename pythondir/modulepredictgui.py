@@ -17,7 +17,8 @@ from param_pix_p import threeFileMerge,htmldir,threeFile,threeFile3d,reportdir,r
 
 from param_pix_p import classifc,classifdict,usedclassifdict,oldFormat,writeFile,volumeweb
 
-from param_pix_p import maxproba,excluvisu,fidclass,rsliceNum,evaluate,evaluatef,evaluatefull,normi
+from param_pix_p import maxproba,excluvisu,fidclass,rsliceNum,evaluatef,normi
+#from param_pix_p import evaluate,evaluatefull
 
 from tdGenePredictGui import predictrun
 
@@ -287,17 +288,19 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,slnt,tabro
             proba=ll[1]
 
             prec, mprobai = maxproba(proba)
+            if mprobai <th:
+                classlabel='healthy'
+            else:
+                classlabel=fidclass(prec,classif)
 
-            classlabel=fidclass(prec,classif)
-            classcolor=classifc[classlabel]
-
-            if mprobai >th and classlabel not in excluvisu:
+            if  classlabel not in excluvisu:
                 if classlabel not in listlabel:
                     listlabel.append(classlabel)
+                    print classlabel
                 
                 cv2.rectangle(imgpatch,(xpat,ypat),(xpat+dimpavxr-1,ypat+dimpavyr-1),classif[classlabel]+1,-1)
                 if va[classlabel]==True:
-                    cv2.rectangle(imgn,(xpat,ypat),(xpat+dimpavxr,ypat+dimpavyr),classcolor,1)
+                    cv2.rectangle(imgn,(xpat,ypat),(xpat+dimpavxr,ypat+dimpavyr),classifc[classlabel],1)
 
 #                if lvexist:
                 imgray=np.copy(imgpatch)
@@ -325,7 +328,7 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,slnt,tabro
           
     if lvexist:
         tablung1=np.copy(tabscanLung[slicenumber])
-        patchdict=cv2.resize(patchdict,(tablung1.shape[0],tablung1.shape[1]),interpolation=cv2.INTER_LINEAR)
+        patchdict=cv2.resize(patchdict,(tablung1.shape[0],tablung1.shape[1]),interpolation=cv2.INTER_NEAREST)
         np.putmask(tablung1,tablung1>0,255)
         predictpatu=np.bitwise_and(tablung1, patchdict) 
         referencepatroi= np.copy(tabroi[slicenumber])
@@ -557,7 +560,11 @@ def calcSupNp(dirf, patch_list_cross_slice, pat, tabMed,
 #                ypat = patch_list_cross_slice[slicename][ll][0][1]
                 proba = patch_list_cross_slice[slicename][ll][1]
                 prec, mprobai = maxproba(proba)
-                classlabel = fidclass(prec, classif)
+                
+                if mprobai < thrprobaUIP:
+                    classlabel='healthy'
+                else:
+                    classlabel = fidclass(prec, classif)
 #                if pat == 'bronchiectasis' and slicename==14 and classlabel==pat:
 #                    print slicename,pat,xpat,mprobai,classlabel
     
@@ -567,7 +574,7 @@ def calcSupNp(dirf, patch_list_cross_slice, pat, tabMed,
                 else:
                     pospr = 1
                     pospl = 0
-                if classlabel == pat and mprobai > thrprobaUIP:
+                if classlabel == pat:
                 
                     dictP[pat][psp] = (
                     dictP[pat][psp][0] + pospl,
@@ -580,10 +587,13 @@ def calcSupNp(dirf, patch_list_cross_slice, pat, tabMed,
 #                ypat = patch_list_cross_slice_sub[slicename][ll][0][1]
                 proba = patch_list_cross_slice_sub[slicename][ll][1]
                 prec, mprobai = maxproba(proba)
-                classlabel = fidclass(prec, classif)
-#                if pat == 'bronchiectasis' and slicename==14 and classlabel==pat:
-#                    print slicename,pat,xpat,mprobai,classlabel
-                if classlabel == pat and mprobai > thrprobaUIP:
+                
+                if mprobai < thrprobaUIP:
+                    classlabel='healthy'
+                else:
+                    classlabel = fidclass(prec, classif)
+
+                if classlabel == pat :
                     if xpat >= tabMed[slicename]:
                         pospr = 0
                         pospl = 1
@@ -1471,7 +1481,7 @@ def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
         predictpatu=np.zeros((slntroi,dx,dy), np.uint8)
         referencepatu=np.zeros((slntroi,dx,dy), np.uint8)
         num_class=len(classif)
-        th=thrprobaUIP
+
         for slroi in range(0,slntroi):
 #    for slicenumber in (143,144):
             slicenumber=slnroi[slroi]
@@ -1485,18 +1495,17 @@ def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
                         proba=ll[1]
             
                         prec, mprobai = maxproba(proba)
-            
-                        classlabel=fidclass(prec,classif)
-            
-                        if mprobai >th and classlabel not in excluvisu:
-            
-            #                imgn= addpatchn(classcolor,classlabel,xpat,ypat,imgn)
-                            cv2.rectangle(imgpatch,(xpat,ypat),(xpat+dimpavx-1,ypat+dimpavy-1),classif[classlabel]+1,-1)
-                            imgray=np.copy(imgpatch)
-                            np.putmask(imgray,imgray>0,255)
-                            mask=np.bitwise_not(imgray)
-                            patchdict[slicenumber]=cv2.bitwise_and(patchdict[slicenumber],patchdict[slicenumber],mask=mask)
-                            patchdict[slicenumber]=cv2.bitwise_or(imgpatch,patchdict[slicenumber])
+                        if mprobai <thrprobaUIP:
+                            classlabel='healthy'
+                        else:
+                            classlabel=fidclass(prec,classif)
+
+                        cv2.rectangle(imgpatch,(xpat,ypat),(xpat+dimpavx-1,ypat+dimpavy-1),classif[classlabel]+1,-1)
+                        imgray=np.copy(imgpatch)
+                        np.putmask(imgray,imgray>0,255)
+                        mask=np.bitwise_not(imgray)
+                        patchdict[slicenumber]=cv2.bitwise_and(patchdict[slicenumber],patchdict[slicenumber],mask=mask)
+                        patchdict[slicenumber]=cv2.bitwise_or(imgpatch,patchdict[slicenumber])
             
 
             referencepatroi= np.copy(tabroi[slicenumber])
@@ -1678,10 +1687,10 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,tabroi,
                     numberfinal=0
                     nbdig=0
                     numberentered={}
-            if key==2424832:
+            if key==2424832 or  key==60:
                 fl=max(0,fl-1)
                 cv2.setTrackbarPos('Flip','Sliderfip' ,fl)
-            if key==2555904:
+            if key==2555904 or  key==62:
                 fl=min(slnt-2,fl+1)
                 cv2.setTrackbarPos('Flip','Sliderfip' ,fl)
                 
@@ -1709,6 +1718,7 @@ def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,tabroi,
             img=contrasti(img,c) 
             img = img.astype('float32')            
             img=cv2.resize(img,(dimtaby,dimtabx),interpolation=cv2.INTER_LINEAR)
+            img=np.clip(img,0,255) 
             img=normi(img)
 #            print img.shape
 #            print  initimg.shape
