@@ -36,7 +36,7 @@ topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 #extendir0='0'
 #define the name of directory for patches
 #patchesdirnametop = ['th0.95_TOPPATCH_JC_0']
-patchesdirnametop = ['th0.95_TOPPATCH_all_CHU2new']
+patchesdirnametop = ['th0.95_TOPPATCH_all_REFVALnew_3b']
 
 #patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_JC_0']
 #print patchesdirnametop
@@ -47,11 +47,11 @@ extendir1=''
 pickel_dirsource_root='pickle'
 #pickel_dirsource_e='train' #path for data fort training
 pickel_dirsource_e='val' #path for data fort training
-pickel_dirsource_e='essai' #path for data fort training
+#pickel_dirsource_e='essai' #path for data fort training
 
 pickel_dirsourcenum=setdata #extensioon for path for data for training
 #extendir2='2'
-extendir2='0'
+extendir2='3b'
 extendir3=extendir1
 
 #augf=5#augmentation factor default 3

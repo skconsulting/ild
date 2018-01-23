@@ -11,42 +11,69 @@ S. Kritter
  
 from param_pix_t import classif
 from param_pix_t import thrpatch,setdata
-from param_pix_t import norm,notToAug
+from param_pix_t import norm,toAug
 from param_pix_t import picklepath,perrorfile,generandom,geneaug
 
 import datetime
 import os
-#import sys
+import sys
 
 import numpy as np
 from sklearn.model_selection import train_test_split
 import cPickle as pickle
 import random
 
-
 #####################################################################
 #define the working directory for input patches
 topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
-#toppatch= 'TOPPATCH'
-#extendir='all'
-#extendir0='5'
-#extendir0='essai'
 
-extendir1=''
 patchesdirnametop=[]
-patchesdirnametop = ['th0.95_TOPPATCH_all_HUGr']
 
-patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU']
-patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2']
-patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new']
+"""
+patchesdirnametop = ['TOPPATCHOUT_all_HUG']
+#patchesdirnametop = ['th0.95_TOPPATCH_all_HUGr']
 
-patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHUmed']
-patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2med']
-patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2newmed']
+#CHU
+patchesdirnametop = patchesdirnametop+['TOPPATCHOUT_all_CHU']
+patchesdirnametop = patchesdirnametop+['TOPPATCHOUT_all_CHUa']
+patchesdirnametop = patchesdirnametop+['TOPPATCHOUT_all_CHUmed']
 
-patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHUa']
-patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2a']
-patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2newa']
+#CHU2
+patchesdirnametop = patchesdirnametop+['TOPPATCHOUT_all_CHU2']
+patchesdirnametop = patchesdirnametop+['TOPPATCHOUT_all_CHU2a3']
+patchesdirnametop = patchesdirnametop+['TOPPATCHOUT_all_CHU2med3']
+
+#CHU2new
+patchesdirnametop = patchesdirnametop+['TOPPATCHOUT_all_CHU2new']
+patchesdirnametop = patchesdirnametop+['TOPPATCHOUT_all_CHU2newa3']
+patchesdirnametop = patchesdirnametop+['TOPPATCHOUT_all_CHU2newmed3']
+
+
+"""
+#HUG
+#patchesdirnametop = ['th0.95_TOPPATCH_all_HUG_3br']
+
+#patchesdirnametop = ['th0.95_TOPPATCH_all_HUG']
+#patchesdirnametop = ['th0.95_TOPPATCH_all_HUGr']
+
+#CHU
+patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU_UIP_3b']
+patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU_UIP_a_3b']
+patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU_UIP_med_3b']
+
+
+#CHU2
+patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2_UIP_3_3b']
+patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2_UIP_a3_3b']
+patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2_UIP_med3_3b']
+
+
+#CHU2new
+patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_3_3b']
+patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_a3_3b']
+patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_med3_3b']
+
+
 
 #patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_JC_0']
 #print patchesdirnametop
@@ -56,11 +83,11 @@ patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2newa']
 pickel_dirsource_root='pickle'
 pickel_dirsource_e='train' #path for data fort training
 pickel_dirsourcenum=setdata #extensioon for path for data for training
-extendir2='1'
-#extendir2='essai'
-extendir3=extendir1
+#extendir2='2'
+extendir2='3b'
+extendir1=''
 
-augf=5#augmentation factor default 3
+augf=1#augmentation factor default 3
 test_size=0 #split test training percent
 
 #all in percent
@@ -74,14 +101,11 @@ maxmultint=10
 ######################  end ############################################
 ########################################################################
 
-#sepextend2='ROI'
-if len (extendir3)>0:
-    extendir3='_'+extendir3
-    
+
 if len (extendir1)>0:
     extendir1='_'+extendir1
 
-pickel_dirsource='th'+str(thrpatch)+'_'+pickel_dirsource_root+'_'+pickel_dirsource_e+'_'+pickel_dirsourcenum+'_'+extendir2+extendir3
+pickel_dirsource='th'+str(thrpatch)+'_'+pickel_dirsource_root+'_'+pickel_dirsource_e+'_'+pickel_dirsourcenum+'_'+extendir2+extendir1
 print 'path to directory to store patches:',pickel_dirsource
 
 patch_dir=os.path.join(topdir,pickel_dirsource)
@@ -90,23 +114,16 @@ print ('classification used:')
 for f in classif:
     print (f, classif[f])
 
-
-
-#define the name of directory for patches
-#patchesdirnametop = 'th'+str(round(thrpatch,2))+'_'+toppatch+'_'+extendir+'_'+extendir0+extendir1
+print ' pattern to augment:'
+print toAug
 
 hugeClass=['healthy','back_ground']
 #hugeClass=['']
 
 #input patch directory
-#patch_dirsource=os.path.join(topdir,patchesdirnametop)
-#patch_dirsource=os.path.join(patch_dirsource,patch_dirsource)
-#patch_dirsource=os.path.join(patch_dirsource,picklepath)
 print 'path for pickle inputs',patchesdirnametop
 print 'path to write data for training',patch_dir
-#if not os.path.isdir(patch_dirsource):
-#    print 'directory ',patch_dirsource,' does not exist'
-#    sys.exit()
+
 print '--------------------------------'
 ###############################################################
 if not os.path.exists(patch_dir):
@@ -118,6 +135,8 @@ todayn = str(tn.month)+'-'+str(tn.day)+'-'+str(tn.year)+' - '+str(tn.hour)+'h '+
 errorfile.write('started at :'+todayn)
 errorfile.write('--------------------\n')
 errorfile.write('numbe of loops :'+str(augf)+'\n')
+errorfile.write('pattern to augment: \n')
+errorfile.write(str(toAug)+'\n')
 errorfile.write('percentage split: :'+str(test_size)+'\n')
 errorfile.write('path for pickle inputs'+str(patchesdirnametop)+'\n')
 errorfile.write('path to write data for training'+patch_dir+'\n')
@@ -126,6 +145,7 @@ print 'number of loops:', augf
 print 'percentage split:', test_size
 errorfile.write('--------------------\n')
 errorfile.close()
+
 
 #define a dictionary with labels
 patclass={}
@@ -180,6 +200,9 @@ print '----------'
 for category in usedclassifFinal:
     for f in patchesdirnametop:
         patch_dirsource=os.path.join(topdir,f)
+        if not os.path.exists(patch_dirsource):
+            print patch_dirsource, 'does not exist'
+            sys.exit()
         patch_dirsource=os.path.join(patch_dirsource,picklepath)
         category_dir = os.path.join(patch_dirsource, category)
     #    print  'the path into the categories is: ', category_dir
@@ -198,7 +221,10 @@ for category in usedclassifFinal:
 #                            continue
     classNumberInit[category]=len(patclass[category])
 
-
+for f in usedclassifFinal:
+    if classNumberInit[f]==0:
+        usedclassifFinal.remove(f)
+print ('all final classes:',usedclassifFinal)    
 total=0
 print('number of patches init')
 errorfile = open(eferror, 'a')
@@ -213,6 +239,7 @@ errorfile.write('--------------------\n')
 errorfile.close()
 print '----------'
 #define coeff max
+
 maxl=0
 lif = [name for name in usedclassifFinal if name  not in hugeClass]
 for f in lif:
@@ -246,10 +273,12 @@ errorfile.close()
 print ' maximum number of patches ratio'
 classConso={}
 for f in usedclassifFinal:
-    classConso[f]=float(maxl)/max(1,classNumberInit[f])
-#for f in usedclassifFinal:
-    print (f,classif[f],' {0:.2f}'.format (classConso[f]))
-print '----------'
+    if classNumberInit[f]>0:
+        classConso[f]=float(maxl)/max(1,classNumberInit[f])
+        print (f,classif[f],' {0:.2f}'.format (classConso[f]))
+    else:
+        classConso[f]='NONE'
+        print (f,classif[f],classConso[f])
 
 def genedata(category):
     feature=[]
@@ -265,7 +294,7 @@ def genedata(category):
             nump+=1
             avpavg=avpavg+avm
             label.append(lc)
-#            print avm,avpavg
+
     avmr=avpavg/nump
     return feature,label,avmr
 
@@ -291,12 +320,13 @@ def genf(features_train,labels_train,maxl,auga):
                      else:
                          scan=features_train[pat][i]
                 else:
-                    if pat in notToAug:
-                        keepaenh=0
-#                        print pat, ' NO augmentation'
-                    else:
+                    if pat in toAug:
                         keepaenh=1
-#                        print pat, ' augmentation'
+#                        print pat, 'augmentation'
+                    else:
+                        keepaenh=0
+#                        print pat, ' No augmentation'
+
                     if not auga:
                         keepaenh=0
                     scaleint,multint,rotimg,resiz,shiftv,shifth=generandom(maxscaleint,
@@ -306,20 +336,19 @@ def genf(features_train,labels_train,maxl,auga):
                          scan=geneaug(features_train[pat][indexpatc],scaleint,multint,rotimg,resiz,shiftv,shifth)
                     else:
                          scan=geneaug(features_train[pat][i],scaleint,multint,rotimg,resiz,shiftv,shifth)
-#                tt=(scan,mask)
-#                featurelab.append(tt)
+
                 mask=labels_train[pat][i]
                 feature.append(scan)
                 label.append(mask)
             if  pat not in hugeClass:        
                     for i in range(0,maxl-numberscan):
                         numpat[pat]+=1
-                        if pat in notToAug:
-                            keepaenh=0
-#                            print pat, ' NO augmentation'
-                        else:
+                        if pat in toAug:
                             keepaenh=1
 #                            print pat, ' augmentation'
+                        else:
+                            keepaenh=0
+#                            print pat, ' No augmentation'
                         if not auga:
                             keepaenh=0
                         scaleint,multint,rotimg,resiz,shiftv,shifth=generandom(maxscaleint,

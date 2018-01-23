@@ -12,7 +12,7 @@ version 1.0
 from param_pix_t import classifall,usedclassifall,classifc
 from param_pix_t import dimpavx,dimpavy,typei,typei1,avgPixelSpacing,thrpatch,lungmaskbmp1
 from param_pix_t import remove_folder,normi,genelabelloc,totalpat,totalnbpat,fidclass
-from param_pix_t import white,medianblur
+from param_pix_t import white,medianblur,average3,median3,numbit,norm,augmentation
 from param_pix_t import patchpicklename,scan_bmp,lungmask,lungmask1,lungmaskbmp,sroi,patchesdirname
 from param_pix_t import imagedirname,picklepath,patchfile,source,perrorfile,plabelfile,locabg,reservedword
 
@@ -22,7 +22,8 @@ import datetime
 import dicom
 import numpy as np
 import os
-
+import sys
+import time
 #import scipy.misc
 
 #general parameters and file, directory names
@@ -37,7 +38,25 @@ subHUG='ILD_TXT'
 toppatch= 'TOPPATCH'
 #extension for output dir
 extendir='all'
-extendir1='HUGm'
+
+if medianblur:
+    exta1='m'
+elif average3:
+    exta1='a'
+elif median3:
+    exta1='med'
+else:
+    exta1=''
+if augmentation:
+    exta2='3'
+else:
+    exta2=''
+if numbit: 
+    exta3='_3b'
+else:
+    exta3='_1b'
+extendir1=namedirHUG+'_'+subHUG+'_'+exta1+exta2+exta3
+
 #extendir1='essai'
 
 #labelEnh=('consolidation','reticulation,air_trapping','bronchiectasis','cysts')
@@ -53,6 +72,7 @@ if len (extendir1)>0:
 #define the name of directory for patches
 patchesdirnametop = 'th'+str(round(thrpatch,2))+'_'+toppatch+'_'+extendir+extendir1
 print 'name of directory for patches :', patchesdirnametop
+
 #define the name of directory for patches
 
 #full path names
@@ -430,9 +450,11 @@ def pavs (namedirtopcf,label,loca,slnt,numslice,namescan):
                 np.putmask(tabf,tabf>0,1)
                 _tabscan=tabscan[int(numslice)]
 #                imgray8b=normi(_tabscan)
+#                start=time.time()
+#                i=xmin
+#                while i <= xmax:
+                for  i in range(xmin,xmax+1):
 
-                i=xmin
-                while i <= xmax:
                     j=ymin
                     while j<=ymax:
                         tabpatch=tabf[j:j+dimpavy,i:i+dimpavx]
@@ -443,33 +465,48 @@ def pavs (namedirtopcf,label,loca,slnt,numslice,namescan):
 
                             imgray = _tabscan[j:j+dimpavy,i:i+dimpavx]
 
-                            imagemax= cv2.countNonZero(imgray)
-                            min_val, max_val, min_loc,max_loc = cv2.minMaxLoc(imgray)
+#                            imagemax= cv2.countNonZero(imgray)
+                            max_val= imgray.max()
+                            min_val=imgray.min()
 
-                            if imagemax > 0 and max_val - min_val>2:
+#                            min_val, max_val, min_loc,max_loc = cv2.minMaxLoc(imgray)
+
+                            if  max_val - min_val>2:
+#                            if imagemax > 0 :
+
                                 nbp+=1
-                                patpickle.append(imgray)
+                                if numbit:
+                                    imgraystack = np.expand_dims(imgray,-1) 
+                                    imgraystack=np.repeat(imgraystack,3,axis=-1)
+                                    patpickle.append(imgraystack)
+                                else:
+                                    patpickle.append(imgray)
+
 #                                imgraytowrite = normi(imgray)
 #                                nampa=os.path.join(nampadirl,namedirHUG+'_'+tail+
 #                                                   '_'+str(numslice)+'_'+str(i)+'_'+str(j)+'_'+str(nbp)+'.'+typei )                                
 #                                cv2.imwrite (nampa, imgraytowrite)
-                                x=0
-                                #we draw the rectange
-                                while x < dimpavx:
-                                    y=0
-                                    while y < dimpavy:
-                                        tabp[y+j][x+i]=150
-                                        if x == 0 or x == dimpavx-1 :
-                                            y+=1
-                                        else:
-                                            y+=dimpavy-1
-                                    x+=1
-                                #we cancel the source
+#                                x=0
+                                cv2.rectangle(tabp,(i,j),(i+dimpavx,j+dimpavy),200,0)
                                 tabf[j:j+dimpavy,i:i+dimpavx]=0
+                                #we draw the rectange
+#                                while x < dimpavx:
+#                                    y=0
+#                                    while y < dimpavy:
+#                                        tabp[y+j][x+i]=150
+#                                        if x == 0 or x == dimpavx-1 :
+#                                            y+=1
+#                                        else:
+#                                            y+=dimpavy-1
+#                                    x+=1
+#                                #we cancel the source
+#                                tabf[j:j+dimpavy,i:i+dimpavx]=0
                                 j+=dimpavy-1
                         j+=1
-                    i+=1
-
+#                    i+=1
+#           end=time.time()
+#           print end-start
+#           sys.exit()
            if nbp>0:
              tabfc =tabfc+tabp
              ntotpat=ntotpat+nbp

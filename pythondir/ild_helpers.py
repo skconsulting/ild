@@ -32,6 +32,7 @@ import argparse
 import cPickle as pickle
 import numpy as np
 import os
+import sys
 from keras.utils import np_utils
 import sklearn.metrics as metrics
 # debug
@@ -52,51 +53,83 @@ def parse_args():
     parser.add_argument('-pat', help='Patience parameter for early stoping [default: 200]')
     parser.add_argument('-tol', help='Tolerance parameter for early stoping [default: 1.005]')
     parser.add_argument('-csv', help='csv results filename alias [default: res]')
+    parser.add_argument('-val', help='val data use[default: TRUE]')
     args = parser.parse_args()
 
     return args
 
-def load_data(imageDepth):
+def load_data(dirp,nb_classes,nbits):
 
     # load the dataset as X_train and as a copy the X_val
-    X_train = pickle.load( open( "../pickle/X_train.pkl", "rb" ) )
-    y_train = pickle.load( open( "../pickle/y_train.pkl", "rb" ) )
-    X_val = pickle.load( open( "../pickle/X_val.pkl", "rb" ) )
-    y_val = pickle.load( open( "../pickle/y_val.pkl", "rb" ) )
-    
-    X_train = np.asarray(np.expand_dims(X_train,1))/float(imageDepth)
-    
+    X_train = pickle.load( open( os.path.join(dirp,'X_train.pkl'), "rb" ) )    
 
+    y_train = pickle.load( open(os.path.join(dirp,'y_train.pkl'), "rb" ) )
+    X_val = pickle.load( open( os.path.join(dirp,'X_val.pkl'), "rb" ) )
+    y_val = pickle.load( open( os.path.join(dirp,'y_val.pkl'), "rb" ) )
+    if nbits!=1:
+        X_train=np.moveaxis(X_train,3,1)
+        X_val=np.moveaxis(X_val,3,1)
+    else:
+         X_train = np.expand_dims(X_train,1)  
+         X_val =np.expand_dims(X_val,1)
     print ('Xtrain :',X_train.shape)
     print 'X_train min max :',X_train.min(),X_train.max()
 
+    # labels to categorical vectors
+#    uniquelbls = np.unique(y_train)
+#    nb_classes = int( uniquelbls.shape[0])
+    print ('number of classes :', int(nb_classes)) 
+  
+#    zbn = np.min(uniquelbls) # zero based numbering
+    y_train = np_utils.to_categorical(y_train, nb_classes)
+    y_val = np_utils.to_categorical(y_val, nb_classes)
+
+    return (X_train, y_train), (X_val, y_val)
+
+def load_data_train(dirp,nb_classes,nbits):
+
+    # load the dataset as X_train and as a copy the X_val
+    X_train = pickle.load( open( os.path.join(dirp,'X_train.pkl'), "rb" ) )
+
+    y_train = pickle.load( open(os.path.join(dirp,'y_train.pkl'), "rb" ) )
+      
+    if nbits!=1:
+        X_train=np.moveaxis(X_train,3,1)
+    else:
+         X_train = np.expand_dims(X_train,1)  
     
-    X_val = np.asarray(np.expand_dims(X_val,1))/float(imageDepth)
+    print ('Xtrain :',X_train.shape)
+    print 'X_train min max :',X_train.min(),X_train.max()
 
     # labels to categorical vectors
-    uniquelbls = np.unique(y_train)
-    nb_classes = int( uniquelbls.shape[0])
+#    uniquelbls = np.unique(y_train)
+#    nb_classes = int( uniquelbls.shape[0])
     print ('number of classes :', int(nb_classes)) 
-    clas_weigh_l=[]
-    if os.path.exists("../pickle/y_val.pkl"):
-        class_weights = pickle.load(open( "../pickle/class_weights.pkl", "rb" ) )
-#        print class_weights
-        for i in range (0,nb_classes):
-#            print i,class_weights[i]
-            clas_weigh_l.append(class_weights[i])
-    else:
-        for i in range (0,nb_classes):
-            clas_weigh_l.append(1)
-    print 'weights for classes:'
-    for i in range (0,nb_classes):
-                    print i, clas_weigh_l[i]
-    zbn = np.min(uniquelbls) # zero based numbering
-    y_train = np_utils.to_categorical(y_train-zbn, nb_classes)
-    y_val = np_utils.to_categorical(y_val-zbn, nb_classes)
-
-    return (X_train, y_train), (X_val, y_val),clas_weigh_l
+#    zbn = np.min(uniquelbls) # zero based numbering
+    y_train = np_utils.to_categorical(y_train, nb_classes)
+    X_val=[]
+    y_val =[]
+    return (X_train, y_train), (X_val, y_val)
 #    return (X_train, y_train), (X_val, y_val),class_weights
+    
+def load_data_val(dirp,nb_classes,nbits):
 
+    X_val = pickle.load( open( os.path.join(dirp,'X_val.pkl'), "rb" ) )
+    y_val = pickle.load( open( os.path.join(dirp,'y_val.pkl'), "rb" ) )
+    if nbits!=1:
+        X_val=np.moveaxis(X_val,3,1)
+    else:
+         X_val = np.expand_dims(X_val,1)  
+
+    # labels to categorical vectors
+#    uniquelbls = np.unique(y_val)
+#    nb_classes = int( uniquelbls.shape[0])
+    print ('number of classes :', int(nb_classes)) 
+  
+#    zbn = np.min(uniquelbls) # zero based numbering
+    y_val = np_utils.to_categorical(y_val, nb_classes)
+
+    return  (X_val, y_val)
 
 def evaluate(actual,pred):
     fscore = metrics.f1_score(actual, pred, average='macro')

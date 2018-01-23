@@ -31,9 +31,14 @@ setdata='set1'
 thrpatch = 0.95 #patch overlapp tolerance
 ######################################################
 writeFile=False
-medianblur=False
-average3=False
-median3=True
+medianblur=False #m
+average3=False # a
+median3=True #med
+augmentation=False #3  #if True, roi of slice number +/- are added
+numbit=True
+minmax=True # if true, min and max for 3 d patch, or slice-1, slice , slice +1
+#toAug=['ground_glass','reticulation']
+toAug=[]
 #"""
 #MIN_BOUND = -1000.0
 #MAX_BOUND = 400.0
@@ -52,7 +57,7 @@ learning_rate=1e-4
 
 minb=-1024.0
 maxb=400.
-PIXEL_MEAN = 0.2725
+PIXEL_MEAN = 0.29
 
 MIN_BOUND =minb
 MAX_BOUND = maxb
@@ -60,7 +65,9 @@ MAX_BOUND = maxb
 #PIXEL_MEAN = 0.288702558038
 
 #PIXEL_MEAN = 0.
+print 'minhu, maxhu, averagehu'
 print minb,maxb,PIXEL_MEAN
+
 
 dimpavx=16
 dimpavy=16
@@ -77,7 +84,7 @@ volelemp=avgPixelSpacing*avgPixelSpacing*avgPixelSpacing # for 1 pixel
 volelem= volelemp*pxy/1000 #in ml, to multiply by slicepitch in mm
 
 reservedword=['REPORT_SCORE']
-augmentation=False#if True, roi of slice number +/- are added
+
 
 modelname='CNN.h5'
 
@@ -139,17 +146,18 @@ highgrey=(240,240,240)
 #cwd=os.getcwd()
 #(cwdtop,tail)=os.path.split(cwd)
 #dirpickle=os.path.join(cwdtop,path_pickle)
-notToAug=['HC','reticulation','bronchiectasis','GGpret']
-notToAug=[ 'consolidation',
-        'HC',
-#        'ground_glass',
-        'healthy',
-        'micronodules',
-#        'reticulation',
-        'bronchiectasis',
-        'emphysema',
-#        'GGpret'
-        ]
+#toAug=['HC','reticulation','bronchiectasis','GGpret']
+#toAug=[ 'consolidation',
+#        'HC',
+##        'ground_glass',
+#        'healthy',
+#        'micronodules',
+##        'reticulation',
+#        'bronchiectasis',
+#        'emphysema',
+##        'GGpret'
+#        ]
+
 
 usedclassifall = [
         'back_ground',
@@ -728,17 +736,21 @@ def totalnbpat (patchtoppath,picklepathdir):
     for pat in usedclassifall:
         labeldict[pat]=0
     for dirnam in dirlabel:
+#        print 'dirname', dirnam,dirlabel
         dirloca=os.path.join(picklepathdir,dirnam)
-    #    print ('dirloca', dirloca)
+#        print ('dirloca', dirloca)
         listdirloca=os.listdir(dirloca)
+        listdirloca= [ name for name in os.listdir(dirloca) if os.path.isdir(os.path.join(dirloca, name)) ]
+
         label=dirnam
-    #    print ('dirname', dirname)
+
     
         loca=''
         if dirnam not in labellist:
                 labellist.append(dirnam)
     #    print('label:',label)
         for dlo in listdirloca:
+#            print 'dlo',dlo,listdirloca
             loca=dlo
             if dlo not in localist:
                 localist.append(dlo)
@@ -746,9 +758,9 @@ def totalnbpat (patchtoppath,picklepathdir):
             if label=='' or loca =='':
                 print('not found:',dirnam)
             subdir = os.path.join(dirloca,loca)
-#            print 'subdir',subdir
             n=0
             listcwd=os.listdir(subdir)
+
 #            print 'listcwd',listcwd
             for ff in listcwd:
                 namtopp=ff.find('_',0)

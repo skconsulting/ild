@@ -22,6 +22,8 @@ from keras.callbacks import ModelCheckpoint,ReduceLROnPlateau,CSVLogger,EarlySto
 from keras.optimizers import Adam
 from keras import backend as K
 from keras.models import Model
+from keras import applications
+from keras import regularizers
 
 from keras.layers import Input, concatenate,  Conv2DTranspose,UpSampling2D
 
@@ -49,7 +51,127 @@ def dice_coef_loss(y_true, y_pred):
     return -dice_coef(y_true, y_pred)
 
 
+def vgg16_model(input_shape, output_shape, params,filew,patch_dir_store,numbits):
+    num_class=output_shape[-1]
+    dimpx=input_shape[-1]
+    INP_SHAPE = (numbits, dimpx, dimpx)
+    dim_org=keras.backend.image_data_format()
+    """VGG 16 Model for Keras
 
+    Model Schema is based on 
+    https://gist.github.com/baraldilorenzo/07d7802847aaad0a35d3
+
+    ImageNet Pretrained Weights 
+    https://drive.google.com/file/d/0Bz7KyqmuGsilT0J5dmRCM0ROVHc/view?usp=sharing
+
+    Parameters:
+      img_rows, img_cols - resolution of inputs
+      channel - 1 for grayscale, 3 for color 
+      num_classes - number of categories for our classification task
+    """
+    padding='same'
+    kernel_size=(3,3)
+    model = Sequential()
+    model.add(Conv2D(64, kernel_size, activation='relu', padding=padding , data_format=dim_org,input_shape=INP_SHAPE))
+    model.add(Conv2D(64, kernel_size, activation='relu', padding=padding,data_format=dim_org ))
+    model.add(MaxPooling2D((2,2), strides=(2,2),data_format=dim_org))
+    
+    model.add(Conv2D(128, kernel_size, activation='relu', padding=padding,data_format=dim_org ))
+    model.add(Conv2D(128, kernel_size, activation='relu', padding=padding,data_format=dim_org ))
+    model.add(MaxPooling2D((2,2), strides=(2,2),data_format=dim_org))
+    
+    model.add(Conv2D(256, kernel_size, activation='relu', padding=padding,data_format=dim_org ))
+    model.add(Conv2D(256, kernel_size, activation='relu', padding=padding,data_format=dim_org ))
+    model.add(MaxPooling2D((2,2), strides=(2,2),data_format=dim_org))
+    
+    model.add(Conv2D(512, kernel_size, activation='relu', padding=padding,data_format=dim_org ))
+    model.add(Conv2D(512, kernel_size, activation='relu', padding=padding,data_format=dim_org ))
+    model.add(Conv2D(512, kernel_size, activation='relu', padding=padding,data_format=dim_org ))
+    model.add(MaxPooling2D((2,2), strides=(2,2),data_format=dim_org))
+    
+    model.add(Conv2D(512, kernel_size, activation='relu', padding=padding,data_format=dim_org ))
+    model.add(Conv2D(512, kernel_size, activation='relu', padding=padding,data_format=dim_org ))
+    model.add(Conv2D(512, kernel_size, activation='relu', padding=padding,data_format=dim_org ))
+#    model.add(MaxPooling2D((2,2), strides=(2,2),data_format=dim_org))
+    model.add(AveragePooling2D(pool_size=(2,2),data_format=dim_org))
+#    
+    # Add Fully Connected Layer
+    model.add(Flatten())
+    model.add(Dense(4096, activation='relu'))
+    model.add(Dropout(0.5))
+    model.add(Dense(4096, activation='relu'))
+    model.add(Dropout(0.5))
+    model.add(Dense(1000, activation='softmax'))
+
+    # Loads ImageNet pre-trained data
+    model.load_weights('vgg16_weights.h5')
+
+    # Truncate and replace softmax layer for transfer learning
+    model.layers.pop()
+    model.outputs = [model.layers[-1].output]
+    model.layers[-1].outbound_nodes = []
+    model.add(Dense(num_class, activation='softmax'))
+
+    for layer in model.layers[:-5]:
+        layer.trainable = False
+
+    model.compile(optimizer=Adam(lr=learning_rate), loss='categorical_crossentropy', metrics=['categorical_accuracy'])
+    filew.write ('learning rate:'+str(learning_rate)+'\n')
+    print ('learning rate:'+str(learning_rate))
+    json_string = model.to_json()
+    pickle.dump(json_string, open(os.path.join(patch_dir_store,modelname), "wb"),protocol=-1)
+    orig_stdout = sys.stdout
+    f = open(os.path.join(patch_dir_store,'modelvgg16.txt'), 'w')
+    sys.stdout = f
+    print(model.summary())
+    sys.stdout = orig_stdout
+    f.close()
+    print model.layers[-1].output_shape #== (None, 16, 16, 21)
+
+    return model
+
+
+
+
+def vgg6net(input_shape, output_shape, params,filew,patch_dir_store,numbits):
+    print 'input shape:',input_shape,'output shape:',output_shape
+   
+    num_class=output_shape[-1]
+    dimpx=input_shape[-1]
+    INP_SHAPE = (numbits, dimpx, dimpx)
+    base_model = applications.VGG16(weights='imagenet', include_top=False, 
+                                    input_shape=INP_SHAPE,
+                                     pooling='avg',
+                                    )
+    add_model = Sequential()
+    add_model.add(Flatten(input_shape=base_model.output_shape[1:]))
+    add_model.add(Dense(256, activation='relu'))
+    add_model.add(Dense(num_class, activation='sigmoid'))
+
+    model = Model(inputs=base_model.input, outputs=add_model(base_model.output))
+    
+#    for layer in model.layers[:25]:
+#        layer.trainable = False
+    
+    for layer in model.layers[:-5]:
+        layer.trainable = False
+    model.compile(optimizer=Adam(lr=learning_rate), loss='categorical_crossentropy', metrics=['categorical_accuracy'])
+    filew.write ('learning rate:'+str(learning_rate)+'\n')
+    print ('learning rate:'+str(learning_rate))
+    json_string = model.to_json()
+    pickle.dump(json_string, open(os.path.join(patch_dir_store,modelname), "wb"),protocol=-1)
+    orig_stdout = sys.stdout
+    f = open(os.path.join(patch_dir_store,'modelvgg16.txt'), 'w')
+    sys.stdout = f
+    print(model.summary())
+    sys.stdout = orig_stdout
+    f.close()
+    print model.layers[-1].output_shape #== (None, 16, 16, 21)
+    return model
+    
+    
+    
+    
 
 def get_modelunet(input_shape, output_shape, params,filew,patch_dir_store):
     num_class=output_shape[-1]
@@ -120,14 +242,14 @@ def get_modelunet(input_shape, output_shape, params,filew,patch_dir_store):
     return model
 
 
-def get_model(input_shape, output_shape, params,filew,patch_dir_store):
+def get_model3(input_shape, output_shape, params,filew,patch_dir_store,numbits):
     print 'input shape:',input_shape,'output shape:',output_shape
    
     num_class=output_shape[-1]
     
     dimpx=input_shape[-1]
 
-    INP_SHAPE = (1, dimpx, dimpx)
+    INP_SHAPE = (numbits, dimpx, dimpx)
     dim_org=keras.backend.image_data_format()
     kernel_size=(2,2)
     pool_siz=(2,2)
@@ -144,8 +266,10 @@ def get_model(input_shape, output_shape, params,filew,patch_dir_store):
 
     print 'sk5 with num_class :',num_class
     model = Sequential() 
+
     model.add(Conv2D(coef[0], kernel_size, input_shape=INP_SHAPE, padding=paddingv, 
                       data_format=dim_org, kernel_constraint=maxnorm(maxnormv)))   
+
     model.add(LeakyReLU(alpha=params['a']))
     model.add(Conv2D(coef[0], kernel_size, input_shape=INP_SHAPE, padding=paddingv, 
                       data_format=dim_org, kernel_constraint=maxnorm(maxnormv)))  
@@ -187,8 +311,8 @@ def get_model(input_shape, output_shape, params,filew,patch_dir_store):
 #    model.add(Dense(1000))
 #    model.add(LeakyReLU(alpha=params['a']))
     model.add(Dropout(0.5)) 
-    
-    model.add(Dense(num_class, activation='softmax'))
+    model.add(Dense(num_class, activation='softmax', kernel_regularizer=regularizers.l2(0.01),
+                activity_regularizer=regularizers.l1(0.01)))
     
     model.compile(optimizer=Adam(lr=learning_rate), loss='categorical_crossentropy', metrics=['categorical_accuracy'])
     filew.write ('learning rate:'+str(learning_rate)+'\n')
@@ -344,7 +468,7 @@ def load_model_set(pickle_dir_train):
     return namelastc
 
 
-def train(x_train, y_train, x_val, y_val, params,eferror,patch_dir_store,valset,acttrain):
+def train(x_train, y_train, x_val, y_val, params,eferror,patch_dir_store,valset,acttrain,numbits):
     ''' TODO: documentation '''
 
     filew = open(eferror, 'a')
@@ -374,8 +498,7 @@ def train(x_train, y_train, x_val, y_val, params,eferror,patch_dir_store,valset,
     print('[Objective] \t\t->\t'+ get_Obj(params['obj']))
     print('[Results filename] \t->\t'+str(params['res_alias']+parameters_str+'.txt'))
     print('[val_data] \t\t->\t'+ str(params['val_data']))
-    
-    
+       
     filew.write('[Dropout Param] \t->\t'+str(params['do'])+'\n')
     filew.write('[Alpha Param] \t\t->\t'+str(params['a'])+'\n')
     filew.write('[Multiplier] \t\t->\t'+str(params['k'])+'\n')
@@ -390,9 +513,8 @@ def train(x_train, y_train, x_val, y_val, params,eferror,patch_dir_store,valset,
     filew.write('[Results filename] \t->\t'+str(params['res_alias']+parameters_str+'.txt')+'\n')
     filew.write('[val_data] \t\t->\t'+ str(params['val_data'])+'\n')
     
-
-
     # Rescale Input Images
+
     if params['s'] != 1:
         print('\033[93m'+'Rescaling Patches...'+'\033[0m')
         x_train = np.asarray(np.expand_dims([cv2.resize(x_train[i, 0, :, :], (0,0), fx=params['s'], fy=params['s']) for i in xrange(x_train.shape[0])], 1))
@@ -414,29 +536,23 @@ def train(x_train, y_train, x_val, y_val, params,eferror,patch_dir_store,valset,
     
 #    model = get_model(x_train.shape, y_train.shape, params,filew,patch_dir_store)
     
-    if len(listmodel)>0:
-#    if False:
+    filew.write ('learning rate:'+str(learning_rate)+'\n')
+    print ('learning rate:'+str(learning_rate))
+    model = get_model3(x_train.shape, y_train.shape, params,filew,patch_dir_store,numbits)
+#    model = vgg16_model(x_train.shape, y_train.shape, params,filew,patch_dir_store,numbits)
 
-#         json_string1=pickle.load( open(os.path.join(patch_dir_store,modelname), "rb"))
-#         model = model_from_json(json_string1)
-         model = get_model(x_train.shape, y_train.shape, params,filew,patch_dir_store)
-         
-#         learning_rate=1e-4
-         filew.write ('learning rate:'+str(learning_rate)+'\n')
-         print ('learning rate:'+str(learning_rate))
-#         model.compile(optimizer=params['opt'], loss=get_Obj(params['obj']), metrics=['categorical_accuracy'])
-#         model.compile(optimizer=Adam(lr=learning_rate), loss='categorical_crossentropy', metrics=['categorical_accuracy'])
+    if len(listmodel)>0:
 
          namelastc=load_model_set(patch_dir_store) 
          print 'load weight found from last training',namelastc
          filew.write('load weight found from last training\n'+namelastc+'\n')
 #         model= load_model(namelastc)
          model.load_weights(namelastc)  
+         model.compile(optimizer=Adam(lr=learning_rate), loss='categorical_crossentropy', metrics=['categorical_accuracy'])
 
     else:
          print 'first training to be run'
          filew.write('first training to be run\n')
-         model = get_model(x_train.shape, y_train.shape, params,filew,patch_dir_store)
 #    model.summary()
     
     filew.write ('-----------------\n')
@@ -456,12 +572,12 @@ def train(x_train, y_train, x_val, y_val, params,eferror,patch_dir_store,valset,
     
         early_stopping=EarlyStopping(monitor='val_loss', patience=20, verbose=1,min_delta=0.01,mode='auto')                     
         model_checkpoint = ModelCheckpoint(os.path.join(patch_dir_store,'weights_'+today+'.{epoch:02d}-{val_loss:.3f}.hdf5'), 
-                                    monitor='val_loss', save_best_only=True,save_weights_only=True)       
+                                    monitor='val_loss', save_best_only=True,save_weights_only=True,mode='auto')       
         reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5,
-                          patience=8, min_lr=5e-6,verbose=1)
+                          patience=9, min_lr=5e-6,verbose=1)
         csv_logger = CSVLogger(rese,append=True)
         filew.close()
-        batch_size=500
+        batch_size=200
         number_of_unique_sample= x_train.shape[0]
     
         steps_per_epoch=number_of_unique_sample/batch_size
@@ -519,7 +635,7 @@ def train(x_train, y_train, x_val, y_val, params,eferror,patch_dir_store,valset,
 #    valset='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool/th0.95_pickle_val_set1_r0'
     print('validation set '+str(valset))
     filew.write('validation set '+str(valset)+'\n')
-    (x_val, y_val)= H.load_data_val(valset, num_class)
+    (x_val, y_val)= H.load_data_val(valset, num_class,numbits)
     y_score = model.predict(x_val, batch_size=1050)
     fscore, acc, cm = H.evaluate(np.argmax(y_val, axis=1), np.argmax(y_score, axis=1))
     print('Val F-score: '+str(fscore)+'\tVal acc: '+str(acc))

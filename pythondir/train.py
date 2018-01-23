@@ -43,10 +43,13 @@ topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 pickel_dirsource_root='pickle'
 pickel_dirsource_e='train' #path for data fort training
 pickel_dirsourcenum='set1' #extensioon for path for data for training
+#extendir1='2'
 extendir1='1'
-extendir2=''
 
-valset='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool/th0.95_pickle_val_set1_0'
+extendir2=''
+nbits=1
+
+valset='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool/th0.95_pickle_val_set1_3b'
 print 'validation path'
 print valset
 if not os.path.exists(valset):
@@ -88,13 +91,13 @@ errorfile.write('--------------------\n')
 errorfile.close()
 
 if train_params['val_data']:
-    (X_train, y_train), (X_val, y_val)= H.load_data(patch_dir,num_class)
+    (X_train, y_train), (X_val, y_val)= H.load_data(patch_dir,num_class,nbits)
 
 else:
-     (X_train, y_train), (X_val, y_val)= H.load_data_train(patch_dir,num_class)
+     (X_train, y_train), (X_val, y_val)= H.load_data_train(patch_dir,num_class,nbits)
 
 # train a CNN model
-model = CNN.train(X_train, y_train, X_val, y_val, train_params,eferror,patch_dir_store,valset,actrain)
+model = CNN.train(X_train, y_train, X_val, y_val, train_params,eferror,patch_dir_store,valset,actrain,nbits)
 
 errorfile = open(eferror, 'a')
 t = datetime.datetime.now()
