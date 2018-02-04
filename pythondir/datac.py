@@ -30,52 +30,80 @@ topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 patchesdirnametop=[]
 
 """
-patchesdirnametop = ['TOPPATCHOUT_all_HUG']
-#patchesdirnametop = ['th0.95_TOPPATCH_all_HUGr']
-
-#CHU
-patchesdirnametop = patchesdirnametop+['TOPPATCHOUT_all_CHU']
-patchesdirnametop = patchesdirnametop+['TOPPATCHOUT_all_CHUa']
-patchesdirnametop = patchesdirnametop+['TOPPATCHOUT_all_CHUmed']
-
-#CHU2
-patchesdirnametop = patchesdirnametop+['TOPPATCHOUT_all_CHU2']
-patchesdirnametop = patchesdirnametop+['TOPPATCHOUT_all_CHU2a3']
-patchesdirnametop = patchesdirnametop+['TOPPATCHOUT_all_CHU2med3']
-
-#CHU2new
-patchesdirnametop = patchesdirnametop+['TOPPATCHOUT_all_CHU2new']
-patchesdirnametop = patchesdirnametop+['TOPPATCHOUT_all_CHU2newa3']
-patchesdirnametop = patchesdirnametop+['TOPPATCHOUT_all_CHU2newmed3']
-
-
-"""
 #HUG
-#patchesdirnametop = ['th0.95_TOPPATCH_all_HUG_3br']
+patchesdirnametop = ['th0.95_TOPPATCH_all_HUG_3br']
 
 #patchesdirnametop = ['th0.95_TOPPATCH_all_HUG']
 #patchesdirnametop = ['th0.95_TOPPATCH_all_HUGr']
 
 #CHU
-patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU_UIP_3b']
-patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU_UIP_a_3b']
-patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU_UIP_med_3b']
+patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU_UIP__3bm']
+patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU_UIP_a_3bm']
+patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU_UIP_med_3bm']
 
 
 #CHU2
-patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2_UIP_3_3b']
-patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2_UIP_a3_3b']
+patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2_UIP_3_3bm']
+patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2_UIP_a3_3bm']
 patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2_UIP_med3_3b']
 
 
 #CHU2new
-patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_3_3b']
-patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_a3_3b']
-patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_med3_3b']
+patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_3_3bm']
+patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_a3_3bm']
+patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_med3_3bm']
+"""
+############################## 1b   ###########################
+#HUG
+#patchesdirnametop = ['th0.95_TOPPATCH_all_HUG_ILD_TXT__1b']
+#patchesdirnametop = ['th0.95_TOPPATCH_all_HUG_ILD_TXT_a_1b']
+#patchesdirnametop = ['th0.95_TOPPATCH_all_HUG_ILD_TXT_med_1b']
+#
+##CHU
+#patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU_UIP__1b']
+#patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU_UIP_a_1b']
+#patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU_UIP_med_1b']
+
+
+#CHU2
+#patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2_UIP_a3_1b']
+#patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2_UIP_med3_1b']
+#patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2_UIP_3_1b']
+
+
+#CHU2new
+patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_a3_1b']
+patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP__1b']
+patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_med3_1b']
+patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_3_1b']
+"""
+
+
+############################## 3bm  ###########################
+#HUG
+patchesdirnametop = ['th0.95_TOPPATCH_all_HUG_ILD_TXT__3bm']
+#patchesdirnametop = ['th0.95_TOPPATCH_all_HUG_ILD_TXT_a_1b']
+#patchesdirnametop = ['th0.95_TOPPATCH_all_HUG_ILD_TXT_med_1b']
+
+#CHU
+patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU_UIP__3bm']
+
+
+#CHU2
+patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2_UIP_3_3bm']
+#patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2_UIP_a3_3b']
+#patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2_UIP_med3_3b']
 
 
 
-#patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_JC_0']
+#CHU2new
+patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_3_3bm']
+#patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_a3_3b']
+#patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_med3_3b']
+
+"""
+##########################################################################################
+#patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_val_REFVALnew_UIPJC__1b']
 #print patchesdirnametop
 
 
@@ -84,11 +112,11 @@ pickel_dirsource_root='pickle'
 pickel_dirsource_e='train' #path for data fort training
 pickel_dirsourcenum=setdata #extensioon for path for data for training
 #extendir2='2'
-extendir2='3b'
-extendir1=''
+extendir2='1'
+extendir1='1'
 
-augf=1#augmentation factor default 3
-test_size=0 #split test training percent
+augf=5#augmentation factor default 3
+test_size=0 #split test training in percent 0 means no val
 
 #all in percent
 maxshiftv=0
@@ -96,7 +124,36 @@ maxshifth=0
 maxrot=7
 maxresize=0
 maxscaleint=0
-maxmultint=10
+maxmultint=20
+listdirtop={}
+for f in  patchesdirnametop:
+    listdirtop[f]=classif
+
+listforCHU={'ground_glass':2,
+            'micronodules':4}
+#listdirtop['th0.95_TOPPATCH_all_CHU_UIP__1b']= listforCHU
+#listdirtop['th0.95_TOPPATCH_all_CHU_UIP_a_1b']= listforCHU
+#listdirtop['th0.95_TOPPATCH_all_CHU_UIP_med_1b']= listforCHU
+
+for f in  patchesdirnametop:
+        if f.find('_CHU_')>0:
+            listdirtop[f]=listforCHU
+
+"""
+classif ={
+        'consolidation':0,
+        'HC':1,
+        'ground_glass':2,
+        'healthy':3,
+        'micronodules':4,
+        'reticulation':5,
+        'bronchiectasis':6,
+        'emphysema':7,
+        'GGpret':8,
+        'lung':9
+        }
+"""
+
 ########################################################################
 ######################  end ############################################
 ########################################################################
@@ -165,7 +222,6 @@ for f in  patchesdirnametop:
     patch_dirsource=os.path.join(topdir,f)
     patch_dirsource=os.path.join(patch_dirsource,picklepath)
     category_list=category_list+os.walk( patch_dirsource).next()[1]
-
 # print what we have as categories
 #print ('all classes in database:',category_list)
 #print '----------'
@@ -183,43 +239,60 @@ print 'number of classes:', numclass
 print '----------'
 
 # go through all categories to calculate the number of patches per class
-#
-#for category in usedclassifFinal:
-#    category_dir = os.path.join(patch_dirsource, category)
-##    print  'the path into the categories is: ', category_dir
-#    sub_categories_dir_list = (os.listdir(category_dir))
-#    #print 'the sub categories are : ', sub_categories_dir_list
-#    for subCategory in sub_categories_dir_list:
-#        subCategory_dir = os.path.join(category_dir, subCategory)
-##        print  'the path into the sub categories is: ',subCategory_dir
-#        #print subCategory_dir
-#        image_files = [name for name in os.listdir(subCategory_dir) if name.find('.pkl') > 0 ]
-#        for filei in image_files:
-#                patclass[category]=patclass[category]+pickle.load(open(os.path.join(subCategory_dir,filei),'rb'))
-#        classNumberInit[category]=len(patclass[category])
-for category in usedclassifFinal:
-    for f in patchesdirnametop:
+
+
+#listdirtop[f]for category in usedclassifFinal:
+    
+for f in patchesdirnametop:
         patch_dirsource=os.path.join(topdir,f)
         if not os.path.exists(patch_dirsource):
             print patch_dirsource, 'does not exist'
             sys.exit()
         patch_dirsource=os.path.join(patch_dirsource,picklepath)
-        category_dir = os.path.join(patch_dirsource, category)
-    #    print  'the path into the categories is: ', category_dir
-        if os.path.exists(category_dir):
-            sub_categories_dir_list = (os.listdir(category_dir))
-            #print 'the sub categories are : ', sub_categories_dir_list
-            for subCategory in sub_categories_dir_list:
-                subCategory_dir = os.path.join(category_dir, subCategory)
-        #        print  'the path into the sub categories is: ',subCategory_dir
-                #print subCategory_dir
-                image_files = [name for name in os.listdir(subCategory_dir) if name.find('.pkl') > 0 ]
-                for filei in image_files:
-#                        try:
+#        print patch_dirsource
+        for category in listdirtop[f]:
+#            if category=='bronchiectasis':
+#                print category
+                category_dir = os.path.join(patch_dirsource, category)
+                if os.path.exists(category_dir):
+                    sub_categories_dir_list = (os.listdir(category_dir))
+    #                print 'the sub categories are : ', sub_categories_dir_list
+                    for subCategory in sub_categories_dir_list:
+                        subCategory_dir = os.path.join(category_dir, subCategory)
+    #                    print subCategory_dir
+                        image_files = [name for name in os.listdir(subCategory_dir) if name.find('.pkl') > 0 ]
+#                        print image_files
+                        for filei in image_files:
+                            aa=pickle.load(open(os.path.join(subCategory_dir,filei),'rb'))
+#                            print filei,len (aa)
                             patclass[category]=patclass[category]+pickle.load(open(os.path.join(subCategory_dir,filei),'rb'))
-#                        except:
-#                            continue
-    classNumberInit[category]=len(patclass[category])
+for category in usedclassifFinal:
+        classNumberInit[category]=len(patclass[category])
+
+#for category in usedclassifFinal:
+#    for f in patchesdirnametop:
+#        patch_dirsource=os.path.join(topdir,f)
+#        if not os.path.exists(patch_dirsource):
+#            print patch_dirsource, 'does not exist'
+#            sys.exit()
+#        patch_dirsource=os.path.join(patch_dirsource,picklepath)
+#        category_dir = os.path.join(patch_dirsource, category)
+#    #    print  'the path into the categories is: ', category_dir
+#        if os.path.exists(category_dir):
+#            sub_categories_dir_list = (os.listdir(category_dir))
+#            #print 'the sub categories are : ', sub_categories_dir_list
+#            for subCategory in sub_categories_dir_list:
+#                subCategory_dir = os.path.join(category_dir, subCategory)
+#        #        print  'the path into the sub categories is: ',subCategory_dir
+#                print subCategory_dir
+#                ooo
+#                image_files = [name for name in os.listdir(subCategory_dir) if name.find('.pkl') > 0 ]
+#                for filei in image_files:
+##                        try:
+#                            patclass[category]=patclass[category]+pickle.load(open(os.path.join(subCategory_dir,filei),'rb'))
+##                        except:
+##                            continue
+#    classNumberInit[category]=len(patclass[category])
 
 for f in usedclassifFinal:
     if classNumberInit[f]==0:
@@ -410,8 +483,8 @@ for f in usedclassifFinal:
      nump+=1
      print ('---')
 print 'total number of patches:',len(totalp)
-totalm=np.array(totalp)
-print 'mean data:',np.mean(totalm)
+#totalm=np.array(totalp)
+#print 'mean data:',np.mean(totalm)
 print 'average data scan',avgp/nump 
 for f in usedclassifFinal:
     print 'initial ',f,len(feature_d[f]),len(label_d[f])
@@ -421,11 +494,11 @@ feature_test ={}
 label_test={}
 feature_train ={}
 label_train={}
-print 'split data'
+print 'split data',
 if test_size>0:
     for f in usedclassifFinal:
         feature_train[f], feature_test[f], label_train[f], label_test[f] =  train_test_split(
-            feature_d[f],label_d[f],test_size=test_size)
+            feature_d[f],label_d[f],test_size=test_size/100.)
 else:
     for f in usedclassifFinal:
         feature_train[f]=feature_d[f]

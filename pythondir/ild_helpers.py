@@ -58,15 +58,16 @@ def parse_args():
 
     return args
 
-def load_data(dirp,nb_classes,nbits):
+def load_data(dirp,nb_classes):
 
     # load the dataset as X_train and as a copy the X_val
-    X_train = pickle.load( open( os.path.join(dirp,'X_train.pkl'), "rb" ) )    
+    X_train = pickle.load( open( os.path.join(dirp,'X_train.pkl'), "rb" ) )  
 
     y_train = pickle.load( open(os.path.join(dirp,'y_train.pkl'), "rb" ) )
     X_val = pickle.load( open( os.path.join(dirp,'X_val.pkl'), "rb" ) )
     y_val = pickle.load( open( os.path.join(dirp,'y_val.pkl'), "rb" ) )
-    if nbits!=1:
+    if len(X_train.shape)>3:
+
         X_train=np.moveaxis(X_train,3,1)
         X_val=np.moveaxis(X_val,3,1)
     else:
@@ -86,14 +87,15 @@ def load_data(dirp,nb_classes,nbits):
 
     return (X_train, y_train), (X_val, y_val)
 
-def load_data_train(dirp,nb_classes,nbits):
+def load_data_train(dirp,nb_classes):
 
     # load the dataset as X_train and as a copy the X_val
     X_train = pickle.load( open( os.path.join(dirp,'X_train.pkl'), "rb" ) )
 
     y_train = pickle.load( open(os.path.join(dirp,'y_train.pkl'), "rb" ) )
       
-    if nbits!=1:
+    if len(X_train.shape)>3:
+
         X_train=np.moveaxis(X_train,3,1)
     else:
          X_train = np.expand_dims(X_train,1)  
@@ -112,11 +114,11 @@ def load_data_train(dirp,nb_classes,nbits):
     return (X_train, y_train), (X_val, y_val)
 #    return (X_train, y_train), (X_val, y_val),class_weights
     
-def load_data_val(dirp,nb_classes,nbits):
+def load_data_val(dirp,nb_classes):
 
     X_val = pickle.load( open( os.path.join(dirp,'X_val.pkl'), "rb" ) )
     y_val = pickle.load( open( os.path.join(dirp,'y_val.pkl'), "rb" ) )
-    if nbits!=1:
+    if len(X_val.shape)>3:
         X_val=np.moveaxis(X_val,3,1)
     else:
          X_val = np.expand_dims(X_val,1)  

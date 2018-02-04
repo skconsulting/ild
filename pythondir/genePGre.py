@@ -3,7 +3,6 @@
 """Top file to generate patches from DICOM database HU method and pixle out from CHU Grenoble
 include new patterns when patterns are super imposed, cross view
 it is for cross view only
-includes back_ground
 version 1.0
 18 august 2017
 S. Kritter
@@ -35,13 +34,11 @@ import cPickle as pickle
 #######################################################
 #global directory for scan file
 topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
-namedirHUG = 'CHU'
+namedirHUG = 'CHU2new'
 #namedirHUG = 'CHU2'
 #namedirHUG = 'REFVALnew'
 
 #namedirHUG = 'CHU2new'
-
-
 
 #subdir for roi in text
 subHUG='UIP'
@@ -480,7 +477,7 @@ def genebmp(dirName, sou,tabscanName,fxs,listsln,listroi):
                 print 'no roi in dcm'                
         else:
         #force roi from dcm
-                                    
+            print 'force roi from dcm'
             fileList =[name for name in  os.listdir(dirFileP) if ".dcm" in name.lower()]
             if len(fileList)>0:
                 for filename in fileList:
@@ -575,9 +572,7 @@ def pavs (dirName,pat,slnt,dimtabx,dimtaby,tabscanName,listroi,tabscanm1,tabscan
 #    patchpicklenamepatient=namedirHUG+'_'+tail+'_'+patchpicklename
     patchpicklenamepatient=namedirHUG+'_'+subHUG+'_'+tail+'_'+patchpicklename
 
-
     pathpicklepatfile=os.path.join(pathpicklepatl,patchpicklenamepatient)
-
 
     if not os.path.exists(pathpicklepat):
          os.mkdir(pathpicklepat)
@@ -619,8 +614,10 @@ def pavs (dirName,pat,slnt,dimtabx,dimtaby,tabscanName,listroi,tabscanm1,tabscan
                 np.putmask(tabf,tabf>0,1)
                 _tabscan=tabscan[scannumb]
                 if numbit:
-                    _tabscanm1=tabscan[scannumb]
+#                    _tabscanm2=tabscanm1[max(scannumb-1,1)]
+                    _tabscanm1=tabscanm1[scannumb]
                     _tabscanp1=tabscanp1[scannumb]
+#                    _tabscanp2=tabscanp1[min(scannumb+1,slnt-1)]
                   
                 for  i in range(xmin,xmax+1):
                     j=ymin
@@ -634,6 +631,8 @@ def pavs (dirName,pat,slnt,dimtabx,dimtaby,tabscanName,listroi,tabscanm1,tabscan
                             if numbit:
                                 imgraym1 = _tabscanm1[j:j+dimpavy,i:i+dimpavx]
                                 imgrayp1 = _tabscanp1[j:j+dimpavy,i:i+dimpavx]
+#                                imgraym2 = _tabscanm2[j:j+dimpavy,i:i+dimpavx]
+#                                imgrayp2 = _tabscanp2[j:j+dimpavy,i:i+dimpavx]
                             max_val= imgray.max()
                             min_val=imgray.min()
 
@@ -641,15 +640,20 @@ def pavs (dirName,pat,slnt,dimtabx,dimtaby,tabscanName,listroi,tabscanm1,tabscan
                                 nbp+=1
                                 if numbit:
                                     if minmax:
-                                        imgraym1m=np.minimum(imgray,imgraym1)
-                                        imgraym1m=np.minimum(imgrayp1,imgraym1m)
-                                        imgrayp1m=np.maximum(imgray,imgraym1)
-                                        imgrayp1m=np.maximum(imgrayp1,imgraym1)
-                                        imgraystack=np.dstack((imgraym1m,imgray,imgrayp1m))
+                                        imgrayminimum=np.minimum(imgray,imgraym1)
+                                        imgrayminimum=np.minimum(imgrayp1,imgrayminimum)
+                                        
+                                        imgraymaximum=np.maximum(imgray,imgraym1)
+                                        imgraymaximum=np.maximum(imgrayp1,imgraymaximum)
+                                        imgraystack=np.dstack((imgrayminimum,imgray,imgraymaximum))
                                         
                                     else:                                   
+#                                        imgraystack=np.dstack((imgraym2,imgraym1,imgray,imgrayp1,imgrayp2))
                                         imgraystack=np.dstack((imgraym1,imgray,imgrayp1))
-                                    patpickle.append(imgraystack)
+
+#                                        print imgraystack.shape,imgraystack[0,0],imgraym2[0,0],imgraym1[0,0],imgray[0,0],imgrayp1[0,0],imgrayp2[0,0]
+#                                        ooo
+                                        patpickle.append(imgraystack)
                                     
                                 else:
                                     patpickle.append(imgray)

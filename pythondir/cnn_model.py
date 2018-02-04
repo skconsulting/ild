@@ -242,14 +242,16 @@ def get_modelunet(input_shape, output_shape, params,filew,patch_dir_store):
     return model
 
 
-def get_model3(input_shape, output_shape, params,filew,patch_dir_store,numbits):
+def get_model3(input_shape, output_shape, params,filew,patch_dir_store,namelastc):
     print 'input shape:',input_shape,'output shape:',output_shape
    
     num_class=output_shape[-1]
     
     dimpx=input_shape[-1]
+    numbits= input_shape[1]
 
     INP_SHAPE = (numbits, dimpx, dimpx)
+    print 'input shape:',INP_SHAPE
     dim_org=keras.backend.image_data_format()
     kernel_size=(2,2)
     pool_siz=(2,2)
@@ -269,7 +271,6 @@ def get_model3(input_shape, output_shape, params,filew,patch_dir_store,numbits):
 
     model.add(Conv2D(coef[0], kernel_size, input_shape=INP_SHAPE, padding=paddingv, 
                       data_format=dim_org, kernel_constraint=maxnorm(maxnormv)))   
-
     model.add(LeakyReLU(alpha=params['a']))
     model.add(Conv2D(coef[0], kernel_size, input_shape=INP_SHAPE, padding=paddingv, 
                       data_format=dim_org, kernel_constraint=maxnorm(maxnormv)))  
@@ -305,15 +306,20 @@ def get_model3(input_shape, output_shape, params,filew,patch_dir_store,numbits):
     model.add(Dropout(0.25)) 
     
     model.add(Flatten())
-    model.add(Dense(1000))
+    model.add(Dense(2048))
     model.add(LeakyReLU(alpha=params['a']))
-#    model.add(Dropout(0.3)) 
-#    model.add(Dense(1000))
-#    model.add(LeakyReLU(alpha=params['a']))
-    model.add(Dropout(0.5)) 
-    model.add(Dense(num_class, activation='softmax', kernel_regularizer=regularizers.l2(0.01),
-                activity_regularizer=regularizers.l1(0.01)))
+    model.add(Dropout(0.3))
     
+    model.add(Dense(2048))
+    model.add(LeakyReLU(alpha=params['a']))
+    model.add(Dropout(0.3)) 
+    
+    model.add(Dense(num_class, activation='softmax'))
+#    model.add(Dense(num_class, activation='softmax', kernel_regularizer=regularizers.l2(0.01),
+#                activity_regularizer=regularizers.l1(0.01)))
+#    
+    if namelastc !='NAN':
+        model.load_weights(namelastc)  
     model.compile(optimizer=Adam(lr=learning_rate), loss='categorical_crossentropy', metrics=['categorical_accuracy'])
     filew.write ('learning rate:'+str(learning_rate)+'\n')
     print ('learning rate:'+str(learning_rate))
@@ -468,7 +474,7 @@ def load_model_set(pickle_dir_train):
     return namelastc
 
 
-def train(x_train, y_train, x_val, y_val, params,eferror,patch_dir_store,valset,acttrain,numbits):
+def train(x_train, y_train, x_val, y_val, params,eferror,patch_dir_store,valset,acttrain):
     ''' TODO: documentation '''
 
     filew = open(eferror, 'a')
@@ -530,31 +536,21 @@ def train(x_train, y_train, x_val, y_val, params,eferror,patch_dir_store,valset,
     if  params['val_data']:
         filew.write( 'x_val is: '+ str(x_val.shape)+'\n')
     filew.write('x min max mean is : '+ str(x_train.min())+' '+str(x_train.max())+' '+str(np.mean(x_train))+'\n')
-    
-    listmodel=[name for name in os.listdir(patch_dir_store) if name.find('weights')==0]
-#    model = get_model(x_train.shape, y_train.shape, params)
-    
-#    model = get_model(x_train.shape, y_train.shape, params,filew,patch_dir_store)
-    
     filew.write ('learning rate:'+str(learning_rate)+'\n')
     print ('learning rate:'+str(learning_rate))
-    model = get_model3(x_train.shape, y_train.shape, params,filew,patch_dir_store,numbits)
-#    model = vgg16_model(x_train.shape, y_train.shape, params,filew,patch_dir_store,numbits)
-
+    
+    listmodel=[name for name in os.listdir(patch_dir_store) if name.find('weights')==0] 
     if len(listmodel)>0:
-
          namelastc=load_model_set(patch_dir_store) 
          print 'load weight found from last training',namelastc
          filew.write('load weight found from last training\n'+namelastc+'\n')
-#         model= load_model(namelastc)
-         model.load_weights(namelastc)  
-         model.compile(optimizer=Adam(lr=learning_rate), loss='categorical_crossentropy', metrics=['categorical_accuracy'])
 
     else:
          print 'first training to be run'
          filew.write('first training to be run\n')
+         namelastc='NAN'
 #    model.summary()
-    
+    model = get_model3(x_train.shape, y_train.shape, params,filew,patch_dir_store,namelastc)
     filew.write ('-----------------\n')
     if acttrain:
         nb_epoch_i_p=params['patience']
@@ -578,9 +574,9 @@ def train(x_train, y_train, x_val, y_val, params,eferror,patch_dir_store,valset,
         csv_logger = CSVLogger(rese,append=True)
         filew.close()
         batch_size=200
-        number_of_unique_sample= x_train.shape[0]
+#        number_of_unique_sample= x_train.shape[0]
     
-        steps_per_epoch=number_of_unique_sample/batch_size
+#        steps_per_epoch=number_of_unique_sample/batch_size
         
         if params['val_data']:
             print 'using valdata'
@@ -635,7 +631,7 @@ def train(x_train, y_train, x_val, y_val, params,eferror,patch_dir_store,valset,
 #    valset='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool/th0.95_pickle_val_set1_r0'
     print('validation set '+str(valset))
     filew.write('validation set '+str(valset)+'\n')
-    (x_val, y_val)= H.load_data_val(valset, num_class,numbits)
+    (x_val, y_val)= H.load_data_val(valset, num_class)
     y_score = model.predict(x_val, batch_size=1050)
     fscore, acc, cm = H.evaluate(np.argmax(y_val, axis=1), np.argmax(y_score, axis=1))
     print('Val F-score: '+str(fscore)+'\tVal acc: '+str(acc))

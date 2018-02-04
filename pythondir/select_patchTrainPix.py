@@ -29,7 +29,7 @@ firsto='th'+str(thrpatch)+'_'
 toppatch= 'TOPPATCH'
 extendir='all'
 #extendir0='2'
-extendir0='CHU2newa3'
+extendir0='CHU2new_UIP__1b'
 
 
 """
@@ -65,6 +65,7 @@ picklepatches='picklepatches'
 namedirtopcpickle=os.path.join(topdir,firsto+toppatch+'_'+extendir+'_'+extendir0)
 
 namedirtopcpickle=os.path.join(namedirtopcpickle,picklepatches)
+print namedirtopcpickle
 
 classifild = classif
 
@@ -84,8 +85,6 @@ pickel_dirsource='th'+str(thrpatch)+'_'+pickel_dirsource_root+'_'+pickel_dirsour
 pathildcnn =os.path.join(topdir,pickel_dirsource)
 pathildcnn =os.path.join(pathildcnn,weightildcnn)
 picklein_file =os.path.join(pathildcnn,modelArch)
-
-
 
 patchtoppath=os.path.join(topdir,toppatchres+'_'+extendirres+'_'+extendir0res)
 
@@ -146,6 +145,7 @@ def genebmppatch(dirName,pat):
 #                    ooo
                     patdicn.append(patscan)
                     patdic.append(listscan[num])
+
     return patdic,patdicn
                 
 
@@ -153,22 +153,17 @@ def genebmppatch(dirName,pat):
 
 def ILDCNNpredict(patch_list,model):
     print ('Predict started ....')
-
     X0=len(patch_list)
     ex=False
-
     if X0 > 0:
-
         pa = np.expand_dims(patch_list, 1)
         proba = model.predict_proba(pa, batch_size=500,verbose=1)
         print 'number of patches', len(pa)
         ex=True
-
     else:
         print (' no patch in selected slice')
         proba = ()
     
-
     return proba,ex
 
 
@@ -197,10 +192,12 @@ classinsource =[name for name in os.listdir(namedirtopcpickle) if name in classi
 #classinsource.remove('back_ground')
 #print classinsource,namedirtopcpickle
 namelastc=load_model_set(pathildcnn) 
+
 #print namelastc
 
 #print picklein_file
 patdic={}
+
 model=modelCompilation(picklein_file,namelastc)
 
 thpat={}

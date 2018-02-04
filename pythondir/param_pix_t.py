@@ -33,12 +33,12 @@ thrpatch = 0.95 #patch overlapp tolerance
 writeFile=False
 medianblur=False #m
 average3=False # a
-median3=True #med
+median3=False #med
 augmentation=False #3  #if True, roi of slice number +/- are added
-numbit=True
-minmax=True # if true, min and max for 3 d patch, or slice-1, slice , slice +1
-#toAug=['ground_glass','reticulation']
-toAug=[]
+numbit=False # 3d patches
+minmax=False # if true, min and max for 3 d patch, if false: slice-1, slice , slice +1
+toAug=['ground_glass','reticulation', 'HC','GGpret']
+#toAug=[]
 #"""
 #MIN_BOUND = -1000.0
 #MAX_BOUND = 400.0
@@ -57,7 +57,7 @@ learning_rate=1e-4
 
 minb=-1024.0
 maxb=400.
-PIXEL_MEAN = 0.29
+PIXEL_MEAN = 0.2656
 
 MIN_BOUND =minb
 MAX_BOUND = maxb

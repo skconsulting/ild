@@ -34,7 +34,7 @@ train_params = {
      'patience' : args.pat if args.pat else 200,       # Patience parameter for early stoping 200
      'tolerance': args.tol if args.tol else 1.005,     # Tolerance parameter for early stoping [default: 1.005, checks if > 0.5%]
      'res_alias': args.csv if args.csv else 'res' + str(today),     # csv results filename alias
-     'val_data': args.val if args.val else True     # validation data provided  (True) or 10% of training set (False)
+     'val_data': args.val if args.val else False     # validation data provided  (True) or 10% of training set (False)
 }
 
 topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
@@ -45,11 +45,9 @@ pickel_dirsource_e='train' #path for data fort training
 pickel_dirsourcenum='set1' #extensioon for path for data for training
 #extendir1='2'
 extendir1='1'
+extendir2='1'
 
-extendir2=''
-nbits=1
-
-valset='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool/th0.95_pickle_val_set1_3b'
+valset='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool/th0.95_pickle_val_set1_1_1'
 print 'validation path'
 print valset
 if not os.path.exists(valset):
@@ -77,7 +75,6 @@ print 'weight dir store : ',patch_dir_store #path with weights after training
 if not os.path.exists(patch_dir_store):
     os.mkdir(patch_dir_store)
 
-
 eferror=os.path.join(patch_dir_store,ptrainfile)
 errorfile = open(eferror, 'w')
 tn = datetime.datetime.now()
@@ -91,13 +88,13 @@ errorfile.write('--------------------\n')
 errorfile.close()
 
 if train_params['val_data']:
-    (X_train, y_train), (X_val, y_val)= H.load_data(patch_dir,num_class,nbits)
+    (X_train, y_train), (X_val, y_val)= H.load_data(patch_dir,num_class)
 
 else:
-     (X_train, y_train), (X_val, y_val)= H.load_data_train(patch_dir,num_class,nbits)
+     (X_train, y_train), (X_val, y_val)= H.load_data_train(patch_dir,num_class)
 
 # train a CNN model
-model = CNN.train(X_train, y_train, X_val, y_val, train_params,eferror,patch_dir_store,valset,actrain,nbits)
+model = CNN.train(X_train, y_train, X_val, y_val, train_params,eferror,patch_dir_store,valset,actrain)
 
 errorfile = open(eferror, 'a')
 t = datetime.datetime.now()
