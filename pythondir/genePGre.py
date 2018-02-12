@@ -14,7 +14,7 @@ S. Kritter
 from param_pix_t import derivedpatall,classifc,usedclassifall,classifall
 from param_pix_t import dimpavx,dimpavy,typei,typei1,avgPixelSpacing,thrpatch,perrorfile,plabelfile,pxy
 from param_pix_t import remove_folder,normi,genelabelloc,totalpat,totalnbpat,fidclass,rsliceNum
-from param_pix_t import white,medianblur,average3,median3,numbit,norm,minmax
+from param_pix_t import white,medianblur,average3,median3,numbit,minmax
 from param_pix_t import patchpicklename,scan_bmp,lungmask,lungmask1,sroi,patchesdirname,derivedpat
 from param_pix_t import imagedirname,picklepath,source,lungmaskbmp,layertokeep,reservedword,augmentation
 import os
@@ -36,13 +36,11 @@ import cPickle as pickle
 topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 namedirHUG = 'CHU2new'
 #namedirHUG = 'CHU2'
+#namedirHUG = 'CHU'
 #namedirHUG = 'REFVALnew'
 
-#namedirHUG = 'CHU2new'
 
-#subdir for roi in text
 subHUG='UIP'
-#subHUG='UIP'
 #subHUG='ILD_TXT'
 #subHUG='UIPJC'
 #subHUG='UIPJCAN'
@@ -51,9 +49,9 @@ subHUG='UIP'
 #global directory for output patches file
 toppatch= 'TOPPATCH'
 #extension for output dir
-#extendir='JC'
+#extendir='val'
 extendir='all'
-#extendir='essai1'
+extendir='essai1'
 
 if medianblur:
     exta1='m'
@@ -69,7 +67,7 @@ else:
     exta2=''
 if numbit: 
     if minmax: 
-        exta3='_3bm'
+        exta3='_3bm53'
     else:
         exta3='_3b'
 else:
@@ -94,6 +92,7 @@ if len (extendir1)>0:
     extendir1='_'+extendir1
 patchesdirnametop = 'th'+str(round(thrpatch,2))+'_'+toppatch+'_'+extendir+extendir1
 print 'name of directory for patches :', patchesdirnametop
+
 
 #full path names
 #cwd=os.getcwd()
@@ -617,6 +616,8 @@ def pavs (dirName,pat,slnt,dimtabx,dimtaby,tabscanName,listroi,tabscanm1,tabscan
 #                    _tabscanm2=tabscanm1[max(scannumb-1,1)]
                     _tabscanm1=tabscanm1[scannumb]
                     _tabscanp1=tabscanp1[scannumb]
+                    _tabscanm2=tabscanm1[max(1,scannumb-1)]
+                    _tabscanp2=tabscanp1[min(scannumb+1,slnt-1)]
 #                    _tabscanp2=tabscanp1[min(scannumb+1,slnt-1)]
                   
                 for  i in range(xmin,xmax+1):
@@ -631,6 +632,8 @@ def pavs (dirName,pat,slnt,dimtabx,dimtaby,tabscanName,listroi,tabscanm1,tabscan
                             if numbit:
                                 imgraym1 = _tabscanm1[j:j+dimpavy,i:i+dimpavx]
                                 imgrayp1 = _tabscanp1[j:j+dimpavy,i:i+dimpavx]
+                                imgraym2 = _tabscanm2[j:j+dimpavy,i:i+dimpavx]
+                                imgrayp2 = _tabscanp2[j:j+dimpavy,i:i+dimpavx]
 #                                imgraym2 = _tabscanm2[j:j+dimpavy,i:i+dimpavx]
 #                                imgrayp2 = _tabscanp2[j:j+dimpavy,i:i+dimpavx]
                             max_val= imgray.max()
@@ -640,12 +643,21 @@ def pavs (dirName,pat,slnt,dimtabx,dimtaby,tabscanName,listroi,tabscanm1,tabscan
                                 nbp+=1
                                 if numbit:
                                     if minmax:
-                                        imgrayminimum=np.minimum(imgray,imgraym1)
+                                        imgrayminimum=np.minimum(imgray,imgraym2)
+                                        imgrayminimum=np.minimum(imgraym1,imgrayminimum)                                      
                                         imgrayminimum=np.minimum(imgrayp1,imgrayminimum)
+                                        imgrayminimum=np.minimum(imgrayp2,imgrayminimum)
                                         
-                                        imgraymaximum=np.maximum(imgray,imgraym1)
+                                        imgraymaximum=np.maximum(imgray,imgraym2)
+                                        imgraymaximum=np.maximum(imgraym1,imgraymaximum)
                                         imgraymaximum=np.maximum(imgrayp1,imgraymaximum)
-                                        imgraystack=np.dstack((imgrayminimum,imgray,imgraymaximum))
+                                        imgraymaximum=np.maximum(imgrayp2,imgraymaximum)
+
+                                        
+                                        imgraystack=np.dstack((imgrayminimum,imgraym1,imgray,imgrayp1,imgraymaximum))
+#                                        print imgraystack.shape,imgraystack[0,0],imgraym2[0,0],imgraym1[0,0],imgray[0,0],imgrayp1[0,0],imgrayp2[0,0]
+#                                        ooo
+
                                         
                                     else:                                   
 #                                        imgraystack=np.dstack((imgraym2,imgraym1,imgray,imgrayp1,imgrayp2))
@@ -653,7 +665,7 @@ def pavs (dirName,pat,slnt,dimtabx,dimtaby,tabscanName,listroi,tabscanm1,tabscan
 
 #                                        print imgraystack.shape,imgraystack[0,0],imgraym2[0,0],imgraym1[0,0],imgray[0,0],imgrayp1[0,0],imgrayp2[0,0]
 #                                        ooo
-                                        patpickle.append(imgraystack)
+                                    patpickle.append(imgraystack)
                                     
                                 else:
                                     patpickle.append(imgray)
@@ -831,7 +843,6 @@ listdirc= [ name for name in os.listdir(namedirtopc) if os.path.isdir(os.path.jo
 print 'class used :',usedclassifall
 
 for f in listdirc:
-
     print('work on:',f)
     errorfile = open(eferror, 'a')
     listroi=[]
@@ -874,7 +885,6 @@ for f in listdirc:
 
     contenudir = [name for name in os.listdir(namedirtopcf) if name in usedclassifall and name not in derivedpatall]
     for i in contenudir:
-        if i != 'back_ground':
             tabroipat[i],_,_,listroi,_,_=genebmp(namedirtopcf, i,tabscanName,fxs,listsln,listroi)
 
 #    for i in derivedpatall:
@@ -885,7 +895,6 @@ for f in listdirc:
 
     contenudir = [name for name in os.listdir(namedirtopcf) if name in usedclassifall]
     for i in contenudir:
-         if i != 'back_ground':
             nbp=pavs(namedirtopcf,i,slnt,dimtabx,dimtaby,tabscanName,listroi,tabscanm1,tabscan,tabscanp1)  
             nbpf=nbpf+nbp
     namenbpat=namedirHUG+'_nbpat_'+f+'.txt'

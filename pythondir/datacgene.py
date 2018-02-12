@@ -9,7 +9,7 @@ S. Kritter
 18 august 2017
  '''
  
-from param_pix_t import classif,hugeClass,toAug
+from param_pix_t import classif
 from param_pix_t import thrpatch,setdata
 from param_pix_t import norm
 from param_pix_t import picklepath,perrorfile,generandom,geneaug
@@ -51,7 +51,7 @@ patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2_UIP_med3_3b']
 patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_3_3b']
 patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_a3_3b']
 patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_med3_3b']
-
+"""
 ############################## 1b   ###########################
 #HUG
 patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_HUG_ILD_TXT__1b']
@@ -77,7 +77,7 @@ patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_med3_1b'
 patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_3_1b']
 
 
-
+"""
 ############################## 3bm5  ###########################
 #HUG
 #patchesdirnametop = ['th0.95_TOPPATCH_all_HUG_ILD_TXT__3bm']
@@ -97,7 +97,7 @@ patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2_UIP_med3_3bm5']
 patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_3_3bm5']
 #patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_a3_3b']
 patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_med3_3bm5']
-"""
+
 ############################## 3bm53  ###########################
 #HUG
 #patchesdirnametop = ['th0.95_TOPPATCH_all_HUG_ILD_TXT__3bm']
@@ -106,23 +106,34 @@ patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_med3_3bm
 
 #CHU
 #patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU_UIP__3bm5']
-patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU_UIP_med_3bm53']
+#patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU_UIP_med_3bm53']
 
 #CHU2
 #patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2_UIP_3_3bm5']
 #patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2_UIP_a3_3b']
-patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2_UIP_med3_3bm53']
+#patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2_UIP_med3_3bm53']
 
 #CHU2new
 #patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_3_3bm5']
 #patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_a3_3b']
 patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_med3_3bm53']
 ##########################################################################################
-#patchesdirnametop = ['th0.95_TOPPATCH_val_REFVALnew_UIPJC_med_3bm53']
+"""
+#patchesdirnametop = ['th0.95_TOPPATCH_val_REFVALnew_UIPJC__1b']
 #print patchesdirnametop
 #toAug=['ground_glass','reticulation', 'HC','GGpret']
 #
-
+toAug=[ 
+       'consolidation',
+        'HC',
+        'ground_glass',
+#        'healthy',
+        'micronodules',
+        'reticulation'
+        'bronchiectasis',
+        'emphysema',
+        'GGpret'
+        ]
 #toAug=[]
 
 #define the directory to store data
@@ -130,15 +141,15 @@ pickel_dirsource_root='pickle'
 pickel_dirsource_e='train' #path for data fort training
 #pickel_dirsource_e='val' #path for data fort training
 
+dir_train='T'
 pickel_dirsourcenum=setdata #extensioon for path for data for training
 #extendir2='2'
 extendir1='1'
-extendir2='3bm53'
-extendir2='essai2'
+extendir2='1'
+#extendir2='essai'
 
-
-augf=1#augmentation factor default 3
-test_size=0 #split test training in percent 0 means no val
+#augf=1#augmentation factor default 3
+test_size=20 #split test training in percent 0 means no training, only val
 
 #all in percent
 maxshiftv=0
@@ -176,8 +187,7 @@ classif ={
         'reticulation':5,
         'bronchiectasis':6,
         'emphysema':7,
-        'GGpret':8,
-        'lung':9
+        'GGpret':8 
         }
 """
 
@@ -193,6 +203,7 @@ pickel_dirsource='th'+str(thrpatch)+'_'+pickel_dirsource_root+'_'+pickel_dirsour
 print 'path to directory to store patches:',pickel_dirsource
 
 patch_dir=os.path.join(topdir,pickel_dirsource)
+patch_dir_train=os.path.join(patch_dir,dir_train)
 
 print ('classification used:')
 for f in classif:
@@ -201,7 +212,7 @@ for f in classif:
 print ' pattern to augment:'
 print toAug
 
-
+hugeClass=['healthy','back_ground']
 #hugeClass=['']
 
 #input patch directory
@@ -209,23 +220,27 @@ print 'path for pickle inputs',patchesdirnametop
 print 'path to write data for training',patch_dir
 
 print '--------------------------------'
+
 ###############################################################
 if not os.path.exists(patch_dir):
     os.mkdir(patch_dir)
+if not os.path.exists(patch_dir_train):
+    os.mkdir(patch_dir_train)
+    
 eferror=os.path.join(patch_dir,perrorfile)
-errorfile = open(eferror, 'a')
+errorfile = open(eferror, 'w')
 tn = datetime.datetime.now()
 todayn = str(tn.month)+'-'+str(tn.day)+'-'+str(tn.year)+' - '+str(tn.hour)+'h '+str(tn.minute)+'m'+'\n'
 errorfile.write('started at :'+todayn)
 errorfile.write('--------------------\n')
-errorfile.write('numbe of loops :'+str(augf)+'\n')
+#errorfile.write('numbe of loops :'+str(augf)+'\n')
 errorfile.write('pattern to augment: \n')
 errorfile.write(str(toAug)+'\n')
 errorfile.write('percentage split: :'+str(test_size)+'\n')
 errorfile.write('path for pickle inputs'+str(patchesdirnametop)+'\n')
 errorfile.write('path to write data for training'+patch_dir+'\n')
 errorfile.write('pattern set :'+str(setdata)+'\n')
-print 'number of loops:', augf
+#print 'number of loops:', augf
 print 'percentage split:', test_size
 errorfile.write('--------------------\n')
 errorfile.close()
@@ -296,32 +311,7 @@ for f in patchesdirnametop:
 #                            print filei,len (aa)
                             patclass[category]=patclass[category]+pickle.load(open(os.path.join(subCategory_dir,filei),'rb'))
 for category in usedclassifFinal:
-        classNumberInit[category]=len(patclass[category])
-
-#for category in usedclassifFinal:
-#    for f in patchesdirnametop:
-#        patch_dirsource=os.path.join(topdir,f)
-#        if not os.path.exists(patch_dirsource):
-#            print patch_dirsource, 'does not exist'
-#            sys.exit()
-#        patch_dirsource=os.path.join(patch_dirsource,picklepath)
-#        category_dir = os.path.join(patch_dirsource, category)
-#    #    print  'the path into the categories is: ', category_dir
-#        if os.path.exists(category_dir):
-#            sub_categories_dir_list = (os.listdir(category_dir))
-#            #print 'the sub categories are : ', sub_categories_dir_list
-#            for subCategory in sub_categories_dir_list:
-#                subCategory_dir = os.path.join(category_dir, subCategory)
-#        #        print  'the path into the sub categories is: ',subCategory_dir
-#                print subCategory_dir
-#                ooo
-#                image_files = [name for name in os.listdir(subCategory_dir) if name.find('.pkl') > 0 ]
-#                for filei in image_files:
-##                        try:
-#                            patclass[category]=patclass[category]+pickle.load(open(os.path.join(subCategory_dir,filei),'rb'))
-##                        except:
-##                            continue
-#    classNumberInit[category]=len(patclass[category])
+    classNumberInit[category]=len(patclass[category])  
 
 for f in usedclassifFinal:
     if classNumberInit[f]==0:
@@ -389,109 +379,52 @@ def genedata(category):
     avpavg=0
     nump=0
     for p in patclass[category]:
-            pf = p.astype('float32')
-            normp=norm(pf)
-            feature.append(normp)
-            avm=np.mean(normp)
-            nump+=1
-            avpavg=avpavg+avm
-            label.append(lc)
+        pf = p.astype('float32')
+        normp=norm(pf)
+        feature.append(normp)
+        avm=np.mean(normp)
+        nump+=1
+        avpavg=avpavg+avm
+        label.append(lc)
 
     avmr=avpavg/nump
     return feature,label,avmr
 
-def genf(features_train,labels_train,maxl,auga):
+def genf(features_p,maxl):
     feature=[]
     label=[]
     numpat={}
     for pat in usedclassifFinal:
         numpat[pat]=0
     for pat in usedclassifFinal:
-        numberscan1=len(features_train[pat])
-        print pat,numberscan1,maxl
+        numberscan1=len(features_p[pat])
         numberscan=min(numberscan1,maxl)
-#        print pat,numberscan,maxl
-        for num in range(0,augf):
-#            print 'init',num,numpat
-            for i in range(0,numberscan):
+        for i in range(0,numberscan):
                 numpat[pat]+=1
-                if num==0:
-                     if  pat in hugeClass:
-                         indexpatc =  random.randint(0, len(features_train[pat])-1)  
-                         scan=features_train[pat][indexpatc]
-                     else:
-                         scan=features_train[pat][i]
-                else:
-                    if pat in toAug:
-                        keepaenh=1
-#                        print pat, 'augmentation'
-                    else:
-                        keepaenh=0
-#                        print pat, ' No augmentation'
-
-                    if not auga:
-                        keepaenh=0
+                if  pat in hugeClass:
+                     indexpatc =  random.randint(0, len(features_p[pat])-1)  
+                     scan=features_p[pat][indexpatc]
+                else:                
+                    keepaenh=0
                     scaleint,multint,rotimg,resiz,shiftv,shifth=generandom(maxscaleint,
                                 maxmultint,maxrot,maxresize,maxshiftv,maxshifth,keepaenh)
-                    if  pat in hugeClass:
-                         indexpatc =  random.randint(0, numberscan-1)  
-                         scan=geneaug(features_train[pat][indexpatc],scaleint,multint,rotimg,resiz,shiftv,shifth)
-                    else:
-                         scan=geneaug(features_train[pat][i],scaleint,multint,rotimg,resiz,shiftv,shifth)
+                    scan=geneaug(features_p[pat][i],scaleint,multint,rotimg,resiz,shiftv,shifth)
 
-                mask=labels_train[pat][i]
-
+                mask=classif[pat]
                 feature.append(scan)
                 label.append(mask)
-            if  pat not in hugeClass:        
-                    for i in range(0,maxl-numberscan):
-                        numpat[pat]+=1
-                        if pat in toAug:
-                            keepaenh=1
-#                            print pat, ' augmentation'
-                        else:
-                            keepaenh=0
-#                            print pat, ' No augmentation'
-                        if not auga:
-                            keepaenh=0
-                        scaleint,multint,rotimg,resiz,shiftv,shifth=generandom(maxscaleint,
-                               maxmultint,maxrot,maxresize,maxshiftv,maxshifth,keepaenh)
-                        scan=geneaug(features_train[pat][i%numberscan],scaleint,multint,rotimg,resiz,shiftv,shifth)
-                        mask=labels_train[pat][i%numberscan]  
-                        feature.append(scan)
-                        label.append(mask)
-#            print 'end',num,numpat
-    
-            """
-            for i in range(numberscan):
-                pat1 = 'healthy'
-                numpat[pat1]+=1
-                indexpatc =  random.randint(0,  len(features_train[pat1]) -1)  
-                scan=features_train[pat1][indexpatc]
-                mask=classif[pat1]
-                feature.append(scan)
-                label.append(mask)
-            print 'fend',num,numpat
-            """
-#    shuffle(featurelab)
-#    unzipped = zip(*featurelab )
-#    feature=(unzipped[0])
-#    label=(unzipped[1])
-#    print numpat
-#    print len(feature)
-    if auga:
-        for i in range(len(feature)/len(usedclassifFinal)):
-                    pat1 = 'healthy'
-                    numpat[pat1]+=1
-                    indexpatc =  random.randint(0,  len(features_train[pat1]) -1)  
-                    scan=features_train[pat1][indexpatc]
-                    mask=classif[pat1]
+        if  pat not in hugeClass:        
+                for i in range(0,maxl-numberscan):
+                    numpat[pat]+=1
+                    keepaenh=0
+                    scaleint,multint,rotimg,resiz,shiftv,shifth=generandom(maxscaleint,
+                           maxmultint,maxrot,maxresize,maxshiftv,maxshifth,keepaenh)
+                    scan=geneaug(features_p[pat][i%numberscan],scaleint,multint,rotimg,resiz,shiftv,shifth)
+                    mask=classif[pat]
                     feature.append(scan)
                     label.append(mask)
     
     return feature,label,numpat
-
-
 
                 
 ####################################################################################
@@ -531,9 +464,15 @@ if test_size>0:
             feature_d[f],label_d[f],test_size=test_size/100.)
 else:
     for f in usedclassifFinal:
-        feature_train[f]=feature_d[f]
-        label_train[f]=label_d[f]
-         
+        feature_test[f]=feature_d[f]
+        label_test[f]=label_d[f]
+        
+if test_size>0:       
+    for category in usedclassifFinal:
+        dirpat=os.path.join(patch_dir_train,category)
+        if not os.path.exists(dirpat):
+            os.mkdir(dirpat)
+        pickle.dump(feature_train[category], open( os.path.join(dirpat,"pat.pkl"), "wb" ),protocol=-1)
 
 print 'after split '
 maxltraining=0
@@ -543,106 +482,96 @@ maxpatest=['None']
 maxpattrain=['None']
 
 for f in usedclassifFinal:
-    ltrain=len(feature_train[f])
-    if test_size>0: ltest=len(feature_test[f])
-    print 'training ',f,ltrain,len(label_train[f])
-    if test_size>0: print 'test ',f,ltest,len(label_test[f])
+    if test_size>0: 
+        ltrain=len(feature_train[f])
+        print 'training ',f,ltrain,len(label_train[f])
+    
+    ltest=len(feature_test[f])
+    print 'test ',f,ltest,len(label_test[f])
     print '---'
-    errorfile.write('split data training '+' '+f+' '+str(ltrain)+' '+str(len(label_train[f]))+'\n')   
-    if test_size>0: errorfile.write('split data test '+' '+f+' '+str(ltest)+' '+str(len(label_test[f]))+'\n')   
+    if test_size>0:
+        errorfile.write('split data training '+' '+f+' '+str(ltrain)+' '+str(len(label_train[f]))+'\n')   
+    errorfile.write('split data test '+' '+f+' '+str(ltest)+' '+str(len(label_test[f]))+'\n')   
     errorfile.write('--\n')  
     if f not in hugeClass:
-        if ltrain>maxltraining:
-            maxltraining=ltrain
-            maxpattrain=f
         if test_size>0:
-            if ltest>maxltest:
+            if ltrain>maxltraining:
+                maxltraining=ltrain
+                maxpattrain=f
+        if ltest>maxltest:
                 maxltest=ltest
                 maxpatest=f
 print '------'
 errorfile.close()
-print 'max training',maxltraining, 'for: ',maxpattrain
-if test_size>0: print 'max test',maxltest, 'for:', maxpatest
+if test_size>0:print 'max training',maxltraining, 'for: ',maxpattrain
+print 'max test',maxltest, 'for:', maxpatest
 
 print '----'
-features_train_f=[]
-labels_train_f=[]
-features_test_f=[]
-labels_test_f=[]
-print 'augmentation training'
-features_train_f,labels_train_f,numpat= genf(feature_train,label_train,maxltraining,True)
-feature_train={}
-label_train={}
 
+print 'augmentation test'
+features_test_f,labels_test_f,numpat= genf(feature_test,maxltest)
 print '----'
-print 'after augmentation train'
+errorfile = open(eferror, 'a')
+print 'after augmentation test'
 for f in usedclassifFinal:
     print f,numpat[f]
-print '----'
-if test_size>0:
-    print 'augmentation test'
-    features_test_f,labels_test_f,numpat= genf(feature_test,label_test,maxltest,False)
-    print '----'
-    print 'after augmentation test'
-    for f in usedclassifFinal:
-        print f,numpat[f]
-print '----'
-print 'data training after augmentation ',len(features_train_f),len(labels_train_f)
-if test_size>0: print 'data test after augmentation ',len(features_test_f),len(labels_test_f)
-print '----'
-errorfile = open(eferror, 'a')
-errorfile.write('data training after augmentation '+' '+str(len(features_train_f))+' '+str(len(labels_train_f))+'\n')   
-if test_size>0: errorfile.write('data test after augmentation '+' '+str(len(features_test_f))+' '+str(len(labels_test_f))+'\n')   
-errorfile.write('--------------------\n')    
+    errorfile.write('data training after augmentation '+' '+str(numpat[f])+' '+f+' \n')     
 errorfile.close()
+print '----'
+#print 'data training after augmentation ',len(features_train_f),len(labels_train_f)
+#if test_size>0: print 'data test after augmentation ',len(features_test_f),len(labels_test_f)
+#print '----'
+#errorfile = open(eferror, 'a')
+##errorfile.write('data training after augmentation '+' '+str(len(features_train_f))+' '+str(len(labels_train_f))+'\n')   
+#if test_size>0: errorfile.write('data test after augmentation '+' '+str(len(features_test_f))+' '+str(len(labels_test_f))+'\n')   
+#errorfile.write('--------------------\n')    
+#errorfile.close()
+#
+#print ('------------')
+#errorfile = open(eferror, 'a')
+#errorfile.write('Number of data and label \n')
+#print ('Number of data and label ')
+##print 'train',len(features_train_f),len(labels_train_f)
+##errorfile.write('train '+' '+str(len(features_train_f))+' '+str(len(labels_train_f))+'\n')   
+#if test_size>0: print 'test',len(features_test_f),len(labels_test_f)
+#if test_size>0: errorfile.write('test '+' '+str(len(features_test_f))+' '+str(len(labels_test_f))+'\n')
+#print ('----')
+#errorfile.write('--------------------\n')
+#errorfile.close()
+## transform dataset list into numpy array
+##X_train = np.array(features_train_f)
+##y_train = np.array(labels_train_f)
 
-print ('------------')
-errorfile = open(eferror, 'a')
-errorfile.write('Number of data and label \n')
-print ('Number of data and label ')
-print 'train',len(features_train_f),len(labels_train_f)
-errorfile.write('train '+' '+str(len(features_train_f))+' '+str(len(labels_train_f))+'\n')   
-if test_size>0: print 'test',len(features_test_f),len(labels_test_f)
-if test_size>0: errorfile.write('test '+' '+str(len(features_test_f))+' '+str(len(labels_test_f))+'\n')
-print ('----')
-errorfile.write('--------------------\n')
-errorfile.close()
-# transform dataset list into numpy array
-X_train = np.array(features_train_f)
-y_train = np.array(labels_train_f)
-if test_size>0:
-    X_test = np.array(features_test_f)
-    y_test = np.array(labels_test_f)
+X_test = np.array(features_test_f)
+y_test = np.array(labels_test_f)
 
 print '-----------FINAL----------------'
-print ('Xtrain :',X_train.shape)
-if test_size>0:
-    print ('Xtest : ',X_test.shape)
-print ('ytrain : ',y_train.shape)
-print 'ytrain min max', y_train.min(),y_train.max()
-if test_size>0:
-    print ('ytest : ',y_test.shape)
+#print ('Xtrain :',X_train.shape)
+
+print ('X_test : ',X_test.shape)
+print ('y_test : ',y_test.shape)
+
 errorfile = open(eferror, 'a')
-errorfile.write('Xtrain : '+' '+str(X_train.shape)+'\n')
-if test_size>0: errorfile.write('Xtest : '+' '+str(X_test.shape)+'\n') 
-errorfile.write('ytrain : '+' '+str(y_train.shape)+'\n') 
-if test_size>0: errorfile.write('ytest : '+' '+str(y_test.shape)+'\n')   
+errorfile.write('X_test : '+' '+str(X_test.shape)+'\n') 
+errorfile.write('y_test : '+' '+str(y_test.shape)+'\n')   
 errorfile.write('--------------------\n')
 errorfile.close()
 
-pickle.dump(X_train, open( os.path.join(patch_dir,"X_train.pkl"), "wb" ),protocol=-1)
-pickle.dump(y_train, open( os.path.join(patch_dir,"y_train.pkl"), "wb" ),protocol=-1)
-if test_size>0:
-    pickle.dump(X_test, open( os.path.join(patch_dir,"X_val.pkl"), "wb" ),protocol=-1)
-    pickle.dump(y_test, open( os.path.join(patch_dir,"y_val.pkl"), "wb" ),protocol=-1)
+#pickle.dump(X_train, open( os.path.join(patch_dir,"X_train.pkl"), "wb" ),protocol=-1)
+#pickle.dump(y_train, open( os.path.join(patch_dir,"y_train.pkl"), "wb" ),protocol=-1)
+
+pickle.dump(X_test, open( os.path.join(patch_dir,"X_val.pkl"), "wb" ),protocol=-1)
+pickle.dump(y_test, open( os.path.join(patch_dir,"y_val.pkl"), "wb" ),protocol=-1)
+
+    
 X_train=[]
 features_train_f=[]
 features_test_f=[]
 y_train=[]
 labels_train_f=[]
 labels_train_f=[]
-print 'recuperate xtrain'
-recuperated_X_train = pickle.load( open( os.path.join(patch_dir,"X_train.pkl"), "rb" ) )
+print 'recuperate X_test'
+recuperated_X_train = pickle.load( open( os.path.join(patch_dir,"X_val.pkl"), "rb" ) )
 min_val=np.min(recuperated_X_train)
 max_val=np.max(recuperated_X_train)
 mean_val=np.mean(recuperated_X_train)

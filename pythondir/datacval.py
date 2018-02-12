@@ -36,7 +36,9 @@ topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 #extendir0='0'
 #define the name of directory for patches
 #patchesdirnametop = ['th0.95_TOPPATCH_JC_0']
-patchesdirnametop = ['th0.95_TOPPATCH_all_REFVALnew_3b']
+patchesdirnametop = ['th0.95_TOPPATCH_val_REFVALnew_UIPJC__1b']
+#patchesdirnametop = ['th0.95_TOPPATCH_all_CHU2new_UIP__1b']
+
 
 #patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_JC_0']
 #print patchesdirnametop
@@ -46,13 +48,13 @@ extendir1=''
 #define the directory to store data
 pickel_dirsource_root='pickle'
 #pickel_dirsource_e='train' #path for data fort training
-pickel_dirsource_e='val' #path for data fort training
-#pickel_dirsource_e='essai' #path for data fort training
+#pickel_dirsource_e='val' #path for data fort training
+pickel_dirsource_e='essaic' #path for data fort training
 
 pickel_dirsourcenum=setdata #extensioon for path for data for training
 #extendir2='2'
-extendir2='3b'
-extendir3=extendir1
+extendir2=''
+extendir3='1'
 
 #augf=5#augmentation factor default 3
 #test_size=0.1 #split test training percent
@@ -64,8 +66,8 @@ extendir3=extendir1
 if len (extendir3)>0:
     extendir3='_'+extendir3
     
-if len (extendir1)>0:
-    extendir1='_'+extendir1
+#if len (extendir1)>0:
+#    extendir1='_'+extendir1
 
 pickel_dirsource='th'+str(thrpatch)+'_'+pickel_dirsource_root+'_'+pickel_dirsource_e+'_'+pickel_dirsourcenum+'_'+extendir2+extendir3
 print 'path to directory to store patches:',pickel_dirsource
@@ -292,8 +294,8 @@ def genf(features_train,labels_train,maxl):
             tabpat=np.array(featurepat[pat])
             print pat,tabpat.min(),tabpat.max(),np.mean(tabpat),np.std(tabpat)
             errorfile.write(("%10s" % pat)+
-                    ("%10s" % str(tabpat.min()))+ 
-                    ("%10s" %str(tabpat.max()))+ 
+                    ("%10s" % str(round(tabpat.min(),3)))+ 
+                    ("%10s" %str(round(tabpat.max(),3)))+ 
                     ("%10s" %str(round(np.mean(tabpat),3)))+
                     ("%10s" %str(round(np.std(tabpat),3)))+'\n')
         else:

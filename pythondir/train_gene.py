@@ -1,10 +1,11 @@
 # coding: utf-8
-from param_pix_t import thrpatch,classif
+from param_pix_t import thrpatch,classif,hugeClass
 #from keras.models import load_model
 #from keras.models import model_from_json
 import ild_helpers as H
-import cnn_model as CNN
+import cnn_model_gene as CNN
 import os
+import cPickle as pickle
 import keras
 from keras import backend as K
 K.set_image_dim_ordering('th')
@@ -33,8 +34,8 @@ train_params = {
      'obj': args.obj if args.obj else 'ce',            # Minimization Objective: mse, ce
      'patience' : args.pat if args.pat else 200,       # Patience parameter for early stoping 200
      'tolerance': args.tol if args.tol else 1.005,     # Tolerance parameter for early stoping [default: 1.005, checks if > 0.5%]
-     'res_alias': args.csv if args.csv else 'res' + str(today),     # csv results filename alias
-     'val_data': args.val if args.val else False     # validation data provided  (True) or 10% of training set (False)
+     'res_alias': args.csv if args.csv else 'res' + str(today)     # csv results filename alias
+#     'val_data': args.val if args.val else False     # validation data provided  (True) or 10% of training set (False)
 }
 
 topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
@@ -45,17 +46,42 @@ pickel_dirsource_e='train' #path for data fort training
 pickel_dirsourcenum='set1' #extensioon for path for data for training
 #extendir1='2'
 extendir1='1'
-extendir2='3bm53'
+#extendir2='3bm5'
+extendir2='1'
+
 modelarch='sk5'
-valset='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool/th0.95_pickle_val_set1_1_3bm53'
+valset='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool/th0.95_pickle_val_set1_1_1'
 print 'validation path'
 print valset
 if not os.path.exists(valset):
     print 'valset doesnot exist: ',valset
     sys.exit()
 actrain=True #put true to actually train, otherwise only predict
-validation_split=0.1 #percentage of val if val_data=False
+calnum=False # put True to calculate the number of images
+#validation_split=0.1 #percentage of val if val_data=False
+trainSetSize=940806 #number of images total 1b
+batch_size=200
+
+#all in percent
+maxshiftv=0
+maxshifth=0
+maxrot=7
+maxresize=0
+maxscaleint=0
+maxmultint=20
+        
+dir_train='T'
 #########################################################################################
+paramaug={}
+paramaug['maxshiftv']=maxshiftv
+paramaug['maxshifth']=maxshifth
+paramaug['maxrot']=maxrot
+paramaug['maxshiftv']=maxshiftv
+paramaug['maxresize']=maxresize
+paramaug['maxscaleint']=maxscaleint
+paramaug['maxmultint']=maxmultint
+
+
 num_class= len(classif)
 print 'number of classes', num_class
 
@@ -69,11 +95,30 @@ if not os.path.exists(patch_dir):
     print 'pickel_dirsource doesnot exist: ',patch_dir
     sys.exit()
 patch_dir_store=os.path.join(patch_dir,pickleStore)
+patch_dir_train=os.path.join(patch_dir,dir_train)
 
 print 'patch dir source : ',patch_dir #path with data for training
 print 'weight dir store : ',patch_dir_store #path with weights after training
+print 'train dir  : ',patch_dir_train #path with  training data
 if not os.path.exists(patch_dir_store):
     os.mkdir(patch_dir_store)
+feature_train={}
+classNumber={}
+for f in classif:
+    classNumber[f]=0
+totalimages=0
+for category in classif:
+        dirpat=os.path.join(patch_dir_train,category)
+        feature_train[category]=pickle.load( open( os.path.join(dirpat,"pat.pkl"), "rb" ))
+        classNumber[category]=len(feature_train[category])
+        if category not in hugeClass: totalimages=totalimages+classNumber[category]
+for category in classif:
+    print 'number of patches in train: ', category, classNumber[category]
+print 'number total of images:',totalimages
+print 'number total of images for trainSetSize:',totalimages*num_class
+print 'ratio with trainSetSize:',1.0*totalimages*num_class/trainSetSize
+if calnum:
+    sys.exit()
 
 eferror=os.path.join(patch_dir_store,ptrainfile)
 errorfile = open(eferror, 'w')
@@ -87,14 +132,12 @@ errorfile.write('weight dir store : '+patch_dir_store+'\n') #path with weights a
 errorfile.write('--------------------\n')
 errorfile.close()
 
-if train_params['val_data']:
-    (X_train, y_train), (X_val, y_val)= H.load_data(patch_dir,num_class)
 
-else:
-     (X_train, y_train), (X_val, y_val)= H.load_data_train(patch_dir,num_class)
+(X_val, y_val)= H.load_data_val(patch_dir,num_class)
 
 # train a CNN model
-model = CNN.train(X_train, y_train, X_val, y_val, train_params,eferror,patch_dir_store,valset,actrain,modelarch,validation_split)
+model = CNN.train(X_val, y_val, train_params,eferror,patch_dir_store,valset,actrain,
+                  modelarch,trainSetSize,feature_train,classNumber,paramaug,batch_size)
 
 errorfile = open(eferror, 'a')
 t = datetime.datetime.now()

@@ -34,10 +34,10 @@ writeFile=False
 medianblur=False #m
 average3=False # a
 median3=False #med
-augmentation=False #3  #if True, roi of slice number +/- are added
-numbit=False # 3d patches
-minmax=False # if true, min and max for 3 d patch, if false: slice-1, slice , slice +1
-toAug=['ground_glass','reticulation', 'HC','GGpret']
+augmentation=True #3  #if True, roi of slice number +/- are added
+numbit=True # 3d patches
+minmax=True # if true, min and max for 3 d patch, if false: slice-1, slice , slice +1
+
 #toAug=[]
 #"""
 #MIN_BOUND = -1000.0
@@ -143,24 +143,7 @@ parme=(234,136,222)
 chatain=(139,108,66)
 highgrey=(240,240,240)
 
-#cwd=os.getcwd()
-#(cwdtop,tail)=os.path.split(cwd)
-#dirpickle=os.path.join(cwdtop,path_pickle)
-#toAug=['HC','reticulation','bronchiectasis','GGpret']
-#toAug=[ 'consolidation',
-#        'HC',
-##        'ground_glass',
-#        'healthy',
-#        'micronodules',
-##        'reticulation',
-#        'bronchiectasis',
-#        'emphysema',
-##        'GGpret'
-#        ]
-
-
 usedclassifall = [
-        'back_ground',
         'consolidation',
         'HC',
         'ground_glass',
@@ -178,23 +161,22 @@ usedclassifall = [
         'bropret',
         ]
 classifall ={
-     'back_ground':0,
-        'consolidation':1,
-        'HC':2,
-        'ground_glass':3,
-        'healthy':4,
-        'micronodules':5,
-        'reticulation':6,
-        'air_trapping':7,
-        'cysts':8,
-        'bronchiectasis':9,
-        'emphysema':10,
-        'GGpret':11,
-        'HCpret':12,
-        'HCpbro':13,
-        'GGpbro':14,
-        'bropret':15,
-        'lung':16
+        'consolidation':0,
+        'HC':1,
+        'ground_glass':2,
+        'healthy':3,
+        'micronodules':4,
+        'reticulation':5,
+        'air_trapping':6,
+        'cysts':7,
+        'bronchiectasis':8,
+        'emphysema':9,
+        'GGpret':10,
+        'HCpret':11,
+        'HCpbro':12,
+        'GGpbro':13,
+        'bropret':14,
+        'lung':15
         }
 
 derivedpatall=[
@@ -209,75 +191,19 @@ layertokeep= [
         ]
     
 classifnotvisu=['healthy',]
-
-if setdata=='set0':
-    classif ={
-        'consolidation':0,
-        'HC':1,
-        'ground_glass':2,
-        'healthy':3,
-        'micronodules':4,
-        'reticulation':5,
-        'air_trapping':6,
-        'cysts':7,
-        'bronchiectasis':8,
-#        'emphysema':10,
-        'GGpret':9,
-        'lung':10
-        }
-    usedclassif = [
-        'consolidation',
+hugeClass=['healthy']
+toAug=[ 
+       'consolidation',
         'HC',
         'ground_glass',
-        'healthy',
+#        'healthy',
         'micronodules',
-        'reticulation',
-        'air_trapping',
-        'cysts',
+        'reticulation'
         'bronchiectasis',
+        'emphysema',
         'GGpret'
         ]
-    derivedpat=[
-        'GGpret'
-        ]
-    
-elif setdata=='set0p':
-    classif ={
-            'back_ground':0,
-        'consolidation':1,
-        'HC':2,
-        'ground_glass':3,
-        'healthy':4,
-        'micronodules':5,
-        'reticulation':6,
-        'air_trapping':7,
-        'cysts':8,
-        'bronchiectasis':9,
-#        'emphysema':10,
-        'GGpret':10,
-        'lung':11
-        }
-    usedclassif = [
-        'back_ground',
-        'consolidation',
-        'HC',
-        'ground_glass',
-        'healthy',
-        'micronodules',
-        'reticulation',
-        'air_trapping',
-        'cysts',
-        'bronchiectasis',
-        'GGpret'
-        ]
-    derivedpat=[
-        'HCpret',
-        'HCpbro',
-        'GGpbro',
-        'GGpret',
-        'bropret'
-        ]
-elif setdata=='set1':
+if setdata=='set1':
     classif ={
         'consolidation':0,
         'HC':1,
@@ -287,208 +213,11 @@ elif setdata=='set1':
         'reticulation':5,
         'bronchiectasis':6,
         'emphysema':7,
-        'GGpret':8,
-        'lung':9
+        'GGpret':8
         }
 
     derivedpat=[
         'GGpret'
-        ]
-elif setdata=='setr':
-    classif ={
-        'reticulation':0,
-        'ground_glass':1,
-        'healthy':2,
-        'GGpret':3,
-        'lung':4
-        }
-
-    derivedpat=[
-        'GGpret'
-        ]
-elif setdata=='set1p':
-    classif ={
-        'back_ground':0,
-        'consolidation':1,
-        'HC':2,
-        'ground_glass':3,
-        'healthy':4,
-        'reticulation':5,
-        'air_trapping':6,        
-        'bronchiectasis':7,
-        'GGpret':8,
-        'lung':9
-        }
-    usedclassif = [
-        'back_ground',
-        'consolidation',
-        'HC',
-        'ground_glass',
-        'healthy',
-        'reticulation',
-        'air_trapping',
-        'bronchiectasis',
-        'GGpret'
-        ]
-    derivedpat=[
-        'HCpret',
-        'HCpbro',
-        'GGpbro',
-        'GGpret',
-        'bropret'
-        ]
-    
-elif setdata=='set2':
-    classif ={
-        'consolidation':0,
-        'HC':1,
-        'ground_glass':2,
-        'healthy':3,
-        'reticulation':4,
-        'air_trapping':5,
-        'cysts':6,
-        'bronchiectasis':7,
-        'GGpret':8,
-        'lung':9
-        }
-    usedclassif = [
-        'consolidation',
-        'HC',
-        'ground_glass',
-        'healthy',
-        'reticulation',
-        'air_trapping',
-        'cysts',
-        'bronchiectasis',
-        'GGpret'
-        ]
-    derivedpat=[
-        'HCpret',
-        'HCpbro',
-        'GGpbro',
-        'GGpret',
-        'bropret'
-        ]    
-    
-elif setdata=='set2p':
-    classif ={
-        'back_ground':0,
-        'consolidation':1,
-        'HC':2,
-        'ground_glass':3,
-        'healthy':4,
-        'reticulation':5,
-        'air_trapping':6,
-        'cysts':7,
-        'bronchiectasis':8,
-        'GGpret':9,
-        'lung':10
-        }
-    usedclassif = [
-        'back_ground',
-        'consolidation',
-        'HC',
-        'ground_glass',
-        'healthy',
-        'reticulation',
-        'air_trapping',
-        'cysts',
-        'bronchiectasis',
-        'GGpret'
-        ]
-    derivedpat=[
-        'HCpret',
-        'HCpbro',
-        'GGpbro',
-        'GGpret',
-        'bropret'
-        ]    
-    
-    
-elif setdata=='setall':
-    classif ={
-        'consolidation':0,
-        'HC':1,
-        'ground_glass':2,
-        'healthy':3,
-        'micronodules':4,
-        'reticulation':5,
-        'air_trapping':6,
-        'cysts':7,
-        'bronchiectasis':8,
-        'emphysema':9,
-        'bronchial_wall_thickening':10,
-        'early_fibrosis':11,
-        'increased_attenuation':12,
-        'macronodules':13,
-        'pcp':14,
-        'peripheral_micronodules':15,
-        'tuberculosis':16,
-        'GGpret':17,
-        'HCpret':18,
-        'HCpbro':19,
-        'GGpbro':20,
-        'bropret':21,
-        'lung':22
-        }
-    usedclassif = [
-        'consolidation',
-        'HC',
-        'ground_glass',
-        'healthy',
-        'micronodules',
-        'reticulation',
-        'air_trapping',
-        'cysts',
-        'bronchiectasis',
-        'emphysema',
-        'bronchial_wall_thickening',
-        'early_fibrosis',
-        'increased_attenuation',
-        'macronodules',
-        'pcp',
-        'peripheral_micronodules',
-        'tuberculosis',
-        'HCpret',
-        'HCpbro',
-        'GGpbro',
-        'GGpret',
-        'bropret'
-        ]
-    derivedpat=[
-        'HCpret',
-        'HCpbro',
-        'GGpbro',
-        'GGpret',
-        'bropret'
-        ]
-    
-elif setdata=='CHU':
-    classif ={
-        'consolidation':0,
-        'HC':1,
-        'ground_glass':2,
-        'healthy':3,
-        'reticulation':4,
-        'bronchiectasis':5,
-        'lung':6
-        }
-    
-    usedclassif = [
-        'consolidation',
-        'HC',
-        'ground_glass',
-        'healthy',
-        'reticulation',
-        'bronchiectasis'
-        ]
-    
-    derivedpat=[
-        'HCpret',
-        'HCpbro',
-        'GGpbro',
-        'GGpret',
-        'bropret'
         ]
     
 else:

@@ -91,7 +91,6 @@ def load_data_train(dirp,nb_classes):
 
     # load the dataset as X_train and as a copy the X_val
     X_train = pickle.load( open( os.path.join(dirp,'X_train.pkl'), "rb" ) )
-
     y_train = pickle.load( open(os.path.join(dirp,'y_train.pkl'), "rb" ) )
       
     if len(X_train.shape)>3:
@@ -116,8 +115,13 @@ def load_data_train(dirp,nb_classes):
     
 def load_data_val(dirp,nb_classes):
 
-    X_val = pickle.load( open( os.path.join(dirp,'X_val.pkl'), "rb" ) )
-    y_val = pickle.load( open( os.path.join(dirp,'y_val.pkl'), "rb" ) )
+    try:
+        X_val = pickle.load( open( os.path.join(dirp,'X_val.pkl'), "rb" ) )
+        y_val = pickle.load( open( os.path.join(dirp,'y_val.pkl'), "rb" ) )
+    except:
+        X_val = pickle.load( open( os.path.join(dirp,'X_train.pkl'), "rb" ) )
+        y_val = pickle.load( open( os.path.join(dirp,'y_train.pkl'), "rb" ) )
+            
     if len(X_val.shape)>3:
         X_val=np.moveaxis(X_val,3,1)
     else:

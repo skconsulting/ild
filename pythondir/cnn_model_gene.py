@@ -1,13 +1,16 @@
 # -*- coding: utf-8 -*-
 # debug
 # from ipdb import set_trace as bp
-from param_pix_t import modelname,learning_rate
+from param_pix_t import modelname,learning_rate,fidclass
+from param_pix_t import classif,hugeClass,toAug,generandom,geneaug
+
 import ild_helpers as H
 import datetime
 import cPickle as pickle
-import cv2
+#import cv2
 import os
 import numpy as np
+import random
 import sys
 #import h5py
 import keras
@@ -23,9 +26,12 @@ from keras.optimizers import Adam
 from keras import backend as K
 from keras.models import Model
 from keras import applications
-from keras import regularizers
+#from keras import regularizers
+from keras.utils import np_utils
 
-from keras.layers import Input, concatenate,  Conv2DTranspose,UpSampling2D
+from keras.layers import Input, concatenate,  Conv2DTranspose
+#from keras.layers import UpSampling2D
+
 
 def get_FeatureMaps(L, policy, constant=17):
     return {
@@ -242,13 +248,15 @@ def get_modelunet(input_shape, output_shape, params,filew,patch_dir_store):
     return model
 
 
-def get_modelsk5(input_shape, output_shape, params,filew,patch_dir_store,namelastc,learning_rate):
-    print 'input shape:',input_shape,'output shape:',output_shape
+def get_modelsk5(output_shape,output_label, params,filew,patch_dir_store,namelastc,learning_rate):
+    print 'output shape:',output_shape
+    print 'output output_label:',output_label
    
-    num_class=output_shape[-1]
+    num_class=output_label[-1]
+    print 'num_class',num_class
     
-    dimpx=input_shape[-1]
-    numbits= input_shape[1]
+    dimpx=output_shape[-1]
+    numbits= output_shape[1]
 
     INP_SHAPE = (numbits, dimpx, dimpx)
     print 'input shape:',INP_SHAPE
@@ -493,10 +501,75 @@ def load_model_set(pickle_dir_train):
     print 'last weights :',namelast   
     return namelastc
 
+def  readclasses(pat,namepat,indexpat,scaleint,multint,rotimg,resiz,shiftv,shifth):
+    scanr=namepat[indexpat]
+    scan=geneaug(scanr,scaleint,multint,rotimg,resiz,shiftv,shifth)
+    mask=classif[pat]
+    return scan, mask  
 
-def train(x_train, y_train, x_val, y_val, params,eferror,patch_dir_store,valset,acttrain,modelarch,validation_splitp):
+def gen_random_image(numclass,feature_train,indexpatc,classNumber,paramaug):
+    global numgen
+    maxshiftv=paramaug['maxshiftv'] 
+    maxshifth= paramaug['maxshifth']
+    maxrot=paramaug['maxrot']
+    maxshiftv=paramaug['maxshiftv']
+    maxresize=paramaug['maxresize']
+    maxscaleint=paramaug['maxscaleint']
+    maxmultint=paramaug['maxmultint']
+    numgen+=1
+    pat=fidclass(numgen%numclass,classif)
+    numberscan=classNumber[pat]
+
+    if  pat in hugeClass:
+        indexpat =  random.randint(0, numberscan-1)                       
+    else:                                                   
+        indexpat =  indexpatc[pat]%numberscan
+
+    indexpatc[pat]=indexpat+1
+    if pat in toAug:
+        keepaenh=1
+    else:
+        keepaenh=0
+    
+    scaleint,multint,rotimg,resiz,shiftv,shifth=generandom(maxscaleint,
+                            maxmultint,maxrot,maxresize,maxshiftv,maxshifth,keepaenh)
+    scan,mask=readclasses(pat,feature_train[pat],indexpat,scaleint,multint,rotimg,resiz,shiftv,shifth) 
+#    scaleint,rotimg,resiz,shiftv,shifth=generandom(keepaenh)
+
+    return scan,mask,indexpatc
+
+def readclasses2(num_classes,X_testi,y_testi):
+
+    X_test=np.array(X_testi)
+    y_test=np.array(y_testi) 
+    
+    if len(X_test.shape)>3:
+        X_test=np.moveaxis(X_test,3,1)
+    else:
+         X_test = np.expand_dims(X_test,1)  
+
+    y_test = np_utils.to_categorical(y_test, num_classes)
+
+    return  X_test,  y_test  
+
+
+def batch_generator(batch_size,numclass,feature_train,indexpatc,classNumber,paramaug):
+    while True:
+        image_list = []
+        mask_list = []
+        for i in range(batch_size):
+            img, mask,indexpatc = gen_random_image(numclass,feature_train,indexpatc,classNumber,paramaug)
+            image_list.append(img)
+            mask_list.append(mask)
+            
+        X_test,  ytest  =readclasses2(numclass,image_list,mask_list)
+        yield  X_test,  ytest          
+
+
+def train(x_val, y_val, params,eferror,patch_dir_store,valset,acttrain,modelarch,trainSetSize,
+          feature_train,classNumber,paramaug,batch_size):
     ''' TODO: documentation '''
-
+    global numgen
     filew = open(eferror, 'a')
     # Parameters String used for saving the files
     parameters_str = str('_d' + str(params['do']).replace('.', '') +
@@ -522,8 +595,9 @@ def train(x_train, y_train, x_val, y_val, params,eferror,patch_dir_store,valset,
     print('[Feature Maps Policy] \t->\t'+ params['fp'])
     print('[Optimizer] \t\t->\t'+ params['opt'])
     print('[Objective] \t\t->\t'+ get_Obj(params['obj']))
-    print('[Results filename] \t->\t'+str(params['res_alias']+parameters_str+'.txt'))
-    print('[val_data] \t\t->\t'+ str(params['val_data']))
+    print('trainSetSize\t->\t'+str(trainSetSize))
+    print('batch_size\t->\t'+str(batch_size))
+
        
     filew.write('[Dropout Param] \t->\t'+str(params['do'])+'\n')
     filew.write('[Alpha Param] \t\t->\t'+str(params['a'])+'\n')
@@ -536,27 +610,11 @@ def train(x_train, y_train, x_val, y_val, params,eferror,patch_dir_store,valset,
     filew.write('[Feature Maps Policy] \t->\t'+ params['fp']+'\n')
     filew.write('[Optimizer] \t\t->\t'+ params['opt']+'\n')
     filew.write('[Objective] \t\t->\t'+ get_Obj(params['obj'])+'\n')
-    filew.write('[Results filename] \t->\t'+str(params['res_alias']+parameters_str+'.txt')+'\n')
-    filew.write('[val_data] \t\t->\t'+ str(params['val_data'])+'\n')
-    
-    # Rescale Input Images
+    filew.write('trainSetSize\t->\t'+str(trainSetSize)+'\n')
+    filew.write('batch_size\t->\t'+str(batch_size)+'\n')
 
-    if params['s'] != 1:
-        print('\033[93m'+'Rescaling Patches...'+'\033[0m')
-        x_train = np.asarray(np.expand_dims([cv2.resize(x_train[i, 0, :, :], (0,0), fx=params['s'], fy=params['s']) for i in xrange(x_train.shape[0])], 1))
-        x_val = np.asarray(np.expand_dims([cv2.resize(x_val[i, 0, :, :], (0,0), fx=params['s'], fy=params['s']) for i in xrange(x_val.shape[0])], 1))
-        print('\033[92m'+'Done, Rescaling Patches'+'\033[0m')
-        print('[New Data Shape]\t->\tX: '+str(x_train.shape))
 
-    print 'x_shape is: ', x_train.shape
-    if  params['val_data']:
-        print 'x_val is: ', x_val.shape
-    print ('x min max mean is : '+ str(x_train.min())+' '+str(x_train.max())+' '+str(np.mean(x_train)))
-    filew.write('x_shape is : '+ str(x_train.shape)+'\n')
-    if  params['val_data']:
-        filew.write( 'x_val is: '+ str(x_val.shape)+'\n')
-    filew.write('x min max mean is : '+ str(x_train.min())+' '+str(x_train.max())+' '+str(np.mean(x_train))+'\n')
-    
+    print 'x_val is: ', x_val.shape
     
     listmodel=[name for name in os.listdir(patch_dir_store) if name.find('weights')==0] 
     if len(listmodel)>0:
@@ -571,20 +629,26 @@ def train(x_train, y_train, x_val, y_val, params,eferror,patch_dir_store,valset,
          namelastc='NAN'
          learning_ratef=learning_rate
     if modelarch=='sk5':
-        model = get_modelsk5(x_train.shape, y_train.shape, params,filew,patch_dir_store,namelastc,learning_ratef)
+        model = get_modelsk5(x_val.shape,y_val.shape, params,filew,patch_dir_store,namelastc,learning_ratef)
     filew.write ('-----------------\n')
+    numclass=y_val.shape[1]
     if acttrain:
+        numgen=-1 
+        
+        indexpatc={}
+        for j in classif:
+            indexpatc[j]=0
         nb_epoch_i_p=params['patience']
-    
+
         # Open file to write the results
         rese=os.path.join(patch_dir_store,params['res_alias']+parameters_str+'.csv')
     
-        print ('starting the loop of training with number of patience = ', params['patience'])
+        print ('starting the loop of training with number of epochs = ', params['patience'])
         t = datetime.datetime.now()
     
         todayn = str('m'+str(t.month)+'_d'+str(t.day)+'_y'+str(t.year)+'_'+str(t.hour)+'h_'+str(t.minute)+'m'+'\n')
         today = str('m'+str(t.month)+'_d'+str(t.day)+'_y'+str(t.year)+'_'+str(t.hour)+'h_'+str(t.minute)+'m')
-        filew.write ('starting the loop of training with number of patience = '+ str(params['patience'])+'\n')
+        filew.write ('starting the loop of training with number of epochs = '+ str(params['patience'])+'\n')
         filew.write('started at :'+todayn)
     
         early_stopping=EarlyStopping(monitor='val_loss', patience=20, verbose=1,min_delta=0.01,mode='auto')                     
@@ -594,21 +658,22 @@ def train(x_train, y_train, x_val, y_val, params,eferror,patch_dir_store,valset,
                           patience=9, min_lr=1e-6,verbose=1)
         csv_logger = CSVLogger(rese,append=True)
         filew.close()
-        batch_size=200
+
 #        number_of_unique_sample= x_train.shape[0]
     
 #        steps_per_epoch=number_of_unique_sample/batch_size
-        
-        if params['val_data']:
-            print 'using valdata'   
-            model.fit(x_train, y_train, batch_size=batch_size, epochs=nb_epoch_i_p, verbose =2,
-                              validation_data=(x_val,y_val),shuffle=True, 
-                              callbacks=[model_checkpoint,reduce_lr,csv_logger,early_stopping]  )
-        else:
-            print int(validation_splitp*100),'% train data as val data'
-            model.fit(x_train, y_train, batch_size=batch_size, epochs=nb_epoch_i_p, verbose =2,
-                            validation_split=validation_splitp,shuffle=True, 
-                             callbacks=[model_checkpoint,reduce_lr,csv_logger,early_stopping]  )
+        history = model.fit_generator(
+          generator=batch_generator(batch_size,numclass,feature_train,indexpatc,classNumber,paramaug),
+                epochs=nb_epoch_i_p,
+                steps_per_epoch=trainSetSize//batch_size,
+#                sample_weight=class_weights,
+                validation_data=(x_val,y_val),
+                verbose=2,
+                callbacks=[model_checkpoint,reduce_lr,csv_logger,early_stopping] )
+#                max_queue_size=batch_size)  
+#        model.fit(x_train, y_train, batch_size=batch_size, epochs=nb_epoch_i_p, verbose =2,
+#                              validation_data=(x_val,y_val),shuffle=True, 
+#                              callbacks=[model_checkpoint,reduce_lr,csv_logger,early_stopping]  )    
     else:
         filew.write ('no training\n')
         filew.close()
@@ -623,35 +688,32 @@ def train(x_train, y_train, x_val, y_val, params,eferror,patch_dir_store,valset,
     filew.write('load weight found from last training\n'+namelastc+'\n')
     model.load_weights(namelastc)
        
-    if  params['val_data']:
         #if validation data provided
-        y_score = model.predict(x_val, batch_size=1050)
-        fscore, acc, cm = H.evaluate(np.argmax(y_val, axis=1), np.argmax(y_score, axis=1))
-        print('Val F-score: '+str(fscore)+'\tVal acc: '+str(acc))
-        print cm
-        print '---------------'
-        t = datetime.datetime.now()
-        todayn = str('m'+str(t.month)+'_d'+str(t.day)+'_y'+str(t.year)+'_'+str(t.hour)+'h_'+str(t.minute)+'m'+'\n')
-        filew.write('  finished at :'+todayn)
-        filew.write('  f-score is : '+ str(fscore)+'\n')
-        filew.write('  accuray is : '+ str(acc)+'\n')
-        filew.write('  confusion matrix\n')
-        n= cm.shape[0]
-        for cmi in range (0,n): 
+    y_score = model.predict(x_val, batch_size=1050)
+    fscore, acc, cm = H.evaluate(np.argmax(y_val, axis=1), np.argmax(y_score, axis=1))
+    print('Val F-score: '+str(fscore)+'\tVal acc: '+str(acc))
+    print cm
+    print '---------------'
+    t = datetime.datetime.now()
+    todayn = str('m'+str(t.month)+'_d'+str(t.day)+'_y'+str(t.year)+'_'+str(t.hour)+'h_'+str(t.minute)+'m'+'\n')
+    filew.write('  finished at :'+todayn)
+    filew.write('  f-score is : '+ str(fscore)+'\n')
+    filew.write('  accuray is : '+ str(acc)+'\n')
+    filew.write('  confusion matrix\n')
+    n= cm.shape[0]
+    for cmi in range (0,n): 
+
+#        filew.write('  ')
+        for j in range (0,n):
+            filew.write(str(cm[cmi][j])+' ')
+        filew.write('\n')
     
-    #        filew.write('  ')
-            for j in range (0,n):
-                filew.write(str(cm[cmi][j])+' ')
-            filew.write('\n')
+    filew.write('------------------------------------------\n')
         
-        filew.write('------------------------------------------\n')
-        
-    
-    num_class=y_train.shape[-1]
 #    valset='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool/th0.95_pickle_val_set1_r0'
     print('validation set '+str(valset))
     filew.write('validation set '+str(valset)+'\n')
-    (x_val, y_val)= H.load_data_val(valset, num_class)
+    (x_val, y_val)= H.load_data_val(valset, numclass)
     y_score = model.predict(x_val, batch_size=1050)
     fscore, acc, cm = H.evaluate(np.argmax(y_val, axis=1), np.argmax(y_score, axis=1))
     print('Val F-score: '+str(fscore)+'\tVal acc: '+str(acc))
