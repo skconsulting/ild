@@ -2,7 +2,7 @@
 # debug
 # from ipdb import set_trace as bp
 from param_pix_t import modelname,learning_rate,fidclass
-from param_pix_t import classif,hugeClass,toAug,generandom,geneaug
+from param_pix_t import classif,hugeClass,toAug,generandom,geneaug,norm
 
 import ild_helpers as H
 import datetime
@@ -270,6 +270,7 @@ def get_modelsk5(output_shape,output_label, params,filew,patch_dir_store,namelas
     startnum=32
     coef={}
     coef[0]=startnum
+    print '0',coef[0]
     for i in range(1,4):
         coef[i]=coef[i-1]*2
         print i,coef[i]
@@ -339,7 +340,7 @@ def get_modelsk5(output_shape,output_label, params,filew,patch_dir_store,namelas
     print(model.summary())
     sys.stdout = orig_stdout
     f.close()
-    print model.layers[-1].output_shape #== (None, 16, 16, 21)
+    print model.layers[-1].output_shape 
     return model
 
 
@@ -460,31 +461,7 @@ def get_model(input_shape, output_shape, params,filew,patch_dir_store,namelastc,
     print model.layers[-1].output_shape #== (None, 16, 16, 21)
     return model
     
-    
-    
-#    
-#    
-#    if params['opt'] not in ['Adam', 'Adagrad', 'SGD']:
-#        sys.exit('Wrong optimizer: Please select one of the following. Adam, Adagrad, SGD')
-#    if get_Obj(params['obj']) not in ['MSE', 'categorical_crossentropy']:
-#        sys.exit('Wrong Objective: Please select one of the following. MSE, categorical_crossentropy')
-##    model.compile(optimizer=params['opt'], loss=get_Obj(params['obj']), metrics=['categorical_accuracy'])
-#    model.compile(optimizer=Adam(lr=learning_rate), loss='categorical_crossentropy', metrics=['categorical_accuracy'])
-#    filew.write ('learning rate:'+str(learning_rate)+'\n')
-#    print ('learning rate:'+str(learning_rate))
-#    json_string = model.to_json()
-#    pickle.dump(json_string, open(os.path.join(patch_dir_store,modelname), "wb"),protocol=-1)
-#    orig_stdout = sys.stdout
-#    f = open('model.txt', 'w')
-#    sys.stdout = f
-#    print(model.summary())
-#    sys.stdout = orig_stdout
-#    f.close()
 
-#    optimizer=keras.optimizers.Adam(lr=lr,decay=decay)
-#    model.compile(optimizer=optimizer, loss=get_Obj(params['obj']))
-
-    return model
 
 def load_model_set(pickle_dir_train):
     listmodel=[name for name in os.listdir(pickle_dir_train) if name.find('weights')==0]
@@ -503,39 +480,29 @@ def load_model_set(pickle_dir_train):
 
 def  readclasses(pat,namepat,indexpat,scaleint,multint,rotimg,resiz,shiftv,shifth):
     scanr=namepat[indexpat]
-    scan=geneaug(scanr,scaleint,multint,rotimg,resiz,shiftv,shifth)
+    scanra=geneaug(scanr,scaleint,multint,rotimg,resiz,shiftv,shifth)
+    scan=norm(scanra)
     mask=classif[pat]
     return scan, mask  
 
-def gen_random_image(numclass,feature_train,indexpatc,classNumber,paramaug):
-    global numgen
-    maxshiftv=paramaug['maxshiftv'] 
-    maxshifth= paramaug['maxshifth']
-    maxrot=paramaug['maxrot']
-    maxshiftv=paramaug['maxshiftv']
-    maxresize=paramaug['maxresize']
-    maxscaleint=paramaug['maxscaleint']
-    maxmultint=paramaug['maxmultint']
+def gen_random_image(numclass,feature_train,indexpatc,classNumber):
+    global numgen  
     numgen+=1
     pat=fidclass(numgen%numclass,classif)
     numberscan=classNumber[pat]
-
     if  pat in hugeClass:
         indexpat =  random.randint(0, numberscan-1)                       
     else:                                                   
         indexpat =  indexpatc[pat]%numberscan
-
+        
     indexpatc[pat]=indexpat+1
     if pat in toAug:
         keepaenh=1
     else:
-        keepaenh=0
-    
+        keepaenh=0   
     scaleint,multint,rotimg,resiz,shiftv,shifth=generandom(maxscaleint,
                             maxmultint,maxrot,maxresize,maxshiftv,maxshifth,keepaenh)
     scan,mask=readclasses(pat,feature_train[pat],indexpat,scaleint,multint,rotimg,resiz,shiftv,shifth) 
-#    scaleint,rotimg,resiz,shiftv,shifth=generandom(keepaenh)
-
     return scan,mask,indexpatc
 
 def readclasses2(num_classes,X_testi,y_testi):
@@ -553,15 +520,14 @@ def readclasses2(num_classes,X_testi,y_testi):
     return  X_test,  y_test  
 
 
-def batch_generator(batch_size,numclass,feature_train,indexpatc,classNumber,paramaug):
+def batch_generator(batch_size,numclass,feature_train,indexpatc,classNumber):
     while True:
         image_list = []
         mask_list = []
         for i in range(batch_size):
-            img, mask,indexpatc = gen_random_image(numclass,feature_train,indexpatc,classNumber,paramaug)
+            img, mask,indexpatc = gen_random_image(numclass,feature_train,indexpatc,classNumber)
             image_list.append(img)
             mask_list.append(mask)
-            
         X_test,  ytest  =readclasses2(numclass,image_list,mask_list)
         yield  X_test,  ytest          
 
@@ -569,7 +535,14 @@ def batch_generator(batch_size,numclass,feature_train,indexpatc,classNumber,para
 def train(x_val, y_val, params,eferror,patch_dir_store,valset,acttrain,modelarch,trainSetSize,
           feature_train,classNumber,paramaug,batch_size):
     ''' TODO: documentation '''
-    global numgen
+    global numgen,maxshiftv,maxshifth,maxrot,maxshiftv,maxresize,maxscaleint,maxmultint
+    maxshiftv=paramaug['maxshiftv'] 
+    maxshifth= paramaug['maxshifth']
+    maxrot=paramaug['maxrot']
+    maxshiftv=paramaug['maxshiftv']
+    maxresize=paramaug['maxresize']
+    maxscaleint=paramaug['maxscaleint']
+    maxmultint=paramaug['maxmultint']
     filew = open(eferror, 'a')
     # Parameters String used for saving the files
     parameters_str = str('_d' + str(params['do']).replace('.', '') +
@@ -640,7 +613,6 @@ def train(x_val, y_val, params,eferror,patch_dir_store,valset,acttrain,modelarch
             indexpatc[j]=0
         nb_epoch_i_p=params['patience']
 
-        # Open file to write the results
         rese=os.path.join(patch_dir_store,params['res_alias']+parameters_str+'.csv')
     
         print ('starting the loop of training with number of epochs = ', params['patience'])
@@ -651,11 +623,11 @@ def train(x_val, y_val, params,eferror,patch_dir_store,valset,acttrain,modelarch
         filew.write ('starting the loop of training with number of epochs = '+ str(params['patience'])+'\n')
         filew.write('started at :'+todayn)
     
-        early_stopping=EarlyStopping(monitor='val_loss', patience=20, verbose=1,min_delta=0.01,mode='auto')                     
+        early_stopping=EarlyStopping(monitor='val_loss', patience=15, verbose=1,min_delta=0.01,mode='auto')                     
         model_checkpoint = ModelCheckpoint(os.path.join(patch_dir_store,'weights_'+today+'.{epoch:02d}-{val_loss:.3f}.hdf5'), 
                                     monitor='val_loss', save_best_only=True,save_weights_only=True,mode='auto')       
         reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5,
-                          patience=9, min_lr=1e-6,verbose=1)
+                          patience=5, min_lr=1e-6,verbose=1)
         csv_logger = CSVLogger(rese,append=True)
         filew.close()
 
@@ -663,17 +635,15 @@ def train(x_val, y_val, params,eferror,patch_dir_store,valset,acttrain,modelarch
     
 #        steps_per_epoch=number_of_unique_sample/batch_size
         history = model.fit_generator(
-          generator=batch_generator(batch_size,numclass,feature_train,indexpatc,classNumber,paramaug),
+          generator=batch_generator(batch_size,numclass,feature_train,indexpatc,classNumber),
                 epochs=nb_epoch_i_p,
                 steps_per_epoch=trainSetSize//batch_size,
 #                sample_weight=class_weights,
                 validation_data=(x_val,y_val),
                 verbose=2,
-                callbacks=[model_checkpoint,reduce_lr,csv_logger,early_stopping] )
-#                max_queue_size=batch_size)  
-#        model.fit(x_train, y_train, batch_size=batch_size, epochs=nb_epoch_i_p, verbose =2,
-#                              validation_data=(x_val,y_val),shuffle=True, 
-#                              callbacks=[model_checkpoint,reduce_lr,csv_logger,early_stopping]  )    
+                callbacks=[model_checkpoint,reduce_lr,csv_logger,early_stopping] ,
+                max_queue_size=2)  
+
     else:
         filew.write ('no training\n')
         filew.close()
@@ -689,7 +659,7 @@ def train(x_val, y_val, params,eferror,patch_dir_store,valset,acttrain,modelarch
     model.load_weights(namelastc)
        
         #if validation data provided
-    y_score = model.predict(x_val, batch_size=1050)
+    y_score = model.predict(x_val, batch_size=500)
     fscore, acc, cm = H.evaluate(np.argmax(y_val, axis=1), np.argmax(y_score, axis=1))
     print('Val F-score: '+str(fscore)+'\tVal acc: '+str(acc))
     print cm
@@ -714,7 +684,7 @@ def train(x_val, y_val, params,eferror,patch_dir_store,valset,acttrain,modelarch
     print('validation set '+str(valset))
     filew.write('validation set '+str(valset)+'\n')
     (x_val, y_val)= H.load_data_val(valset, numclass)
-    y_score = model.predict(x_val, batch_size=1050)
+    y_score = model.predict(x_val, batch_size=500)
     fscore, acc, cm = H.evaluate(np.argmax(y_val, axis=1), np.argmax(y_score, axis=1))
     print('Val F-score: '+str(fscore)+'\tVal acc: '+str(acc))
     print cm

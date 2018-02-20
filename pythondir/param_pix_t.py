@@ -28,15 +28,17 @@ print theano.__version__
 print ' keras.backend.image_data_format :',keras.backend.image_data_format()
 ######################################################################
 setdata='set1'
-thrpatch = 0.95 #patch overlapp tolerance
+#thrpatch = 0.95 #patch overlapp tolerance
+thrpatch = 0.8 #patch overlapp tolerance
+
 ######################################################
 writeFile=False
 medianblur=False #m
 average3=False # a
 median3=False #med
-augmentation=True #3  #if True, roi of slice number +/- are added
-numbit=True # 3d patches
-minmax=True # if true, min and max for 3 d patch, if false: slice-1, slice , slice +1
+augmentation=False #3  #if True, roi of slice number +/- are added
+numbit=False # 3d patches
+minmax=False # if true, min and max for 3 d patch, if false: slice-1, slice , slice +1
 
 #toAug=[]
 #"""
@@ -52,19 +54,15 @@ learning_rate=1e-4
 #minb=centerHU-(limitHU/2)
 #maxb=centerHU+(limitHU/2)
 
-#minb=-1024.0
-#maxb=2000.0
-
 minb=-1024.0
 maxb=400.
-PIXEL_MEAN = 0.2656
+PIXEL_MEAN = 0.275
+#PIXEL_MEAN = 0.33
 
-MIN_BOUND =minb
+MIN_BOUND = minb
 MAX_BOUND = maxb
 
-#PIXEL_MEAN = 0.288702558038
 
-#PIXEL_MEAN = 0.
 print 'minhu, maxhu, averagehu'
 print minb,maxb,PIXEL_MEAN
 
@@ -190,19 +188,22 @@ layertokeep= [
         'bronchiectasis',
         ]
     
-classifnotvisu=['healthy',]
+classifnotvisu=['healthy']
 hugeClass=['healthy']
+
 toAug=[ 
        'consolidation',
         'HC',
         'ground_glass',
 #        'healthy',
         'micronodules',
-        'reticulation'
+        'reticulation',
         'bronchiectasis',
         'emphysema',
         'GGpret'
         ]
+#toAug=[]
+
 if setdata=='set1':
     classif ={
         'consolidation':0,
@@ -213,7 +214,7 @@ if setdata=='set1':
         'reticulation':5,
         'bronchiectasis':6,
         'emphysema':7,
-        'GGpret':8
+        'GGpret':8 
         }
 
     derivedpat=[
@@ -310,6 +311,20 @@ def normi(tabi):
      tabi2=tabi2.astype('uint8')
      return tabi2
  
+def normihu(tabi):
+     """ normalise patches"""
+
+     max_val=float(np.max(tabi))
+     min_val=float(np.min(tabi))
+     mm=max_val-min_val
+     if mm ==0:
+         mm=1
+#     print 'tabi1',min_val, max_val,imageDepth/float(max_val)
+     tabi2=(tabi-min_val)*(1.0/mm)
+#     tabi2=np.clip(tabi2,0,255)
+#     tabi2=tabi2.astype('uint8')
+     return tabi2
+ 
 def fidclass(numero,classn):
     """return class from number"""
     found=False
@@ -326,10 +341,10 @@ def normalize(image):
     image1= (image - MIN_BOUND) / (MAX_BOUND - MIN_BOUND)
     image1[image1>1] = 1.
     image1[image1<0] = 0.
-
+#    image1=normihu(image1)
     return image1
 
-def zero_center(image):
+def zero_center(image):    
     image1 = image - PIXEL_MEAN
     return image1
 
@@ -567,12 +582,11 @@ def geneshifth(img,s):
 
 def generesize(img,r):
     if r !=0:
+        types=type(img[0][0])
         shapx=img.shape[1]
         shapy=img.shape[0]  
-        types=type(img[0][0])
-        imgc=img.copy().astype('float64')
+        imgc=img.copy()
         imgr=cv2.resize(imgc,None,fx=(100+r)/100.,fy=(100+r)/100.,interpolation=cv2.INTER_LINEAR)  
-        imgr=imgr.astype(types)
         newshapex=imgr.shape[1]
         newshapey=imgr.shape[0]
 
@@ -621,11 +635,11 @@ def generot(image,tt):
 
 def genescaleint(img,s):
     if s!=0:
-        minint=-1.
-        maxint=1.
+        minint=minb
+        maxint=maxb   
         types=type(img[0][0])
         acts=s*(maxint-minint)/100.0
-        imgc=img.copy().astype('float32')    
+        imgc=img.copy()  
         imgr=imgc+acts
         imgr=np.clip(imgr,minint,maxint)
         imgr=imgr.astype(types)
@@ -636,13 +650,11 @@ def genescaleint(img,s):
 
 def genesmultint(img,s):
     if s!=0:
-        minint=-1.
-        maxint=1.
-        
+        minint=minb
+        maxint=maxb   
         types=type(img[0][0])
         acts=(100+s)/100.0
-        imgc=img.copy().astype('float32')    
-        imgr=imgc*acts
+        imgr=img*acts
         imgr=np.clip(imgr,minint,maxint)
         imgr=imgr.astype(types)
     else:
@@ -651,14 +663,12 @@ def genesmultint(img,s):
 
 
 def geneaug(img,scaleint,multint,rotimg,resiz,shiftv,shifth):
-    
     imgr=geneshifth(img,shifth)
     imgr=geneshiftv(imgr,shiftv)
     imgr=generot(imgr,rotimg)
     imgr=generesize(imgr,resiz)
     imgr=genesmultint(imgr,multint)
     imgr=genescaleint(imgr,scaleint)
-
     return imgr
     
 

@@ -121,15 +121,13 @@ def load_data_val(dirp,nb_classes):
     except:
         X_val = pickle.load( open( os.path.join(dirp,'X_train.pkl'), "rb" ) )
         y_val = pickle.load( open( os.path.join(dirp,'y_train.pkl'), "rb" ) )
-            
+
+
     if len(X_val.shape)>3:
         X_val=np.moveaxis(X_val,3,1)
     else:
          X_val = np.expand_dims(X_val,1)  
 
-    # labels to categorical vectors
-#    uniquelbls = np.unique(y_val)
-#    nb_classes = int( uniquelbls.shape[0])
     print ('number of classes :', int(nb_classes)) 
   
 #    zbn = np.min(uniquelbls) # zero based numbering

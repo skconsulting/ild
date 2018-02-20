@@ -8,8 +8,8 @@ version 1.5
 '''
 #from param_pix_p import *
 from param_pix_s import scan_bmp,avgPixelSpacing,dimpavx,dimpavy,dirpickleArch,modelArch,surfelemp
-from param_pix_s import typei,typei1,excluvisu
-from param_pix_s import white,yellow,red
+from param_pix_s import typei,typei1,excluvisu,minmax
+from param_pix_s import white,yellow
 
 from param_pix_s import lung_namebmp,jpegpath,lungmask,lungmask1
 from param_pix_s import fidclass,pxy
@@ -406,7 +406,7 @@ def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan,listsln,tabscanName
 def tagviews (tab,t0,x0,y0,t1,x1,y1,t2,x2,y2,t3,x3,y3,t4,x4,y4,t5,x5,y5,t6,x6,y6):
     """write simple text in image """
     font = cv2.FONT_HERSHEY_PLAIN
-    col=red
+    col=yellow
     size=0.5
     sizes=0.4
 
@@ -435,11 +435,11 @@ def pavgene(dirf,dimtabx,dimtaby,tabscanScan,tabscanLung,slnt,jpegpath,listsln):
         jpegpathdir=os.path.join(dirf,jpegpath)
         remove_folder(jpegpathdir)
         os.mkdir(jpegpathdir)
-        tabscan = np.zeros((slnt,dimtabx,dimtaby), np.int16)
+#        tabscan = np.zeros((slnt,dimtabx,dimtaby), np.int16)
 #        for i in listsln:
                 
         for img in listsln:
-             tabscan[img]=tabscanScan[img]
+#             tabscan[img]=tabscanScan[img]
 #             if img==12:
 #                        pickle.dump(tabscan[img], open('scorepav.pkl', "wb" ),protocol=-1)
 
@@ -450,7 +450,13 @@ def pavgene(dirf,dimtabx,dimtaby,tabscanScan,tabscanLung,slnt,jpegpath,listsln):
              np.putmask(tablung,tablung>0,1)
              np.putmask(tabfrgb,tabfrgb>0,100)
              tabfrgb= cv2.cvtColor(tabfrgb,cv2.COLOR_GRAY2BGR)
-             tabf=norm(tabscan[img])
+             tabf=norm(tabscanScan[img])
+             if minmax:
+                _tabscanm1=norm(tabscanScan[max(1,img-1)])
+                _tabscanm2=norm(tabscanScan[max(1,img-2)])
+                
+                _tabscanp1=norm(tabscanScan[min(slnt-1,img+1)])
+                _tabscanp2=norm(tabscanScan[min(slnt-1,img+2)])
 #             print nz1
              nz= tablung.max()
 
@@ -477,12 +483,34 @@ def pavgene(dirf,dimtabx,dimtaby,tabscanScan,tabscanLung,slnt,jpegpath,listsln):
     #                        print i,j,targ,area
     #                        ooo
                             imgray = tabf[j:j+dimpavy,i:i+dimpavx]
+                            if minmax:
+
+                                imgraym1 = _tabscanm1[j:j+dimpavy,i:i+dimpavx]
+                                imgrayp1 = _tabscanp1[j:j+dimpavy,i:i+dimpavx]
+                                imgraym2 = _tabscanm2[j:j+dimpavy,i:i+dimpavx]
+                                imgrayp2 = _tabscanp2[j:j+dimpavy,i:i+dimpavx]
 
                             min_val, max_val, min_loc,max_loc = cv2.minMaxLoc(imgray)
 
                             if  min_val != max_val:
 #                                imgray= norm(imgray)
-                                patch_list.append((img,i,j,imgray))
+                                if minmax:
+                                        imgrayminimum=np.minimum(imgray,imgraym2)
+                                        imgrayminimum=np.minimum(imgraym1,imgrayminimum)                                      
+                                        imgrayminimum=np.minimum(imgrayp1,imgrayminimum)
+                                        imgrayminimum=np.minimum(imgrayp2,imgrayminimum)
+                                        
+                                        imgraymaximum=np.maximum(imgray,imgraym2)
+                                        imgraymaximum=np.maximum(imgraym1,imgraymaximum)
+                                        imgraymaximum=np.maximum(imgrayp1,imgraymaximum)
+                                        imgraymaximum=np.maximum(imgrayp2,imgraymaximum)
+
+                                        
+#                                                imgraystack=np.dstack((imgrayminimum,imgraym1,imgray,imgrayp1,imgraymaximum))
+                                        imgraystack=np.dstack((imgrayminimum,imgray,imgraymaximum))
+                                        patch_list.append((img,i,j,imgraystack))
+                                else:
+                                    patch_list.append((img,i,j,imgray))
                                 tablung[j:j+dimpavy,i:i+dimpavx]=0
                                 cv2.rectangle(tabfw,(i,j),(i+dimpavx,j+dimpavy),yellow,0)
                                 j+=dimpavy-1
@@ -561,25 +589,21 @@ def ILDCNNpredict(patch_list,model):
     for fil in patch_list:
               dataset_list.append(fil[3])
     X0=len(dataset_list)
-    if X0 > 0:      
-        pa = np.expand_dims(dataset_list, 1)
-        proba = model.predict_proba(pa, batch_size=500,verbose=1)
+    if X0 > 0:
+        X_val=np.array(dataset_list)
+        if len(X_val.shape)>3:
+            X_val=np.moveaxis(X_val,3,1)
+        else:
+             X_val = np.expand_dims(X_val,1)  
+#            pa = np.expand_dims(np.array(dataset_list), 1)
+        proba = model.predict_proba(X_val, batch_size=500,verbose=1)
         pru= np.unique(np.argmax(proba,axis=1))
         print pru
-#        print proba.shape
-#        for i in range(proba.shape[0]):
-#            if np.argmax(proba[i])>4:
-#                print proba[i]
-#                print np.argmax(proba[i])
-##            print np.unique(np.argmax(proba[i]))
-##            print np.unique(np.argmax(proba,axis=0))
-#        sys.exit(1)
-        
 
     else:
         print (' no patch in selected slice')
         proba = []
-    print 'number of patches', len(pa)
+    print 'number of patches', X0
     print (' predicted patterns:')
     for i in range(len(pru)):
         print  pru[i], usedclassif[pru[i]]
@@ -1151,7 +1175,7 @@ def generoi(dirf,tabroi,dimtabx,dimtaby,slnroi,tabscanName,dirroit,tabscanroi,ta
         for pat in usedclassif:
             tab=np.copy(tabroipat[pat][numslice])
             np.putmask(tabroi[numslice], tab > 0, 0)
-#            np.putmask(tab, tab > 0, classif[pat]+1)            
+          
             tabroi[numslice]+=tab
 #            if tab.max()>0:
 #                cv2.imshow(str(numslice)+' '+pat+' tabo',normi(tabroi[numslice])) 
@@ -1216,20 +1240,9 @@ def generoi(dirf,tabroi,dimtabx,dimtaby,slnroi,tabscanName,dirroit,tabscanroi,ta
                             listroi[numslice].append(pat)
                         if pat not in excluvisu:
 #                            print pat
-                            np.putmask(img, img >0, 100)
-#                                ctkey=drawcontours2(img,pat,dimtabx,dimtaby)
-#                                ctkeym=ctkey.copy()
-#                                ctkeym=cv2.cvtColor(ctkeym,cv2.COLOR_RGB2GRAY)
-#                                ctkeym=cv2.cvtColor(ctkeym,cv2.COLOR_GRAY2RGB)                       
-#                                np.putmask(anoted_image, ctkeym >0, 0)
-    #                        anoted_image=cv2.add(anoted_image,ctkey)
-                            
-                            
-    #                        imgcolor=cv2.cvtColor(img,cv2.COLOR_GRAY2RGB)  
-                            colorlung=colorimage(img,classifc[pat])
-    
-                            anoted_image=cv2.addWeighted(anoted_image,1,colorlung,0.4,0)
-    
+                            np.putmask(img, img >0, 100) 
+                            colorlung=colorimage(img,classifc[pat])    
+                            anoted_image=cv2.addWeighted(anoted_image,1,colorlung,0.4,0)    
                             anoted_image=tagviewct(anoted_image,pat,200,10)  
 #                                tabscanroi[numslice]=anoted_image
                                                

@@ -28,21 +28,22 @@ import random
 topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
 
 patchesdirnametop=[]
-"""
+
 #######################   3b ########################
+"""
 #HUG
 patchesdirnametop =  patchesdirnametop+['th0.95_TOPPATCH_all_HUG_ILD_TXT__3b']
 
 
 #CHU
-#patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU_UIP__3b']
-#patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU_UIP_a_3b']
+patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU_UIP__3b']
+patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU_UIP_a_3b']
 patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU_UIP_med_3b']
 
 
 #CHU2
 
-#patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2_UIP_3_3b']
+patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2_UIP_3_3b']
 patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2_UIP_a3_3b']
 patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2_UIP_med3_3b']
 
@@ -51,33 +52,40 @@ patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2_UIP_med3_3b']
 patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_3_3b']
 patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_a3_3b']
 patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_med3_3b']
-"""
+
 ############################## 1b   ###########################
+"""
 #HUG
-patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_HUG_ILD_TXT__1b']
+patchesdirnametop = patchesdirnametop+['th0.8_TOPPATCH_all_HUG_ILD_TXT_med_1b']
 #patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_HUG_ILD_TXT_a_1b']
+patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_HUG_ILD_TXT__1b']
 #patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_HUG_ILD_TXT_med_1b']
+
 #
-##CHU
-patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU_UIP__1b']
+##
+###CHU
+#patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU_UIP__1b']
 patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU_UIP_a_1b']
+patchesdirnametop = patchesdirnametop+['th0.8_TOPPATCH_all_CHU_UIP_med_1b']
 patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU_UIP_med_1b']
 
-
-#CHU2
+#
+#
+##CHU2
 patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2_UIP_a3_1b']
-patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2_UIP_med3_1b']
+patchesdirnametop = patchesdirnametop+['th0.8_TOPPATCH_all_CHU2_UIP_med3_1b']
 patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2_UIP_3_1b']
 
 
 #CHU2new
 patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_a3_1b']
 #patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP__1b']
+patchesdirnametop = patchesdirnametop+['th0.8_TOPPATCH_all_CHU2new_UIP_med3_1b']
 patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_med3_1b']
 patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_3_1b']
-
-
 """
+
+
 ############################## 3bm5  ###########################
 #HUG
 #patchesdirnametop = ['th0.95_TOPPATCH_all_HUG_ILD_TXT__3bm']
@@ -90,51 +98,45 @@ patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU_UIP_med_3bm5']
 
 #CHU2
 patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2_UIP_3_3bm5']
-#patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2_UIP_a3_3b']
+patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2_UIP_a3_3bm5']
 patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2_UIP_med3_3bm5']
 
 #CHU2new
 patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_3_3bm5']
-#patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_a3_3b']
+patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_a3_3bm5']
 patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_med3_3bm5']
 
 ############################## 3bm53  ###########################
+
 #HUG
 #patchesdirnametop = ['th0.95_TOPPATCH_all_HUG_ILD_TXT__3bm']
 #patchesdirnametop = ['th0.95_TOPPATCH_all_HUG_ILD_TXT_a_1b']
 #patchesdirnametop = ['th0.95_TOPPATCH_all_HUG_ILD_TXT_med_1b']
 
 #CHU
-#patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU_UIP__3bm5']
-#patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU_UIP_med_3bm53']
+patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU_UIP__3bm53']
+patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU_UIP_a_3bm53']
+patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU_UIP_med_3bm53']
 
 #CHU2
-#patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2_UIP_3_3bm5']
-#patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2_UIP_a3_3b']
-#patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2_UIP_med3_3bm53']
+patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2_UIP_3_3bm53']
+patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2_UIP_a3_3bm53']
+patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2_UIP_med3_3bm53']
 
 #CHU2new
-#patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_3_3bm5']
-#patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_a3_3b']
+patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_3_3bm53']
+patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_a3_3bm53']
 patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_med3_3bm53']
+
 ##########################################################################################
 """
 #patchesdirnametop = ['th0.95_TOPPATCH_val_REFVALnew_UIPJC__1b']
+#patchesdirnametop = ['th0.95_TOPPATCH_val_REFnew_UIP__1b']
+#patchesdirnametop = ['th0.8_TOPPATCH_val_REFVALnew_UIPJC__1b']
+
+
 #print patchesdirnametop
-#toAug=['ground_glass','reticulation', 'HC','GGpret']
-#
-toAug=[ 
-       'consolidation',
-        'HC',
-        'ground_glass',
-#        'healthy',
-        'micronodules',
-        'reticulation'
-        'bronchiectasis',
-        'emphysema',
-        'GGpret'
-        ]
-#toAug=[]
+
 
 #define the directory to store data
 pickel_dirsource_root='pickle'
@@ -145,11 +147,11 @@ dir_train='T'
 pickel_dirsourcenum=setdata #extensioon for path for data for training
 #extendir2='2'
 extendir1='1'
-extendir2='1'
+extendir2='1b'
 #extendir2='essai'
 
 #augf=1#augmentation factor default 3
-test_size=20 #split test training in percent 0 means no training, only val
+test_size=10 #split test training in percent 0 means no training, only val
 
 #all in percent
 maxshiftv=0
@@ -157,25 +159,30 @@ maxshifth=0
 maxrot=7
 maxresize=0
 maxscaleint=0
-maxmultint=20
+maxmultint=0
+
 listdirtop={}
 for f in  patchesdirnametop:
     listdirtop[f]=classif
 #
-#listforCHU2={
-#        'consolidation':0,
+listforres={
+        'consolidation':0,
 #        'HC':1,
-##        'ground_glass':2,
-##        'healthy':3,
-#        'micronodules':4,
-#        'reticulation':5,
+#        'ground_glass':2,
+        'healthy':3,
+        'micronodules':4,
+        'reticulation':5,
 #        'bronchiectasis':6,
-#        'emphysema':7
-#        }
-#
-#for f in  patchesdirnametop:
-#        if f.find('_CHU2_')>0:
-#            listdirtop[f]=listforCHU2
+        'emphysema':7
+#        'GGpret':8 
+        }
+
+for f in  patchesdirnametop:
+#    print f
+#    print f.find('th0.8_')
+    if f.find('th0.8_')>=0:
+        print 'apply restriction on:',f
+        listdirtop[f]=listforres
 
 """
 classif ={
@@ -209,10 +216,8 @@ print ('classification used:')
 for f in classif:
     print (f, classif[f])
 
-print ' pattern to augment:'
-print toAug
 
-hugeClass=['healthy','back_ground']
+hugeClass=['healthy']
 #hugeClass=['']
 
 #input patch directory
@@ -235,7 +240,6 @@ errorfile.write('started at :'+todayn)
 errorfile.write('--------------------\n')
 #errorfile.write('numbe of loops :'+str(augf)+'\n')
 errorfile.write('pattern to augment: \n')
-errorfile.write(str(toAug)+'\n')
 errorfile.write('percentage split: :'+str(test_size)+'\n')
 errorfile.write('path for pickle inputs'+str(patchesdirnametop)+'\n')
 errorfile.write('path to write data for training'+patch_dir+'\n')
@@ -283,9 +287,6 @@ print '----------'
 
 # go through all categories to calculate the number of patches per class
 
-
-#listdirtop[f]for category in usedclassifFinal:
-    
 for f in patchesdirnametop:
         print 'work on: ',f
         patch_dirsource=os.path.join(topdir,f)
@@ -309,7 +310,7 @@ for f in patchesdirnametop:
                         for filei in image_files:
                             aa=pickle.load(open(os.path.join(subCategory_dir,filei),'rb'))
 #                            print filei,len (aa)
-                            patclass[category]=patclass[category]+pickle.load(open(os.path.join(subCategory_dir,filei),'rb'))
+                            patclass[category]=patclass[category]+aa
 for category in usedclassifFinal:
     classNumberInit[category]=len(patclass[category])  
 
@@ -376,19 +377,12 @@ def genedata(category):
     feature=[]
     label=[]
     lc=classif[category]
-    avpavg=0
-    nump=0
     for p in patclass[category]:
-        pf = p.astype('float32')
-        normp=norm(pf)
-        feature.append(normp)
-        avm=np.mean(normp)
-        nump+=1
-        avpavg=avpavg+avm
+#        pf = p.astype('float32')
+#        normp=norm(pf)        
+        feature.append(p)
         label.append(lc)
-
-    avmr=avpavg/nump
-    return feature,label,avmr
+    return feature,label
 
 def genf(features_p,maxl):
     feature=[]
@@ -402,7 +396,7 @@ def genf(features_p,maxl):
         for i in range(0,numberscan):
                 numpat[pat]+=1
                 if  pat in hugeClass:
-                     indexpatc =  random.randint(0, len(features_p[pat])-1)  
+                     indexpatc =  random.randint(0, numberscan1-1)  
                      scan=features_p[pat][indexpatc]
                 else:                
                     keepaenh=0
@@ -411,7 +405,7 @@ def genf(features_p,maxl):
                     scan=geneaug(features_p[pat][i],scaleint,multint,rotimg,resiz,shiftv,shifth)
 
                 mask=classif[pat]
-                feature.append(scan)
+                feature.append(norm(scan))
                 label.append(mask)
         if  pat not in hugeClass:        
                 for i in range(0,maxl-numberscan):
@@ -421,7 +415,7 @@ def genf(features_p,maxl):
                            maxmultint,maxrot,maxresize,maxshiftv,maxshifth,keepaenh)
                     scan=geneaug(features_p[pat][i%numberscan],scaleint,multint,rotimg,resiz,shiftv,shifth)
                     mask=classif[pat]
-                    feature.append(scan)
+                    feature.append(norm(scan))
                     label.append(mask)
     
     return feature,label,numpat
@@ -435,20 +429,14 @@ label_d={}
 
 print ('----------------')
 avgp=0
-nump=0
 totalp=[]
 for f in usedclassifFinal:
      print('gene normalize data from images work on :',f)
-     feature_d[f],label_d[f],avgpl=genedata(f)
-#     print np.array(feature_d[f]).min(),np.array(feature_d[f]).max()
-     avgp=avgp+avgpl
+     feature_d[f],label_d[f]=genedata(f)
      totalp=totalp+feature_d[f]
-     nump+=1
      print ('---')
 print 'total number of patches:',len(totalp)
-#totalm=np.array(totalp)
-#print 'mean data:',np.mean(totalm)
-print 'average data scan',avgp/nump 
+
 for f in usedclassifFinal:
     print 'initial ',f,len(feature_d[f]),len(label_d[f])
 print ('----------------') 

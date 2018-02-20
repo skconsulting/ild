@@ -12,7 +12,7 @@ version 1.0
 from param_pix_t import classifall,usedclassifall,classifc
 from param_pix_t import dimpavx,dimpavy,typei,typei1,avgPixelSpacing,thrpatch,lungmaskbmp1
 from param_pix_t import remove_folder,normi,genelabelloc,totalpat,totalnbpat,fidclass
-from param_pix_t import white,medianblur,average3,median3,numbit,norm,augmentation
+from param_pix_t import white,medianblur,average3,median3,numbit,augmentation,minmax
 from param_pix_t import patchpicklename,scan_bmp,lungmask,lungmask1,lungmaskbmp,sroi,patchesdirname
 from param_pix_t import imagedirname,picklepath,patchfile,source,perrorfile,plabelfile,locabg,reservedword
 
@@ -23,7 +23,7 @@ import dicom
 import numpy as np
 import os
 import sys
-import time
+#import time
 #import scipy.misc
 
 #general parameters and file, directory names
@@ -52,7 +52,10 @@ if augmentation:
 else:
     exta2=''
 if numbit: 
-    exta3='_3b'
+    if minmax: 
+        exta3='_3bm5'
+    else:
+        exta3='_3b'
 else:
     exta3='_1b'
 extendir1=namedirHUG+'_'+subHUG+'_'+exta1+exta2+exta3
@@ -127,6 +130,27 @@ if medianblur:
     errorfile.write('median blur\n')
 else:
     errorfile.write('NO median blur\n')
+if average3:
+   errorfile.write('average3\n')
+else:
+    errorfile.write('NO average3\n')
+if median3:
+   errorfile.write('median3\n')
+else:
+    errorfile.write('NO median3\n')
+if numbit:
+    if minmax:
+     errorfile.write('3 dimension patch with min max\n')
+    else:
+     errorfile.write('3 dimension patch without min max\n')
+else:
+    errorfile.write('1 dimension patch\n')
+    
+if augmentation:
+    errorfile.write('roi -1/+1 slice\n')
+else:
+    errorfile.write('roi 1 slice only\n')
+
 
 errorfile.write('--------------------------------\n')
 errorfile.write('source directory '+namedirtopc+'\n')
@@ -250,6 +274,9 @@ def genebmp(dirName,slnt,dimtabx,dimtaby):
     lunglist = [name for name in os.listdir(lung_dir) if ".dcm" in name.lower()]
 
     tabscan=np.zeros((slnt,dimtabx,dimtaby),np.int16)
+    tabscano=np.zeros((slnt,dimtabx,dimtaby),np.int16)
+    tabscanm1=np.zeros((slnt,dimtabx,dimtaby),np.int16)
+    tabscanp1=np.zeros((slnt,dimtabx,dimtaby),np.int16)
     tabsroi=np.zeros((slnt,dimtabx,dimtaby,3),np.uint8)
     tabslung=np.zeros((slnt,dimtabx,dimtaby),np.uint8)
     
@@ -257,13 +284,10 @@ def genebmp(dirName,slnt,dimtabx,dimtaby):
 #    os.listdir(lung_dir)
 
     for filename in fileList:
-#            print(filename)
-#        if ".dcm" in filename.lower():  # check whether the file's DICOM
             FilesDCM =(os.path.join(dirName,filename))
             RefDs = dicom.read_file(FilesDCM,force=True)
             dsr= RefDs.pixel_array
-
-            
+           
             dsr=dsr.astype('int16')
             fxs=float(RefDs.PixelSpacing[0])/avgPixelSpacing
 #                print 'fxs',fxs
@@ -279,10 +303,7 @@ def genebmp(dirName,slnt,dimtabx,dimtaby):
                 dsr = slope * dsr.astype(np.float64)
                 dsr = dsr.astype(np.int16)
             dsr += np.int16(intercept)
-#            dsr = dsr.astype('int16')
             
-            if medianblur:
-                dsr=cv2.medianBlur(dsr,3)
             dsr = dsr.astype('float32')
 #            print dsr.min(),dsr.max()
             dsrmin= dsr.min()
@@ -295,13 +316,8 @@ def genebmp(dirName,slnt,dimtabx,dimtaby):
 #            dsr = scipy.ndimage.interpolation.zoom(dsr, fxs, mode='nearest')
 #        imgresize=dsr
             dsr=dsr.astype('int16')
-#            print dsr.min(),dsr.max()
 
-#            print dsr.mean()/(16*16)
-#                        print dsr.min(),dsr.max(),dsr.shape
-#            dsr=cv2.resize(dsr,None,fx=fxs,fy=fxs,interpolation=cv2.INTER_LINEAR)          
-
-            tabscan[scanNumber]=dsr.copy()
+            tabscano[scanNumber]=dsr.copy()
             tabscanName[scanNumber]=imgcoredebss
             dsrforimage=normi(dsr)
             imgcored=imgcoredeb+typei
@@ -317,6 +333,42 @@ def genebmp(dirName,slnt,dimtabx,dimtaby):
             dsrforimage=tagviews(dsrforimage,textw,0,20)
             cv2.imwrite (bmpfileroi, dsrforimage)
             tabsroi[scanNumber]=dsrforimage
+            
+    for scanNumber in range (1,slnt):
+            
+                tabscanos= tabscano[scanNumber].astype('float32')
+                dtx=tabscanos.shape[0]
+                if medianblur:
+                    tabscanos=cv2.medianBlur(tabscanos,3)             
+                if average3:
+                    ts9 = tabscano[max(scanNumber-1,1)].astype('float32')
+                    ts11 = tabscano[min(scanNumber+1,slnt-1)].astype('float32') 
+                    tabscanos=(tabscanos+ts9+ts11)/3.
+                    
+                if median3:
+                    ts9 = tabscano[max(scanNumber-1,1)].astype('float32')
+                    ts11 = tabscano[min(scanNumber+1,slnt-1)].astype('float32')
+                    tmedian=np.median(np.dstack((ts9,tabscanos,ts11)),axis=2)
+                    tabsref = np.zeros((dtx,dtx),'float32')    
+                    dift=tabscanos-ts9
+                    dift1=ts11-tabscanos
+                    tmaxabs=np.maximum(abs(dift),abs(dift1))
+                    np.putmask(tabsref,tmaxabs<201,tabscanos)
+                    np.putmask(tabsref,tmaxabs>200,tmedian)
+                    tabscanos=tabsref
+                                   
+                tabscan[scanNumber]=tabscanos.astype('int16')
+#                textw='n: '+tail+' scan: '+str(scanNumber)
+
+#                cv2.imwrite (bmpfiled, dsrforimage)
+#                dsrforimage=cv2.cvtColor(dsrforimage,cv2.COLOR_GRAY2BGR)
+#                dsrforimage=tagviews(dsrforimage,textw,2,20)
+##                cv2.imwrite (bmpfileroi, dsrforimage)
+#                tabsroi[scanNumber]=dsrforimage
+    if numbit:
+            for scanNumber in range (1,slnt):
+                    tabscanm1[scanNumber]=tabscan[max(scanNumber-1,1)]
+                    tabscanp1[scanNumber]=tabscan[min(scanNumber+1,slnt-1)]
 
     
     for lungfile in lunglist:
@@ -338,7 +390,7 @@ def genebmp(dirName,slnt,dimtabx,dimtaby):
                 tabslung[scanNumber]=dsrresize
                 cv2.imwrite (bmpfile, dsrresize)
 
-    return tabscan,tabsroi,tabscanName,tabslung
+    return tabscan,tabsroi,tabscanName,tabslung,tabscanm1,tabscanp1
 
 def reptfulle(tabc,dx,dy,col):
     imgi = np.zeros((dx,dy,3), np.uint8)
@@ -385,7 +437,7 @@ def contour2(im,l):
     return vis
 
 
-def pavs (namedirtopcf,label,loca,slnt,numslice,namescan):
+def pavs (namedirtopcf,label,loca,slnt,numslice,namescan,tabscanm1,tabscan,tabscanp1):
     """ generate patches from ROI"""
     (top,tail)=os.path.split(namedirtopcf)
     
@@ -437,7 +489,6 @@ def pavs (namedirtopcf,label,loca,slnt,numslice,namescan):
                 imn = cv2.cvtColor(imn, cv2.COLOR_BGR2RGB)
                 sroifile=namescan+'.'+typei
                 filenamesroi=os.path.join(sroidir,sroifile)
-#                print 'filenamesroi',filenamesroi
                 cv2.imwrite(filenamesroi,imn)
 
                 atabf = np.nonzero(tabf)
@@ -449,12 +500,11 @@ def pavs (namedirtopcf,label,loca,slnt,numslice,namescan):
                 tabf=cv2.cvtColor(tabf, cv2.COLOR_BGR2GRAY)
                 np.putmask(tabf,tabf>0,1)
                 _tabscan=tabscan[int(numslice)]
-#                imgray8b=normi(_tabscan)
-#                start=time.time()
-#                i=xmin
-#                while i <= xmax:
-                for  i in range(xmin,xmax+1):
+                if numbit:
+                    _tabscanm1=tabscanm1[int(numslice)]
+                    _tabscanp1=tabscanp1[int(numslice)]
 
+                for  i in range(xmin,xmax+1):
                     j=ymin
                     while j<=ymax:
                         tabpatch=tabf[j:j+dimpavy,i:i+dimpavx]
@@ -462,51 +512,39 @@ def pavs (namedirtopcf,label,loca,slnt,numslice,namescan):
                         targ=float(area)/pxy
 
                         if targ >thrpatch:
-
+                            
                             imgray = _tabscan[j:j+dimpavy,i:i+dimpavx]
-
-#                            imagemax= cv2.countNonZero(imgray)
+                            if numbit:
+                                imgraym1 = _tabscanm1[j:j+dimpavy,i:i+dimpavx]
+                                imgrayp1 = _tabscanp1[j:j+dimpavy,i:i+dimpavx]
+                                
                             max_val= imgray.max()
                             min_val=imgray.min()
 
-#                            min_val, max_val, min_loc,max_loc = cv2.minMaxLoc(imgray)
-
                             if  max_val - min_val>2:
-#                            if imagemax > 0 :
-
                                 nbp+=1
                                 if numbit:
-                                    imgraystack = np.expand_dims(imgray,-1) 
-                                    imgraystack=np.repeat(imgraystack,3,axis=-1)
+                                    if minmax:
+                                        imgrayminimum=np.minimum(imgray,imgraym1)
+                                        imgrayminimum=np.minimum(imgrayp1,imgrayminimum)
+                                        
+                                        imgraymaximum=np.maximum(imgray,imgraym1)
+                                        imgraymaximum=np.maximum(imgrayp1,imgraymaximum)
+                                        imgraystack=np.dstack((imgrayminimum,imgray,imgraymaximum))
+                                        
+                                    else:                                   
+                                        imgraystack=np.dstack((imgraym1,imgray,imgrayp1))
                                     patpickle.append(imgraystack)
+
                                 else:
                                     patpickle.append(imgray)
 
-#                                imgraytowrite = normi(imgray)
-#                                nampa=os.path.join(nampadirl,namedirHUG+'_'+tail+
-#                                                   '_'+str(numslice)+'_'+str(i)+'_'+str(j)+'_'+str(nbp)+'.'+typei )                                
-#                                cv2.imwrite (nampa, imgraytowrite)
-#                                x=0
                                 cv2.rectangle(tabp,(i,j),(i+dimpavx,j+dimpavy),200,0)
                                 tabf[j:j+dimpavy,i:i+dimpavx]=0
-                                #we draw the rectange
-#                                while x < dimpavx:
-#                                    y=0
-#                                    while y < dimpavy:
-#                                        tabp[y+j][x+i]=150
-#                                        if x == 0 or x == dimpavx-1 :
-#                                            y+=1
-#                                        else:
-#                                            y+=dimpavy-1
-#                                    x+=1
-#                                #we cancel the source
-#                                tabf[j:j+dimpavy,i:i+dimpavx]=0
+  
                                 j+=dimpavy-1
                         j+=1
-#                    i+=1
-#           end=time.time()
-#           print end-start
-#           sys.exit()
+
            if nbp>0:
              tabfc =tabfc+tabp
              ntotpat=ntotpat+nbp
@@ -711,7 +749,7 @@ for f in listdirc:
     
     dimtabx,dimtaby,slnt = genepara(namedirtopcf)
 #        print dimtabx,dimtaby,slnt
-    tabscan,tabsroi,tabscanname,tabslung=genebmp(namedirtopcf,slnt,dimtabx,dimtaby)
+    tabscan,tabsroi,tabscanname,tabslung,tabscanm1,tabscanp1=genebmp(namedirtopcf,slnt,dimtabx,dimtaby)
     nbpf=0
     tabroipat={}
     for label in usedclassifall:
@@ -832,7 +870,7 @@ for f in listdirc:
                 tabroipat[label][int(numslice)]=imgc
 #                if label =='ground_glass' and numslice==13:
 #                print '1',tabroipat[label][numslice].max(),label,numslice
-                nbp=pavs(namedirtopcf,label,loca,slnt,numslice,tabscanname[int(numslice)])
+                nbp=pavs(namedirtopcf,label,loca,slnt,numslice,tabscanname[int(numslice)],tabscanm1,tabscan,tabscanp1)
 #                print 'nbp',nbp
 
                 nbpf=nbpf+nbp
@@ -840,9 +878,9 @@ for f in listdirc:
 #    genebackground(namedirtopcf)
 #    print listsliceok
 #    print type(listsliceok[0])
-    for numslice in listsliceok:
-        nbp=pavs(namedirtopcf,fidclass(0,classifall),locabg,slnt,numslice,tabscanname[int(numslice)])
-        nbpf=nbpf+nbp
+#    for numslice in listsliceok:
+#        nbp=pavs(namedirtopcf,fidclass(0,classifall),locabg,slnt,numslice,tabscanname[int(numslice)])
+#        nbpf=nbpf+nbp
     namenbpat=namedirHUG+'_nbpat_'+f+'.txt'
     ofilepw = open(os.path.join(jpegpath,namenbpat), 'w')
     ofilepw.write('number of patches: '+str(nbpf))

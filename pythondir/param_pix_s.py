@@ -31,25 +31,36 @@ print ' keras.backend.image_data_format :',keras.backend.image_data_format()
 oldFormat=False #for compatibility with old format
 
 writeFile=False
+minmax=False #to be put to True for min and max on 5 slice
 """
 MIN_BOUND = -1000.0
 MAX_BOUND = 400.0
 PIXEL_MEAN = 0.25
 """
-limitHU=1424.0
-centerHU=-312.0
-PIXEL_MEAN = 0.2725
 
-#limitHU=1700.0
-#centerHU=-662.0
-#PIXEL_MEAN = 0.52
+minb=-1024.0
+maxb=400.
+PIXEL_MEAN = 0.275
 
-minb=centerHU-(limitHU/2)
-maxb=centerHU+(limitHU/2)
-MIN_BOUND =minb
+
+MIN_BOUND = minb
 MAX_BOUND = maxb
 
-PIXEL_MEAN = 0.2725
+
+#limitHU=1424.0
+#centerHU=-312.0
+#PIXEL_MEAN = 0.2725
+#
+##limitHU=1700.0
+##centerHU=-662.0
+##PIXEL_MEAN = 0.52
+#
+#minb=centerHU-(limitHU/2)
+#maxb=centerHU+(limitHU/2)
+#MIN_BOUND =minb
+#MAX_BOUND = maxb
+#
+#PIXEL_MEAN = 0.2725
 
 print 'MIN_BOUND:',MIN_BOUND,'MAX_BOUND:',MAX_BOUND,'PIXEL_MEAN',PIXEL_MEAN
 #sys.exit()

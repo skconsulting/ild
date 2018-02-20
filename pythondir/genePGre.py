@@ -34,15 +34,17 @@ import cPickle as pickle
 #######################################################
 #global directory for scan file
 topdir='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool'
-namedirHUG = 'CHU2new'
+#namedirHUG = 'CHU2new'
 #namedirHUG = 'CHU2'
 #namedirHUG = 'CHU'
-#namedirHUG = 'REFVALnew'
+#namedirHUG = 'REFnew'
+
+namedirHUG = 'REFVALnew'
 
 
-subHUG='UIP'
+#subHUG='UIP'
 #subHUG='ILD_TXT'
-#subHUG='UIPJC'
+subHUG='UIPJC'
 #subHUG='UIPJCAN'
 
 
@@ -50,8 +52,8 @@ subHUG='UIP'
 toppatch= 'TOPPATCH'
 #extension for output dir
 #extendir='val'
-extendir='all'
-extendir='essai1'
+extendir='val'
+#extendir='essai2'
 
 if medianblur:
     exta1='m'
@@ -67,7 +69,7 @@ else:
     exta2=''
 if numbit: 
     if minmax: 
-        exta3='_3bm53'
+        exta3='_3bm5'
     else:
         exta3='_3b'
 else:
@@ -76,11 +78,12 @@ else:
 extendir1=namedirHUG+'_'+subHUG+'_'+exta1+exta2+exta3
 
 
-alreadyDone =[ 'S107260', 'S139370', 'S139430', 'S139431', 'S145210', 
-              'S14740', 'S15440', 'S1830', 'S274820', 
-              'S275050', 'S28200', 'S335940', 'S359750', 
-              'S4550', 'S72260', 'S72261']
-alreadyDone =['']
+#alreadyDone =[ 'S107260', 'S139370', 'S139430', 'S139431', 'S145210', 
+#              'S14740', 'S15440', 'S1830', 'S274820', 
+#              'S275050', 'S28200', 'S335940', 'S359750', 
+#              'S4550', 'S72260', 'S72261']
+#alreadyDone =['TR10','TR11','TR12','TR20']
+alreadyDone =[]
 #labelEnh=('consolidation','reticulation,air_trapping','bronchiectasis','cysts')
 labelEnh=()
 locabg='anywhere_CHUG'
@@ -541,8 +544,13 @@ def contour2(im,l):
     im2,contours0, hierarchy = cv2.findContours(thresh,cv2.RETR_TREE,\
         cv2.CHAIN_APPROX_SIMPLE)
     contours = [cv2.approxPolyDP(cnt, 0, True) for cnt in contours0]
+    
+#    cv2.imshow('im',normi(im))
+#    cv2.waitKey(0)
+#    cv2.destroyAllWindows()
+#    ooo
     cv2.drawContours(vis,contours,-1,col,-1,cv2.LINE_AA)
-    return vis
+    return vis,contours0
 
 def pavs (dirName,pat,slnt,dimtabx,dimtaby,tabscanName,listroi,tabscanm1,tabscan,tabscanp1):
     """ generate patches from ROI"""
@@ -583,7 +591,7 @@ def pavs (dirName,pat,slnt,dimtabx,dimtaby,tabscanName,listroi,tabscanm1,tabscan
     for scannumb in listroi:
 #       print 'wrok on scan: ',scannumb
 
-       tabp = np.zeros((dimtabx, dimtaby), dtype='i')
+       tabp = np.zeros((dimtabx, dimtaby), np.uint8)
        tabf=np.copy(tabroipat[pat][scannumb])
 
        tabfc=np.copy(tabf)
@@ -591,7 +599,7 @@ def pavs (dirName,pat,slnt,dimtabx,dimtaby,tabscanName,listroi,tabscanm1,tabscan
        nbp=0
 
        if tabf.max()>0:
-           vis=contour2(tabf,pat)
+           vis,contours0=contour2(tabf,pat)
            if vis.sum()>0:
 
                 _tabsroi = np.copy(tabsroi[scannumb])
@@ -602,14 +610,7 @@ def pavs (dirName,pat,slnt,dimtabx,dimtaby,tabscanName,listroi,tabscanm1,tabscan
                 sroifile=tabscanName[scannumb]+'.'+typei1
                 filenamesroi=os.path.join(sroidir,sroifile)
                 cv2.imwrite(filenamesroi,imn)
-
-                atabf = np.nonzero(tabf)
-
-                xmin=atabf[1].min()
-                xmax=atabf[1].max()
-                ymin=atabf[0].min()
-                ymax=atabf[0].max()
-
+                
                 np.putmask(tabf,tabf>0,1)
                 _tabscan=tabscan[scannumb]
                 if numbit:
@@ -619,61 +620,80 @@ def pavs (dirName,pat,slnt,dimtabx,dimtaby,tabscanName,listroi,tabscanm1,tabscan
                     _tabscanm2=tabscanm1[max(1,scannumb-1)]
                     _tabscanp2=tabscanp1[min(scannumb+1,slnt-1)]
 #                    _tabscanp2=tabscanp1[min(scannumb+1,slnt-1)]
-                  
-                for  i in range(xmin,xmax+1):
-                    j=ymin
-                    while j<=ymax:
-                        tabpatch=tabf[j:j+dimpavy,i:i+dimpavx]
-                        area= tabpatch.sum()
-                        targ=float(area)/pxy
-                        
-                        if targ >thrpatch:
-                            imgray = _tabscan[j:j+dimpavy,i:i+dimpavx]
-                            if numbit:
-                                imgraym1 = _tabscanm1[j:j+dimpavy,i:i+dimpavx]
-                                imgrayp1 = _tabscanp1[j:j+dimpavy,i:i+dimpavx]
-                                imgraym2 = _tabscanm2[j:j+dimpavy,i:i+dimpavx]
-                                imgrayp2 = _tabscanp2[j:j+dimpavy,i:i+dimpavx]
-#                                imgraym2 = _tabscanm2[j:j+dimpavy,i:i+dimpavx]
-#                                imgrayp2 = _tabscanp2[j:j+dimpavy,i:i+dimpavx]
-                            max_val= imgray.max()
-                            min_val=imgray.min()
+                    
+                for cnt in contours0:
+                    x,y,w,h = cv2.boundingRect(cnt)
+#                    print x,y,w,h  
+#                    ooo
+                    if w > dimpavx and h> dimpavy:
+                        for  i in range(x,x+w):
+                            j=y
+                            while j<=y+h:
+                                tabpatch=tabf[j:j+dimpavy,i:i+dimpavx]
+                                area= tabpatch.sum()
+        #                        print tabpatch.min(),tabpatch.max()
+                                targ=float(area)/pxy
+        #                        print area,pxy,thrpatch,targ
+                                
+                                if targ >thrpatch:
+                                    imgray = _tabscan[j:j+dimpavy,i:i+dimpavx]
+                                    if numbit:
+                                        imgraym1 = _tabscanm1[j:j+dimpavy,i:i+dimpavx]
+                                        imgrayp1 = _tabscanp1[j:j+dimpavy,i:i+dimpavx]
+                                        imgraym2 = _tabscanm2[j:j+dimpavy,i:i+dimpavx]
+                                        imgrayp2 = _tabscanp2[j:j+dimpavy,i:i+dimpavx]
+        #                                imgraym2 = _tabscanm2[j:j+dimpavy,i:i+dimpavx]
+        #                                imgrayp2 = _tabscanp2[j:j+dimpavy,i:i+dimpavx]
+                                    max_val= imgray.max()
+                                    min_val=imgray.min()
+        
+                                    if  max_val - min_val>2:
+                                        nbp+=1
+                                        if numbit:
+                                            if minmax:
+                                                imgrayminimum=np.minimum(imgray,imgraym2)
+                                                imgrayminimum=np.minimum(imgraym1,imgrayminimum)                                      
+                                                imgrayminimum=np.minimum(imgrayp1,imgrayminimum)
+                                                imgrayminimum=np.minimum(imgrayp2,imgrayminimum)
+                                                
+                                                imgraymaximum=np.maximum(imgray,imgraym2)
+                                                imgraymaximum=np.maximum(imgraym1,imgraymaximum)
+                                                imgraymaximum=np.maximum(imgrayp1,imgraymaximum)
+                                                imgraymaximum=np.maximum(imgrayp2,imgraymaximum)
+        
+                                                
+#                                                imgraystack=np.dstack((imgrayminimum,imgraym1,imgray,imgrayp1,imgraymaximum))
+                                                imgraystack=np.dstack((imgrayminimum,imgray,imgraymaximum))
 
-                            if  max_val - min_val>2:
-                                nbp+=1
-                                if numbit:
-                                    if minmax:
-                                        imgrayminimum=np.minimum(imgray,imgraym2)
-                                        imgrayminimum=np.minimum(imgraym1,imgrayminimum)                                      
-                                        imgrayminimum=np.minimum(imgrayp1,imgrayminimum)
-                                        imgrayminimum=np.minimum(imgrayp2,imgrayminimum)
-                                        
-                                        imgraymaximum=np.maximum(imgray,imgraym2)
-                                        imgraymaximum=np.maximum(imgraym1,imgraymaximum)
-                                        imgraymaximum=np.maximum(imgrayp1,imgraymaximum)
-                                        imgraymaximum=np.maximum(imgrayp2,imgraymaximum)
-
-                                        
-                                        imgraystack=np.dstack((imgrayminimum,imgraym1,imgray,imgrayp1,imgraymaximum))
-#                                        print imgraystack.shape,imgraystack[0,0],imgraym2[0,0],imgraym1[0,0],imgray[0,0],imgrayp1[0,0],imgrayp2[0,0]
-#                                        ooo
-
-                                        
-                                    else:                                   
-#                                        imgraystack=np.dstack((imgraym2,imgraym1,imgray,imgrayp1,imgrayp2))
-                                        imgraystack=np.dstack((imgraym1,imgray,imgrayp1))
-
-#                                        print imgraystack.shape,imgraystack[0,0],imgraym2[0,0],imgraym1[0,0],imgray[0,0],imgrayp1[0,0],imgrayp2[0,0]
-#                                        ooo
-                                    patpickle.append(imgraystack)
-                                    
-                                else:
-                                    patpickle.append(imgray)
-                                cv2.rectangle(tabp,(i,j),(i+dimpavx,j+dimpavy),200,0)
-                                tabf[j:j+dimpavy,i:i+dimpavx]=0
-                                j+=dimpavy-1
-                        j+=1
-                    i+=1
+        #                                        print imgraystack.shape,imgraystack[0,0],imgraym2[0,0],imgraym1[0,0],imgray[0,0],imgrayp1[0,0],imgrayp2[0,0]
+        #                                        ooo
+        
+                                                
+                                            else:                                   
+        #                                        imgraystack=np.dstack((imgraym2,imgraym1,imgray,imgrayp1,imgrayp2))
+                                                imgraystack=np.dstack((imgraym1,imgray,imgrayp1))
+        
+        #                                        print imgraystack.shape,imgraystack[0,0],imgraym2[0,0],imgraym1[0,0],imgray[0,0],imgrayp1[0,0],imgrayp2[0,0]
+        #                                        ooo
+                                            patpickle.append(imgraystack)
+                                            
+                                        else:
+                                            patpickle.append(imgray)
+                                        cv2.rectangle(tabp,(i,j),(i+dimpavx,j+dimpavy),200,0)
+        #                                tabftempo=tabf.copy()
+        #                                tabftempo[j:j+dimpavy,i:i+dimpavx]=255
+        #                                cv2.imshow('tabp',tabp)
+        #                                cv2.imshow('tabf',normi(tabf))
+        #                                cv2.imshow('scan',normi(_tabscan[j:j+dimpavy,i:i+dimpavx]))
+        #                                cv2.imshow('scanf',normi(_tabscan))
+        #                                cv2.imshow('tabftempo',normi(tabftempo))
+        #                                cv2.waitKey(0)
+        #                                cv2.destroyAllWindows()
+        #                                ooo
+                                        tabf[j:j+dimpavy,i:i+dimpavx]=0
+                                        j+=dimpavy-1
+                                j+=1
+                            i+=1
 
        if nbp>0:
 #             print tabfc.shape,tabp.shape

@@ -47,10 +47,10 @@ pickel_dirsourcenum='set1' #extensioon for path for data for training
 #extendir1='2'
 extendir1='1'
 #extendir2='3bm5'
-extendir2='1'
+extendir2='1b'
 
 modelarch='sk5'
-valset='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool/th0.95_pickle_val_set1_1_1'
+valset='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool/th0.95_pickle_val_set1_1_1b'
 print 'validation path'
 print valset
 if not os.path.exists(valset):
@@ -59,8 +59,9 @@ if not os.path.exists(valset):
 actrain=True #put true to actually train, otherwise only predict
 calnum=False # put True to calculate the number of images
 #validation_split=0.1 #percentage of val if val_data=False
-trainSetSize=940806 #number of images total 1b
-batch_size=200
+turn =1 #number of times total images*numclass
+
+batch_size=600
 
 #all in percent
 maxshiftv=0
@@ -115,8 +116,10 @@ for category in classif:
 for category in classif:
     print 'number of patches in train: ', category, classNumber[category]
 print 'number total of images:',totalimages
-print 'number total of images for trainSetSize:',totalimages*num_class
-print 'ratio with trainSetSize:',1.0*totalimages*num_class/trainSetSize
+trainSetSize=turn*totalimages*num_class
+print 'number total of images for trainSetSize:',trainSetSize
+
+print 'ratio with trainSetSize:',1.0*trainSetSize/(totalimages*num_class)
 if calnum:
     sys.exit()
 
