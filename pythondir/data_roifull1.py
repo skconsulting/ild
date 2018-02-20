@@ -13,9 +13,10 @@ include generation per pattern
 
 from param_pix import cwdtop,lungmask,lungmask1,lung_namebmp,image_rows,image_cols,typei1
 from param_pix import sroi,source,scan_bmp ,derivedpat,layertokeep
-from param_pix import limitHU,centerHU,yellow
+from param_pix import yellow,reservedword,MIN_BOUND,MAX_BOUND
+
 from param_pix import remove_folder,normi,rsliceNum,norm,colorimage
-from param_pix import classifc,classif,MAX_BOUND
+from param_pix import classifc,classif
 
 import cPickle as pickle
 import cv2
@@ -38,26 +39,26 @@ nametop='SOURCE_IMAGE'
 #nameHug='HUG'
 #nameHug='CHU2new'
 #nameHug='CHU'
-nameHug='CHU2'
-#nameHug='REFVAL'
+#nameHug='CHU2'
+nameHug='REFVAL'
 #subHUG='ILD6'
 #subHUG='ILD_TXT'
 #subHUG='ILD208'
 #subHUG='UIP4'
 #subHUG='UIP6'
-subHUG='UIP'
-#subHUG='TR18'
+#subHUG='UIP'
+subHUG='JCnew'
 
 
 #path for image dir for CNN
 
 imagedir='IMAGEDIR'
-#toppatch= 'TOPVAL'
-toppatch= 'TOPROI'
+toppatch= 'TOPVAL'
+#toppatch= 'TOPROI'
 
 extendir='0'
-#extendir='ILD6'
-
+#extendir='UIP0'
+alreadyDone=[]
 ###############################################################
 
 path_TOP=os.path.join(cwdtop,nametop)
@@ -286,7 +287,7 @@ def morph(imgt,k):
 
 
   
-def genebmp(fn,sou,nosource,centerHU, limitHU, tabscanName,tabscanroi,dimtabx,dimtaby):
+def genebmp(fn,sou,nosource, tabscanName,tabscanroi,dimtabx,dimtaby):
     """generate patches from dicom files"""
     global picklein_file
     (top,tail) =os.path.split(fn)
@@ -317,8 +318,8 @@ def genebmp(fn,sou,nosource,centerHU, limitHU, tabscanName,tabscanroi,dimtabx,di
     print 'slice pitch in z :',slicepitch
 #    ooo
     print 'patient position :',patientPosition
-    lbHU=centerHU-limitHU/2
-    lhHU=centerHU+limitHU/2
+    lbHU=MIN_BOUND
+    lhHU=MAX_BOUND
 #    dsr= RefDs.pixel_array
     
     PixelSpacing=float(RefDs.PixelSpacing[0])
@@ -385,8 +386,8 @@ def genebmp(fn,sou,nosource,centerHU, limitHU, tabscanName,tabscanroi,dimtabx,di
         t3='Scan: '+str(slicenumber)
 
         t4=time.asctime()
-        t5='CenterHU: '+str(int(centerHU))
-        t6='LimitHU: +/-' +str(int(limitHU/2))
+        t5='MinHU: '+str(int(MIN_BOUND))
+        t6='MaxHU: ' +str(int(MAX_BOUND))
                 
         anoted_image=tagviews(imtowrite,t0,0,10,t1,0,dimtaby-20,t2,0,20,
                      t3,0,dimtaby-30,t4,0,dimtaby-10,t5,0,dimtaby-40,t6,0,dimtaby-50)        
@@ -497,17 +498,11 @@ def genebmplung(fn,lungname,slnt,dimtabx,dimtaby,tabscanScan,listsln,tabscanName
                     segmented_lungs_fill=np.zeros((slnt,dimtabx,dimtabx), np.uint8)
                     for i in listsln:
                         segmented_lungs_fill[i]=get_segmented_lungs(tabscanScan[i])
-                
-                
-                
-    
-#                segmented_lungs_fill = segment_lung_mask(tabscanScan, True)
-    #            print segmented_lungs_fill.shape
+
                 for i in listsln:
                     
                     tabscan1[i]=morph(segmented_lungs_fill[i],13)
-    #                if i ==200:
-    #                    cv2.imshow(str(i),normi(tabscan1[i]))
+
     
                     imgcoreScan=tabscanName[i]
                     bmpfile=os.path.join(fmbmpbmp,imgcoreScan)
@@ -568,6 +563,7 @@ def peparescan(numslice,tabs,tabl,datascan):
 #    np.putmask(tabslung,tabslung>0,1)
     
     tablc=tabslung.astype(np.int16)
+#    print tablc.min(),tablc.max()
     np.putmask(tablc,tablc==0,MAX_BOUND)#MAX_BOUND is the label for outside lung area
     np.putmask(tablc,tablc==255,0)
         
@@ -675,8 +671,8 @@ def calnewpat(pat,slnroi,tabroipat,tabroi):
             tabroi[i]=np.bitwise_or(tabroi[i],tab1) 
             tabroi[i]=np.bitwise_or(tabroi[i],tab2) 
             tabroi[i]=np.bitwise_or(tabroi[i],tab) 
-
     return tabroi
+
 def tagviewct(tab,label,x,y):
     """write text in image according to label and color"""
 
@@ -800,7 +796,10 @@ def generoi(dirf,tabroi,dimtabx,dimtaby,slnroi,tabscanName,dirroit,tabscanroi,ta
 
 
 ##############################################################################
-listdirc= (os.listdir(namedirtopc))
+listdirc= [ name for name in os.listdir(namedirtopc) if os.path.isdir(os.path.join(namedirtopc, name)) and \
+            name not in alreadyDone and name not in reservedword]
+print listdirc
+
 listpat=[]
 listslicetot={}
 listpatf={}
@@ -846,7 +845,7 @@ for f in listdirc:
     tabscanName={}
     tabscanroi={}
     tabscanScan,slnt,slicepitch,lissln,tabscanroi,tabscanName,PixelSpacing=genebmp(dirf,
-                        source,nosource, centerHU, limitHU,tabscanName,tabscanroi,image_rows,image_cols)
+                        source,nosource,tabscanName,tabscanroi,image_rows,image_cols)
     tabscanLung,tabrange=genebmplung(dirf,lungmaski,slnt,image_rows,image_cols,tabscanScan,lissln,tabscanName)
     slnroi=[]
     tabroi=np.zeros((slnt,image_rows,image_cols), np.uint8) 

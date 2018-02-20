@@ -3,6 +3,7 @@
 Created on 07 july 2017
 class patches against probability
 DO NOT applies norming through norm
+need to change mean pix in param pix
 @author: sylvain
 """
 import cPickle as pickle
@@ -31,6 +32,7 @@ subHUG='patchesref'#subdirectory from nameHug input pickle
 
 toppatch= 'classpatch' #name of top directory for image and label generation
 
+#for set1
 classifild ={
         'consolidation':0,
         'HC':1,
@@ -38,12 +40,12 @@ classifild ={
         'healthy':3,
         'micronodules':4,
         'reticulation':5,
-        'air_trapping':6,
-        'cysts':7,
-        'bronchiectasis':8,
-#        'emphysema':10,
-        'GGpret':9
+        'bronchiectasis':6,
+        'emphysema':7,
+        'GGpret':8
         }
+
+
 
 cwd=os.getcwd()
 #
@@ -51,8 +53,8 @@ cwd=os.getcwd()
 
 picklepatches='picklepatches' 
 weightildcnn='weightildcnn'
-pcross='set0_c0'
-pfront='set0_c0'
+pcross='set1_c0'
+pfront='set1_c0'
 modelArch='CNN.h5'
 pathmodelarch='modelArch'
 
@@ -99,23 +101,36 @@ def genebmppatch(dirName,pat):
     patdic=[]
     patdicn=[]
 
-    dirName='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool/th0.95_TOPPATCH_all_2/picklepatches'
+    dirName='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool/th0.95_TOPPATCH_all_CHU2new_UIP_3_1b/picklepatches'
+#    dirName='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool/th0.95_TOPPATCH_all_HUG_ILD_TXT__1b/picklepatches'
+
 
     patdir=os.path.join(dirName,pat)
+    print patdir
+
 #    dirName='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool/th0.95_TOPPATCH_all_2/picklepatches'
-    subd=os.listdir(patdir)
-    for loca in subd:
-        patsubdir=os.path.join(patdir,loca)
-        listpickles=os.listdir(patsubdir)        
-        for l in listpickles:
-                listscan=pickle.load(open(os.path.join(patsubdir,l),"rb"))
-#                print patsubdir,l
-                for num in range(len(listscan)):
-#                    print listscan[num].min(),listscan[num].max()
-                    patscan=norm(listscan[num])
-#                    print patscan.min(),patscan.max()
-                    patdicn.append(patscan)
-                    patdic.append(listscan[num])
+
+    try:
+        subd=os.listdir(patdir)
+
+        for loca in subd:
+
+
+            patsubdir=os.path.join(patdir,loca)
+            listpickles=os.listdir(patsubdir)        
+            for l in listpickles:
+                    listscan=pickle.load(open(os.path.join(patsubdir,l),"rb"))
+#                    print patsubdir,l
+                    for num in range(len(listscan)):
+#                        print listscan[num].min(),listscan[num].max()
+
+                        patscan=norm(listscan[num])
+    #                    print patscan.min(),patscan.max()
+                        patdicn.append(patscan)
+                        patdic.append(listscan[num])
+    except:
+        print 'no ',pat   
+     
     return patdic,patdicn
                 
 
@@ -123,52 +138,32 @@ def genebmppatch(dirName,pat):
 
 def ILDCNNpredict(patch_list,model):
     print ('Predict started ....')
-
+    ok=False
     X0=len(patch_list)
-
     if X0 > 0:
 
-        pa = np.expand_dims(patch_list, 1)
+        pa = np.expand_dims(np.array(patch_list), 1)
         proba = model.predict_proba(pa, batch_size=500,verbose=1)
-
+        print 'number of patches', len(pa)
+        ok=True
     else:
         print (' no patch in selected slice')
         proba = ()
-    print 'number of patches', len(pa)
 
-    return proba
+    return proba,ok
 
-
-def modelCompilation(t,picklein_file,picklein_file_front,setdata):
+def modelCompilation(picklein_file,namelastc):
     
-    print 'model compilation',t
-    
+    print 'model compilation'   
 
-    dirpickleArchs=os.path.join(dirpickleArch,setdata)
-    dirpickleArchsc=os.path.join(dirpickleArchs,modelArch)
-
-    json_string=pickle.load( open(dirpickleArchsc, "rb"))
-#    print dirpickleArchsc
+    json_string=pickle.load( open(picklein_file, "rb"))
     model = model_from_json(json_string)
+    model.load_weights(namelastc) 
     model.compile(optimizer='Adam', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
 #        model.compile()
+       
+    return model
 
-    if t=='cross':
-        lismodel=os.listdir(picklein_file)
-        
-        modelpath = os.path.join(picklein_file, lismodel[0])
-#        print modelpath
-    if t=='front':
-        lismodel=os.listdir(picklein_file_front)
-        modelpath = os.path.join(picklein_file_front, lismodel[0])
-
-    if os.path.exists(modelpath):
-        print 'weight exist',modelpath
-        model.load_weights(modelpath)  
-        
-        return model
-    else:
-        print 'weight dos not exist',modelpath
 
 
 listpat=[]
@@ -183,7 +178,17 @@ classinsource =[name for name in os.listdir(namedirtopcpickle) if name in classi
 print classinsource,namedirtopcpickle
 
 patdic={}
-model=modelCompilation('cross',picklein_file,picklein_file_front,setdata)
+lismodel=os.listdir(picklein_file)      
+namelastc = os.path.join(picklein_file, lismodel[0])
+dirpickleArchs=os.path.join(dirpickleArch,setdata)
+dirpickleArchsc=os.path.join(dirpickleArchs,modelArch)
+print ' architecture path',dirpickleArchsc
+print 'weight path:',namelastc
+
+
+
+model=modelCompilation(dirpickleArchsc,namelastc)
+
 
 thpat={}
 for pat in classinsource: 
@@ -204,67 +209,74 @@ finalpatn=0
 patnumberinit={}
 patnumberfinal={}
 for pat in classinsource: 
+#    pat='ground_glass'
+    patnumberfinal[pat]=0
+   
     cp=classifild[pat]
     th=thpat[pat]
     scantab=[]
     propatab=[]
     print 'work on :',pat, 'number',str(cp)
+
     tabscan,tabscann=genebmppatch(namedirtopcpickle,pat)
     #tabsacn: no norm, tabscann: norm
     patnumberinit[pat]=len(tabscan)
     initpatn=initpatn+len(tabscan)
     print 'number of patches for pattern :',pat,':',len(tabscan)
     
-    probapat=ILDCNNpredict(tabscann,model)
-#    print probapat.shape
-    cpp=np.amax(probapat ,axis=-1)
-    cpr=np.argmax(probapat,axis=-1 )
-#    print probapat[0]
-#    print cpp[0]
-#    print cpr[0]
-#    ooo
-#    probapat=100*probapat
-#    probapat=probapat.astype('uint')
-##    cpp=np.amax(probapat)
+    probapat,ok=ILDCNNpredict(tabscann,model)
     
-    plt.figure(figsize = (4, 3))
-#    print 'imamax min max',imamax.min(), imamax.max(),imamax[100][200]
-    plt.hist(cpr.flatten(), bins=50, color='c')
-    plt.xlabel("class")
-    plt.ylabel("Frequency")
-    plt.show()
-    plt.figure(figsize = (4, 3))
-    plt.hist(cpp.flatten(), bins=50, color='c')
-    plt.xlabel("proba")
-    plt.ylabel("Frequency")
-    plt.show()
-#    print cpp[10]
-#    print cpr[10]
-#    print probapat[10]
-    
-    for image, proba in zip(tabscan, probapat):
-        cpr=np.argmax(proba)
-        cpp=np.amax(proba)
-        if cpr==cp and cpp >th:
-            scantab.append(image)
-#            print cp,cpr,cpp
-#        else:
+    if ok:
+
+        cpp=np.amax(probapat ,axis=-1)
+        cpr=np.argmax(probapat,axis=-1 )
+#        print probapat[0]
+#        print cpp[0]
+#        print cpr[0]
+    #    ooo
+    #    probapat=100*probapat
+    #    probapat=probapat.astype('uint')
+    ##    cpp=np.amax(probapat)
+        
+        plt.figure(figsize = (4, 3))
+    #    print 'imamax min max',imamax.min(), imamax.max(),imamax[100][200]
+        plt.hist(cpr.flatten(), bins=50, color='c')
+        plt.xlabel("class")
+        plt.ylabel("Frequency")
+        plt.show()
+        plt.figure(figsize = (4, 3))
+        plt.hist(cpp.flatten(), bins=50, color='c')
+        plt.xlabel("proba")
+        plt.ylabel("Frequency")
+        plt.show()
+
+    #    print cpp[10]
+    #    print cpr[10]
+    #    print probapat[10]
+        
+        for image, proba in zip(tabscan, probapat):
+            cpr=np.argmax(proba)
+            cpp=np.amax(proba)
+            if cpr==cp and cpp >th:
+                scantab.append(image)
+    #            print cp,cpr,cpp
+    #        else:
                      
 #    print len(scantab)
-    print pat,' init :',len(tabscan),'remainaning with threshodl :',str(th), ':',len(scantab)
-    finalpatn=finalpatn+len(scantab)
-    patnumberfinal[pat]=len(scantab)
-#    cv2.imshow('mask',tabscan[0])
-#    cv2.waitKey(0)
-#    cv2.destroyAllWindows()
-    pdirpat=os.path.join(picklepathdir,pat)
-    remove_folder(pdirpat)
-    os.mkdir(pdirpat)
-    pdirpatc=os.path.join(pdirpat,str(th))
-    if not os.path.exists(pdirpatc):
-        os.mkdir(pdirpatc)
-    pdirpatcf=os.path.join(pdirpatc,'pat.pkl')
-    pickle.dump(scantab, open(pdirpatcf, "wb"),protocol=-1)
+        print pat,' init :',len(tabscan),'remainaning with threshodl :',str(th), ':',len(scantab)
+        finalpatn=finalpatn+len(scantab)
+        patnumberfinal[pat]=len(scantab)
+    #    cv2.imshow('mask',tabscan[0])
+    #    cv2.waitKey(0)
+    #    cv2.destroyAllWindows()
+        pdirpat=os.path.join(picklepathdir,pat)
+        if not os.path.exists(pdirpat):
+            os.mkdir(pdirpat)
+        pdirpatc=os.path.join(pdirpat,str(th))
+        if not os.path.exists(pdirpatc):
+            os.mkdir(pdirpatc)
+        pdirpatcf=os.path.join(pdirpatc,'pat.pkl')
+        pickle.dump(scantab, open(pdirpatcf, "wb"),protocol=-1)
 #    lp=pickle.load( open(pdirpatcf, "rb"))
 #    print len(lp)
 #    print lp[0].min(),lp[0].max()

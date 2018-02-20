@@ -7,8 +7,8 @@ Created on Tue May 02 15:04:39 2017
 setdata='set1'
 
 #modelName='fcn8s'
-#modelName='unet'
-modelName='sk4'
+modelName='unet'
+#modelName='sk4'
 #modelName='alexnet'
 #modelName='vgg16
 #setdata='S2'
@@ -84,12 +84,15 @@ cwd=os.getcwd()
 #limitHU=1700.0
 #centerHU=-662.0
 
-limitHU=1424.0
-centerHU=-312.0
-
+#limitHU=1424.0
+#centerHU=-312.0
 #
-minb=centerHU-(limitHU/2)
-maxb=centerHU+(limitHU/2)
+##
+#minb=centerHU-(limitHU/2)
+#maxb=centerHU+(limitHU/2)
+
+minb=-1024.0
+maxb=400.
 
 #minb=-1024.0
 #maxb=400.
@@ -98,9 +101,9 @@ maxb=centerHU+(limitHU/2)
 
 MIN_BOUND =minb
 MAX_BOUND = maxb
-#PIXEL_MEAN = 0.25
-PIXEL_MEAN = 0.87#0.8681 for next
-#PIXEL_MEAN = 0.52 #for ILD patch only
+PIXEL_MEAN = 0.346
+#PIXEL_MEAN = 0.87#0.8681 for next
+#PIXEL_MEAN = 0.275 #for ILD patch only
 
 print 'MIN_BOUND:',MIN_BOUND,'MAX_BOUND:',MAX_BOUND,'PIXEL_MEAN',PIXEL_MEAN
 
@@ -141,7 +144,7 @@ layertokeep= [
         'bronchiectasis',
         ]
 
-
+reservedword=['REPORT_SCORE']
 
 if setdata=='set0':
 #CHU
@@ -564,23 +567,24 @@ def evaluate(actual,pred,num_class):
 
 def double_conv_layerunet(x, size, dropout, batch_norm,dim_org):
     kernel_size=(3,3)
+    if K.image_dim_ordering() == 'th':
+        axis = 1
+    else:
+        axis = 3
+
     conv = Conv2D(size,kernel_size, activation='relu',
                   data_format=dim_org,kernel_constraint=maxnorm(4.),padding='same')(x)
 #    conv = Conv2D(size,kernel_size,kernel_constraint=maxnorm(4.,axis=-1),padding='same')(x)
 
     if batch_norm == True:
-        conv = BatchNormalization( )(conv)
-#    conv = Activation('relu')(conv)
-#    conv = LeakyReLU(alpha=0.15)(conv)
-#    if dropout > 0:
-#        conv = Dropout(dropout)(conv)
+        conv = BatchNormalization(axis=axis)(conv)
 
     conv = Conv2D(size, kernel_size,activation='relu',
                   data_format=dim_org,kernel_constraint=maxnorm(4.), padding='same')(conv)
 #    conv = Conv2D(size,kernel_size,kernel_constraint=maxnorm(4.,axis=-1),padding='same')(conv)
 
     if batch_norm == True:
-        conv = BatchNormalization()(conv)
+        conv = BatchNormalization(axis=axis)(conv)
 #    conv = Activation('relu')(conv)
 #    conv = LeakyReLU(alpha=0.15)(conv)
     if dropout > 0:
@@ -589,16 +593,11 @@ def double_conv_layerunet(x, size, dropout, batch_norm,dim_org):
 
 
 def get_unet(num_class,num_bit,img_rows,img_cols,INP_SHAPE,dim_org,CONCAT_AXIS):
-#    global weights
+
     print 'this is model UNET new1'
-#    print dim_org
-#    CONCAT_AXIS=3
-#    print 'CONCAT_AXIS',CONCAT_AXIS
-#    weights=w
+
     coefcon={}
     coefcon[1]=16 #32 for 320
-    
-#    coefcon[1]=4 #32 for 320
 
 #coefcon[1]=16 #32 for 320 #16 for gpu
     for i in range (2,6):
@@ -940,6 +939,10 @@ class weighted_categorical_crossentropy(object):
         loss = y_true*K.log(y_pred)*self.weights
         loss =-K.sum(loss,-1)
         return loss      
+
+def categorical_accuracy(y_true, y_pred):
+ return K.cast(K.equal(K.argmax(y_true, axis=-1), K.argmax(y_pred, axis=-1)), K.floatx())
+
  
 
 def w_categorical_crossentropyold(y_true, y_pred, weights):
@@ -966,15 +969,14 @@ def w_categorical_crossentropy(weights):
     return loss
 
 
-def mean_pred(y_true, y_pred):
-    return K.mean(y_pred)
-
 def single_class_accuracy(interesting_class_id):
     def fn(y_true, y_pred):
         class_id_true = K.argmax(y_true, axis=-1)
         class_id_preds = K.argmax(y_pred, axis=-1)
         # Replace class_id_preds with class_id_true for recall here
-        accuracy_mask = K.cast(K.not_equal(class_id_preds, interesting_class_id), 'int32')
+        accuracy_mask = K.cast(K.equal(class_id_true, interesting_class_id), 'int32')
+#        accuracy_mask = K.cast(K.equal(class_id_true, interesting_class_id), 'int32')
+
         class_acc_tensor = K.cast(K.equal(class_id_true, class_id_preds), 'int32') * accuracy_mask
         class_acc = K.sum(class_acc_tensor) / K.maximum(K.sum(accuracy_mask), 1)
         return class_acc
@@ -990,8 +992,11 @@ def squeezed_accuracy(y_true, y_pred):
         class_acc = K.mean(K.equal(class_id_true, class_id_preds))
         return class_acc
 
+def mean_pred(y_true, y_pred):
+    return K.mean(y_pred)
 
-def get_model(num_class,num_bit,img_rows,img_cols,mat_t_k,weights,weightedl):
+
+def get_model(num_class,num_bit,img_rows,img_cols,mat_t_k,weights,weightedl,namelastc):
     DIM_ORDERING=keras.backend.image_data_format()
     if DIM_ORDERING == 'channels_first':
         INP_SHAPE = (num_bit, image_rows, image_cols)  
@@ -1007,6 +1012,8 @@ def get_model(num_class,num_bit,img_rows,img_cols,mat_t_k,weights,weightedl):
     if modelName == 'unet':
 #    unet
         model = get_unet(num_class,num_bit,img_rows,img_cols,INP_SHAPE,DIM_ORDERING,CONCAT_AXIS)
+        if namelastc != 'NAN':
+            model.load_weights(namelastc) 
         
         if weightedl:
             print 'weighted loss'
@@ -1016,7 +1023,7 @@ def get_model(num_class,num_bit,img_rows,img_cols,mat_t_k,weights,weightedl):
             model.compile(optimizer=Adam(lr=learning_rate), loss='categorical_crossentropy', metrics=['categorical_accuracy'])
             print 'NO weighted loss'
         
-        model.compile(optimizer=SGD(lr=learning_rate,decay=1e-6, momentum=0.9, nesterov=True), loss=mloss, metrics=['categorical_accuracy'])
+#        model.compile(optimizer=SGD(lr=learning_rate,decay=1e-6, momentum=0.9, nesterov=True), loss=mloss, metrics=['categorical_accuracy'])
     elif  modelName == 'fcn8s':
     #fcn8s
         USETVG = True
@@ -1085,6 +1092,8 @@ def get_model(num_class,num_bit,img_rows,img_cols,mat_t_k,weights,weightedl):
     
     elif  modelName == 'sk4':        
         model=sk4(num_class,num_bit,img_rows,img_cols,INP_SHAPE,DIM_ORDERING)
+        if namelastc != 'NAN':
+            model.load_weights(namelastc)  
 #        weights = np.ones(512)
         if weightedl:
             print 'weighted loss'
@@ -1093,13 +1102,21 @@ def get_model(num_class,num_bit,img_rows,img_cols,mat_t_k,weights,weightedl):
 #            for layer in model.layers[0:3]:
 #                layer.trainable = True
             mloss = weighted_categorical_crossentropy(weights).myloss
+#            INTERESTING_CLASS_ID=3
+#            model.compile(optimizer=Adam(lr=learning_rate), loss=mloss, metrics=[single_class_accuracy(INTERESTING_CLASS_ID)])
+#            model.compile(optimizer=Adam(lr=learning_rate), loss=mloss, metrics=[mean_pred])
+
             model.compile(optimizer=Adam(lr=learning_rate), loss=mloss, metrics=['categorical_accuracy'])
+
         else:
 #            for layer in model.layers[:28]:
 #                layer.trainable = False
 #            for layer in model.layers[11:25]:
 #                layer.trainable = False
             model.compile(optimizer=Adam(lr=learning_rate), loss='categorical_crossentropy', metrics=['categorical_accuracy'])
+#            INTERESTING_CLASS_ID=0
+#            model.compile(optimizer=Adam(lr=learning_rate), loss='categorical_crossentropy', metrics=[single_class_accuracy(INTERESTING_CLASS_ID)])
+#            model.compile(optimizer=Adam(lr=learning_rate), loss='categorical_crossentropy', metrics=['categorical_accuracy',mean_pred])
             print 'NO weighted loss'
         
         
@@ -1126,10 +1143,12 @@ if __name__ == "__main__":
    num_bit=1
    num_class=11
    weightedl=False
-   model=get_model(num_class,num_bit,image_size,image_size,False,weights,weightedl)
+   model=get_model(num_class,num_bit,image_size,image_size,False,weights,weightedl,'NAN')
    model.summary()
    print 'last model shape', model.layers[-1].output_shape #== (None, 16, 16, 21)
    DIM_ORDERING=keras.backend.image_data_format()
+   print DIM_ORDERING
+   
    if DIM_ORDERING == 'channels_first':
         imarr = np.ones((num_bit,image_size,image_size))
    else:
@@ -1143,6 +1162,7 @@ if __name__ == "__main__":
    
    
    print modelName
+   print model.metrics_names
    
 #   model_json=model.to_json()
 #   with open("model.json", "w") as json_file:

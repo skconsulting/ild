@@ -31,16 +31,17 @@ print ' keras.backend.image_data_format :',keras.backend.image_data_format()
 #######################################################################################################
 
 nameHug='IMAGEDIR'
-toppatch= 'TOPROI' #for scan classified ROI
-extendir='g'  #for scan classified ROI
+toppatch= 'TOPVAL' #for scan classified ROI
+extendir='0'  #for scan classified ROI
 #extendir='essai'  #for scan classified ROI
-
-valshare=20 #percentage for validation set
+rand=False # False means no random but all, only when valshare =100
+valshare=100 #percentage for validation set
 
 pickel_dirsource_root='TRAIN_SET' #path for data fort training
 pickel_dirsource='pickle' #path for data fort training
-pickel_dirsourcenum='train_set' #extensioon for path for data for training
-extendir2='q'
+pickel_dirsourcenum='train_val' #extensioon for path for data for training
+extendir2='0'
+calculOnly=True
 calculOnly=False
 ##############################################################
 validationdir='V'
@@ -135,23 +136,12 @@ def readclasses(pat,namepat,indexpat,indexaug):
     patpick=os.path.join(picklepathdir,pat)
     patpick=os.path.join(patpick,namepat[indexpat])
     readpkl=pickle.load(open(patpick, "rb"))
-#    print patpick
     scanr=readpkl[0]
-#    if scanr.max()==0:
-#                    print patpick
-#                    print 'error image empty'
-#                    sys.exit()
-#    print scanr.shape
-#    print scanr.min(),scanr.max()
+
     scan=geneaug(scanr,indexaug)
     maskr=readpkl[1]
-#    print maskr.shape
-#    print maskr.min(),maskr.max()
+
     mask=geneaug(maskr,indexaug)
-#    cv2.imshow(pat+str(indexpat)+'mask',normi(mask))
-#    cv2.waitKey(0)
-#    cv2.destroyAllWindows()
-#    scanm=norm(scan)
 
     return scan, mask  
 
@@ -159,11 +149,8 @@ def readclasses2(num_classes,X_testi,y_testi):
  
     DIM_ORDERING=keras.backend.image_data_format()
     
-
     y_test = np.array(y_testi)
-#    print 'Xtestinit',X_test.shape
-#    print 'ytest init', y_test.shape
-    
+
     lytest=y_test.shape[0]
     ytestr=np.zeros((lytest,image_rows, image_cols,int(num_classes)),np.uint8)
 #    ytestr=np.zeros((lytest,int(num_classes),image_rows, image_cols),np.uint8)
@@ -177,51 +164,57 @@ def readclasses2(num_classes,X_testi,y_testi):
             ytestr=np.moveaxis(ytestr,-1,1)
     else:
             X_test = np.asarray(np.expand_dims(X_testi,3))  
- 
-#    print 'Xtest after',X_test.shape
-#    print 'yestr',ytestr.shape
+
     return  X_test,  ytestr  
 
 
-def gen_random_image(numgen,numclass,listroi,listscaninroi):
+def gen_random_image(numgen,numclass,listroi,listscaninroi,numgenerate):
 
-    numgen+=1
-#    numgen=numgen%(maximage*numclass)
-#    print numgen,numgen%numclass
     pat =listroi[numgen%numclass]
+    numgenerate[pat]+=1
     numberscan=classnumber[pat]
-#    print numberscan
-#    if  pat in hugeClass:
-    indexpat =  random.randint(0, numberscan-1)                       
-#    else:                                                   
-#        indexpat =  indexpatc[pat]%numberscan
-
-#    indexpatc[pat]=indexpat+1
-
+    indexpat =  random.randint(0, numberscan-1)  
     indexaug = random.randint(0, 11)
-#    print pat,indexpat,indexaug,numberscan
-
     scan,mask=readclasses(pat,listscaninroi[pat],indexpat,indexaug)  
-#    if numgen%numclass==0:
-#        print '--------------'
-    return scan,mask,numgen
+    
+    numgen+=1
+    return scan,mask,numgen,numgenerate
 
     
-def batch_generator(numsamples,numclass,num_classes,listroi,listscaninroi):
+def batch_generator(numsamples,numclass,num_classes,listroi,listscaninroi, rand,numgenerate):
         image_list = []
         mask_list = []
         numgen=0
         print 'generation of images for validation'
-        for i in range (numsamples):
-            img, mask,numgen = gen_random_image(numgen,numclass,listroi,listscaninroi)
-            image_list.append(img)
-            mask_list.append(mask)
+        if rand:
+            for i in range (numsamples):
+    
+                img, mask,numgen,numgenerate = gen_random_image(numgen,numclass,listroi,listscaninroi,numgenerate)
+                image_list.append(img)
+                mask_list.append(mask)
+        else:
+            for pat in listroi:
+                numberscan=classnumber[pat]
+                for n in range(numberscan):
+                    numgenerate[pat]+=1
+                    img,mask=readclasses(pat,listscaninroi[pat],n,0) 
+#                    print pat,n
+                    image_list.append(img)
+                    mask_list.append(mask)
+                    numgen+=1
+                    if numgen==numsamples:
+                        break
+                if numgen==numsamples:
+                        break
+                
+                
         print '--------------'
-        return  image_list,  mask_list 
+        return  image_list,  mask_list ,numgenerate
 
 ###########################################################"
 
 listroi=[name for name in os.listdir(picklepathdir)]
+
 
 numclass=len(listroi)
 print '-----------'
@@ -235,11 +228,16 @@ print '-----------'
 listscaninroi={}
 classnumber={}
 
+listtoroi=[]
 totalimages=0
 maximage=0
 
+
 for c in listroi:
     listscaninroi[c]=os.listdir(os.path.join(picklepathdir,c))
+#    print listscaninroi[c]
+#    for k in listscaninroi[c]:
+        
     numberscan=len(listscaninroi[c])
     classnumber[c]=numberscan
 #    print c,numberscan
@@ -251,15 +249,20 @@ for c in listroi:
 print 'number total of scan images:',totalimages
 print 'maximum data in one pat:',maximage,' in ',ptmax
 print '-----------'
+numgenerate={}
 print 'number of images per pattern:'
 for pat in listroi:
+    numgenerate[pat]=0
     print pat,classnumber[pat]
 print '-----------'
 
-numsamples=int(totalimages*valshare/100)
+numsamples=int(1.0*totalimages*valshare/100.)
 
-image_list,mask_list =  batch_generator(numsamples,numclass,num_classes,listroi,listscaninroi)
+image_list,mask_list,numgenerate =  batch_generator(numsamples,numclass,num_classes,listroi,listscaninroi,rand,numgenerate)
 #print len(mask_list)
+print 'number of images per pattern:'
+for pat in listroi:
+    print pat,numgenerate[pat]
 class_weights=numbclasses(mask_list)
 #print class_weights
 X_test,  Y_test  =readclasses2(num_classes,image_list,mask_list)
@@ -279,7 +282,7 @@ print 'after adding for non existent :'
 for numw in range(num_classes):
     if numw not in setvalue:
         class_weights[numw]=1
-class_weights[0]=0.05
+#class_weights[0]=0.05
 for key,value in class_weights.items():
    print key, fidclass (key,classif), value;
 print('-' * 30)

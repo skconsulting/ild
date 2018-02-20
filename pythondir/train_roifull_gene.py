@@ -21,7 +21,7 @@ K.set_image_dim_ordering('tf')
 nepochs=500
 nameHug='TRAIN_SET'
 subHug='pickle_train_set'
-extension='q'
+extension='r'
 #nameHug='CHU'
 #nameHug='DUMMY'
 dataindir='V'
@@ -126,16 +126,19 @@ def train():
 
     print('Creating and compiling model...')
     print('-'*30)
-    
-    model = get_model(num_class,num_bit,image_rows,image_cols,False,class_weights_r,False)
-
     listmodel=[name for name in os.listdir(pickel_dirout) if name.find('weights')==0]
     if len(listmodel)>0:
          print 'weight  found'
          namelastc=load_model_set(pickel_dirout)         
-         model.load_weights(namelastc)  
+#         model.load_weights(namelastc)  
     else:
          print 'no weight found'
+         namelastc = 'NAN'
+    
+    model = get_model(num_class,num_bit,image_rows,image_cols,False,class_weights_r,False,namelastc)
+    model.summary()
+
+   
 
     X_test, y_test,X_train,y_train,num_class1,img_rows,img_cols,num_val_images,num_train_images = load_train_val(pickel_dirdata)
     assert img_rows==image_rows,"dimension mismatch"
@@ -146,9 +149,9 @@ def train():
     today = str('m'+str(t.month)+'_d'+str(t.day)+'_y'+str(t.year)+'_'+str(t.hour)+'h_'+str(t.minute)+'m')
     rese=os.path.join(pickel_dirout,str(today)+'_e.csv')
 
-    early_stopping=EarlyStopping(monitor='val_loss', patience=20, verbose=1,min_delta=0.005,mode='auto')                                     
-    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2,
-                                              patience=5, min_lr=1e-6,verbose=1)#init 5
+    early_stopping=EarlyStopping(monitor='val_loss', patience=20, verbose=1,min_delta=0.01,mode='auto')                                     
+    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5,
+                                              patience=5, min_lr=5e-6,verbose=1)#init 5
     model_checkpoint = ModelCheckpoint(os.path.join(pickel_dirout,'weights_'+today+'.{epoch:02d}-{val_loss:.3f}.hdf5'), 
                                 monitor='val_loss', save_best_only=True,save_weights_only=True) 
     csv_logger = CSVLogger(rese,append=True)
@@ -166,22 +169,26 @@ def train():
     print 'image number of rows :',img_rows
     print 'image number of columns :',img_cols
     print 'number of epochs:',nepochs
+    print 'batch size',batch_size
     print('-'*30)
     filew.write ( ' path for data input :'+pickel_dirdata+'\n')
     filew.write (  'directory for result'+pickel_dirout+'\n')
     filew.write ('shape x_train :'+str(X_train.shape)+'\n')
     filew.write ('shape y_train :'+str(y_train.shape)+'\n')
+    filew.write ('shape X_test :'+str(X_test.shape)+'\n')
+    filew.write ('shape y_test :'+str(y_test.shape)+'\n')
     filew.write ('image number of rows :'+str(img_rows)+'\n')
     filew.write ('image number of columns :'+str(img_cols)+'\n')
     filew.write ( 'image width:'+ str(num_bit) +'\n')    
     filew.write ( 'number of  of epochs:'+ str(nepochs)+'\n')
+    filew.write (  'batch size'+str(batch_size)+'\n')
     filew.close()
 
                              
        
     print('Fitting model...')
     print('-'*30)
-    print X_train[0].min(), X_train[0].max()
+    print X_train[0].min(), X_train[0].max(),np.mean( X_train)
 
     debug=False
     if debug:

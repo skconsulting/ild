@@ -219,7 +219,7 @@ def preparroi(namedirtopcf,tabscan,tabsroi):
 
             
         patpickle=(norm(tabscan[num]),tabsroi[num])
-#        print len(scan_list)
+#        print np.mean(norm(tabscan[num]))
         pickle.dump(patpickle, open(pathpicklepatfile, "wb"),protocol=-1)
 
 

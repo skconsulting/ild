@@ -48,7 +48,7 @@ extendir='1'  #for scan classified ROI
 #extendir='UIP2'  #for scan classified ROI
 
 pickel_dirsource='TRAIN_SET/pickle_train_set' #path for data fort training
-pickel_dirsourcenum='q' #extensioon for path for data for training
+pickel_dirsourcenum='r' #extensioon for path for data for training
 
 
 ##############################################################

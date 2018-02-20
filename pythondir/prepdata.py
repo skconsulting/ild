@@ -34,27 +34,28 @@ print ' keras.backend.image_data_format :',keras.backend.image_data_format()
 
 nameHug='IMAGEDIR'
 toppatch= 'TOPROI' #for scan classified ROI
-extendir='0'  #for scan classified ROI
+toppatch= 'TOPVAL' #for scan classified ROI
+extendir='jc'  #for scan classified ROI
 #extendir='ILD6'  #for scan classified ROI
 rand=False # False means no random but all, only when valshare =100
-valshare=10 #percentage for validation set
+valshare=30 #percentage for validation set
 numturn=1#number of turn for validation
 pickel_dirsource_root='TRAIN_SET' #path for data fort training
 pickel_dirsource='pickle' #path for data fort training
-pickel_dirsourcenum='train_set' #extensioon for path for data for training
-#extendir2='0'
-extendir2='ild6'
+pickel_dirsourcenum='train_val' #extensioon for path for data for training
+extendir2='1'
+#extendir2='ild6'
 calculOnly=True
 calculOnly=False
 bigpat='healthy'
 
 #all in percent
-maxshiftv=5
-maxshifth=5
+maxshiftv=0
+maxshifth=0
 maxrot=7 #7
-maxresize=10
-maxscaleint=20
-maxmultint=20
+maxresize=0
+maxscaleint=0
+maxmultint=0
 notToAug=['']
 ##############################################################
 validationdir='V'
@@ -107,6 +108,7 @@ print 'source',picklepathdir
 def get_class_weights(y):
     counter = collections.Counter(y)
     majority = max(counter.values())
+  
 #    for cls, count in counter.items():
 #        print cls, count
     return  {cls: float(majority/count) for cls, count in counter.items()}
@@ -237,7 +239,7 @@ totalimagestrain=0
 maximage=0
 maximageval=0
 maximagetrain=0
-
+ptmaxtrain='non'
 for c in listroi:
     print 'work on ',c
     dirsource=os.path.join(picklepathdir,c)    
@@ -313,19 +315,19 @@ for pat in listroi:
     print pat,numgeneratevalf[pat]
 print 'which is :',valshare,'% of ',totalimages,'multiplied by number of classes and number of turns:',maximage*numclass*numturn
 print '-----------'
-
-#train
-numsamples=maximagetrain*numturn
-image_list,mask_list,numgeneratetrainf =  batch_generator(numsamples,listroi,listscaninroi,
-                                                          numgeneratetrain,numgeneratetrainf,True,'training',classnumbertrain)
 class_weights=numbclasses(mask_list)
-#print class_weights
-X_train,  Y_train  =readclasses2(num_classes,image_list,mask_list)
-print 'number of images training generated',len(X_train)
-
-for pat in listroi:
-    print pat,numgeneratetrainf[pat]
-print 'which is :',100-valshare,'% of ',totalimages,'multiplied by number of classes and number of turns:',maximagetrain*numclass*numturn
+#train
+#numsamples=maximagetrain*numturn
+#image_list,mask_list,numgeneratetrainf =  batch_generator(numsamples,listroi,listscaninroi,
+#                                                          numgeneratetrain,numgeneratetrainf,True,'training',classnumbertrain)
+#
+##print class_weights
+#X_train,  Y_train  =readclasses2(num_classes,image_list,mask_list)
+#print 'number of images training generated',len(X_train)
+#
+#for pat in listroi:
+#    print pat,numgeneratetrainf[pat]
+#print 'which is :',100-valshare,'% of ',totalimages,'multiplied by number of classes and number of turns:',maximagetrain*numclass*numturn
 
 if calculOnly==True:
     sys.exit()
@@ -348,16 +350,16 @@ print('-' * 30)
 
 print 'shape X_test :',X_test.shape
 print 'shape y_test :',Y_test.shape
-print 'shape X_train :',X_train.shape
-print 'shape Y_train :',Y_train.shape
+#print 'shape X_train :',X_train.shape
+#print 'shape Y_train :',Y_train.shape
 print '-----------'
 diri=os.path.join(pickle_dir,validationdir)
 remove_folder(diri)
 os.mkdir(diri)
 pickle.dump(X_test, open( os.path.join(diri,"X_test.pkl"), "wb" ),protocol=-1)
 pickle.dump(Y_test, open( os.path.join(diri,"Y_test.pkl"), "wb" ),protocol=-1)
-pickle.dump(X_train, open( os.path.join(diri,"X_train.pkl"), "wb" ),protocol=-1)
-pickle.dump(Y_train, open( os.path.join(diri,"Y_train.pkl"), "wb" ),protocol=-1)
+#pickle.dump(X_train, open( os.path.join(diri,"X_train.pkl"), "wb" ),protocol=-1)
+#pickle.dump(Y_train, open( os.path.join(diri,"Y_train.pkl"), "wb" ),protocol=-1)
 pickle.dump(class_weights, open( os.path.join(pickle_dir,"class_weights.pkl"), "wb" ),protocol=-1)
 #print class_weights
 
@@ -407,48 +409,48 @@ if debug:
             plt.title(str(i)+'label')
             plt.imshow( np.argmax(yt[numtosee],axis=2) )
             plt.show()
-        print 'debug train'
-        xt=  pickle.load(open( os.path.join(diri,"X_train.pkl"), "rb" ))        
-        yt= pickle.load(open( os.path.join(diri,"Y_train.pkl"), "rb" ))
-        DIM_ORDERING=keras.backend.image_data_format()
-        print DIM_ORDERING
-        if DIM_ORDERING == 'channels_first':
-            xt=np.squeeze(xt,1)
-            yt=np.moveaxis(yt,1,-1)
-        else:
-            xt=np.squeeze(xt,-1)
-        print 'xt', xt.shape
-                   
-        xcol=30
-        ycol=20
-        for i in range(3):
-            numtosee=i
-            print 'numtosee',numtosee
-            print 'xt train', xt.shape
-            print 'type xt', type(xt[numtosee][0][0])
-            print 'xt min max',xt.min(),xt.max()
-            print 'xt[0][0][0]',xt[numtosee][0][0]
-            print 'xt[0][350][160]',xt[numtosee][ycol][xcol]
-            print 'yt', yt.shape
-        
-            print 'yt[0][0][0]',yt[numtosee][0][0]
-            print 'yt[0][350][160]',yt[numtosee][ycol][xcol]
-            print 'xt numtosee  min max', xt[numtosee].min(), xt[numtosee].max()
-            print 'yt numtosee min max',yt[numtosee].min(), yt[numtosee].max()
-#            print xt[numtosee][:,:,0].shape
-            if  xt[numtosee].max()==0:
-                cv2.imwrite(str(i)+'image.bmp',normi(xt[numtosee]))
-                cv2.imwrite(str(i)+'label.bmp',normi( np.argmax(yt[numtosee],axis=2)))
-            plt.figure(figsize = (5, 5))
-            #    plt.subplot(1,3,1)
-            #    plt.title('image')
-            
-            #    plt.imshow( np.asarray(crpim) )
-            plt.subplot(1,2,1)
-            plt.title(str(i)+'image')
-            plt.imshow( normi(xt[numtosee]).astype(np.uint8) )
-            plt.subplot(1,2,2)
-            plt.title(str(i)+'label')
-            plt.imshow( np.argmax(yt[numtosee],axis=2) )
-            plt.show()
+#        print 'debug train'
+#        xt=  pickle.load(open( os.path.join(diri,"X_train.pkl"), "rb" ))        
+#        yt= pickle.load(open( os.path.join(diri,"Y_train.pkl"), "rb" ))
+#        DIM_ORDERING=keras.backend.image_data_format()
+#        print DIM_ORDERING
+#        if DIM_ORDERING == 'channels_first':
+#            xt=np.squeeze(xt,1)
+#            yt=np.moveaxis(yt,1,-1)
+#        else:
+#            xt=np.squeeze(xt,-1)
+#        print 'xt', xt.shape
+#                   
+#        xcol=30
+#        ycol=20
+#        for i in range(3):
+#            numtosee=i
+#            print 'numtosee',numtosee
+#            print 'xt train', xt.shape
+#            print 'type xt', type(xt[numtosee][0][0])
+#            print 'xt min max',xt.min(),xt.max()
+#            print 'xt[0][0][0]',xt[numtosee][0][0]
+#            print 'xt[0][350][160]',xt[numtosee][ycol][xcol]
+#            print 'yt', yt.shape
+#        
+#            print 'yt[0][0][0]',yt[numtosee][0][0]
+#            print 'yt[0][350][160]',yt[numtosee][ycol][xcol]
+#            print 'xt numtosee  min max', xt[numtosee].min(), xt[numtosee].max()
+#            print 'yt numtosee min max',yt[numtosee].min(), yt[numtosee].max()
+##            print xt[numtosee][:,:,0].shape
+#            if  xt[numtosee].max()==0:
+#                cv2.imwrite(str(i)+'image.bmp',normi(xt[numtosee]))
+#                cv2.imwrite(str(i)+'label.bmp',normi( np.argmax(yt[numtosee],axis=2)))
+#            plt.figure(figsize = (5, 5))
+#            #    plt.subplot(1,3,1)
+#            #    plt.title('image')
+#            
+#            #    plt.imshow( np.asarray(crpim) )
+#            plt.subplot(1,2,1)
+#            plt.title(str(i)+'image')
+#            plt.imshow( normi(xt[numtosee]).astype(np.uint8) )
+#            plt.subplot(1,2,2)
+#            plt.title(str(i)+'label')
+#            plt.imshow( np.argmax(yt[numtosee],axis=2) )
+#            plt.show()
             

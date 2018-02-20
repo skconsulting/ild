@@ -5,8 +5,10 @@ training of CNN using a generator
 @author: sylvain
 """
 
-from param_pix import cwdtop,num_bit,image_rows,image_cols,hugeClass,usedclassif,classif
-from param_pix import get_model,evaluate
+from param_pix import cwdtop,num_bit,image_rows,image_cols,hugeClass,classif
+from param_pix import get_model,evaluate,generandom,geneaug
+#from param_pix import normi
+
 
 import cPickle as pickle
 import datetime
@@ -14,6 +16,9 @@ import datetime
 import numpy as np
 import os
 import random
+#import cv2
+import sys
+
 
 from keras.callbacks import ModelCheckpoint,ReduceLROnPlateau,CSVLogger,EarlyStopping
 from keras.utils import np_utils
@@ -21,24 +26,40 @@ import keras
 print ' keras.backend.image_data_format :',keras.backend.image_data_format()
 
 ####################################################################################
-
+#smallvalue=['HC','reticulation','bronchiectasis','GGpret']
 nameHug='IMAGEDIR'
 
 toppatch= 'TOPROI' #for scan classified ROI
-extendir='T_2'  #for scan classified ROI
-#extendir='0'  #for scan classified ROI
+#extendir='T_2'  #for scan classified ROI
+extendir='0'  #for scan classified ROI
 
 nametop='TRAIN_SET'
 pickel_top='pickle' #path to get input data
 pickel_ext='train_set'  #path to get input data
-pickel_ext_set='2'  #path to get input data
+pickel_ext_set='unet0'  #path to get input data
 
-trainSetSize=4752# default 220 , number of images for each epoch, multiple of batch_size
-nb_epoch=35 # default 30 number of epoch for each set
-batch_size= 4#default 2 batch size (gpu ram dependant) 8 for sk3, 6 for unet, 4 for sk4
+
+numpidirvalrefend='pickle_train_val_0'
+
+trainSetSize=5500# default 4785 for chu+HUG,  , number of images for each epoch, multiple of batch_size
+nb_epoch=30 # default 35 number of epoch for each set
+batch_size= 6#default 4 batch size (gpu ram dependant) 8 for sk3, 6 for unet, 4 for sk4
 turnNumber=1 #22 number of turn of trainset size 216
 numgen=-1  #to restart after crash -1 means start new
-calculate=True #to be put to False for actual training
+
+
+#all in percent
+maxshiftv=0
+maxshifth=0
+maxrot=7 #7
+maxresize=0
+maxscaleint=0
+maxmultint=20
+
+notToAug=['']
+
+#calculate=True #to be put to False for actual training
+
 calculate=False #to be put to False for actual training
 
 #################################################################################
@@ -82,6 +103,11 @@ print 'total time for ',turnNumber,' turns :',caltime(int(toe*nb_epoch*turnNumbe
 
 ##############################################################
 validationdir='V' #validation set directory
+numpidirvalref=os.path.join(cwdtop,nametop)
+numpidirvalref=os.path.join(numpidirvalref,numpidirvalrefend)
+numpidirvalref=os.path.join(numpidirvalref,validationdir)
+print 'validation path: ', numpidirvalref
+
 pickle_store_ext= 'pickle' #path to store csv with train status
 #pickel_dirsource='pickle_ILD_TXT'
 
@@ -179,45 +205,40 @@ def load_model_set(pickle_dir_train,filew):
     return namelastc
 
 
-def geneaug(image,tt):
-    if tt==0:
-        imout=image
-    elif tt==1:
-    # 1 90 deg
-        imout = np.rot90(image,1)
-    elif tt==2:
-    #2 180 deg
-        imout = np.rot90( image,2)
-    elif tt==3:
-    #3 270 deg
-        imout = np.rot90(image,3)
-    elif tt==4:
-    #4 flip fimage left-right
-            imout=np.fliplr(image)
-    elif tt==5:
-    #5 flip fimage left-right +rot 90
-        imout = np.rot90(np.fliplr(image))
-    elif tt==6:
-    #6 flip fimage left-right +rot 180
-        imout = np.rot90(np.fliplr(image),2)
-    elif tt==7:
-    #7 flip fimage left-right +rot 270
-        imout = np.rot90(np.fliplr(image),3)
-  
-    return imout
-
-def readclasses(pat,namepat,indexpat,indexaug):
-
+def  readclasses(pat,namepat,indexpat,scaleint,multint,rotimg,resiz,shiftv,shifth):
+# scan,mask=readclasses(pat,listscaninroi[pat],indexpat,scaleint,rotimg,resiz,shiftv,shifth)  
     patpick=os.path.join(picklepathdir,pat)
     patpick=os.path.join(patpick,namepat[indexpat])
     readpkl=pickle.load(open(patpick, "rb"))
-                                            
+                          
     scanr=readpkl[0]
-    scan=geneaug(scanr,indexaug)
-    maskr=readpkl[1]
-    mask=geneaug(maskr,indexaug)
- 
+    scan=geneaug(scanr,scaleint,multint,rotimg,resiz,shiftv,shifth,False)
 
+    maskr=readpkl[1]
+    mask=geneaug(maskr,0,0,rotimg,resiz,shiftv,shifth,True)
+
+    minr=maskr.min()
+    manr=maskr.max()
+    minm=mask.min()
+    manm=mask.max()
+    mansr=scanr.max()
+    mansm=scan.max()
+    if manm==0 or manr==0:
+        print 'error label nul'
+        sys.exit()
+    if mansr==0 or mansm==0:
+        print 'error scan nul'
+        sys.exit()
+    if minr != minm or manr!=manm or manr==0 or manm==0:
+        print 'error label'
+        print minr,minm,manr,manm,pat ,indexpat
+#        cv2.imwrite('images.bmp',normi(scanr))
+#        cv2.imwrite('imaget.bmp',normi(scan))
+#        cv2.imwrite('labels.bmp',normi( maskr))
+#        cv2.imwrite('labelt.bmp',normi( mask))
+        sys.exit()
+#    mask=geneaug(maskr,0,rotimg,resiz,shiftv,shifth,False)
+    
     return scan, mask  
 
 def readclasses2(num_classes,X_testi,y_testi):
@@ -227,8 +248,10 @@ def readclasses2(num_classes,X_testi,y_testi):
    
     lytest=y_test.shape[0]
     ytestr=np.zeros((lytest,image_rows, image_cols,int(num_classes)),np.uint8)
+#    print y_test.shape
     for i in range (lytest):
         for j in range (0,image_rows):
+#            print i,j,y_test[i][j]
             ytestr[i][j] = np_utils.to_categorical(y_test[i][j], num_classes)
             
             
@@ -256,12 +279,23 @@ def gen_random_image(numclass,listroi,listscaninroi,indexpatc):
         indexpat =  indexpatc[pat]%numberscan
 
     indexpatc[pat]=indexpat+1
+    if pat in notToAug:
+        keepaenh=0
+    else:
+        keepaenh=1
+    scaleint,multint,rotimg,resiz,shiftv,shifth=generandom(maxscaleint,
+                            maxmultint,maxrot,maxresize,maxshiftv,maxshifth,keepaenh)
+    scan,mask=readclasses(pat,listscaninroi[pat],indexpat,scaleint,multint,rotimg,resiz,shiftv,shifth) 
+#    scaleint,rotimg,resiz,shiftv,shifth=generandom(keepaenh)
 
-    indexaug = random.randint(0, 7)
+    
+#    print  pat,scaleint,rotimg,resiz,shiftv,shifth
+
+#    indexaug = random.randint(0, 7)
 #    print '\n'
 #    print numgen ,pat,indexpat,numberscan
-    scan,mask=readclasses(pat,listscaninroi[pat],indexpat,indexaug)  
-    return scan,mask
+#    scan,mask=readclasses(pat,listscaninroi[pat],indexpat,scaleint,rotimg,resiz,shiftv,shifth)  
+    return scan,mask,indexpatc
     #        label_list.append(mask)
 
 
@@ -271,7 +305,8 @@ def batch_generator(batch_size,numclass,num_classes,listroi,listscaninroi,indexp
         image_list = []
         mask_list = []
         for i in range(batch_size):
-            img, mask = gen_random_image(numclass,listroi,listscaninroi,indexpatc)
+#            print indexpatc['ground_glass']
+            img, mask,indexpatc = gen_random_image(numclass,listroi,listscaninroi,indexpatc)
             image_list.append(img)
             mask_list.append(mask)
             
@@ -297,13 +332,12 @@ def train():
 #    lnumpi=len(listplickle)
     
     num_class,weights,class_weights = load_weight(pickle_dir)
- 
+
     print('Creating and compiling model...')
     print('-'*30)
     weightedloss=True
-    model = get_model(num_class,num_bit,image_rows,image_cols,False,weights,weightedloss)
-    
-
+#    model = get_model(num_class,num_bit,image_rows,image_cols,False,weights,weightedloss)    
+#    sys.exit()
     numpidirval =os.path.join(pickle_dir,validationdir)
     x_val, y_val, num_class,img_rows,img_cols,num_images = load_train_val(numpidirval)
 #    print img_rows
@@ -313,17 +347,17 @@ def train():
     assert img_rows==image_rows,"dimension mismatch"
     assert img_cols==image_cols,"dimension mismatch"
     
-    listmodel=[name for name in os.listdir(pickle_store) if name.find('weights')==0]
-    if len(listmodel)>0:
-
-         print 'load weight found from last training'
-         filew.write ('load weight found from last training\n')
-         namelastc=load_model_set(pickle_store,filew)         
-         model.load_weights(namelastc)  
-    else:
-         print 'first training to be run'
-         filew.write ('first training to be run\n')
-    model.summary()
+#    listmodel=[name for name in os.listdir(pickle_store) if name.find('weights')==0]
+#    if len(listmodel)>0:
+#
+#         print 'load weight found from last training'
+#         filew.write ('load weight found from last training\n')
+#         namelastc=load_model_set(pickle_store,filew)         
+#         model.load_weights(namelastc)  
+#    else:
+#         print 'first training to be run'
+#         filew.write ('first training to be run\n')
+#    
     today = str('m'+str(t.month)+'_d'+str(t.day)+'_y'+str(t.year)+'_'+str(t.hour)+'h_'+str(t.minute)+'m')
     rese=os.path.join(pickle_store,str(today)+'_e.csv')
     listroi=[name for name in os.listdir(picklepathdir)]
@@ -360,7 +394,7 @@ def train():
         totalimages=totalimages+classnumber[pat]
         
     print '-----------'    
-    for pat in usedclassif:
+    for pat in classif:
         print 'number of data in:',pat, ' : ',classnumber[pat]
     for pat in hugeClass:
         print 'number of data in hugeClass:',pat, classnumber[pat]
@@ -418,11 +452,16 @@ def train():
         return
     
     
-    early_stopping=EarlyStopping(monitor='val_loss', patience=20, verbose=1,min_delta=0.01,mode='auto')                                     
+    early_stopping=EarlyStopping(monitor='val_loss', patience=10, verbose=1,min_delta=0.01,mode='auto')      
+#    early_stopping=EarlyStopping(monitor='val_fn', patience=10, verbose=1,min_delta=0.01,mode='auto')                                     
+                               
     reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.4,
-                                              patience=5, min_lr=5e-6,verbose=1)#init 5
+                                              patience=5, min_lr=1e-6,verbose=1,mode='auto')#init 5
     model_checkpoint = ModelCheckpoint(os.path.join(pickle_store,'weights_'+today+'.{epoch:02d}-{val_loss:.3f}.hdf5'), 
-                                monitor='val_loss', save_best_only=True,save_weights_only=True)        
+                                monitor='val_loss', save_best_only=True,save_weights_only=True,mode='auto') 
+# to be used with custom metrics
+#    model_checkpoint = ModelCheckpoint(os.path.join(pickle_store,'weights_'+today+'.{epoch:02d}-{val_loss:.3f}.hdf5'), 
+#                                monitor='val_fn', save_best_only=True,save_weights_only=True,mode='max')        
 
     csv_logger = CSVLogger(rese,append=True)
     print('Fitting model...')          
@@ -430,6 +469,8 @@ def train():
    
 #    ooo
     DIM_ORDERING=keras.backend.image_data_format()
+    print DIM_ORDERING
+
     for i in range (0,turnNumber):
         print 'turn:',i
         nb_epoch_i_p=(i+1)*nb_epoch
@@ -439,25 +480,29 @@ def train():
         filew.write('start turn: '+ str(i)+'\n')
         filew.write('start epoch  :'+str(init_epoch_i_p)+ ' at '+todayn+' for max epoch: '+str(nb_epoch_i_p)+'\n')
         filew.write('------------------------------------------\n')
-        model = get_model(num_class,num_bit,image_rows,image_cols,False,weights,weightedloss)
+        
         listmodel=[name for name in os.listdir(pickle_store) if name.find('weights')==0]
         if len(listmodel)>0:
              print 'load weight found from last training'
              filew.write ('load weight found from last training\n')
              namelastc=load_model_set(pickle_store,filew)         
-             model.load_weights(namelastc)  
+             
         else:
              print 'first training to be run'
              filew.write ('first training to be run\n')
-                
+             namelastc='NAN'
+        model = get_model(num_class,num_bit,image_rows,image_cols,False,weights,weightedloss,namelastc)        
         filew.close()
         print('-'*30)
+        json_string = model.to_json()
+        pickle.dump(json_string,open( os.path.join(pickle_store,'CNN.h5'), "wb"),protocol=-1)
+        model.summary()
         
         history = model.fit_generator(
         generator=batch_generator(batch_size,numclass,num_class,listroi,listscaninroi,indexpatc),
                 epochs=nb_epoch_i_p,
                 initial_epoch=init_epoch_i_p,
-                steps_per_epoch=trainSetSize/batch_size,
+                steps_per_epoch=trainSetSize//batch_size,
 #                sample_weight=class_weights,
                 validation_data=(x_val,y_val),
                 verbose=2,
@@ -465,7 +510,8 @@ def train():
                 max_queue_size=batch_size)   
         
         tn = datetime.datetime.now()
-        todayn = 'month:'+str(tn.month)+'-day:'+str(tn.day)+'-year:'+str(tn.year)+' - '+str(tn.hour)+'h'+str(tn.minute)+'m'
+
+        todayn = 'month:'+str(tn.month)+'_day:'+str(tn.day)+'_year:'+str(tn.year)+'_'+str(tn.hour)+'h'+str(tn.minute)+'m'
         filew=open (todayf,'a')
         filew.write('end turn: '+ str(i)+'\n')
         filew.write('end epoch  :'+str(nb_epoch_i_p)+ ' at '+todayn+' for max epoch: '+str(turnNumber*nb_epoch)+'\n')
@@ -476,13 +522,14 @@ def train():
         print('-'*30)
         y_score = model.predict(x_val, batch_size=batch_size,verbose=1)
         print 'y_score.shape',y_score.shape
+
         if DIM_ORDERING == 'channels_first':
             yvf= np.argmax(y_val, axis=1).flatten()
             #            print yvf[0]
             ysf=  np.argmax(y_score, axis=1).flatten()  
         else:
             yvf= np.argmax(y_val, axis=3).flatten()
-            #            print yvf[0]
+#            print yvf[0], np.argmax(y_val, axis=-1)
             ysf=  np.argmax(y_score, axis=3).flatten()  
         fscore, acc, cm = evaluate(yvf,ysf,num_class)
         print cm
@@ -504,7 +551,48 @@ def train():
                         filew.write('\n')
                     
         filew.write('------------------------------------------\n')
-    print ('------------------------')               
+        filew.close()
+    
+    
+        x_val, y_val, num_class,img_rows,img_cols,num_images = load_train_val(numpidirvalref)
+        print('Predict model from val...')
+        print('-'*30)
+        y_score = model.predict(x_val, batch_size=batch_size,verbose=1)
+        print 'y_score.shape',y_score.shape
+    
+        if DIM_ORDERING == 'channels_first':
+            yvf= np.argmax(y_val, axis=1).flatten()
+            #            print yvf[0]
+            ysf=  np.argmax(y_score, axis=1).flatten()  
+        else:
+            yvf= np.argmax(y_val, axis=3).flatten()
+    #            print yvf[0], np.argmax(y_val, axis=-1)
+            ysf=  np.argmax(y_score, axis=3).flatten()  
+        fscore, acc, cm = evaluate(yvf,ysf,num_class)
+        print cm
+        print('Val F-score: '+str(fscore)+'\tVal acc: '+str(acc))         
+    
+        print '---------------'
+        tn = datetime.datetime.now()
+        todayn = str(tn.month)+'-'+str(tn.day)+'-'+str(tn.year)+' - '+str(tn.hour)+'h '+str(tn.minute)+'m'+'\n'
+        filew=open (todayf,'a')
+        filew.write('  finished at :'+todayn)
+        
+        filew.write('  f-score is : '+ str(fscore)+'\n')
+        filew.write('  accuray is : '+ str(acc)+'\n')
+        filew.write('  confusion matrix\n')
+        n= cm.shape[0]
+        for cmi in range (0,n):     
+                        filew.write('  ')
+                        for j in range (0,n):
+                            filew.write(str(cm[cmi][j])+' ')
+                        filew.write('\n')
+                    
+        filew.write('------------------------------------------\n')
+        print ('------------------------')      
+
+    print ('------------------------')  
+         
     tn = datetime.datetime.now()
     todayn = str(tn.month)+'-'+str(tn.day)+'-'+str(tn.year)+' - '+str(tn.hour)+'h '+str(tn.minute)+'m'+'\n'
     filew.write('completed at :'+todayn)
