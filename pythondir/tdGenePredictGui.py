@@ -7,7 +7,7 @@ version 1.5
 #from param_pix_p import *
 from param_pix_p import scan_bmp,avgPixelSpacing,dimpavx,dimpavy,volumeroifilep,dirpickleArch,modelArch,surfelemp
 from param_pix_p import typei,typei1,typei2
-from param_pix_p import white,yellow,red
+from param_pix_p import white,yellow,red,classifnotvisu
 
 from param_pix_p import lung_namebmp,jpegpath,lungmask,lungmask1
 from param_pix_p import datacrossn,pathjs,fidclass,pxy
@@ -15,7 +15,7 @@ from param_pix_p import datacrossn,pathjs,fidclass,pxy
 from param_pix_p import classifc,excluvisu
 
 
-from param_pix_p import threeFileTop0,threeFileTop1,threeFileTop2,htmldir,source,dicomcross_merge
+from param_pix_p import threeFileTop0,threeFileTop1,threeFileTop21,threeFileTop22,htmldir,source,dicomcross_merge
 from param_pix_p import dicomfront,dicomcross,threeFile,threeFile3d,threeFileTxt,transbmp,threeFileMerge
 from param_pix_p import threeFileTxtMerge,volcol,sroi,sroi3d,threeFileTxt3d,threeFileBot
 from param_pix_p import predictout3d,jpegpath3d,predictout
@@ -423,8 +423,8 @@ def tagviews (tab,t0,x0,y0,t1,x1,y1,t2,x2,y2,t3,x3,y3,t4,x4,y4,t5,x5,y5,t6,x6,y6
     """write simple text in image """
     font = cv2.FONT_HERSHEY_PLAIN
     col=red
-    size=1
-    sizes=0.8
+    size=0.8
+    sizes=0.6
 
     viseg=cv2.putText(tab,t0,(x0, y0), font,sizes,col,1)
     viseg=cv2.putText(viseg,t1,(x1, y1), font,size,col,1)
@@ -434,6 +434,7 @@ def tagviews (tab,t0,x0,y0,t1,x1,y1,t2,x2,y2,t3,x3,y3,t4,x4,y4,t5,x5,y5,t6,x6,y6
     viseg=cv2.putText(viseg,t4,(x4, y4), font,size,col,1)
     viseg=cv2.putText(viseg,t5,(x5, y5), font,size,col,1)
     viseg=cv2.putText(viseg,t6,(x6, y6), font,size,col,1)
+    viseg=cv2.cvtColor(viseg,cv2.COLOR_BGR2RGB)
 
     return viseg
 
@@ -944,7 +945,9 @@ def genethreef(dirpatientdb,patchPositions,probabilities_raw,slicepitch,dimtabx,
         cwd=os.getcwd()
         souuip0=os.path.join(cwd,threeFileTop0)
         souuip1=os.path.join(cwd,threeFileTop1)
-        souuip2=os.path.join(cwd,threeFileTop2)
+
+        souuip21=os.path.join(cwd,threeFileTop21)
+        souuip22=os.path.join(cwd,threeFileTop22)
 #        print souuip
         if v =='cross':
             threeFilel=dptail+'_'+threeFile
@@ -979,7 +982,7 @@ def genethreef(dirpatientdb,patchPositions,probabilities_raw,slicepitch,dimtabx,
 
         volumefile = open(os.path.join(htmldifr,threeFilel), 'a')
         volumefile.write( '<title> '+dptail+' '+v+' orbit </title> \n')
-        volumefile.write( '<h1 id=patientname>'+dptail+' '+v+'  </h1> \n')
+        
 
         vtop1=open(os.path.join(cwd,souuip1),'r')
         apptop1=vtop1.read()
@@ -1008,10 +1011,18 @@ def genethreef(dirpatientdb,patchPositions,probabilities_raw,slicepitch,dimtabx,
         volumefile.write( '<script src="'+ pathjscompr+
                           '/js/underscore-min.js"></script> \n')
 
-        vtop2=open(os.path.join(cwd,souuip2),'r')
-        apptop2=vtop2.read()
-        vtop2.close()
-        volumefile.write(apptop2)
+        vtop21=open(os.path.join(cwd,souuip21),'r')
+        apptop21=vtop21.read()
+        vtop21.close()
+        volumefile.write(apptop21)
+
+        
+        volumefile.write( '<h1 id=patientname>'+dptail+' '+v+'  </h1> \n')
+
+        vtop22=open(os.path.join(cwd,souuip22),'r')
+        apptop22=vtop22.read()
+        vtop22.close()
+        volumefile.write(apptop22)
 #        volumefilejs = open(jsfilel, 'w')
 #        jsfilel.replace("\\","/")
 #        print jsfilel
@@ -1220,7 +1231,7 @@ def tagviewct(tab,label,x,y):
     deltax=100*(labnow/5)
     font = cv2.FONT_HERSHEY_SIMPLEX
     viseg=cv2.putText(tab,label,(x+deltax, y+deltay), font,0.3,col,1)
-#    viseg = cv2.cvtColor(viseg,cv2.COLOR_RGB2BGR)
+    viseg = cv2.cvtColor(viseg,cv2.COLOR_RGB2BGR)
     return viseg
 
 
@@ -1752,7 +1763,7 @@ def generoi(dirf,tabroi,dimtabx,tabscanLung,slnroi,dirroit,tabscanroi,tabscanNam
             imgcoreScan=tabscanName[numslice]
             roibmpfile=os.path.join(dirroit,imgcoreScan)
             anoted_image=tabscanroi[numslice]
-#            anoted_image=cv2.cvtColor(anoted_image,cv2.COLOR_BGR2RGB)
+            anoted_image=cv2.cvtColor(anoted_image,cv2.COLOR_BGR2RGB)
             volumeroi[numslice]={}
             for pat in classif:
                 img=np.copy(tabroi[numslice])
@@ -1761,7 +1772,7 @@ def generoi(dirf,tabroi,dimtabx,tabscanLung,slnroi,dirroit,tabscanroi,tabscanNam
                     np.putmask(img, img ==classif[pat]+1, 1)
                     area= img.sum()* surfelemp  
                     volumeroi[numslice][pat]=area 
-                    if area>0:
+                    if area>0 and pat not in classifnotvisu:
            
                         np.putmask(img, img >0, 100)
                         colorlung=colorimage(img,classifc[pat])
@@ -1776,10 +1787,11 @@ def generoi(dirf,tabroi,dimtabx,tabscanLung,slnroi,dirroit,tabscanroi,tabscanNam
                         
                 else:
                     volumeroi[numslice][pat]=0
+            tabscanroi[numslice]=anoted_image
             anoted_image= cv2.cvtColor(anoted_image,cv2.COLOR_RGB2BGR)  
 #            print roibmpfile
             cv2.imwrite(roibmpfile,anoted_image)
-            tabscanroi[numslice]=anoted_image
+            
     return tabroi,volumeroi,slnroi,tabscanroi
         
 

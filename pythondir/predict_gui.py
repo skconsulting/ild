@@ -19,10 +19,10 @@ import webbrowser
 
 import cPickle as pickle
 
-print os.environ['USERPROFILE']
-print os.environ['LOCALAPPDATA']
-#print os.environ['APPDATA']
-print os.environ['PROGRAMDATA']
+#print os.environ['USERPROFILE']
+#print os.environ['LOCALAPPDATA']
+##print os.environ['APPDATA']
+#print os.environ['PROGRAMDATA']
 
 instdirPredict='Predict'
 instdirMedikey='MedikEye'

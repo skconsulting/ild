@@ -39,20 +39,23 @@ PIXEL_MEAN = 0.25
 """
 #limitHU=1700.0
 #centerHU=-662.0
-limitHU=1424.0
-centerHU=-312.0
-PIXEL_MEAN = 0.2725
+#limitHU=1424.0
+#centerHU=-312.0
+##PIXEL_MEAN = 0.2725
+#
+##limitHU=1700.0
+##centerHU=-662.0
+##PIXEL_MEAN = 0.52
+#
+#minb=centerHU-(limitHU/2)
+#maxb=centerHU+(limitHU/2)
+minb=-1024.0
+maxb=400.
+PIXEL_MEAN = 0.275
+#PIXEL_MEAN = 0.33
 
-#limitHU=1700.0
-#centerHU=-662.0
-#PIXEL_MEAN = 0.52
-
-minb=centerHU-(limitHU/2)
-maxb=centerHU+(limitHU/2)
-MIN_BOUND =minb
+MIN_BOUND = minb
 MAX_BOUND = maxb
-
-PIXEL_MEAN = 0.2725
 
 print 'MIN_BOUND:',MIN_BOUND,'MAX_BOUND:',MAX_BOUND,'PIXEL_MEAN',PIXEL_MEAN
 
@@ -122,7 +125,7 @@ volumeroifile='volumeroi'
 volumeroifilep='volumeroip'
 
 #excluvisu=['healthy']
-excluvisu=['']
+excluvisu=['healthy']
 
 bmpname='scan_bmp'
 
@@ -146,7 +149,8 @@ threeFilejs3d='world3d.js'
 
 threeFileTop0='uiptop0.html'
 threeFileTop1='uiptop1.html'
-threeFileTop2='uiptop2.html'
+threeFileTop21='uiptop21.html'
+threeFileTop22='uiptop22.html'
 threeFileBot='uipbot.html'
 
 

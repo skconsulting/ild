@@ -296,7 +296,7 @@ def drawpatch(t,dx,dy,slicenumber,va,patch_list_cross_slice,volumeroi,slnt,tabro
             if  classlabel not in excluvisu:
                 if classlabel not in listlabel:
                     listlabel.append(classlabel)
-                    print classlabel
+#                    print classlabel
                 
                 cv2.rectangle(imgpatch,(xpat,ypat),(xpat+dimpavxr-1,ypat+dimpavyr-1),classif[classlabel]+1,-1)
                 if va[classlabel]==True:
@@ -987,6 +987,7 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
                     viewasked[key1]=True
                     keyvisu[key1]=False
                 cv2.setTrackbarPos('All','SliderVol',0)
+                thiisisallview=1
 
             if noneview==1:
                 for key1 in usedclassif:
@@ -995,16 +996,16 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
                     keyvisu[key1]=False
                 cv2.setTrackbarPos('Reset','SliderVol',0) 
                 cv2.setTrackbarPos('All','SliderVol',0)
-                allview=0          
-            
-#            if allview ==0:
+#                allview=0   
+                thiisisallview=0
             
             for key1 in usedclassif:
                     s = cv2.getTrackbarPos(key1,'SliderVol')  
                         
                     if s==1  and keyvisu[key1]==False:
 #                        cv2.setTrackbarPos('All','SliderVol',0)
-                        allview=0
+#                        allview=0
+                        thiisisallview=0
 #                        print 'key',key1,allview
                         keyvisu[key1]=True
                         viewasked[key1]=True
@@ -1021,7 +1022,7 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
                 if viewasked[keyne]!=viewaskedold[keyne]:
                     viewaskedold[keyne]=viewasked[keyne]
                     drawok=True
-            
+
             if drawok: 
                 cv2.putText(imgwip,'WIP',(10,10),cv2.FONT_HERSHEY_PLAIN,5,red,2,cv2.LINE_AA)
                 cv2.imshow('wip',imgwip)
@@ -1043,7 +1044,7 @@ def openfichiervolume(listHug,path_patient,patch_list_cross_slice,
                 img = np.zeros((dimtabx,dimtaby,3), np.uint8)
                 cv2.putText(imgtext,'Threshold : '+str(tl),(50,50),cv2.FONT_HERSHEY_PLAIN,1,yellow,1,cv2.LINE_AA)
 #allview 
-                if allview==1:
+                if thiisisallview==1:
                     pervoltot=0
                     
                     for patt in usedclassif:
@@ -1324,7 +1325,7 @@ def openfichiervolumetxt(listHug,path_patient,patch_list_cross_slice,
                       lungSegment,tabMed,thrprobaUIP,patch_list_cross_slice_sub,
                       slicepitch,tabroi,datacross,slnroi,tabscanLung,cnnweigh,thrpatch,tp):
     global  quitl,dimtabx,dimtaby,patchi,ix,iy
-    print 'openfichiervolume start',path_patient
+    print 'openfichiervolumetxt start',path_patient
     volelems=volelem*slicepitch # in mml
     slnt=datacross[0]
     dx=datacross[1]
@@ -1538,7 +1539,8 @@ def writeslice(num,menus):
         cv2.rectangle(menus, (5,10), (150,20), red, -1)
         cv2.putText(menus,'Slice to visualize: '+str(num),(5,20),cv2.FONT_HERSHEY_PLAIN,0.7,white,1 )
         
-def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,tabroi,cnnweigh,tabscanLung,viewstyle,tabscanroi):   
+def openfichier(ti,datacross,path_img,thrprobaUIP,patch_list_cross_slice,tabroi,cnnweigh,
+                tabscanLung,viewstyle,tabscanroi):   
     global  quitl,dimtabx,dimtaby,patchi,ix,iy
     print 'openfichier start' 
     scaleenh=2
