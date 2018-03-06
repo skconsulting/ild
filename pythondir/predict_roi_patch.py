@@ -35,7 +35,9 @@ classifnotvisu=[]
 
 #pickel_train='pickle_lu_f6'
 #pickel_train='best_wesk4'
-pickel_train='pickle_train_set_3/pickle_sk4'
+#pickel_train='pickle_train_set_patchsk4/pickle'
+pickel_train='pickle_train_set_patchunet/pickle'
+
 #pickel_train='best_weunet'
 
 num_class=len(classif)
@@ -57,6 +59,7 @@ namedirtopc=os.path.join(namedirtopc,predict_source)
 pickle_dir_train=os.path.join(cwdtop,trainsettop)
 pickle_dir_train=os.path.join(pickle_dir_train,pickel_train)
 print 'pickle source weight',pickle_dir_train
+
 
 
 predict_result='predict_result'
@@ -286,14 +289,15 @@ def loadmodel(num_class):
     print 'load model'
 #    weights,num_class=load_train_data(pickle_dir_train)
     weights=[]
+    namelastc=load_model_set(pickle_dir_train)
 #    model = get_unet(num_class,image_rows,image_cols)
 #    model = get_model(num_class,image_rows,image_cols,weights)
-    model = get_model(num_class,num_bit,image_rows,image_cols,False,weights,False)
+    model = get_model(num_class,num_bit,image_rows,image_cols,False,weights,False,namelastc,1e-3)
 #    mloss = weighted_categorical_crossentropy(weights).myloss
 #    model.compile(optimizer=Adam(lr=1e-5), loss=mloss, metrics=['categorical_accuracy'])
 #    model.compile(optimizer=Adam(lr=1e-5), loss='categorical_crossentropy', metrics=['categorical_accuracy'])
-    namelastc=load_model_set(pickle_dir_train)
-    model.load_weights(namelastc)
+    
+#    model.load_weights(namelastc)
     return model
 
 
@@ -318,6 +322,7 @@ for f in listdirc:
     numsliceok=[]
     namedirtopcf=os.path.join(namedirtopc,f)
     scanbmp=os.path.join(namedirtopcf,source)
+
     sroidir=os.path.join(namedirtopcf,sroi)
     if not os.path.exists(sroidir):
         os.mkdir(sroidir)

@@ -565,37 +565,39 @@ def evaluate(actual,pred,num_class):
     cm = metrics.confusion_matrix(actual,pred,labels=labl)
     return fscore, acc, cm
 
-def double_conv_layerunet(x, size, dropout, batch_norm,dim_org):
-    kernel_size=(3,3)
+def double_conv_layerunet(x, size, dropout, batch_norm,dim_org,ke_i,kernel_siz):
+    
     if K.image_dim_ordering() == 'th':
         axis = 1
     else:
         axis = 3
 
-    conv = Conv2D(size,kernel_size, activation='relu',
+    conv = Conv2D(size,kernel_siz, activation='relu',kernel_initializer=ke_i,
                   data_format=dim_org,kernel_constraint=maxnorm(4.),padding='same')(x)
-#    conv = Conv2D(size,kernel_size,kernel_constraint=maxnorm(4.,axis=-1),padding='same')(x)
-
+          
     if batch_norm == True:
         conv = BatchNormalization(axis=axis)(conv)
-
-    conv = Conv2D(size, kernel_size,activation='relu',
-                  data_format=dim_org,kernel_constraint=maxnorm(4.), padding='same')(conv)
-#    conv = Conv2D(size,kernel_size,kernel_constraint=maxnorm(4.,axis=-1),padding='same')(conv)
-
-    if batch_norm == True:
-        conv = BatchNormalization(axis=axis)(conv)
-#    conv = Activation('relu')(conv)
-#    conv = LeakyReLU(alpha=0.15)(conv)
+    
     if dropout > 0:
         conv = Dropout(dropout)(conv)
+
+    conv = Conv2D(size, kernel_siz,activation='relu',kernel_initializer=ke_i,
+                  data_format=dim_org,kernel_constraint=maxnorm(4.), padding='same')(conv)
+
+    if batch_norm == True:
+        conv = BatchNormalization(axis=axis)(conv)
+#    conv = LeakyReLU(alpha=0.15)(conv)
+    
     return conv
 
 
 def get_unet(num_class,num_bit,img_rows,img_cols,INP_SHAPE,dim_org,CONCAT_AXIS):
 
-    print 'this is model UNET new1'
-
+    print 'this is model UNET new2'
+    ke_i='he_normal'
+#    ke_i='glorot_uniform'
+    kernel_size=(3,3)
+    stride=(2,2)
     coefcon={}
     coefcon[1]=16 #32 for 320
 
@@ -617,37 +619,37 @@ def get_unet(num_class,num_bit,img_rows,img_cols,INP_SHAPE,dim_org,CONCAT_AXIS):
     inputs = Input(INP_SHAPE)
 #    print INP_SHAPE
 
-    conv1=double_conv_layerunet(inputs, coefcon[1], dor[1], False,dim_org)
+    conv1=double_conv_layerunet(inputs, coefcon[1], dor[1], False,dim_org,ke_i,kernel_size)
     pool1 = MaxPooling2D(pool_size=(2, 2),data_format=dim_org)(conv1)
 
-    conv2=double_conv_layerunet(pool1, coefcon[2], dor[2], batch_norm,dim_org)
+    conv2=double_conv_layerunet(pool1, coefcon[2], dor[2], batch_norm,dim_org,ke_i,kernel_size)
     pool2 = MaxPooling2D(pool_size=(2, 2),data_format=dim_org)(conv2)
 
-    conv3=double_conv_layerunet(pool2, coefcon[3], dor[3], batch_norm,dim_org)
+    conv3=double_conv_layerunet(pool2, coefcon[3], dor[3], batch_norm,dim_org,ke_i,kernel_size)
     pool3 = MaxPooling2D(pool_size=(2, 2),data_format=dim_org)(conv3)
 
-    conv4=double_conv_layerunet(pool3, coefcon[4],dor[4], batch_norm,dim_org)
+    conv4=double_conv_layerunet(pool3, coefcon[4],dor[4], batch_norm,dim_org,ke_i,kernel_size)
     pool4 = MaxPooling2D(pool_size=(2, 2),data_format=dim_org)(conv4)
 
-    conv5=double_conv_layerunet(pool4, coefcon[5], dor[5], batch_norm,dim_org)
-
-    up6 = concatenate([UpSampling2D(size=(2, 2),data_format=dim_org)(conv5), conv4],axis=CONCAT_AXIS)
- 
-    conv6=double_conv_layerunet(up6, coefcon[4], dor[4], batch_norm,dim_org)
-
-    up7 = concatenate([UpSampling2D(size=(2, 2),data_format=dim_org)(conv6), conv3], axis=CONCAT_AXIS)
+    conv5=double_conv_layerunet(pool4, coefcon[5], dor[5], batch_norm,dim_org,ke_i,kernel_size)
     
-    conv7=double_conv_layerunet(up7, coefcon[3], dor[3], batch_norm,dim_org)
+    #    up6 = concatenate([UpSampling2D(size=(2, 2),data_format=dim_org)(conv5), conv4],axis=CONCAT_AXIS)
+    up6 = concatenate([Conv2DTranspose(coefcon[4], kernel_size, strides=(2, 2), padding='same',data_format=dim_org)(conv5), conv4], axis=CONCAT_AXIS) 
+    conv6=double_conv_layerunet(up6, coefcon[4], dor[4], batch_norm,dim_org,ke_i,kernel_size)
 
-    up8 = concatenate([UpSampling2D(size=(2, 2),data_format=dim_org)(conv7), conv2], axis=CONCAT_AXIS)
-    
-    conv8=double_conv_layerunet(up8, coefcon[2], dor[2], batch_norm,dim_org)
+#    up7 = concatenate([UpSampling2D(size=(2, 2),data_format=dim_org)(conv6), conv3], axis=CONCAT_AXIS)
+    up7 = concatenate([Conv2DTranspose(coefcon[3], kernel_size, strides=stride, padding='same',data_format=dim_org)(conv6), conv3], axis=CONCAT_AXIS)    
+    conv7=double_conv_layerunet(up7, coefcon[3], dor[3], batch_norm,dim_org,ke_i,kernel_size)
 
-    up9 = concatenate([UpSampling2D(size=(2, 2),data_format=dim_org)(conv8), conv1], axis=CONCAT_AXIS)
-    
-    conv9=double_conv_layerunet(up9, coefcon[1], dor[1], False,dim_org)    
+#    up8 = concatenate([UpSampling2D(size=(2, 2),data_format=dim_org)(conv7), conv2], axis=CONCAT_AXIS)
+    up8 = concatenate([Conv2DTranspose(coefcon[2], kernel_size, strides=stride, padding='same',data_format=dim_org)(conv7), conv2], axis=CONCAT_AXIS)  
+    conv8=double_conv_layerunet(up8, coefcon[2], dor[2], batch_norm,dim_org,ke_i,kernel_size)
+
+#    up9 = concatenate([UpSampling2D(size=(2, 2),data_format=dim_org)(conv8), conv1], axis=CONCAT_AXIS)
+    up9 = concatenate([Conv2DTranspose(coefcon[1], kernel_size, strides=stride, padding='same',data_format=dim_org)(conv8), conv1], axis=CONCAT_AXIS)  
+    conv9=double_conv_layerunet(up9, coefcon[1], dor[1], False,dim_org,ke_i,kernel_size)    
      
-    conv10 = Conv2D(int(num_class), (1,1), activation='softmax',data_format=dim_org,padding='same')(conv9) #softmax?
+    conv10 = Conv2D(int(num_class), (1,1), activation='softmax',data_format=dim_org,padding='same',kernel_initializer=ke_i)(conv9) #softmax?
     
     model = Model(inputs=[inputs], outputs=[conv10])
     print model.layers[-1].output_shape
@@ -996,7 +998,7 @@ def mean_pred(y_true, y_pred):
     return K.mean(y_pred)
 
 
-def get_model(num_class,num_bit,img_rows,img_cols,mat_t_k,weights,weightedl,namelastc):
+def get_model(num_class,num_bit,img_rows,img_cols,mat_t_k,weights,weightedl,namelastc,learning_rate):
     DIM_ORDERING=keras.backend.image_data_format()
     if DIM_ORDERING == 'channels_first':
         INP_SHAPE = (num_bit, image_rows, image_cols)  
@@ -1143,7 +1145,7 @@ if __name__ == "__main__":
    num_bit=1
    num_class=11
    weightedl=False
-   model=get_model(num_class,num_bit,image_size,image_size,False,weights,weightedl,'NAN')
+   model=get_model(num_class,num_bit,image_size,image_size,False,weights,weightedl,'NAN',learning_rate)
    model.summary()
    print 'last model shape', model.layers[-1].output_shape #== (None, 16, 16, 21)
    DIM_ORDERING=keras.backend.image_data_format()

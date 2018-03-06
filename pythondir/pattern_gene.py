@@ -3,6 +3,7 @@
 Created on Sat Jun 17 11:16:58 2017
 generator of images and label 
 step 1
+norm is applied to output data
 @author: sylvain
 """
 import os
@@ -25,13 +26,13 @@ subHUG='classpatch'#subdirectory from nameHug input pickle
 #subHUG='S3'#subdirectory from nameHug input pickle
 
 toppatchtop='IMAGEDIR'
-toppatch= 'TOPPATCH' #name of top directory for image and label generation
+toppatch= 'TOPVAL' #name of top directory for image and label generation
 subtop_patch='1'#subdirectory for top patch
 
 lpatch=True #to generate images from  lung patch (True) or geometrical
 col = False # to generate color patterns (True), NOT TESTED
 
-slnt=100 # number of images to generate
+slnt=10 # number of images to generate
 numfig=200 # for geometrical, number of figuress per type 
 randomdim=False #True to generate big figures, False for small dimensions
 

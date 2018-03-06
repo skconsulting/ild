@@ -4,18 +4,19 @@ Created on Tue May 02 15:04:39 2017
 Create Xtrain etc data for training 
 specific for patch based images
 2nd step
+NO norm (already done in step 1)
 @author: sylvain
 
 """
 
 #from __future__ import print_function
-from param_pix import cwdtop,image_rows,image_cols
+from param_pix import cwdtop,image_rows,image_cols,generandom,geneaug
 
-from param_pix import remove_folder,normi,norm,fidclass
+from param_pix import remove_folder,normi,fidclass
 from param_pix import classif
 
 import cPickle as pickle
-import cv2
+#import cv2
 import collections
 from keras.utils import np_utils
 import matplotlib.pyplot as plt
@@ -29,8 +30,16 @@ pklnum=100 #number of total images to generate
 print 'number of turns :',pklnum
 perval = 0.2 #percentage for validation
 
-nametopdummy='DUMMY' # name of top directory for dummy images with patches
-toppatchdummy= 'TOPPATCH' #for dummy scan with patches
+
+maxshiftv=0
+maxshifth=0
+maxrot=7 #7
+maxresize=10
+maxscaleint=0
+maxmultint=20
+
+#nametopdummy='DUMMY' # name of top directory for dummy images with patches
+#toppatchdummy= 'TOPPATCH' #for dummy scan with patches
 #namesubdummy='lu_training' #for dummy scan with patches
 #nsubsubdummy='lu_f'  #for dummy scan with patches
 dummyinclude=False #to add patch roi after each set of pattern
@@ -41,14 +50,14 @@ nameHug='IMAGEDIR'
 
 #extendirdummy=namesubdummy
 
-toppatch= 'TOPPATCH' #for scan classified ROI
+toppatch= 'TOPVAL' #for scan classified ROI
 #extendir='ILD_TXT'  #for scan classified ROI
 #extendir='ILD0'  #for scan classified ROI
 extendir='1'  #for scan classified ROI
 #extendir='UIP2'  #for scan classified ROI
 
 pickel_dirsource='TRAIN_SET/pickle_train_set' #path for data fort training
-pickel_dirsourcenum='r' #extensioon for path for data for training
+pickel_dirsourcenum='patchunet' #extensioon for path for data for training
 
 
 ##############################################################
@@ -110,16 +119,17 @@ def get_class_weights(y):
 #remove_folder(pickle_dir)
 
 
-def readclasses(lisscan,picklepathdir,indexpat,indexaug):
+def readclasses(lisscan,picklepathdir,indexpat,scaleint,multint,rotimg,resiz,shiftv,shifth):
         
     patpick=os.path.join(picklepathdir,lisscan[indexpat])
     readpkl=pickle.load(open(patpick, "rb"))
                                             
     scanr=readpkl[0]
-    scan=geneaug(scanr,indexaug)
+#    scan=geneaug(scanr,indexaug)
+    scan=geneaug(scanr,scaleint,multint,rotimg,resiz,shiftv,shifth,False)
     maskr=readpkl[1]
-    mask=geneaug(maskr,indexaug)
-
+#    mask=geneaug(maskr,indexaug)
+    mask=geneaug(maskr,0,0,rotimg,resiz,shiftv,shifth,True)
     return scan, mask  
 
 def numbclasses(y):
@@ -172,38 +182,40 @@ def readclasses2(num_classes,X_traini,y_traini,X_testi,y_testi):
 
 
 #start main
-def geneaug(image,tt):
-    if tt==0:
-        imout=image
-    elif tt==1:
-    # 1 90 deg
-        imout = np.rot90(image,1)
-    elif tt==2:
-    #2 180 deg
-        imout = np.rot90( image,2)
-    elif tt==3:
-    #3 270 deg
-        imout = np.rot90(image,3)
-    elif tt==4:
-    #4 flip fimage left-right
-            imout=np.fliplr(image)
-    elif tt==5:
-    #5 flip fimage left-right +rot 90
-        imout = np.rot90(np.fliplr(image))
-    elif tt==6:
-    #6 flip fimage left-right +rot 180
-        imout = np.rot90(np.fliplr(image),2)
-    elif tt==7:
-    #7 flip fimage left-right +rot 270
-        imout = np.rot90(np.fliplr(image),3)
-  
-    return imout
+#def geneaug(image,tt):
+#    if tt==0:
+#        imout=image
+#    elif tt==1:
+#    # 1 90 deg
+#        imout = np.rot90(image,1)
+#    elif tt==2:
+#    #2 180 deg
+#        imout = np.rot90( image,2)
+#    elif tt==3:
+#    #3 270 deg
+#        imout = np.rot90(image,3)
+#    elif tt==4:
+#    #4 flip fimage left-right
+#            imout=np.fliplr(image)
+#    elif tt==5:
+#    #5 flip fimage left-right +rot 90
+#        imout = np.rot90(np.fliplr(image))
+#    elif tt==6:
+#    #6 flip fimage left-right +rot 180
+#        imout = np.rot90(np.fliplr(image),2)
+#    elif tt==7:
+#    #7 flip fimage left-right +rot 270
+#        imout = np.rot90(np.fliplr(image),3)
+#  
+#    return imout
 
 
 
 ###########################################################"
 
 lisscan=[name for name in os.listdir(picklepathdir)]
+print picklepathdir
+
 #
 numscan=len(lisscan)
 print '-----------'
@@ -217,10 +229,13 @@ label_list=[]
 for numgen in range(pklnum):
       
         indexpat=random.randint(0, numscan-1)
-        indexaug = random.randint(0, 7)
+#        indexaug = random.randint(0, 7)
+        
 
 #        print numgen ,indexpat,numscan
-        scan,mask=readclasses(lisscan,picklepathdir,indexpat,indexaug)  
+        scaleint,multint,rotimg,resiz,shiftv,shifth=generandom(maxscaleint,
+                            maxmultint,maxrot,maxresize,maxshiftv,maxshifth,1)
+        scan,mask=readclasses(lisscan,picklepathdir,indexpat,scaleint,multint,rotimg,resiz,shiftv,shifth)  
         patch_list.append(scan)
         label_list.append(mask)
     

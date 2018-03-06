@@ -4,7 +4,7 @@ Created on Tue May 02 15:04:39 2017
 @author: sylvain
 """
 
-from param_pix import get_model,image_rows,image_cols,num_bit,evaluate,fidclass,classif
+from param_pix import get_model,image_rows,image_cols,num_bit,evaluate,fidclass,classif,learning_rate
 
 import datetime
 import os
@@ -21,7 +21,7 @@ K.set_image_dim_ordering('tf')
 nepochs=500
 nameHug='TRAIN_SET'
 subHug='pickle_train_set'
-extension='r'
+extension='patchunet'
 #nameHug='CHU'
 #nameHug='DUMMY'
 dataindir='V'
@@ -129,13 +129,18 @@ def train():
     listmodel=[name for name in os.listdir(pickel_dirout) if name.find('weights')==0]
     if len(listmodel)>0:
          print 'weight  found'
-         namelastc=load_model_set(pickel_dirout)         
+         namelastc=load_model_set(pickel_dirout)  
+         learning_raten=learning_rate/10
+         print 'new learning_rate',learning_raten
+        
 #         model.load_weights(namelastc)  
     else:
          print 'no weight found'
          namelastc = 'NAN'
+         learning_raten=learning_rate
+         print 'new learning_rate',learning_raten
     
-    model = get_model(num_class,num_bit,image_rows,image_cols,False,class_weights_r,False,namelastc)
+    model = get_model(num_class,num_bit,image_rows,image_cols,False,class_weights_r,False,namelastc,learning_raten)
     model.summary()
 
    
@@ -151,7 +156,7 @@ def train():
 
     early_stopping=EarlyStopping(monitor='val_loss', patience=20, verbose=1,min_delta=0.01,mode='auto')                                     
     reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5,
-                                              patience=5, min_lr=5e-6,verbose=1)#init 5
+                                              patience=3, min_lr=5e-6,verbose=1)#init 5
     model_checkpoint = ModelCheckpoint(os.path.join(pickel_dirout,'weights_'+today+'.{epoch:02d}-{val_loss:.3f}.hdf5'), 
                                 monitor='val_loss', save_best_only=True,save_weights_only=True) 
     csv_logger = CSVLogger(rese,append=True)
