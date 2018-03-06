@@ -55,6 +55,7 @@ patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_med3_3b'
 
 ############################## 1b   ###########################
 """
+
 #HUG
 patchesdirnametop = patchesdirnametop+['th0.8_TOPPATCH_all_HUG_ILD_TXT_med_1b']
 #patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_HUG_ILD_TXT_a_1b']
@@ -84,6 +85,7 @@ patchesdirnametop = patchesdirnametop+['th0.8_TOPPATCH_all_CHU2new_UIP_med3_1b']
 patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_med3_1b']
 patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_3_1b']
 """
+
 
 
 ############################## 3bm5  ###########################
@@ -146,7 +148,7 @@ pickel_dirsource_e='train' #path for data fort training
 dir_train='T'
 pickel_dirsourcenum=setdata #extensioon for path for data for training
 #extendir2='2'
-extendir1='1'
+extendir1='3'
 extendir2='1b'
 #extendir2='essai'
 

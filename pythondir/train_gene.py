@@ -22,14 +22,15 @@ ptrainfile='trainlog'+today+'.txt'
 # initialization
 args         = H.parse_args()                          # Function for parsing command-line arguments
 train_params = {
-     'do' : float(args.do) if args.do else 0.2,        # Dropout Parameter default = 0.2
+     'do' : float(args.do) if args.do else 0.5,        # Dropout Parameter default = 0.2
      'a'  : float(args.a) if args.a else 0.01,          # Conv Layers LeakyReLU default =0.01 alpha param [if alpha set to 0 LeakyReLU is equivalent with ReLU]
-     'k'  : int(args.k) if args.k else 4,              # Feature maps k multiplier
+     'k'  : int(args.k) if args.k else 5,              # Feature maps k multiplier
+     'ke'  : int(args.ke) if args.ke else 2,           # kernel size (ke,ke)
      's'  : float(args.s) if args.s else 1,            # Input Image rescale factor
      'pf' : float(args.pf) if args.pf else 1,          # Percentage of the pooling layer: [0,1]1
      'pt' : args.pt if args.pt else 'Avg',             # Pooling type: Avg, Max
      'fp' : args.fp if args.fp else 'proportional',    # Feature maps policy: proportional, static
-     'cl' : int(args.cl) if args.cl else 4,            # Number of Convolutional Layers normal=5
+     'cl' : int(args.cl) if args.cl else 5,            # Number of Convolutional Layers normal=5
      'opt': args.opt if args.opt else 'Adam',          # Optimizer: SGD, Adagrad, Adam
      'obj': args.obj if args.obj else 'ce',            # Minimization Objective: mse, ce
      'patience' : args.pat if args.pat else 200,       # Patience parameter for early stoping 200
@@ -45,11 +46,12 @@ pickel_dirsource_root='pickle'
 pickel_dirsource_e='train' #path for data fort training
 pickel_dirsourcenum='set1' #extensioon for path for data for training
 #extendir1='2'
-extendir1='1'
+extendir1='3'
 #extendir2='3bm5'
 extendir2='1b'
 
-modelarch='sk5'
+#modelarch='sk5'
+modelarch='genova'
 valset='C:/Users/sylvain/Documents/boulot/startup/radiology/traintool/th0.95_pickle_val_set1_1_1b'
 print 'validation path'
 print valset
@@ -101,6 +103,7 @@ patch_dir_train=os.path.join(patch_dir,dir_train)
 print 'patch dir source : ',patch_dir #path with data for training
 print 'weight dir store : ',patch_dir_store #path with weights after training
 print 'train dir  : ',patch_dir_train #path with  training data
+
 if not os.path.exists(patch_dir_store):
     os.mkdir(patch_dir_store)
 feature_train={}

@@ -29,7 +29,7 @@ print ' keras.backend.image_data_format :',keras.backend.image_data_format()
 ######################################################################
 setdata='set1'
 #thrpatch = 0.95 #patch overlapp tolerance
-thrpatch = 0.8 #patch overlapp tolerance
+thrpatch = 0.95 #patch overlapp tolerance
 
 ######################################################
 writeFile=False
@@ -46,7 +46,7 @@ minmax=False # if true, min and max for 3 d patch, if false: slice-1, slice , sl
 #MAX_BOUND = 400.0
 #PIXEL_MEAN = 0.25
 
-learning_rate=1e-4
+learning_rate=1e-3
 #CHU
 #limitHU=1700.0
 #centerHU=-662.0

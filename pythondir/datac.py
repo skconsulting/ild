@@ -51,33 +51,33 @@ patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2_UIP_med3_3b']
 patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_3_3b']
 patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_a3_3b']
 patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_med3_3b']
-
+"""
 ############################## 1b   ###########################
 #HUG
-patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_HUG_ILD_TXT__1b']
+patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_HUG_ILD_TXT_med_1b']
 #patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_HUG_ILD_TXT_a_1b']
 #patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_HUG_ILD_TXT_med_1b']
 #
 ##CHU
-patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU_UIP__1b']
-patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU_UIP_a_1b']
+#patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU_UIP__1b']
+#patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU_UIP_a_1b']
 patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU_UIP_med_1b']
 
 
 #CHU2
-patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2_UIP_a3_1b']
+#patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2_UIP_a3_1b']
 patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2_UIP_med3_1b']
-patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2_UIP_3_1b']
+#patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2_UIP_3_1b']
 
 
 #CHU2new
-patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_a3_1b']
+#patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_a3_1b']
 #patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP__1b']
 patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_med3_1b']
-patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_3_1b']
+#patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_3_1b']
 
 
-
+"""
 ############################## 3bm5  ###########################
 #HUG
 #patchesdirnametop = ['th0.95_TOPPATCH_all_HUG_ILD_TXT__3bm']
@@ -97,7 +97,7 @@ patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2_UIP_med3_3bm5']
 patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_3_3bm5']
 #patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_a3_3b']
 patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_med3_3bm5']
-"""
+
 ############################## 3bm53  ###########################
 #HUG
 #patchesdirnametop = ['th0.95_TOPPATCH_all_HUG_ILD_TXT__3bm']
@@ -117,8 +117,10 @@ patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2_UIP_med3_3bm53'
 #patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_3_3bm5']
 #patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_a3_3b']
 patchesdirnametop = patchesdirnametop+['th0.95_TOPPATCH_all_CHU2new_UIP_med3_3bm53']
+"""
 ##########################################################################################
 #patchesdirnametop = ['th0.95_TOPPATCH_val_REFVALnew_UIPJC_med_3bm53']
+#patchesdirnametop = ['th0.8_TOPPATCH_val_REFVALnew_UIPJC__1b']
 #print patchesdirnametop
 #toAug=['ground_glass','reticulation', 'HC','GGpret']
 #
@@ -132,13 +134,13 @@ pickel_dirsource_e='train' #path for data fort training
 
 pickel_dirsourcenum=setdata #extensioon for path for data for training
 #extendir2='2'
-extendir1='1'
-extendir2='3bm53'
-extendir2='essai2'
+extendir1='2'
+extendir2='1b'
+#extendir2='essai2'
 
 
 augf=1#augmentation factor default 3
-test_size=0 #split test training in percent 0 means no val
+test_size=10 #split test training in percent 0 means no val
 
 #all in percent
 maxshiftv=0
@@ -146,7 +148,7 @@ maxshifth=0
 maxrot=7
 maxresize=0
 maxscaleint=0
-maxmultint=20
+maxmultint=0
 listdirtop={}
 for f in  patchesdirnametop:
     listdirtop[f]=classif

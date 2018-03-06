@@ -32,7 +32,7 @@ import argparse
 import cPickle as pickle
 import numpy as np
 import os
-import sys
+#import sys
 from keras.utils import np_utils
 import sklearn.metrics as metrics
 # debug
@@ -43,6 +43,7 @@ def parse_args():
     parser.add_argument('-do',  help='Dropout param [default: 0.5]')
     parser.add_argument('-a',   help='Conv Layers LeakyReLU alpha param [if alpha set to 0 LeakyReLU is equivalent with ReLU] [default: 0.3]')
     parser.add_argument('-k',   help='Feature maps k multiplier [default: 4]')
+    parser.add_argument('-ke',  help='kernel size [default: 2]')
     parser.add_argument('-cl',  help='Number of Convolutional Layers [default: 5]')
     parser.add_argument('-s',   help='Input Image rescale factor [default: 1]')
     parser.add_argument('-pf',  help='Percentage of the pooling layer: [0,1] [default: 1]')

@@ -262,6 +262,8 @@ def get_modelsk5(output_shape,output_label, params,filew,patch_dir_store,namelas
     print 'input shape:',INP_SHAPE
     dim_org=keras.backend.image_data_format()
     kernel_size=(3,3)
+#    kernel_size=(4,4)
+
     pool_siz=(2,2)
 #    paddingv='valid'#'same'
     paddingv='same'
@@ -330,6 +332,109 @@ def get_modelsk5(output_shape,output_label, params,filew,patch_dir_store,namelas
     if namelastc !='NAN':
         model.load_weights(namelastc)  
     model.compile(optimizer=Adam(lr=learning_rate), loss='categorical_crossentropy', metrics=['categorical_accuracy'])
+    filew.write ('sk5 with num_class:'+str(num_class)+'\n')
+    filew.write ('learning rate:'+str(learning_rate)+'\n')
+    print ('learning rate:'+str(learning_rate))
+    json_string = model.to_json()
+    pickle.dump(json_string, open(os.path.join(patch_dir_store,modelname), "wb"),protocol=-1)
+    orig_stdout = sys.stdout
+    f = open(os.path.join(patch_dir_store,'modelsk5.txt'), 'w')
+    sys.stdout = f
+    print(model.summary())
+    sys.stdout = orig_stdout
+    f.close()
+    print model.layers[-1].output_shape 
+    return model
+
+def get_modelsk6(output_shape,output_label, params,filew,patch_dir_store,namelastc,learning_rate):
+    print 'output shape:',output_shape
+    print 'output output_label:',output_label
+   
+    num_class=output_label[-1]
+    print 'num_class',num_class
+    
+    dimpx=output_shape[-1]
+    numbits= output_shape[1]
+
+    INP_SHAPE = (numbits, dimpx, dimpx)
+    print 'input shape:',INP_SHAPE
+    dim_org=keras.backend.image_data_format()
+    kernel_size=(3, 3)
+#    kernel_size=(4,4)
+#    kernel_size2=(2,2)
+
+    pool_siz=(2,2)
+    paddingv='valid'#'same'
+#    paddingv='same'
+
+    maxnormv=3
+    startnum=32
+    coef={}
+    coef[0]=startnum
+    print '0',coef[0]
+    for i in range(1,4):
+        coef[i]=coef[i-1]*2
+        print i,coef[i]
+
+    print 'sk5 with num_class :',num_class
+    model = Sequential() 
+    #14L
+    model.add(Conv2D(coef[0], kernel_size, input_shape=INP_SHAPE, padding=paddingv, 
+                      data_format=dim_org, kernel_constraint=maxnorm(maxnormv)))   
+    model.add(LeakyReLU(alpha=params['a']))
+    #12
+    model.add(Conv2D(coef[0], kernel_size, input_shape=INP_SHAPE, padding=paddingv, 
+                      data_format=dim_org, kernel_constraint=maxnorm(maxnormv)))  
+    model.add(LeakyReLU(alpha=params['a']))
+#    model.add(AveragePooling2D(pool_size=pool_siz,data_format=dim_org))
+    model.add(Dropout(0.25)) 
+    #10
+    model.add(Conv2D(coef[1], kernel_size, padding=paddingv, 
+                data_format=dim_org, kernel_constraint=maxnorm(maxnormv)))
+    model.add(LeakyReLU(alpha=params['a']))  
+    #8
+    model.add(Conv2D(coef[1], kernel_size, padding=paddingv, 
+                data_format=dim_org, kernel_constraint=maxnorm(maxnormv)))
+    model.add(LeakyReLU(alpha=params['a']))  
+#    model.add(AveragePooling2D(pool_size=pool_siz,data_format=dim_org))
+    model.add(Dropout(0.25)) 
+    #6
+
+    model.add(Conv2D(coef[2], kernel_size, input_shape=INP_SHAPE, padding=paddingv, 
+                      data_format=dim_org, kernel_constraint=maxnorm(maxnormv)))   
+    model.add(LeakyReLU(alpha=params['a']))
+#    model.add(Conv2D(coef[2], kernel_size, input_shape=INP_SHAPE, padding=paddingv, 
+#                      data_format=dim_org, kernel_constraint=maxnorm(maxnormv)))  
+#    model.add(LeakyReLU(alpha=params['a']))
+    model.add(AveragePooling2D(pool_size=pool_siz,data_format=dim_org))
+#    model.add(Dropout(0.25)) 
+    #2
+#    model.add(Conv2D(coef[3], kernel_size, padding=paddingv, 
+#                data_format=dim_org, kernel_constraint=maxnorm(maxnormv)))
+#    model.add(LeakyReLU(alpha=params['a']))  
+#    model.add(Conv2D(coef[3], kernel_size, padding=paddingv, 
+#                data_format=dim_org, kernel_constraint=maxnorm(maxnormv)))
+#    model.add(LeakyReLU(alpha=params['a']))  
+#    model.add(AveragePooling2D(pool_size=pool_siz,data_format=dim_org))
+#    model.add(Dropout(0.25)) 
+    
+    model.add(Flatten())
+    model.add(Dense(1152))
+    model.add(LeakyReLU(alpha=params['a']))
+    model.add(Dropout(0.3))
+#    
+    model.add(Dense(1024))
+    model.add(LeakyReLU(alpha=params['a']))
+#    model.add(Dropout(0.3)) 
+    
+    model.add(Dense(num_class, activation='softmax'))
+#    model.add(Dense(num_class, activation='softmax', kernel_regularizer=regularizers.l2(0.01),
+#                activity_regularizer=regularizers.l1(0.01)))
+#    
+    if namelastc !='NAN':
+        model.load_weights(namelastc)  
+    model.compile(optimizer=Adam(lr=learning_rate), loss='categorical_crossentropy', metrics=['categorical_accuracy'])
+    filew.write ('sk6 with num_class:'+str(num_class)+'\n')
     filew.write ('learning rate:'+str(learning_rate)+'\n')
     print ('learning rate:'+str(learning_rate))
     json_string = model.to_json()
@@ -344,14 +449,14 @@ def get_modelsk5(output_shape,output_label, params,filew,patch_dir_store,namelas
     return model
 
 
-
-
-def get_model(input_shape, output_shape, params,filew,patch_dir_store,namelastc,learning_rate):
+def get_model_gen(input_shape, output_shape, params,filew,patch_dir_store,namelastc,learning_rate,parameters_str):
 
     print('compiling model...')
-        
+
+    kern_size=(params['ke'],params['ke'])
+#    kern_size=(2,2)    
     # Dimension of The last Convolutional Feature Map (eg. if input 32x32 and there are 5 conv layers 2x2 fm_size = 27)
-    fm_size = input_shape[-1] - params['cl']
+    fm_size = input_shape[-1] - (params['cl']*(kern_size[0]-1))
 
     print 'fm_size : ', fm_size
     print 'input_shape[-1] : ', input_shape[-1]
@@ -366,7 +471,7 @@ def get_model(input_shape, output_shape, params,filew,patch_dir_store,namelastc,
     # Add convolutional layers to model
     # model.add(Convolution2D(params['k']*get_FeatureMaps(1, params['fp']), 2, 2, init='orthogonal', activation=LeakyReLU(params['a']), input_shape=input_shape[1:]))
     # added by me
-    model.add(Conv2D(params['k']*get_FeatureMaps(1, params['fp']), (2, 2), 
+    model.add(Conv2D(params['k']*get_FeatureMaps(1, params['fp']), kern_size, 
                      kernel_initializer='orthogonal', input_shape=input_shape[1:],
                      kernel_constraint=maxnorm(3)))
     # model.add(Activation('relu'))
@@ -375,7 +480,7 @@ def get_model(input_shape, output_shape, params,filew,patch_dir_store,namelastc,
 #    model.add(PReLU(init='zero', weights=None))
     print 'Layer 1 parameters settings:'
     print 'number of filters to be used : ', params['k']*get_FeatureMaps(1, params['fp'])
-    print 'kernel size : 2 x 2' 
+    print 'kernel size :', kern_size
     print 'input_shape of tensor is : ', input_shape[1:]
 
 
@@ -383,13 +488,13 @@ def get_model(input_shape, output_shape, params,filew,patch_dir_store,namelastc,
         print i, params['k']*get_FeatureMaps(i, params['fp'])
         # model.add(Convolution2D(params['k']*get_FeatureMaps(i, params['fp']), 2, 2, init='orthogonal', activation=LeakyReLU(params['a'])))
         model.add(Conv2D(params['k']*get_FeatureMaps(i, params['fp']), 
-                         (2, 2), kernel_initializer='orthogonal',kernel_constraint=maxnorm(3)))
+                         kern_size, kernel_initializer='orthogonal',kernel_constraint=maxnorm(3)))
         # model.add(Activation('relu'))
         model.add(LeakyReLU(alpha=params['a']))
 #        model.add(Dropout(params['do']))
         print 'Layer',  i, ' parameters settings:'
         print 'number of filters to be used : ', params['k']*get_FeatureMaps(i, params['fp'])
-        print 'kernel size : 2 x 2' 
+        print 'kernel size :',kern_size 
 
 
     # Add Pooling and Flatten layers to model
@@ -403,7 +508,8 @@ def get_model(input_shape, output_shape, params,filew,patch_dir_store,namelastc,
         model.add(MaxPooling2D(pool_size=pool_siz))
     else:
         sys.exit("Wrong type of Pooling layer")
-
+#    print(model.summary())
+#    ooo
     model.add(Flatten())
 
     # dropout is 50% or do=0.5
@@ -448,7 +554,9 @@ def get_model(input_shape, output_shape, params,filew,patch_dir_store,namelastc,
     if namelastc !='NAN':
         model.load_weights(namelastc)  
     model.compile(optimizer=Adam(lr=learning_rate), loss='categorical_crossentropy', metrics=['categorical_accuracy'])
+    filew.write ('geneva with num_class:'+str(output_shape[1])+'\n')
     filew.write ('learning rate:'+str(learning_rate)+'\n')
+    filew.write ('param string:'+parameters_str+'\n')
     print ('learning rate:'+str(learning_rate))
     json_string = model.to_json()
     pickle.dump(json_string, open(os.path.join(patch_dir_store,modelname), "wb"),protocol=-1)
@@ -547,9 +655,10 @@ def train(x_val, y_val, params,eferror,patch_dir_store,valset,acttrain,modelarch
     # Parameters String used for saving the files
     parameters_str = str('_d' + str(params['do']).replace('.', '') +
                          '_a' + str(params['a']).replace('.', '') + 
-                         '_k' + str(params['k']).replace('.', '') + 
-                         '_c' + str(params['cl']).replace('.', '') + 
+                         '_k' + str(params['k']) + 
+                         '_cl' + str(params['cl']) + 
                          '_s' + str(params['s']).replace('.', '') + 
+                         '_ke' + str(params['ke']) + 
                          '_pf' + str(params['pf']).replace('.', '') + 
                          '_pt' + params['pt'] +
                          '_fp' + str(params['fp']).replace('.', '') +
@@ -560,6 +669,8 @@ def train(x_val, y_val, params,eferror,patch_dir_store,valset,acttrain,modelarch
     print('[Dropout Param] \t->\t'+str(params['do']))
     print('[Alpha Param] \t\t->\t'+str(params['a']))
     print('[Multiplier] \t\t->\t'+str(params['k']))
+    print('[numb conv] \t\t->\t'+str(params['cl']))
+    print('[kernel size] \t\t->\t'+str(params['ke']))
     print('[Patience] \t\t->\t'+str(params['patience']))
     print('[Tolerance] \t\t->\t'+str(params['tolerance']))
     print('[Input Scale Factor] \t->\t'+str(params['s']))
@@ -575,6 +686,8 @@ def train(x_val, y_val, params,eferror,patch_dir_store,valset,acttrain,modelarch
     filew.write('[Dropout Param] \t->\t'+str(params['do'])+'\n')
     filew.write('[Alpha Param] \t\t->\t'+str(params['a'])+'\n')
     filew.write('[Multiplier] \t\t->\t'+str(params['k'])+'\n')
+    filew.write('[numb conv] \t\t->\t'+str(params['cl'])+'\n')
+    filew.write('[kernel size] \t\t->\t'+str(params['ke'])+'\n')
     filew.write('[Patience] \t\t->\t'+str(params['patience'])+'\n')
     filew.write('[Tolerance] \t\t->\t'+str(params['tolerance'])+'\n')
     filew.write('[Input Scale Factor] \t->\t'+str(params['s'])+'\n')
@@ -603,6 +716,11 @@ def train(x_val, y_val, params,eferror,patch_dir_store,valset,acttrain,modelarch
          learning_ratef=learning_rate
     if modelarch=='sk5':
         model = get_modelsk5(x_val.shape,y_val.shape, params,filew,patch_dir_store,namelastc,learning_ratef)
+    elif modelarch=='sk6':
+        model = get_modelsk6(x_val.shape,y_val.shape, params,filew,patch_dir_store,namelastc,learning_ratef)
+    elif modelarch== 'genova':
+         model = get_model_gen(x_val.shape,y_val.shape, params,filew,patch_dir_store,namelastc,learning_ratef,parameters_str)
+        
     filew.write ('-----------------\n')
     numclass=y_val.shape[1]
     if acttrain:
@@ -627,7 +745,7 @@ def train(x_val, y_val, params,eferror,patch_dir_store,valset,acttrain,modelarch
         model_checkpoint = ModelCheckpoint(os.path.join(patch_dir_store,'weights_'+today+'.{epoch:02d}-{val_loss:.3f}.hdf5'), 
                                     monitor='val_loss', save_best_only=True,save_weights_only=True,mode='auto')       
         reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5,
-                          patience=5, min_lr=1e-6,verbose=1)
+                          patience=3, min_lr=1e-6,verbose=1)
         csv_logger = CSVLogger(rese,append=True)
         filew.close()
 
